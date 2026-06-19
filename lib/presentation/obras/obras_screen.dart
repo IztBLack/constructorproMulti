@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/db/app_database.dart';
 import '../../data/providers.dart';
+import 'obra_detail_screen.dart';
 
 class ObrasScreen extends ConsumerWidget {
   const ObrasScreen({super.key});
@@ -55,11 +56,21 @@ class ObrasScreen extends ConsumerWidget {
                       .where((s) => s.isNotEmpty)
                       .join(' · '),
                 ),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () => _confirmDelete(context, ref, obra),
+                trailing: PopupMenuButton<String>(
+                  onSelected: (v) {
+                    if (v == 'editar') _showObraDialog(context, ref, obra);
+                    if (v == 'eliminar') _confirmDelete(context, ref, obra);
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value: 'editar', child: Text('Editar')),
+                    PopupMenuItem(value: 'eliminar', child: Text('Eliminar')),
+                  ],
                 ),
-                onTap: () => _showObraDialog(context, ref, obra),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ObraDetailScreen(obra: obra),
+                  ),
+                ),
               );
             },
           );
