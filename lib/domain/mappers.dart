@@ -38,3 +38,6 @@ dom.Movimiento movimientoToDomain(Movimiento r) => dom.Movimiento(
           : dom.TipoMovimiento.salida,
       monto: r.monto,
     );
+
+dom.Partida partidaToDomain(Partida r) =>
+    dom.Partida(cantidad: r.cantidad, precioUnitario: r.precioUnitario);

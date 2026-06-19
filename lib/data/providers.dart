@@ -4,6 +4,7 @@ import '../core/db/app_database.dart';
 import 'backup/backup_service.dart';
 import 'repositories.dart';
 import 'repositories_obra.dart';
+import 'repositories_cotizacion.dart';
 
 /// Instancia única de la base de datos Drift.
 final databaseProvider = Provider<AppDatabase>((ref) {
@@ -67,3 +68,27 @@ final asistenciasRangoProvider =
 final destajosRangoProvider =
     StreamProvider.family<List<Destajo>, RangoObra>((ref, r) =>
         ref.watch(destajoRepositoryProvider).watchRango(r.obraId, r.start, r.end));
+
+// ---------------- Cotizaciones / Presupuesto ----------------
+final cotizacionRepositoryProvider = Provider<CotizacionRepository>(
+    (ref) => CotizacionRepository(ref.watch(databaseProvider)));
+final seccionRepositoryProvider = Provider<SeccionRepository>(
+    (ref) => SeccionRepository(ref.watch(databaseProvider)));
+final partidaRepositoryProvider = Provider<PartidaRepository>(
+    (ref) => PartidaRepository(ref.watch(databaseProvider)));
+final pagoRepositoryProvider = Provider<PagoRepository>(
+    (ref) => PagoRepository(ref.watch(databaseProvider)));
+final catalogoRepositoryProvider = Provider<CatalogoRepository>(
+    (ref) => CatalogoRepository(ref.watch(databaseProvider)));
+
+final cotizacionesProvider = StreamProvider<List<Cotizacion>>(
+    (ref) => ref.watch(cotizacionRepositoryProvider).watchAll());
+
+final seccionesProvider = StreamProvider.family<List<Seccion>, String>(
+    (ref, cotId) => ref.watch(seccionRepositoryProvider).watchByCotizacion(cotId));
+
+final partidasDeCotizacionProvider = StreamProvider.family<List<Partida>, String>(
+    (ref, cotId) => ref.watch(partidaRepositoryProvider).watchDeCotizacion(cotId));
+
+final pagosProvider = StreamProvider.family<List<Pago>, String>(
+    (ref, cotId) => ref.watch(pagoRepositoryProvider).watchByCotizacion(cotId));

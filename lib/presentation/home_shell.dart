@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'colaboradores/colaboradores_screen.dart';
 import 'configuraciones/puestos_screen.dart';
+import 'cotizaciones/cotizaciones_screen.dart';
 import 'obras/obras_screen.dart';
 
 /// Shell principal con navegación inferior (Material 3).
@@ -17,6 +18,7 @@ class _HomeShellState extends State<HomeShell> {
 
   static const _screens = [
     ObrasScreen(),
+    CotizacionesScreen(),
     ColaboradoresScreen(),
     PuestosScreen(),
   ];
@@ -33,6 +35,10 @@ class _HomeShellState extends State<HomeShell> {
               icon: Icon(Icons.foundation_outlined),
               selectedIcon: Icon(Icons.foundation),
               label: 'Obras'),
+          NavigationDestination(
+              icon: Icon(Icons.description_outlined),
+              selectedIcon: Icon(Icons.description),
+              label: 'Cotizar'),
           NavigationDestination(
               icon: Icon(Icons.people_outline),
               selectedIcon: Icon(Icons.people),
