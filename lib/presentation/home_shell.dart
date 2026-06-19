@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'colaboradores/colaboradores_screen.dart';
-import 'configuraciones/puestos_screen.dart';
+import 'configuraciones/config_screen.dart';
 import 'cotizaciones/cotizaciones_screen.dart';
 import 'obras/obras_screen.dart';
 
@@ -20,7 +20,7 @@ class _HomeShellState extends State<HomeShell> {
     ObrasScreen(),
     CotizacionesScreen(),
     ColaboradoresScreen(),
-    PuestosScreen(),
+    ConfigScreen(),
   ];
 
   @override
