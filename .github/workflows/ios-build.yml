@@ -35,9 +35,15 @@ jobs:
       - name: Empaquetar IPA sin firmar
         run: |
           cd build/ios/iphoneos
+          rm -rf Payload app-unsigned.ipa
           mkdir Payload
-          cp -r Runner.app Payload/Runner.app
-          zip -qr app-unsigned.ipa Payload
+          mv Runner.app Payload/Runner.app
+          find Payload -name '.DS_Store' -delete
+          # ditto produce un archivo zip "limpio" estilo Apple, sin __MACOSX
+          # ni atributos extendidos que confunden a Sideloadly.
+          /usr/bin/ditto -c -k --sequesterRsrc --keepParent Payload app-unsigned.ipa
+          echo "=== Estructura del IPA ==="
+          unzip -l app-unsigned.ipa | head -25
 
       - name: Publicar IPA como artifact
         uses: actions/upload-artifact@v4
