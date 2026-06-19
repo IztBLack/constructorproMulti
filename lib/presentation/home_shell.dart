@@ -4,6 +4,7 @@ import 'colaboradores/colaboradores_screen.dart';
 import 'configuraciones/config_screen.dart';
 import 'cotizaciones/cotizaciones_screen.dart';
 import 'obras/obras_screen.dart';
+import 'resumen/resumen_screen.dart';
 
 /// Shell principal con navegación inferior (Material 3).
 class HomeShell extends StatefulWidget {
@@ -20,6 +21,7 @@ class _HomeShellState extends State<HomeShell> {
     ObrasScreen(),
     CotizacionesScreen(),
     ColaboradoresScreen(),
+    ResumenScreen(),
     ConfigScreen(),
   ];
 
@@ -43,6 +45,10 @@ class _HomeShellState extends State<HomeShell> {
               icon: Icon(Icons.people_outline),
               selectedIcon: Icon(Icons.people),
               label: 'Equipo'),
+          NavigationDestination(
+              icon: Icon(Icons.insights_outlined),
+              selectedIcon: Icon(Icons.insights),
+              label: 'Resumen'),
           NavigationDestination(
               icon: Icon(Icons.settings_outlined),
               selectedIcon: Icon(Icons.settings),

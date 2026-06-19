@@ -58,6 +58,9 @@ final movimientosPorObraProvider =
     StreamProvider.family<List<Movimiento>, String>((ref, obraId) =>
         ref.watch(movimientoRepositoryProvider).watchByObra(obraId));
 
+final movimientosTodosProvider = StreamProvider<List<Movimiento>>(
+    (ref) => ref.watch(movimientoRepositoryProvider).watchAll());
+
 typedef RangoObra = ({String obraId, int start, int end});
 
 final asistenciasRangoProvider =

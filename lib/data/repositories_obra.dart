@@ -94,6 +94,8 @@ class MovimientoRepository {
             ]))
           .watch();
 
+  Stream<List<Movimiento>> watchAll() => db.select(db.movimientos).watch();
+
   Future<void> add({
     required String obraId,
     required int fecha,

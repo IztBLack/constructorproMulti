@@ -1,12 +1,14 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:printing/printing.dart';
 
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
 import '../../data/providers.dart';
 import '../../domain/logic/presupuesto_calculator.dart';
 import '../../domain/mappers.dart';
+import '../../pdf/pdf_service.dart';
 
 class CotizacionDetailScreen extends ConsumerStatefulWidget {
   final Cotizacion cotizacion;
@@ -35,6 +37,11 @@ class _State extends ConsumerState<CotizacionDetailScreen>
       appBar: AppBar(
         title: Text(widget.cotizacion.nombreProyecto),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            tooltip: 'Exportar presupuesto PDF',
+            onPressed: _exportarPdf,
+          ),
           PopupMenuButton<String>(
             onSelected: (v) async {
               if (v == 'iva') {
@@ -74,6 +81,26 @@ class _State extends ConsumerState<CotizacionDetailScreen>
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Obra creada desde la cotización.')));
     }
+  }
+
+  Future<void> _exportarPdf() async {
+    final secciones = ref.read(seccionesProvider(_cotId)).asData?.value ?? [];
+    final partidas = ref.read(partidasDeCotizacionProvider(_cotId)).asData?.value ?? [];
+    final pagos = ref.read(pagosProvider(_cotId)).asData?.value ?? [];
+    final totalPagado = pagos.fold<double>(0, (a, p) => a + p.monto);
+    final totales = const PresupuestoCalculator().calcular(
+      partidas: partidas.map(partidaToDomain).toList(),
+      ivaEnabled: _ivaEnabled,
+      totalPagado: totalPagado,
+    );
+    final bytes = await PdfService.presupuesto(
+      cot: widget.cotizacion,
+      secciones: secciones,
+      partidas: partidas,
+      totales: totales,
+      iva: _ivaEnabled,
+    );
+    await Printing.sharePdf(bytes: bytes, filename: 'presupuesto.pdf');
   }
 
   // ============ PRESUPUESTO ============

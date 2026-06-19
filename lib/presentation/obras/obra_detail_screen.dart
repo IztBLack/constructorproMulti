@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:printing/printing.dart';
 
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
@@ -7,6 +8,7 @@ import '../../data/providers.dart';
 import '../../domain/logic/flujo_calculator.dart';
 import '../../domain/logic/nomina_calculator.dart';
 import '../../domain/mappers.dart';
+import '../../pdf/pdf_service.dart';
 
 class ObraDetailScreen extends ConsumerStatefulWidget {
   final Obra obra;
@@ -36,6 +38,13 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.obra.nombre),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            tooltip: 'Exportar PDF (Nómina/Caja)',
+            onPressed: _exportarPdf,
+          ),
+        ],
         bottom: TabBar(
           controller: _tab,
           isScrollable: true,
@@ -57,6 +66,43 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
         ],
       ),
     );
+  }
+
+  Future<void> _exportarPdf() async {
+    final idx = _tab.index;
+    if (idx == 2) {
+      // Nómina de la semana activa
+      final fin = Semana.finSemana(_inicioSemana);
+      final rango = (obraId: _obraId, start: _inicioSemana, end: fin);
+      final workers = ref.read(colaboradoresPorObraProvider(_obraId)).asData?.value ?? [];
+      final puestos = ref.read(puestosProvider).asData?.value ?? [];
+      final asis = ref.read(asistenciasRangoProvider(rango)).asData?.value ?? [];
+      final dest = ref.read(destajosRangoProvider(rango)).asData?.value ?? [];
+      final summary = const NominaCalculator().calcular(
+        colaboradores: workers.map(colaboradorToDomain).toList(),
+        asistencias: asis.map(asistenciaToDomain).toList(),
+        destajos: dest.map(destajoToDomain).toList(),
+        puestos: puestos.map(puestoToDomain).toList(),
+      );
+      final domingo = DateTime.fromMillisecondsSinceEpoch(_inicioSemana)
+          .add(const Duration(days: 6));
+      final bytes = await PdfService.nomina(
+        obraNombre: widget.obra.nombre,
+        rango: '${Fmt.date(_inicioSemana)} – ${Fmt.date(domingo.millisecondsSinceEpoch)}',
+        summary: summary,
+      );
+      await Printing.sharePdf(bytes: bytes, filename: 'nomina.pdf');
+    } else if (idx == 3) {
+      // Flujo de caja
+      final movs = ref.read(movimientosPorObraProvider(_obraId)).asData?.value ?? [];
+      final resumen =
+          const FlujoCalculator().resumen(movs.map(movimientoToDomain).toList());
+      final bytes = await PdfService.flujoCaja(
+          obraNombre: widget.obra.nombre, movimientos: movs, resumen: resumen);
+      await Printing.sharePdf(bytes: bytes, filename: 'flujo_caja.pdf');
+    } else {
+      _snack('Cambia a la pestaña Nómina o Caja para exportar su PDF.');
+    }
   }
 
   // ============ EQUIPO ============
