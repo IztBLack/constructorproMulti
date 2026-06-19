@@ -1,0 +1,1675 @@
+﻿[
+    {
+        "clave":  "PRE.10",
+        "descripcion":  "Trazo y nivelación a mano para establecer ejes y niveles",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  11.17,
+        "categoria":  "PRELIMINARES"
+    },
+    {
+        "clave":  "PRE.20",
+        "descripcion":  "Despalme de terreno para retirar maleza",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  6.52,
+        "categoria":  "PRELIMINARES"
+    },
+    {
+        "clave":  "PRE.30",
+        "descripcion":  "Excavación a mano de material tipo A",
+        "unidad":  "M3",
+        "precioUnitarioDefault":  38.19,
+        "categoria":  "PRELIMINARES"
+    },
+    {
+        "clave":  "PRE.40",
+        "descripcion":  "Afine, nivelación y compactación con equipo al 95% PVSM",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  23.37,
+        "categoria":  "PRELIMINARES"
+    },
+    {
+        "clave":  "PRE.70",
+        "descripcion":  "Carga y acarreo en camión de volteo de material y residuos",
+        "unidad":  "M3",
+        "precioUnitarioDefault":  104.37,
+        "categoria":  "PRELIMINARES"
+    },
+    {
+        "clave":  "PLA.10",
+        "descripcion":  "Plantilla de cimentación 5 cm espesor concreto F\u0027C=100 KG/CM2",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  66.22,
+        "categoria":  "CIMENTACIÓN"
+    },
+    {
+        "clave":  "ZAP.ZC1",
+        "descripcion":  "Zapata corrida ZC1 60 cm ancho, 15 cm espesor, varilla #3 @ 20 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  308.76,
+        "categoria":  "CIMENTACIÓN"
+    },
+    {
+        "clave":  "ZAP.ZC2",
+        "descripcion":  "Zapata corrida ZC2 100 cm ancho, 15 cm espesor, varilla #3 @ 10×20 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  387.2,
+        "categoria":  "CIMENTACIÓN"
+    },
+    {
+        "clave":  "CTR.CT2",
+        "descripcion":  "Contratrabe CT2 35×40 cm, 8 varillas #5, doble estribo #2 @ 15 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  445.13,
+        "categoria":  "CIMENTACIÓN"
+    },
+    {
+        "clave":  "CTR.CT3",
+        "descripcion":  "Contratrabe CT3 15×35×30 cm ARMEX 15×30-4 concreto premezclado",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  208.06,
+        "categoria":  "CIMENTACIÓN"
+    },
+    {
+        "clave":  "CTR.CT4",
+        "descripcion":  "Contratrabe CT4 15-35×30 cm, 4 varillas #5, estribos #2 @ 15 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  266.39,
+        "categoria":  "CIMENTACIÓN"
+    },
+    {
+        "clave":  "CTR.CT5",
+        "descripcion":  "Contratrabe CT5 20-40×30 cm, 6 varillas #5, estribos #2 @ 15 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  339.51,
+        "categoria":  "CIMENTACIÓN"
+    },
+    {
+        "clave":  "CTR.CT6",
+        "descripcion":  "Contratrabe CT6 15-25×40 cm, 4 varillas #3, estribos #2 @ 15 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  277.32,
+        "categoria":  "CIMENTACIÓN"
+    },
+    {
+        "clave":  "CTR.CT7",
+        "descripcion":  "Contratrabe CT7 35-45×40 cm, 8 varillas #5, doble estribo #2 @ 20 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  526.6,
+        "categoria":  "CIMENTACIÓN"
+    },
+    {
+        "clave":  "LOSA.CIM.10",
+        "descripcion":  "Losa de cimentación 10 cm, malla electrosoldada 6×6-6/6, F\u0027C=250",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  204.48,
+        "categoria":  "CIMENTACIÓN"
+    },
+    {
+        "clave":  "RELL.LIM",
+        "descripcion":  "Relleno limpio de banco compactado al 95% PVSM, capas ≤20 cm",
+        "unidad":  "M3",
+        "precioUnitarioDefault":  156.36,
+        "categoria":  "CIMENTACIÓN"
+    },
+    {
+        "clave":  "MEM.POLIE",
+        "descripcion":  "Membrana de polietileno cal. 600",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  9.08,
+        "categoria":  "CIMENTACIÓN"
+    },
+    {
+        "clave":  "IMP.ASF",
+        "descripcion":  "Impermeabilizante asfáltico fibratado base agua",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  40.28,
+        "categoria":  "CIMENTACIÓN"
+    },
+    {
+        "clave":  "REF.60",
+        "descripcion":  "Refuerzo 60 cm varilla #3 @ 20 cm en unión contratrabe-losa",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  60.7,
+        "categoria":  "CIMENTACIÓN"
+    },
+    {
+        "clave":  "REF.85",
+        "descripcion":  "Refuerzo 85 cm varilla #3 @ 20 cm en unión contratrabe-losa",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  76.71,
+        "categoria":  "CIMENTACIÓN"
+    },
+    {
+        "clave":  "REF.90",
+        "descripcion":  "Refuerzo 90 cm varilla #3 @ 20 cm en unión contratrabe-losa",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  77.68,
+        "categoria":  "CIMENTACIÓN"
+    },
+    {
+        "clave":  "FIRM.10",
+        "descripcion":  "Firme 10 cm malla electrosoldada 6×6-10/10, F\u0027C=150 KG/CM2",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  180,
+        "categoria":  "ALBAÑILERÍA"
+    },
+    {
+        "clave":  "DENTE.10",
+        "descripcion":  "Dentellón remate de firme 15-25 cm ancho × 30 cm altura ARMEX",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  215.12,
+        "categoria":  "ALBAÑILERÍA"
+    },
+    {
+        "clave":  "DESP.CAST",
+        "descripcion":  "Desplante de castillo para muros, 4 varillas #3, 1 ml desarrollo",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  48.51,
+        "categoria":  "ALBAÑILERÍA"
+    },
+    {
+        "clave":  "MUR.TAB12",
+        "descripcion":  "Muro novablock multiperforado 12 cm, mortero hidráulico-arena 1:4",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  201.34,
+        "categoria":  "ALBAÑILERÍA"
+    },
+    {
+        "clave":  "MUR.CON.10",
+        "descripcion":  "Muro concreto 10 cm doble malla electrosoldada 6×6-6/6, F\u0027C=250",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  796.46,
+        "categoria":  "ALBAÑILERÍA"
+    },
+    {
+        "clave":  "MUR.CON.15",
+        "descripcion":  "Muro concreto 15 cm doble parrilla varilla #3 @ 20 cm, F\u0027C=250",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  1175.85,
+        "categoria":  "ALBAÑILERÍA"
+    },
+    {
+        "clave":  "MUR.20",
+        "descripcion":  "Muro 20 cm tabique rojo recocido, mortero hidráulico-arena 1:4",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  313.16,
+        "categoria":  "ALBAÑILERÍA"
+    },
+    {
+        "clave":  "APLA.INT",
+        "descripcion":  "Aplanado interior a plomo, mortero hidráulico-arena 1:4",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  91.68,
+        "categoria":  "ALBAÑILERÍA"
+    },
+    {
+        "clave":  "APLA.EXT",
+        "descripcion":  "Aplanado exterior a plomo, mortero hidráulico-arena 1:4",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  113.36,
+        "categoria":  "ALBAÑILERÍA"
+    },
+    {
+        "clave":  "APLA.PUL",
+        "descripcion":  "Aplanado pulido a plomo, mezcla cemento-arena 1:3",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  42.99,
+        "categoria":  "ALBAÑILERÍA"
+    },
+    {
+        "clave":  "EMB.15",
+        "descripcion":  "Emboquillado de muro 15 cm, mezcla cemento-arena 1:3",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  65.66,
+        "categoria":  "ALBAÑILERÍA"
+    },
+    {
+        "clave":  "CAS.K1",
+        "descripcion":  "Castillo K1 15×15 cm ARMEX 12×12-4, F\u0027C=150 KG/CM2",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  104.4,
+        "categoria":  "CASTILLOS Y COLUMNAS"
+    },
+    {
+        "clave":  "CAS.K2",
+        "descripcion":  "Castillo K2 15×15 cm, 4 varillas #3, estribo #2 @ 7/15 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  129.65,
+        "categoria":  "CASTILLOS Y COLUMNAS"
+    },
+    {
+        "clave":  "CAS.K3",
+        "descripcion":  "Castillo K3 15×20 cm, 4 varillas #4, estribo #2 @ 7/15 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  173.44,
+        "categoria":  "CASTILLOS Y COLUMNAS"
+    },
+    {
+        "clave":  "CAS.K4",
+        "descripcion":  "Castillo K4 15×20 cm, 4 varillas #3, estribo #2 @ 7/15 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  148.76,
+        "categoria":  "CASTILLOS Y COLUMNAS"
+    },
+    {
+        "clave":  "CAS.K5",
+        "descripcion":  "Castillo K5 25×15 cm, 6 varillas #4, estribo #2 @ 7/15 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  212.63,
+        "categoria":  "CASTILLOS Y COLUMNAS"
+    },
+    {
+        "clave":  "CAS.K6",
+        "descripcion":  "Castillo K6 30×15 cm, 6 varillas #4, estribo #2 @ 7/15 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  250.97,
+        "categoria":  "CASTILLOS Y COLUMNAS"
+    },
+    {
+        "clave":  "CAS.K7",
+        "descripcion":  "Castillo K7 30×15 cm, 4 varillas #3, estribo #2 @ 7/15 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  204.05,
+        "categoria":  "CASTILLOS Y COLUMNAS"
+    },
+    {
+        "clave":  "COL.C1",
+        "descripcion":  "Columna C1 20×20 cm, 4 varillas #5, estribo #2 @ 15 cm, F\u0027C=250",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  368.45,
+        "categoria":  "CASTILLOS Y COLUMNAS"
+    },
+    {
+        "clave":  "COL.C2",
+        "descripcion":  "Columna C2 30×30 cm, 8 varillas #5, doble estribo #3 @ 10 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  688.44,
+        "categoria":  "CASTILLOS Y COLUMNAS"
+    },
+    {
+        "clave":  "DAL.CERR",
+        "descripcion":  "Dala de cerramiento 15×20 cm ARMEX 12×20-4, F\u0027C=150 KG/CM2",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  123.77,
+        "categoria":  "CASTILLOS Y COLUMNAS"
+    },
+    {
+        "clave":  "LOSA.MAC.12",
+        "descripcion":  "Losa maciza 12 cm varilla #3 @ 20 cm, concreto premezclado F\u0027C=250",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  540.89,
+        "categoria":  "LOSAS"
+    },
+    {
+        "clave":  "LOSA.RET.30",
+        "descripcion":  "Losa reticular 30 cm, casetón 25 cm + capa compresión 5 cm",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  477.68,
+        "categoria":  "LOSAS"
+    },
+    {
+        "clave":  "LOSA.15",
+        "descripcion":  "Losa tapa maciza 15 cm, parrilla varilla #3 @ 15×20 cm, F\u0027C=250",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  563.57,
+        "categoria":  "LOSAS"
+    },
+    {
+        "clave":  "TE1",
+        "descripcion":  "Trabe TE1 15×30 cm, 4 varillas #5, estribos #2 @ 15 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  407.04,
+        "categoria":  "TRABES Y NERVADURAS"
+    },
+    {
+        "clave":  "TE2",
+        "descripcion":  "Trabe TE2 40×30 cm, 12 varillas #5 + bastones, estribos (6R)",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  864.36,
+        "categoria":  "TRABES Y NERVADURAS"
+    },
+    {
+        "clave":  "TE3",
+        "descripcion":  "Trabe TE3 30×50 cm, 8 varillas #5 + bastones, estribos (4R)",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  899.93,
+        "categoria":  "TRABES Y NERVADURAS"
+    },
+    {
+        "clave":  "TE4",
+        "descripcion":  "Trabe TE4 20×50 cm, 6 varillas #6 + bastones (3R) @ 15 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  863.33,
+        "categoria":  "TRABES Y NERVADURAS"
+    },
+    {
+        "clave":  "TE5",
+        "descripcion":  "Trabe TE5 15×50 cm, 4 varillas #5 + bastones, estribos @ 15 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  492.44,
+        "categoria":  "TRABES Y NERVADURAS"
+    },
+    {
+        "clave":  "TE6",
+        "descripcion":  "Trabe TE6 15×30 cm, 4 varillas #5 + bastones + estribos #3 @ 20 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  360.27,
+        "categoria":  "TRABES Y NERVADURAS"
+    },
+    {
+        "clave":  "N1",
+        "descripcion":  "Nervadura N1 10×30 cm, 2 varillas #3, grapa #2 @ 15 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  136.23,
+        "categoria":  "TRABES Y NERVADURAS"
+    },
+    {
+        "clave":  "N2",
+        "descripcion":  "Nervadura N2 15×30 cm, 4 varillas #3, estribos #2 @ 15 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  166.13,
+        "categoria":  "TRABES Y NERVADURAS"
+    },
+    {
+        "clave":  "N4",
+        "descripcion":  "Nervadura N4 20×30 cm, 4 varillas #3, estribos #2 @ 15 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  264.29,
+        "categoria":  "TRABES Y NERVADURAS"
+    },
+    {
+        "clave":  "N5",
+        "descripcion":  "Nervadura N5 35×30 cm, 8 varillas #3, estribos (4R) @ 15 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  397.92,
+        "categoria":  "TRABES Y NERVADURAS"
+    },
+    {
+        "clave":  "N6",
+        "descripcion":  "Nervadura N6 35×30 cm, 8 varillas #5 + bastones, estribos (4R)",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  622.59,
+        "categoria":  "TRABES Y NERVADURAS"
+    },
+    {
+        "clave":  "N7",
+        "descripcion":  "Nervadura N7 15/20×30 cm, 4 varillas #4, estribos #2 @ 15 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  214.84,
+        "categoria":  "TRABES Y NERVADURAS"
+    },
+    {
+        "clave":  "AZ.10",
+        "descripcion":  "Pretil 40 cm altura, novablock 12 cm, mortero 1:4",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  114.04,
+        "categoria":  "AZOTEA"
+    },
+    {
+        "clave":  "AZ.35",
+        "descripcion":  "Relleno tepetzil para pendiente en losa azotea, ≤8 cm promedio",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  134.32,
+        "categoria":  "AZOTEA"
+    },
+    {
+        "clave":  "AZ.40",
+        "descripcion":  "Fino en losa azotea 2.5 cm, mezcla cemento-arena 1:3",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  117.3,
+        "categoria":  "AZOTEA"
+    },
+    {
+        "clave":  "AZ.50",
+        "descripcion":  "Chaflán en arista de pretil y losa, mezcla cemento-arena 1:3",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  53.6,
+        "categoria":  "AZOTEA"
+    },
+    {
+        "clave":  "AZ.60",
+        "descripcion":  "Base de tinado 1,100 lt, muretes y losa maciza 10 cm",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  5261.77,
+        "categoria":  "AZOTEA"
+    },
+    {
+        "clave":  "DALA.AZ",
+        "descripcion":  "Dala de cerramiento azotea 15×15 cm ARMEX 12×12-4",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  129.35,
+        "categoria":  "AZOTEA"
+    },
+    {
+        "clave":  "ESC.10",
+        "descripcion":  "Rampa escalera 12 cm, parrilla #3 @ 20 cm + bastones, F\u0027C=250",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  662.32,
+        "categoria":  "ESCALERAS"
+    },
+    {
+        "clave":  "ESC.30",
+        "descripcion":  "Forjado de escalón tabique rojo, 30 cm huella × 18.2 cm peralte",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  307.84,
+        "categoria":  "ESCALERAS"
+    },
+    {
+        "clave":  "LCIM.C20",
+        "descripcion":  "Losa cimentación cisterna 15 cm, doble parrilla #3 @ 20 cm",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  455.65,
+        "categoria":  "CISTERNA Y ALBERCA"
+    },
+    {
+        "clave":  "TRA.PER.10",
+        "descripcion":  "Trabe perimetral cisterna 20×35 cm, 4 varillas #4, F\u0027C=250",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  237.04,
+        "categoria":  "CISTERNA Y ALBERCA"
+    },
+    {
+        "clave":  "CAS.KC1",
+        "descripcion":  "Castillo cisterna KC1 20×20 cm, 4 varillas #3",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  185.22,
+        "categoria":  "CISTERNA Y ALBERCA"
+    },
+    {
+        "clave":  "CAS.KC2",
+        "descripcion":  "Castillo cisterna KC2 20×20 cm, 4 varillas #4",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  210.9,
+        "categoria":  "CISTERNA Y ALBERCA"
+    },
+    {
+        "clave":  "LCIM.15",
+        "descripcion":  "Losa cimentación alberca 15 cm, doble parrilla #3 @ 20 cm",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  503.69,
+        "categoria":  "CISTERNA Y ALBERCA"
+    },
+    {
+        "clave":  "MUR.CON.15",
+        "descripcion":  "Muro concreto alberca 15 cm, doble parrilla #3 @ 20 cm",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  1175.85,
+        "categoria":  "CISTERNA Y ALBERCA"
+    },
+    {
+        "clave":  "FIRM.15",
+        "descripcion":  "Firme en losas 10 cm, malla electrosoldada 6×6-10/10",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  285.71,
+        "categoria":  "ÁREAS EXTERIORES"
+    },
+    {
+        "clave":  "REG.40-60",
+        "descripcion":  "Registro 40×60 cm medidas interiores hasta 80 cm profundidad",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  1079.26,
+        "categoria":  "ÁREAS EXTERIORES"
+    },
+    {
+        "clave":  "POZ.AB",
+        "descripcion":  "Pozo de absorción 1.50 m Ø, profundidad 1.50 m, tabique 28 cm",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  10679.35,
+        "categoria":  "ÁREAS EXTERIORES"
+    },
+    {
+        "clave":  "CTM-001",
+        "descripcion":  "Trazo y nivelación de obra",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  20,
+        "categoria":  "PRELIMINARES Y EXCAVACIÓN"
+    },
+    {
+        "clave":  "CTM-002",
+        "descripcion":  "Excavación en tierra blanda de 0 a 1 mts. de profundidad",
+        "unidad":  "M3",
+        "precioUnitarioDefault":  203,
+        "categoria":  "PRELIMINARES Y EXCAVACIÓN"
+    },
+    {
+        "clave":  "CTM-003",
+        "descripcion":  "Excavación en tierra arcillosa de 0 a 1 mts. de profundidad",
+        "unidad":  "M3",
+        "precioUnitarioDefault":  573,
+        "categoria":  "PRELIMINARES Y EXCAVACIÓN"
+    },
+    {
+        "clave":  "CTM-004",
+        "descripcion":  "Excavación en tierra blanda de 0 a 2 mts. de profundidad",
+        "unidad":  "M3",
+        "precioUnitarioDefault":  242,
+        "categoria":  "PRELIMINARES Y EXCAVACIÓN"
+    },
+    {
+        "clave":  "CTM-005",
+        "descripcion":  "Excavación en tierra arcillosa de 0 a 2 mts. de profundidad",
+        "unidad":  "M3",
+        "precioUnitarioDefault":  614,
+        "categoria":  "PRELIMINARES Y EXCAVACIÓN"
+    },
+    {
+        "clave":  "CTM-006",
+        "descripcion":  "Relleno y compactación de material, producto de excavación en tierra blanda",
+        "unidad":  "M3",
+        "precioUnitarioDefault":  233,
+        "categoria":  "PRELIMINARES Y EXCAVACIÓN"
+    },
+    {
+        "clave":  "CTM-007",
+        "descripcion":  "Relleno y compactación de material, producto de excavación en tierra arcillosa",
+        "unidad":  "M3",
+        "precioUnitarioDefault":  377,
+        "categoria":  "PRELIMINARES Y EXCAVACIÓN"
+    },
+    {
+        "clave":  "CTM-008",
+        "descripcion":  "Firme de concreto simple de 5 cms. de espesor",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  119,
+        "categoria":  "FIRMES Y CIMENTACIÓN"
+    },
+    {
+        "clave":  "CTM-009",
+        "descripcion":  "Firme de concreto simple de 10 cms. de espesor",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  156,
+        "categoria":  "FIRMES Y CIMENTACIÓN"
+    },
+    {
+        "clave":  "CTM-010",
+        "descripcion":  "Firme de concreto simple de 15 cms. de espesor",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  223,
+        "categoria":  "FIRMES Y CIMENTACIÓN"
+    },
+    {
+        "clave":  "CTM-011",
+        "descripcion":  "Cimentación de mampostería de piedra brasa",
+        "unidad":  "M3",
+        "precioUnitarioDefault":  634,
+        "categoria":  "FIRMES Y CIMENTACIÓN"
+    },
+    {
+        "clave":  "CTM-012",
+        "descripcion":  "Cimentación de muros aparente de piedra rústica a una cara de 40 cm de ancho",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  661,
+        "categoria":  "FIRMES Y CIMENTACIÓN"
+    },
+    {
+        "clave":  "CTM-013",
+        "descripcion":  "Cimentación de concreto armado tipo económico, zapata 60x12 cm. y contratrabe 20x30 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  573,
+        "categoria":  "FIRMES Y CIMENTACIÓN"
+    },
+    {
+        "clave":  "CTM-014",
+        "descripcion":  "Hechura y vaciado de concreto en cimentación (con revolvedora)",
+        "unidad":  "M3",
+        "precioUnitarioDefault":  785,
+        "categoria":  "FIRMES Y CIMENTACIÓN"
+    },
+    {
+        "clave":  "CTM-015",
+        "descripcion":  "Vaciado de concreto en cimentación (concreto pre-mezclado)",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  670,
+        "categoria":  "FIRMES Y CIMENTACIÓN"
+    },
+    {
+        "clave":  "CTM-016",
+        "descripcion":  "Muro de tabique de 15 cm. de espesor",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  189,
+        "categoria":  "MUROS"
+    },
+    {
+        "clave":  "CTM-017",
+        "descripcion":  "Muro de tabique de 21 cm. de espesor",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  241,
+        "categoria":  "MUROS"
+    },
+    {
+        "clave":  "CTM-018",
+        "descripcion":  "Muro de tabique de 28 cm. de espesor",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  277,
+        "categoria":  "MUROS"
+    },
+    {
+        "clave":  "CTM-019",
+        "descripcion":  "Muro de tabique acabado aparente",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  315,
+        "categoria":  "MUROS"
+    },
+    {
+        "clave":  "CTM-020",
+        "descripcion":  "Muros de enrace no mayores de 40 cm. de altura",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  161,
+        "categoria":  "MUROS"
+    },
+    {
+        "clave":  "CTM-021",
+        "descripcion":  "Muros de vitricota",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  394,
+        "categoria":  "MUROS"
+    },
+    {
+        "clave":  "CTM-022",
+        "descripcion":  "Pretiles de tabique de 0.14 de barro recocido sin revestimiento en azotea hasta 0.50 cm. de altura",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  186,
+        "categoria":  "MUROS"
+    },
+    {
+        "clave":  "CTM-023",
+        "descripcion":  "Muros de block de 0.20 x 0.15 x 0.40",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  187,
+        "categoria":  "MUROS"
+    },
+    {
+        "clave":  "CTM-024",
+        "descripcion":  "Muro de block aparente por una cara",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  254,
+        "categoria":  "MUROS"
+    },
+    {
+        "clave":  "CTM-025",
+        "descripcion":  "Muros de block aparentes por dos caras",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  263,
+        "categoria":  "MUROS"
+    },
+    {
+        "clave":  "CTM-026",
+        "descripcion":  "Repisón de concreto sobre muros de 14 x 80 x 25 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  345,
+        "categoria":  "MUROS"
+    },
+    {
+        "clave":  "CTM-027",
+        "descripcion":  "Dalas y castillo de 14 x 15 cm. con ARMEX, incluye: cimbra, fierro y colado",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  252,
+        "categoria":  "CASTILLOS Y DALAS"
+    },
+    {
+        "clave":  "CTM-028",
+        "descripcion":  "Dalas y castillos de 15 x 25 cm. con ARMEX, incluye: cimbra, fierro y colado",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  252,
+        "categoria":  "CASTILLOS Y DALAS"
+    },
+    {
+        "clave":  "CTM-029",
+        "descripcion":  "Castillo de 15 x 30 cm. con ARMEX, incluye: cimbra, fierro y colado",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  263,
+        "categoria":  "CASTILLOS Y DALAS"
+    },
+    {
+        "clave":  "CTM-030",
+        "descripcion":  "Hechuras y vaciado de concreto en trabes y losa",
+        "unidad":  "M3",
+        "precioUnitarioDefault":  941,
+        "categoria":  "TRABES Y LOSAS"
+    },
+    {
+        "clave":  "CTM-031",
+        "descripcion":  "Vaciado de concreto en trabes y losa (concreto pre-mezclado)",
+        "unidad":  "M3",
+        "precioUnitarioDefault":  878,
+        "categoria":  "TRABES Y LOSAS"
+    },
+    {
+        "clave":  "CTM-032",
+        "descripcion":  "Colocación de concreto bombeado",
+        "unidad":  "M3",
+        "precioUnitarioDefault":  320,
+        "categoria":  "TRABES Y LOSAS"
+    },
+    {
+        "clave":  "CTM-033",
+        "descripcion":  "Subida, trazo y colocación de block en losa aligerada",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  22,
+        "categoria":  "TRABES Y LOSAS"
+    },
+    {
+        "clave":  "CTM-038",
+        "descripcion":  "Aplanado en trabes de 20 x 40 cm en losa",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  188,
+        "categoria":  "APLANADOS"
+    },
+    {
+        "clave":  "CTM-039",
+        "descripcion":  "Aplanado en cejas de cuadros de 10 x 20 cm",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  153,
+        "categoria":  "APLANADOS"
+    },
+    {
+        "clave":  "CTM-040",
+        "descripcion":  "Aplanado en muros interiores, con cemento, cal y arena",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  164,
+        "categoria":  "APLANADOS"
+    },
+    {
+        "clave":  "CTM-041",
+        "descripcion":  "Aplanado de plafond con cemento, cal y arena",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  206,
+        "categoria":  "APLANADOS"
+    },
+    {
+        "clave":  "CTM-042",
+        "descripcion":  "Aplanado exterior en muros con cemento, cal y arena",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  153,
+        "categoria":  "APLANADOS"
+    },
+    {
+        "clave":  "CTM-043",
+        "descripcion":  "Emboquillado de puertas y ventanas",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  88,
+        "categoria":  "APLANADOS"
+    },
+    {
+        "clave":  "CTM-044",
+        "descripcion":  "Perfilado de trabes y columnas",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  67,
+        "categoria":  "APLANADOS"
+    },
+    {
+        "clave":  "CTM-045",
+        "descripcion":  "Perfilado en muros donde no van marcos",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  138,
+        "categoria":  "APLANADOS"
+    },
+    {
+        "clave":  "CTM-046",
+        "descripcion":  "Colocación de tubería de albañal hasta 6\" incluyendo excavación y relleno",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  217,
+        "categoria":  "INSTALACIÓN SANITARIA Y DRENAJE"
+    },
+    {
+        "clave":  "CTM-047",
+        "descripcion":  "Pozo de absorción de 1.50 de diámetro hasta 2 mts. de profundidad, incluye: excavación y relleno",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  4939,
+        "categoria":  "INSTALACIÓN SANITARIA Y DRENAJE"
+    },
+    {
+        "clave":  "CTM-048",
+        "descripcion":  "Registro de albañal 40x60 cms. tabique rojo, incluye: excavación y relleno",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  803,
+        "categoria":  "INSTALACIÓN SANITARIA Y DRENAJE"
+    },
+    {
+        "clave":  "CTM-049",
+        "descripcion":  "Registro de albañal 40x60 cms. concreto, incluye: cimbra, fierro y colado, excavación y relleno",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  1613,
+        "categoria":  "INSTALACIÓN SANITARIA Y DRENAJE"
+    },
+    {
+        "clave":  "CTM-050",
+        "descripcion":  "Registro tipo mediano de 30 x 30 cms. a base de tabique rojo",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  345,
+        "categoria":  "INSTALACIÓN SANITARIA Y DRENAJE"
+    },
+    {
+        "clave":  "CTM-051",
+        "descripcion":  "Registro tipo mediano de 30 x 30 cms. de concreto",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  345,
+        "categoria":  "INSTALACIÓN SANITARIA Y DRENAJE"
+    },
+    {
+        "clave":  "CTM-052",
+        "descripcion":  "Hechura de cajita para llaves de paso común",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  209,
+        "categoria":  "INSTALACIÓN SANITARIA Y DRENAJE"
+    },
+    {
+        "clave":  "CTM-053",
+        "descripcion":  "Fosa séptica con 2 departamentos, incluye: excavación, relleno y tapa",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  10068,
+        "categoria":  "INSTALACIÓN SANITARIA Y DRENAJE"
+    },
+    {
+        "clave":  "CTM-054",
+        "descripcion":  "Colocación de coladera con cajas chicas",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  237,
+        "categoria":  "INSTALACIÓN SANITARIA Y DRENAJE"
+    },
+    {
+        "clave":  "CTM-IH01",
+        "descripcion":  "Instalación de WC, incluye: ramaleo, ranurado y colocación",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  1503,
+        "categoria":  "INSTALACIÓN SANITARIA Y DRENAJE"
+    },
+    {
+        "clave":  "CTM-IH02",
+        "descripcion":  "Instalación de lavabo con agua fría y caliente, incluye: ramaleo, ranurado y conexión",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  1258,
+        "categoria":  "INSTALACIÓN SANITARIA Y DRENAJE"
+    },
+    {
+        "clave":  "CTM-IH03",
+        "descripcion":  "Instalación de regadera con agua fría y caliente, incluye: ramaleo, ranurado y conexión",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  1436,
+        "categoria":  "INSTALACIÓN SANITARIA Y DRENAJE"
+    },
+    {
+        "clave":  "CTM-IH04",
+        "descripcion":  "Instalación de tina de hidromasaje",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  8225,
+        "categoria":  "INSTALACIÓN SANITARIA Y DRENAJE"
+    },
+    {
+        "clave":  "CTM-IH05",
+        "descripcion":  "Instalación de bidet",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  2000,
+        "categoria":  "INSTALACIÓN SANITARIA Y DRENAJE"
+    },
+    {
+        "clave":  "CTM-IH06",
+        "descripcion":  "Instalación de lavadero o lavado de granito",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  1193,
+        "categoria":  "INSTALACIÓN SANITARIA Y DRENAJE"
+    },
+    {
+        "clave":  "CTM-IH07",
+        "descripcion":  "Conexión de calentador sin línea de gas",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  1278,
+        "categoria":  "INSTALACIÓN SANITARIA Y DRENAJE"
+    },
+    {
+        "clave":  "CTM-IH08",
+        "descripcion":  "Instalación de vertedero de una llave",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  1225,
+        "categoria":  "INSTALACIÓN SANITARIA Y DRENAJE"
+    },
+    {
+        "clave":  "CTM-IH09",
+        "descripcion":  "Instalación de llave de riego",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  657,
+        "categoria":  "INSTALACIÓN SANITARIA Y DRENAJE"
+    },
+    {
+        "clave":  "CTM-IH10",
+        "descripcion":  "Instalación de migitorio",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  1210,
+        "categoria":  "INSTALACIÓN SANITARIA Y DRENAJE"
+    },
+    {
+        "clave":  "CTM-IH11",
+        "descripcion":  "Instalación de tinaco",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  1870,
+        "categoria":  "INSTALACIÓN SANITARIA Y DRENAJE"
+    },
+    {
+        "clave":  "CTM-IE01",
+        "descripcion":  "Salida de luz visible (casa tipo económico)",
+        "unidad":  "SALIDA",
+        "precioUnitarioDefault":  388,
+        "categoria":  "INSTALACIÓN ELÉCTRICA"
+    },
+    {
+        "clave":  "CTM-IE02",
+        "descripcion":  "Salida de luz oculta (casa tipo económico)",
+        "unidad":  "SALIDA",
+        "precioUnitarioDefault":  470,
+        "categoria":  "INSTALACIÓN ELÉCTRICA"
+    },
+    {
+        "clave":  "CTM-IE03",
+        "descripcion":  "Salida de luz oculta (casa tipo residencial)",
+        "unidad":  "SALIDA",
+        "precioUnitarioDefault":  470,
+        "categoria":  "INSTALACIÓN ELÉCTRICA"
+    },
+    {
+        "clave":  "CTM-055",
+        "descripcion":  "Chaflanes en azotea",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  81,
+        "categoria":  "ESCALERAS Y ACABADOS EXTERIORES"
+    },
+    {
+        "clave":  "CTM-056",
+        "descripcion":  "Forjado de escaleras",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  274,
+        "categoria":  "ESCALERAS Y ACABADOS EXTERIORES"
+    },
+    {
+        "clave":  "CTM-057",
+        "descripcion":  "Forrado de escaleras con revestimiento de cemento",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  274,
+        "categoria":  "ESCALERAS Y ACABADOS EXTERIORES"
+    },
+    {
+        "clave":  "CTM-058",
+        "descripcion":  "Forrado de escaleras con loseta",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  274,
+        "categoria":  "ESCALERAS Y ACABADOS EXTERIORES"
+    },
+    {
+        "clave":  "CTM-059",
+        "descripcion":  "Forjado en bajantes por dos caras",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  209,
+        "categoria":  "ESCALERAS Y ACABADOS EXTERIORES"
+    },
+    {
+        "clave":  "CTM-063",
+        "descripcion":  "Losas para andador de concreto con junta de separación",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  388,
+        "categoria":  "ESCALERAS Y ACABADOS EXTERIORES"
+    },
+    {
+        "clave":  "CTM-064",
+        "descripcion":  "Colocación de lavaderos o fregaderos sin resanes",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  409,
+        "categoria":  "ESCALERAS Y ACABADOS EXTERIORES"
+    },
+    {
+        "clave":  "CTM-065",
+        "descripcion":  "Guarniciones de concreto hasta de 0.40 de peralte",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  209,
+        "categoria":  "ESCALERAS Y ACABADOS EXTERIORES"
+    },
+    {
+        "clave":  "CTM-066",
+        "descripcion":  "Colado de guarniciones tipo L de 0.40 x 0.15 con cimbra",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  403,
+        "categoria":  "ESCALERAS Y ACABADOS EXTERIORES"
+    },
+    {
+        "clave":  "CTM-067",
+        "descripcion":  "Tinacos verticales y horizontales con base",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  2258,
+        "categoria":  "ESCALERAS Y ACABADOS EXTERIORES"
+    },
+    {
+        "clave":  "CTM-068",
+        "descripcion":  "Junta de separación de barda perfilada",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  101,
+        "categoria":  "ESCALERAS Y ACABADOS EXTERIORES"
+    },
+    {
+        "clave":  "CTM-069",
+        "descripcion":  "Colocación y nivelación de barandales",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  271,
+        "categoria":  "ESCALERAS Y ACABADOS EXTERIORES"
+    },
+    {
+        "clave":  "CTM-070",
+        "descripcion":  "Colocación de portones de madera",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  271,
+        "categoria":  "ESCALERAS Y ACABADOS EXTERIORES"
+    },
+    {
+        "clave":  "CTM-071",
+        "descripcion":  "Colocación de rejas de protección",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  271,
+        "categoria":  "ESCALERAS Y ACABADOS EXTERIORES"
+    },
+    {
+        "clave":  "CTM-072",
+        "descripcion":  "Alero de protección de barda colindante",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  338,
+        "categoria":  "ESCALERAS Y ACABADOS EXTERIORES"
+    },
+    {
+        "clave":  "CTM-073",
+        "descripcion":  "Alero de protección de barda colindante con vaciado de concreto",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  389,
+        "categoria":  "ESCALERAS Y ACABADOS EXTERIORES"
+    },
+    {
+        "clave":  "CTM-074",
+        "descripcion":  "Escalera de tipo común",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  9838,
+        "categoria":  "ESCALERAS Y ACABADOS EXTERIORES"
+    },
+    {
+        "clave":  "CTM-075",
+        "descripcion":  "Gotero colgante con boquilla",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  221,
+        "categoria":  "ESCALERAS Y ACABADOS EXTERIORES"
+    },
+    {
+        "clave":  "CTM-060",
+        "descripcion":  "Piso de cemento hasta 7 cm. de espesor, firme y fino",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  188,
+        "categoria":  "PISOS Y RECUBRIMIENTOS"
+    },
+    {
+        "clave":  "CTM-061",
+        "descripcion":  "Fino en azotea primer nivel",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  113,
+        "categoria":  "PISOS Y RECUBRIMIENTOS"
+    },
+    {
+        "clave":  "CTM-062",
+        "descripcion":  "Firme, fino y pulido",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  169,
+        "categoria":  "PISOS Y RECUBRIMIENTOS"
+    },
+    {
+        "clave":  "CTM-076",
+        "descripcion":  "Piso de mosaico de pasta o granito",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  209,
+        "categoria":  "PISOS Y RECUBRIMIENTOS"
+    },
+    {
+        "clave":  "CTM-077",
+        "descripcion":  "Colocación de piso Interceramic hasta 0.50x0.50 cm sin incluir fino",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  335,
+        "categoria":  "PISOS Y RECUBRIMIENTOS"
+    },
+    {
+        "clave":  "CTM-078",
+        "descripcion":  "Cortes de mosaico o celosías se harán con disco",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  32,
+        "categoria":  "PISOS Y RECUBRIMIENTOS"
+    },
+    {
+        "clave":  "CTM-079",
+        "descripcion":  "Zoclo de piso Interceramic",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  85,
+        "categoria":  "PISOS Y RECUBRIMIENTOS"
+    },
+    {
+        "clave":  "CTM-080",
+        "descripcion":  "Colocación de mosaico Interceramic",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  242,
+        "categoria":  "PISOS Y RECUBRIMIENTOS"
+    },
+    {
+        "clave":  "CTM-081",
+        "descripcion":  "Colocación de lambrín de azulejo de 11x11 de medialeta",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  242,
+        "categoria":  "PISOS Y RECUBRIMIENTOS"
+    },
+    {
+        "clave":  "CTM-082",
+        "descripcion":  "Colocación de lambrín veneciano",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  307,
+        "categoria":  "PISOS Y RECUBRIMIENTOS"
+    },
+    {
+        "clave":  "CTM-083",
+        "descripcion":  "Colocación de accesorios para baño incluyendo botiquín",
+        "unidad":  "JGO",
+        "precioUnitarioDefault":  862,
+        "categoria":  "PISOS Y RECUBRIMIENTOS"
+    },
+    {
+        "clave":  "CTM-084",
+        "descripcion":  "Colocación de azulejo en boquilla",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  109,
+        "categoria":  "PISOS Y RECUBRIMIENTOS"
+    },
+    {
+        "clave":  "CTM-085",
+        "descripcion":  "Colocación de celosía de barro",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  426,
+        "categoria":  "PISOS Y RECUBRIMIENTOS"
+    },
+    {
+        "clave":  "CTM-086",
+        "descripcion":  "Colocación de balaostres incluye base y pasamanos",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  484,
+        "categoria":  "PISOS Y RECUBRIMIENTOS"
+    },
+    {
+        "clave":  "CTM-087",
+        "descripcion":  "Colocación de celosía de cemento",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  470,
+        "categoria":  "PISOS Y RECUBRIMIENTOS"
+    },
+    {
+        "clave":  "CTM-088",
+        "descripcion":  "Piso de cemento con huella, costal de malla",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  181,
+        "categoria":  "PISOS Y RECUBRIMIENTOS"
+    },
+    {
+        "clave":  "CTM-089",
+        "descripcion":  "Colocación de piedrín en muros",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  352,
+        "categoria":  "PISOS Y RECUBRIMIENTOS"
+    },
+    {
+        "clave":  "CTM-090",
+        "descripcion":  "Colocación de loseta en lambrines y pisos de mármol",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  258,
+        "categoria":  "PISOS Y RECUBRIMIENTOS"
+    },
+    {
+        "clave":  "CTM-091",
+        "descripcion":  "Colocación de adoquín sobre tierra blanda o balastro sin incluir compactación",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  146,
+        "categoria":  "PISOS Y RECUBRIMIENTOS"
+    },
+    {
+        "clave":  "CTM-092",
+        "descripcion":  "Lambrín de galleta o loseta española",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  258,
+        "categoria":  "PISOS Y RECUBRIMIENTOS"
+    },
+    {
+        "clave":  "CTM-093",
+        "descripcion":  "Colocación de teja acanalada de barro tipo colonial",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  436,
+        "categoria":  "PISOS Y RECUBRIMIENTOS"
+    },
+    {
+        "clave":  "CTM-094",
+        "descripcion":  "Hechura de cisterna de 2000 lts. terminada",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  11806,
+        "categoria":  "CISTERNA Y OBRAS ESPECIALES"
+    },
+    {
+        "clave":  "CTM-095",
+        "descripcion":  "Relleno mezclado con tepetzil en primer nivel",
+        "unidad":  "M3",
+        "precioUnitarioDefault":  719,
+        "categoria":  "CISTERNA Y OBRAS ESPECIALES"
+    },
+    {
+        "clave":  "CTM-096",
+        "descripcion":  "Registro de 60 x 40 cm. profundidad mayor de 1.04",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  786,
+        "categoria":  "CISTERNA Y OBRAS ESPECIALES"
+    },
+    {
+        "clave":  "CTM-097",
+        "descripcion":  "Hechura de banqueta, acabado escobillado con volteador sin incluir malla",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  236,
+        "categoria":  "CISTERNA Y OBRAS ESPECIALES"
+    },
+    {
+        "clave":  "CTM-098",
+        "descripcion":  "Colocación de tecnomalla 6x6 2/2",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  67,
+        "categoria":  "HABILITADO DE ACERO"
+    },
+    {
+        "clave":  "CTM-099",
+        "descripcion":  "Colocación de ARMEX diferentes medidas",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  62,
+        "categoria":  "HABILITADO DE ACERO"
+    },
+    {
+        "clave":  "CTM-100",
+        "descripcion":  "Cortado, doblado y armado de varillas hasta 3/8",
+        "unidad":  "TM",
+        "precioUnitarioDefault":  10087,
+        "categoria":  "HABILITADO DE ACERO"
+    },
+    {
+        "clave":  "CTM-101",
+        "descripcion":  "Cortado, doblado y armado de varillas de 1\" a 1/2\"",
+        "unidad":  "TM",
+        "precioUnitarioDefault":  7903,
+        "categoria":  "HABILITADO DE ACERO"
+    },
+    {
+        "clave":  "CTM-102",
+        "descripcion":  "Hechura de anillos de 1/4\" alambrón de 10x30 cm",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  36,
+        "categoria":  "HABILITADO DE ACERO"
+    },
+    {
+        "clave":  "CTM-103",
+        "descripcion":  "Hechura de anillos de alambrón de 1/4\" de 35 a 100 cm",
+        "unidad":  "PZA",
+        "precioUnitarioDefault":  36,
+        "categoria":  "HABILITADO DE ACERO"
+    },
+    {
+        "clave":  "CTM-P01",
+        "descripcion":  "Pintura vinílica a dos manos",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  113,
+        "categoria":  "PINTURA"
+    },
+    {
+        "clave":  "CTM-P02",
+        "descripcion":  "Pintura esmalte a dos manos",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  155,
+        "categoria":  "PINTURA"
+    },
+    {
+        "clave":  "CTM-P03",
+        "descripcion":  "Rebatido en muros a 3 manos",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  101,
+        "categoria":  "PINTURA"
+    },
+    {
+        "clave":  "CTM-P04",
+        "descripcion":  "Pasta tipo impermeable en muros interiores y exteriores, rayada, caracoleada y tipo mecano",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  116,
+        "categoria":  "PINTURA"
+    },
+    {
+        "clave":  "CTM-IMP01",
+        "descripcion":  "Impermeabilización base agua tipo económico con dos capas de membrana de refuerzo",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  177,
+        "categoria":  "IMPERMEABILIZACIÓN"
+    },
+    {
+        "clave":  "CTM-Y01",
+        "descripcion":  "Aplanados en plafones",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  148,
+        "categoria":  "YESERÍA Y TABLAROCA"
+    },
+    {
+        "clave":  "CTM-Y02",
+        "descripcion":  "Aplanados en plafones y muros a nivel y a plomo",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  177,
+        "categoria":  "YESERÍA Y TABLAROCA"
+    },
+    {
+        "clave":  "CTM-Y03",
+        "descripcion":  "Aplanado en vigas con octavos en esquina hasta de 60 cm. de altura",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  242,
+        "categoria":  "YESERÍA Y TABLAROCA"
+    },
+    {
+        "clave":  "CTM-Y04",
+        "descripcion":  "Aplanados de medidas muestras",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  187,
+        "categoria":  "YESERÍA Y TABLAROCA"
+    },
+    {
+        "clave":  "CTM-Y05",
+        "descripcion":  "Aplanados de columnas hasta de 0.50 x 0.50 con chaflán",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  316,
+        "categoria":  "YESERÍA Y TABLAROCA"
+    },
+    {
+        "clave":  "CTM-Y06",
+        "descripcion":  "Plafón de tablaroca con bastidor metálico hasta 3 mts. altura, incluye: calafateo y terminado",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  316,
+        "categoria":  "YESERÍA Y TABLAROCA"
+    },
+    {
+        "clave":  "CTM-Y07",
+        "descripcion":  "Muro divisorio por dos caras con bastidor metálico, incluye: calafateo y terminado",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  316,
+        "categoria":  "YESERÍA Y TABLAROCA"
+    },
+    {
+        "clave":  "CTM-Y08",
+        "descripcion":  "Muro de lambrín de tablaroca a una cara con bastidor metálico",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  316,
+        "categoria":  "YESERÍA Y TABLAROCA"
+    },
+    {
+        "clave":  "CTM-Y09",
+        "descripcion":  "Cajillo de tablaroca con bastidor metálico, hasta 60x60 cm. a 3 mts.",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  357,
+        "categoria":  "YESERÍA Y TABLAROCA"
+    },
+    {
+        "clave":  "CTM-Y10",
+        "descripcion":  "Plafón modulado 60x60 cm. con retículo prefabricado esmaltada blanco hasta 3 mts.",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  316,
+        "categoria":  "YESERÍA Y TABLAROCA"
+    },
+    {
+        "clave":  "CTM-C01",
+        "descripcion":  "Cimbra en cimentación",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  564,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C02",
+        "descripcion":  "Cimbra en columnas (común o hasta de 30x30)",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  564,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C03",
+        "descripcion":  "Hechura de moldes de columna",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  564,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C04",
+        "descripcion":  "Cimbra de columnas (triplay)",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  709,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C05",
+        "descripcion":  "Cimbra de trabes hacia abajo (común)",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  541,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C06",
+        "descripcion":  "Cimbra de trabes hacia abajo (triplay)",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  524,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C07",
+        "descripcion":  "Cimbra en común en losa plana",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  355,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C08",
+        "descripcion":  "Cimbra en triplay en losa plana",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  408,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C09",
+        "descripcion":  "Cimbra en común en losa inclinada",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  448,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C10",
+        "descripcion":  "Cimbra de losa reticular plana de triplay",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  466,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C11",
+        "descripcion":  "Cimbra de losa reticular incluida (triplay)",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  470,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C12",
+        "descripcion":  "Cimbra en trabes invertidos",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  376,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C13",
+        "descripcion":  "Cimbra en común muros",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  493,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C14",
+        "descripcion":  "Cimbra triplay en muros",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  553,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C15",
+        "descripcion":  "Cimbra en redoblon común",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  364,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C16",
+        "descripcion":  "Cimbra en redoblon triplay",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  457,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C17",
+        "descripcion":  "Cimbra en costados de losa reticular",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  540,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C18",
+        "descripcion":  "Cimbra de faldon común incluyendo obra falsa",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  566,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C19",
+        "descripcion":  "Cimbra de faldon triplay incluido obra falsa",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  652,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C20",
+        "descripcion":  "Cimbra de estructura común (edificios)",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  431,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C21",
+        "descripcion":  "Cimbra de estructura triplay (edificios)",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  457,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C22",
+        "descripcion":  "Cimbra de losa hasta 5.00 mts. de altura (común) con saracha",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  605,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C23",
+        "descripcion":  "Cimbra de losa hasta 5 mts. de altura (triplay)",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  519,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C24",
+        "descripcion":  "Cimbra vigueta de bovedilla (común)",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  251,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C25",
+        "descripcion":  "Cimbra de hechura de subidero planta baja",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  1422,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C26",
+        "descripcion":  "Cimbra de hechura de subidero planta alta",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  2857,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-C27",
+        "descripcion":  "Chaflán de pulgada",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  75,
+        "categoria":  "CIMBRA"
+    },
+    {
+        "clave":  "CTM-PUL01",
+        "descripcion":  "Pulido y brillado en piso de granito",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  188,
+        "categoria":  "PULIDO"
+    },
+    {
+        "clave":  "CTM-PUL02",
+        "descripcion":  "Pulido de piso terrazo",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  249,
+        "categoria":  "PULIDO"
+    },
+    {
+        "clave":  "CTM-PUL03",
+        "descripcion":  "Pulido de piso de mármol",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  249,
+        "categoria":  "PULIDO"
+    },
+    {
+        "clave":  "CTM-PUL04",
+        "descripcion":  "Pulido de piso de pasta",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  181,
+        "categoria":  "PULIDO"
+    },
+    {
+        "clave":  "CTM-PUL05",
+        "descripcion":  "Pulido de zoclo de granito",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  128,
+        "categoria":  "PULIDO"
+    },
+    {
+        "clave":  "CTM-PUL06",
+        "descripcion":  "Pulido de zoclo de mármol",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  128,
+        "categoria":  "PULIDO"
+    },
+    {
+        "clave":  "CTM-PUL07",
+        "descripcion":  "Pulido de zoclo de pasta",
+        "unidad":  "ML",
+        "precioUnitarioDefault":  128,
+        "categoria":  "PULIDO"
+    },
+    {
+        "clave":  "CTM-PUL08",
+        "descripcion":  "Encerado de piso de granito, mármol pasta y terrazo",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  87,
+        "categoria":  "PULIDO"
+    },
+    {
+        "clave":  "CTM-PUL09",
+        "descripcion":  "Devastado de piso de concreto",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  128,
+        "categoria":  "PULIDO"
+    },
+    {
+        "clave":  "CTM-PUL10",
+        "descripcion":  "Lavado de piso de cerámica con máquina",
+        "unidad":  "M2",
+        "precioUnitarioDefault":  128,
+        "categoria":  "PULIDO"
+    }
+]

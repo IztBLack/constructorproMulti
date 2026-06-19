@@ -1,0 +1,47 @@
+name: iOS Build (IPA sin firmar)
+
+# Compila la app iOS en un runner macOS de GitHub y publica un IPA SIN FIRMAR
+# como artifact. Ese IPA se firma e instala en el iPhone con Sideloadly (Windows)
+# usando un Apple ID gratuito.
+
+on:
+  workflow_dispatch: # permite lanzarlo manualmente desde la pestaña Actions
+  push:
+    branches: [main]
+
+jobs:
+  build-ios:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.2
+          cache: true
+
+      - name: Dependencias
+        run: flutter pub get
+
+      - name: Generar código (Drift)
+        run: dart run build_runner build
+
+      - name: Build iOS (sin firma)
+        run: flutter build ios --release --no-codesign
+
+      - name: Empaquetar IPA sin firmar
+        run: |
+          cd build/ios/iphoneos
+          mkdir Payload
+          cp -r Runner.app Payload/Runner.app
+          zip -qr app-unsigned.ipa Payload
+
+      - name: Publicar IPA como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: constructorpro-unsigned-ipa
+          path: build/ios/iphoneos/app-unsigned.ipa
+          if-no-files-found: error
