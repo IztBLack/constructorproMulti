@@ -6,8 +6,10 @@ import 'package:printing/printing.dart';
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
 import '../../data/providers.dart';
+import '../../domain/clave_generator.dart';
 import '../../domain/logic/presupuesto_calculator.dart';
 import '../../domain/mappers.dart';
+import '../../domain/text_import_parser.dart';
 import '../../pdf/pdf_service.dart';
 
 class CotizacionDetailScreen extends ConsumerStatefulWidget {
@@ -260,6 +262,9 @@ class _State extends ConsumerState<CotizacionDetailScreen>
                               ),
                               OverflowBar(children: [
                                 TextButton(
+                                    onPressed: () => _importarTexto(s.id),
+                                    child: const Text('Importar texto')),
+                                TextButton(
                                     onPressed: () => _seccionDialog(s),
                                     child: const Text('Renombrar')),
                                 TextButton(
@@ -327,6 +332,87 @@ class _State extends ConsumerState<CotizacionDetailScreen>
     } else {
       await repo.rename(s.id, ctrl.text.trim());
     }
+  }
+
+  /// Pega un listado de conceptos en texto y los importa como partidas
+  /// (detecta unidad/cantidad/precio y genera claves automáticas).
+  Future<void> _importarTexto(String seccionId) async {
+    final textoCtrl = TextEditingController();
+    List<ParsedConcepto> preview = [];
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => AlertDialog(
+          title: const Text('Importar desde texto'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              TextField(
+                controller: textoCtrl,
+                maxLines: 6,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: 'Una partida por línea. Ej:\n'
+                      'Muro de block 85 m2 \$201.34\n'
+                      'Aplanado interior 120 m2 91.68',
+                ),
+                onChanged: (v) => setS(() => preview = TextImportParser.parse(v)),
+              ),
+              const SizedBox(height: 8),
+              if (preview.isNotEmpty)
+                SizedBox(
+                  height: 200,
+                  child: ListView(
+                    children: preview
+                        .map((p) => ListTile(
+                              dense: true,
+                              title: Text(p.nombre),
+                              subtitle: Text(
+                                  '${p.cantidad} ${p.unidad} × ${Fmt.money(p.precioUnitario)}'),
+                            ))
+                        .toList(),
+                  ),
+                ),
+            ]),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+            FilledButton(
+              onPressed: preview.isEmpty
+                  ? null
+                  : () async {
+                      final repo = ref.read(partidaRepositoryProvider);
+                      final claves = (ref
+                                  .read(partidasDeCotizacionProvider(_cotId))
+                                  .asData
+                                  ?.value ??
+                              [])
+                          .map((p) => p.clave)
+                          .toList();
+                      var orden = 0;
+                      for (final c in preview) {
+                        final clave = ClaveGenerator.generar(c.nombre, claves);
+                        claves.add(clave);
+                        await repo.upsert(PartidasCompanion(
+                          id: Value(repo.newId()),
+                          seccionId: Value(seccionId),
+                          clave: Value(clave),
+                          descripcion: Value(c.nombre),
+                          unidad: Value(c.unidad),
+                          cantidad: Value(c.cantidad),
+                          precioUnitario: Value(c.precioUnitario),
+                          orden: Value(orden++),
+                        ));
+                      }
+                      if (ctx.mounted) Navigator.pop(ctx);
+                    },
+              child: Text('Importar (${preview.length})'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _eliminarSeccion(Seccion s) async {
@@ -444,7 +530,27 @@ class _State extends ConsumerState<CotizacionDetailScreen>
           key: formKey,
           child: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              TextFormField(controller: claveCtrl, decoration: const InputDecoration(labelText: 'Clave')),
+              TextFormField(
+                controller: claveCtrl,
+                decoration: InputDecoration(
+                  labelText: 'Clave',
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.auto_fix_high),
+                    tooltip: 'Generar clave',
+                    onPressed: () {
+                      final existentes = (ref
+                                  .read(partidasDeCotizacionProvider(_cotId))
+                                  .asData
+                                  ?.value ??
+                              [])
+                          .map((p) => p.clave)
+                          .toList();
+                      claveCtrl.text =
+                          ClaveGenerator.generar(descCtrl.text, existentes);
+                    },
+                  ),
+                ),
+              ),
               TextFormField(
                 controller: descCtrl,
                 decoration: const InputDecoration(labelText: 'Descripción'),

@@ -205,4 +205,19 @@ class CatalogoRepository {
           ..limit(50))
         .get();
   }
+
+  Stream<List<CatalogoConcepto>> watchAll() => (db.select(db.catalogoConceptos)
+        ..orderBy([
+          (t) => OrderingTerm(expression: t.categoria),
+          (t) => OrderingTerm(expression: t.clave),
+        ]))
+      .watch();
+
+  Future<void> upsert(CatalogoConceptosCompanion c) =>
+      db.into(db.catalogoConceptos).insertOnConflictUpdate(c);
+
+  Future<void> delete(String id) =>
+      (db.delete(db.catalogoConceptos)..where((t) => t.id.equals(id))).go();
+
+  String newId() => _uuid.v4();
 }

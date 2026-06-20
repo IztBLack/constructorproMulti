@@ -11,6 +11,7 @@ import '../../core/crash/crash_logger.dart';
 import '../../core/settings/settings_provider.dart';
 import '../../data/demo_data.dart';
 import '../../data/providers.dart';
+import 'catalogo_screen.dart';
 import 'puestos_screen.dart';
 
 class ConfigScreen extends ConsumerWidget {
@@ -50,6 +51,13 @@ class ConfigScreen extends ConsumerWidget {
             onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const PuestosScreen())),
           ),
+          ListTile(
+            leading: const Icon(Icons.menu_book_outlined),
+            title: const Text('Catálogo de conceptos'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const CatalogoScreen())),
+          ),
           const Divider(),
           const _Header('Datos'),
           ListTile(
@@ -76,9 +84,69 @@ class ConfigScreen extends ConsumerWidget {
             title: const Text('Compartir reporte de errores'),
             onTap: () => _compartirCrash(context),
           ),
+          const Divider(),
+          _Header('Zona de peligro', color: Theme.of(context).colorScheme.error),
+          _danger(context, ref, 'Eliminar todas las obras', 'ELIMINAR',
+              () => ref.read(maintenanceRepositoryProvider).deleteAllObras()),
+          _danger(context, ref, 'Eliminar todos los colaboradores', 'ELIMINAR',
+              () => ref.read(maintenanceRepositoryProvider).deleteAllColaboradores()),
+          _danger(context, ref, 'Eliminar todas las cotizaciones', 'ELIMINAR',
+              () => ref.read(maintenanceRepositoryProvider).deleteAllCotizaciones()),
+          _danger(context, ref, 'Vaciar catálogo de conceptos', 'VACIAR',
+              () => ref.read(maintenanceRepositoryProvider).vaciarCatalogo()),
+          _danger(context, ref, 'Restablecer TODO', 'RESTABLECER',
+              () => ref.read(maintenanceRepositoryProvider).restablecerTodo()),
+          const SizedBox(height: 24),
         ],
       ),
     );
+  }
+
+  Widget _danger(BuildContext context, WidgetRef ref, String titulo,
+      String palabra, Future<void> Function() accion) {
+    final error = Theme.of(context).colorScheme.error;
+    return ListTile(
+      leading: Icon(Icons.warning_amber_outlined, color: error),
+      title: Text(titulo, style: TextStyle(color: error)),
+      onTap: () => _dangerConfirm(context, titulo, palabra, accion),
+    );
+  }
+
+  Future<void> _dangerConfirm(BuildContext context, String titulo,
+      String palabra, Future<void> Function() accion) async {
+    final ctrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(titulo),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text('Esta acción es IRREVERSIBLE.\nEscribe "$palabra" para confirmar.'),
+          const SizedBox(height: 12),
+          TextField(
+            controller: ctrl,
+            autofocus: true,
+            decoration: InputDecoration(hintText: palabra),
+          ),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Confirmar')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    if (ctrl.text.trim().toUpperCase() != palabra) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('La palabra no coincide. Cancelado.')));
+      }
+      return;
+    }
+    await accion();
+    if (context.mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('$titulo: hecho.')));
+    }
   }
 
   static const _dias = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
@@ -208,14 +276,15 @@ class ConfigScreen extends ConsumerWidget {
 
 class _Header extends StatelessWidget {
   final String text;
-  const _Header(this.text);
+  final Color? color;
+  const _Header(this.text, {this.color});
 
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
         child: Text(text,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
+                color: color ?? Theme.of(context).colorScheme.primary,
                 fontWeight: FontWeight.bold)),
       );
 }

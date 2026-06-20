@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/db/app_database.dart';
 import 'backup/backup_service.dart';
+import 'maintenance_repository.dart';
 import 'repositories.dart';
 import 'repositories_obra.dart';
 import 'repositories_cotizacion.dart';
@@ -83,6 +84,12 @@ final pagoRepositoryProvider = Provider<PagoRepository>(
     (ref) => PagoRepository(ref.watch(databaseProvider)));
 final catalogoRepositoryProvider = Provider<CatalogoRepository>(
     (ref) => CatalogoRepository(ref.watch(databaseProvider)));
+
+final maintenanceRepositoryProvider = Provider<MaintenanceRepository>(
+    (ref) => MaintenanceRepository(ref.watch(databaseProvider)));
+
+final catalogoTodoProvider = StreamProvider<List<CatalogoConcepto>>(
+    (ref) => ref.watch(catalogoRepositoryProvider).watchAll());
 
 final cotizacionesProvider = StreamProvider<List<Cotizacion>>(
     (ref) => ref.watch(cotizacionRepositoryProvider).watchAll());
