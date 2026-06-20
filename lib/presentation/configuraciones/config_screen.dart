@@ -55,7 +55,7 @@ class ConfigScreen extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.science_outlined),
             title: const Text('Cargar datos de prueba'),
-            subtitle: const Text('Llena la app con una obra de ejemplo'),
+            subtitle: const Text('Reemplaza con un demo completo (4 obras, equipo, cotizaciones)'),
             onTap: () => _cargarDemo(context, ref),
           ),
           ListTile(
