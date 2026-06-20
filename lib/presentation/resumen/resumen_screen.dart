@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:printing/printing.dart';
 
 import '../../core/format/format.dart';
+import '../../core/pdf/pdf_config.dart';
 import '../../data/providers.dart';
 import '../../domain/logic/flujo_calculator.dart';
 import '../../domain/mappers.dart';
+import '../../pdf/pdf_service.dart';
 
 class ResumenScreen extends ConsumerWidget {
   const ResumenScreen({super.key});
@@ -17,7 +20,16 @@ class ResumenScreen extends ConsumerWidget {
     final cotsAsync = ref.watch(cotizacionesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Resumen')),
+      appBar: AppBar(
+        title: const Text('Resumen'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            tooltip: 'Reporte global de flujo de caja',
+            onPressed: () => _exportarGlobal(ref),
+          ),
+        ],
+      ),
       body: obrasAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
@@ -93,6 +105,23 @@ class ResumenScreen extends ConsumerWidget {
         },
       ),
     );
+  }
+
+  Future<void> _exportarGlobal(WidgetRef ref) async {
+    final obras = ref.read(obrasProvider).asData?.value ?? [];
+    final movs = ref.read(movimientosTodosProvider).asData?.value ?? [];
+    final global = const FlujoCalculator().resumen(movs.map(movimientoToDomain).toList());
+    final porObra = obras
+        .map((o) => (
+              obra: o.nombre,
+              resumen: const FlujoCalculator().resumen(
+                  movs.where((x) => x.obraId == o.id).map(movimientoToDomain).toList()),
+            ))
+        .toList();
+    final config = await PdfPrefs.load();
+    final bytes = await PdfService.flujoCajaGlobal(
+        porObra: porObra, global: global, config: config);
+    await Printing.sharePdf(bytes: bytes, filename: 'flujo_global.pdf');
   }
 
   Widget _contador(String label, int n, IconData icon) => Expanded(

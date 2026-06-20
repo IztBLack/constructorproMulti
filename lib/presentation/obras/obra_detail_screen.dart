@@ -4,6 +4,7 @@ import 'package:printing/printing.dart';
 
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
+import '../../core/pdf/pdf_config.dart';
 import '../../data/providers.dart';
 import '../../domain/logic/flujo_calculator.dart';
 import '../../domain/logic/nomina_calculator.dart';
@@ -69,6 +70,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
   }
 
   Future<void> _exportarPdf() async {
+    final config = await PdfPrefs.load();
     final idx = _tab.index;
     if (idx == 2) {
       // Nómina de la semana activa
@@ -90,6 +92,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
         obraNombre: widget.obra.nombre,
         rango: '${Fmt.date(_inicioSemana)} – ${Fmt.date(domingo.millisecondsSinceEpoch)}',
         summary: summary,
+        config: config,
       );
       await Printing.sharePdf(bytes: bytes, filename: 'nomina.pdf');
     } else if (idx == 3) {
@@ -98,7 +101,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
       final resumen =
           const FlujoCalculator().resumen(movs.map(movimientoToDomain).toList());
       final bytes = await PdfService.flujoCaja(
-          obraNombre: widget.obra.nombre, movimientos: movs, resumen: resumen);
+          obraNombre: widget.obra.nombre, movimientos: movs, resumen: resumen, config: config);
       await Printing.sharePdf(bytes: bytes, filename: 'flujo_caja.pdf');
     } else {
       _snack('Cambia a la pestaña Nómina o Caja para exportar su PDF.');
@@ -194,7 +197,14 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
         ListTile(
           leading: const Icon(Icons.event),
           title: Text('Día: ${Fmt.dayName(_diaAsistencia)}'),
-          trailing: const Icon(Icons.edit_calendar),
+          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+            IconButton(
+              icon: const Icon(Icons.summarize_outlined),
+              tooltip: 'Resumen semanal',
+              onPressed: _resumenAsistenciasSemana,
+            ),
+            const Icon(Icons.edit_calendar),
+          ]),
           onTap: () async {
             final d = await showDatePicker(
               context: context,
@@ -356,6 +366,43 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
           }),
         ),
       ],
+    );
+  }
+
+  Future<void> _resumenAsistenciasSemana() async {
+    final inicio = Semana.inicioSemana(_diaAsistencia);
+    final fin = Semana.finSemana(inicio);
+    final rango = (obraId: _obraId, start: inicio, end: fin);
+    final asistencias = await ref.read(asistenciasRangoProvider(rango).future);
+    final asignados = ref.read(colaboradoresPorObraProvider(_obraId)).asData?.value ?? [];
+    final totalPorColab = <String, double>{};
+    for (final a in asistencias) {
+      totalPorColab[a.colaboradorId] = (totalPorColab[a.colaboradorId] ?? 0) + a.fraccion;
+    }
+    if (!mounted) return;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Asistencias ${Fmt.date(inicio)} – ${Fmt.date(fin)}'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: asignados
+                .where((c) => c.tipoPago == 'DIA')
+                .map((c) => ListTile(
+                      dense: true,
+                      title: Text(c.nombre),
+                      trailing: Text(
+                          '${(totalPorColab[c.id] ?? 0).toStringAsFixed(2)} días'),
+                    ))
+                .toList(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cerrar')),
+        ],
+      ),
     );
   }
 

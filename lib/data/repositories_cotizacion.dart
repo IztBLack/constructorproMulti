@@ -192,6 +192,35 @@ class PagoRepository {
       (db.delete(db.pagos)..where((t) => t.id.equals(id))).go();
 }
 
+class ArchivoRepository {
+  final AppDatabase db;
+  ArchivoRepository(this.db);
+
+  Stream<List<ArchivoCotizacion>> watchByCotizacion(String cotId) =>
+      (db.select(db.archivosCotizacion)
+            ..where((t) => t.cotizacionId.equals(cotId))
+            ..orderBy([(t) => OrderingTerm(expression: t.fechaAgregado, mode: OrderingMode.desc)]))
+          .watch();
+
+  Future<void> add({
+    required String cotId,
+    required String tipo, // 'IMAGEN' | 'PDF'
+    required String nombre,
+    required String uri,
+  }) =>
+      db.into(db.archivosCotizacion).insert(ArchivosCotizacionCompanion.insert(
+            id: _uuid.v4(),
+            cotizacionId: cotId,
+            tipo: tipo,
+            nombre: nombre,
+            uri: uri,
+            fechaAgregado: DateTime.now().millisecondsSinceEpoch,
+          ));
+
+  Future<void> delete(String id) =>
+      (db.delete(db.archivosCotizacion)..where((t) => t.id.equals(id))).go();
+}
+
 class CatalogoRepository {
   final AppDatabase db;
   CatalogoRepository(this.db);

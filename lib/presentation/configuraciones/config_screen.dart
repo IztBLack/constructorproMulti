@@ -12,6 +12,7 @@ import '../../core/settings/settings_provider.dart';
 import '../../data/demo_data.dart';
 import '../../data/providers.dart';
 import 'catalogo_screen.dart';
+import 'pdf_config_screen.dart';
 import 'puestos_screen.dart';
 
 class ConfigScreen extends ConsumerWidget {
@@ -57,6 +58,14 @@ class ConfigScreen extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const CatalogoScreen())),
+          ),
+          ListTile(
+            leading: const Icon(Icons.picture_as_pdf_outlined),
+            title: const Text('Personalizar PDF'),
+            subtitle: const Text('Logo, color, marca de agua, empresa'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PdfConfigScreen())),
           ),
           const Divider(),
           const _Header('Datos'),

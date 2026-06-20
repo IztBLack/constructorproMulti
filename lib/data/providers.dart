@@ -85,6 +85,12 @@ final pagoRepositoryProvider = Provider<PagoRepository>(
 final catalogoRepositoryProvider = Provider<CatalogoRepository>(
     (ref) => CatalogoRepository(ref.watch(databaseProvider)));
 
+final archivoRepositoryProvider = Provider<ArchivoRepository>(
+    (ref) => ArchivoRepository(ref.watch(databaseProvider)));
+
+final archivosProvider = StreamProvider.family<List<ArchivoCotizacion>, String>(
+    (ref, cotId) => ref.watch(archivoRepositoryProvider).watchByCotizacion(cotId));
+
 final maintenanceRepositoryProvider = Provider<MaintenanceRepository>(
     (ref) => MaintenanceRepository(ref.watch(databaseProvider)));
 

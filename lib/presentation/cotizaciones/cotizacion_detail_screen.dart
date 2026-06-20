@@ -1,10 +1,18 @@
+import 'dart:io';
+
 import 'package:drift/drift.dart' show Value;
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
+import 'package:pdfx/pdfx.dart';
 import 'package:printing/printing.dart';
 
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
+import '../../core/pdf/pdf_config.dart';
 import '../../data/providers.dart';
 import '../../domain/clave_generator.dart';
 import '../../domain/logic/presupuesto_calculator.dart';
@@ -22,7 +30,7 @@ class CotizacionDetailScreen extends ConsumerStatefulWidget {
 
 class _State extends ConsumerState<CotizacionDetailScreen>
     with SingleTickerProviderStateMixin {
-  late final TabController _tab = TabController(length: 2, vsync: this);
+  late final TabController _tab = TabController(length: 3, vsync: this);
   late bool _ivaEnabled = widget.cotizacion.ivaEnabled;
 
   String get _cotId => widget.cotizacion.id;
@@ -75,11 +83,13 @@ class _State extends ConsumerState<CotizacionDetailScreen>
         bottom: TabBar(controller: _tab, tabs: const [
           Tab(text: 'Presupuesto'),
           Tab(text: 'Pagos'),
+          Tab(text: 'Archivos'),
         ]),
       ),
       body: TabBarView(controller: _tab, children: [
         _presupuestoTab(),
         _pagosTab(),
+        _archivosTab(),
       ]),
     );
   }
@@ -172,6 +182,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
       ivaEnabled: _ivaEnabled,
       totalPagado: totalPagado,
     );
+    final config = await PdfPrefs.load();
     final bytes = await PdfService.presupuesto(
       cot: widget.cotizacion,
       secciones: secciones,
@@ -179,6 +190,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
       totales: totales,
       iva: _ivaEnabled,
       aportadoPorPartida: aportadoPorPartida,
+      config: config,
     );
     await Printing.sharePdf(bytes: bytes, filename: 'presupuesto.pdf');
   }
@@ -743,6 +755,143 @@ class _State extends ConsumerState<CotizacionDetailScreen>
         ),
       ),
     );
+  }
+
+  // ============ ARCHIVOS ============
+  Widget _archivosTab() {
+    final archivosAsync = ref.watch(archivosProvider(_cotId));
+    return Scaffold(
+      body: archivosAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Error: $e')),
+        data: (archivos) {
+          if (archivos.isEmpty) {
+            return const Center(
+                child: Text('Sin archivos.\nAgrega fotos o planos PDF.',
+                    textAlign: TextAlign.center));
+          }
+          return GridView.count(
+            crossAxisCount: 3,
+            padding: const EdgeInsets.all(8),
+            children: archivos.map((a) {
+              final esImagen = a.tipo == 'IMAGEN';
+              return GestureDetector(
+                onTap: () => _verArchivo(a),
+                onLongPress: () => _eliminarArchivo(a),
+                child: Card(
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: esImagen && File(a.uri).existsSync()
+                            ? Image.file(File(a.uri), fit: BoxFit.cover, width: double.infinity)
+                            : const Icon(Icons.picture_as_pdf, size: 48, color: Colors.red),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: Text(a.nombre,
+                            maxLines: 1, overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 11)),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _agregarArchivo,
+        icon: const Icon(Icons.attach_file),
+        label: const Text('Agregar'),
+      ),
+    );
+  }
+
+  Future<void> _agregarArchivo() async {
+    final opcion = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(
+            leading: const Icon(Icons.photo_camera),
+            title: const Text('Foto (cámara)'),
+            onTap: () => Navigator.pop(ctx, 'camara'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.photo_library),
+            title: const Text('Foto (galería)'),
+            onTap: () => Navigator.pop(ctx, 'galeria'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.picture_as_pdf),
+            title: const Text('Plano PDF'),
+            onTap: () => Navigator.pop(ctx, 'pdf'),
+          ),
+        ]),
+      ),
+    );
+    if (opcion == null) return;
+    final dir = await getApplicationDocumentsDirectory();
+    String? src;
+    String tipo = 'IMAGEN';
+    String nombre = '';
+    if (opcion == 'pdf') {
+      final res = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf']);
+      src = res?.files.single.path;
+      tipo = 'PDF';
+      nombre = res?.files.single.name ?? 'plano.pdf';
+    } else {
+      final picked = await ImagePicker().pickImage(
+          source: opcion == 'camara' ? ImageSource.camera : ImageSource.gallery);
+      src = picked?.path;
+      nombre = picked?.name ?? 'foto.jpg';
+    }
+    if (src == null) return;
+    final dest = File(path.join(dir.path, '${DateTime.now().millisecondsSinceEpoch}${path.extension(src)}'));
+    await File(src).copy(dest.path);
+    await ref.read(archivoRepositoryProvider)
+        .add(cotId: _cotId, tipo: tipo, nombre: nombre, uri: dest.path);
+  }
+
+  Future<void> _verArchivo(ArchivoCotizacion a) async {
+    if (!File(a.uri).existsSync()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('El archivo ya no existe.')));
+      }
+      return;
+    }
+    if (a.tipo == 'IMAGEN') {
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => Dialog(
+          child: InteractiveViewer(
+            child: Image.file(File(a.uri)),
+          ),
+        ),
+      );
+    } else {
+      if (!mounted) return;
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => Scaffold(
+          appBar: AppBar(title: Text(a.nombre)),
+          body: PdfViewPinch(controller: PdfControllerPinch(
+              document: PdfDocument.openFile(a.uri))),
+        ),
+      ));
+    }
+  }
+
+  Future<void> _eliminarArchivo(ArchivoCotizacion a) async {
+    final ok = await _confirm('¿Eliminar "${a.nombre}"?', 'Eliminar');
+    if (ok) {
+      try {
+        final f = File(a.uri);
+        if (f.existsSync()) f.deleteSync();
+      } catch (_) {}
+      await ref.read(archivoRepositoryProvider).delete(a.id);
+    }
   }
 
   // ============ Helpers ============
