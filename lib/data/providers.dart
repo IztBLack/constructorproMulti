@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart'; // StateProvider
 
 import '../core/db/app_database.dart';
 import 'backup/backup_service.dart';
@@ -6,6 +7,9 @@ import 'maintenance_repository.dart';
 import 'repositories.dart';
 import 'repositories_obra.dart';
 import 'repositories_cotizacion.dart';
+
+/// Pestaña seleccionada del shell inferior (para accesos rápidos del dashboard).
+final homeTabProvider = StateProvider<int>((ref) => 0);
 
 /// Instancia única de la base de datos Drift.
 final databaseProvider = Provider<AppDatabase>((ref) {

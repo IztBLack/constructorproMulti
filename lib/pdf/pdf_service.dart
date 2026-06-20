@@ -282,6 +282,135 @@ class PdfService {
     return doc.save();
   }
 
+  // ---------------- Reporte GLOBAL de nómina ----------------
+  static Future<Uint8List> nominaGlobal({
+    required List<({String obra, NominaSummary summary})> datos,
+    required String rango,
+    PdfConfig config = const PdfConfig(),
+  }) async {
+    final color = _hex(config.colorHex);
+    final doc = pw.Document();
+    var granTotal = 0.0;
+    for (final d in datos) {
+      granTotal += d.summary.totalNomina;
+    }
+    doc.addPage(pw.MultiPage(
+      pageTheme: _pageTheme(config),
+      footer: _footer(config),
+      build: (context) {
+        final w = <pw.Widget>[
+          _header('Concentrado global de nómina', 'Semana: $rango', config, color),
+        ];
+        for (final d in datos) {
+          if (d.summary.items.isEmpty) continue;
+          w.add(pw.Container(
+            width: double.infinity,
+            color: color,
+            padding: const pw.EdgeInsets.all(6),
+            margin: const pw.EdgeInsets.only(top: 8),
+            child: pw.Text('OBRA: ${d.obra.toUpperCase()}',
+                style: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 10)),
+          ));
+          w.add(pw.TableHelper.fromTextArray(
+            headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
+            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8),
+            cellStyle: const pw.TextStyle(fontSize: 8),
+            cellAlignments: {3: pw.Alignment.centerRight},
+            headers: ['Trabajador', 'Puesto', 'Tipo', 'Total'],
+            data: d.summary.items
+                .map((it) => [
+                      it.colaborador.nombre,
+                      it.puestoNombre,
+                      it.colaborador.tipoPago == dom.TipoPago.dia ? 'Día' : 'Destajo',
+                      Fmt.money(it.totalPagar),
+                    ])
+                .toList(),
+          ));
+          w.add(_totalLinea('Subtotal ${d.obra}', d.summary.totalNomina));
+        }
+        w.add(pw.SizedBox(height: 10));
+        w.add(_totalLinea('GRAN TOTAL NÓMINA', granTotal, bold: true, color: _verde));
+        return w;
+      },
+    ));
+    return doc.save();
+  }
+
+  // ---------------- Reporte GLOBAL de presupuestos ----------------
+  static Future<Uint8List> presupuestosGlobal({
+    required List<({String proyecto, String cliente, PresupuestoTotales totales})> datos,
+    PdfConfig config = const PdfConfig(),
+  }) async {
+    final color = _hex(config.colorHex);
+    final granTotal = datos.fold<double>(0, (a, d) => a + d.totales.total);
+    final doc = pw.Document();
+    doc.addPage(pw.MultiPage(
+      pageTheme: _pageTheme(config),
+      footer: _footer(config),
+      build: (context) => [
+        _header('Concentrado global de presupuestos', 'Todas las cotizaciones', config, color),
+        pw.TableHelper.fromTextArray(
+          headerDecoration: pw.BoxDecoration(color: color),
+          headerStyle: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 9),
+          cellStyle: const pw.TextStyle(fontSize: 8),
+          cellAlignments: {2: pw.Alignment.centerRight, 3: pw.Alignment.centerRight, 4: pw.Alignment.centerRight},
+          headers: ['Proyecto', 'Cliente', 'Subtotal', 'IVA', 'Total'],
+          data: datos
+              .map((d) => [
+                    d.proyecto, d.cliente,
+                    Fmt.money(d.totales.subtotal),
+                    Fmt.money(d.totales.iva),
+                    Fmt.money(d.totales.total),
+                  ])
+              .toList(),
+        ),
+        pw.SizedBox(height: 10),
+        _totalLinea('GRAN TOTAL', granTotal, bold: true, color: color),
+      ],
+    ));
+    return doc.save();
+  }
+
+  // ---------------- Reporte GLOBAL de asistencias ----------------
+  static Future<Uint8List> asistenciasGlobal({
+    required List<({String obra, List<({String trabajador, double dias})> filas})> datos,
+    required String rango,
+    PdfConfig config = const PdfConfig(),
+  }) async {
+    final color = _hex(config.colorHex);
+    final doc = pw.Document();
+    doc.addPage(pw.MultiPage(
+      pageTheme: _pageTheme(config),
+      footer: _footer(config),
+      build: (context) {
+        final w = <pw.Widget>[
+          _header('Concentrado global de asistencias', 'Semana: $rango', config, color),
+        ];
+        for (final d in datos) {
+          if (d.filas.isEmpty) continue;
+          w.add(pw.Container(
+            width: double.infinity,
+            color: color,
+            padding: const pw.EdgeInsets.all(6),
+            margin: const pw.EdgeInsets.only(top: 8),
+            child: pw.Text('OBRA: ${d.obra.toUpperCase()}',
+                style: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 10)),
+          ));
+          w.add(pw.TableHelper.fromTextArray(
+            headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
+            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8),
+            cellStyle: const pw.TextStyle(fontSize: 8),
+            cellAlignments: {1: pw.Alignment.centerRight},
+            headers: ['Trabajador', 'Días trabajados'],
+            data: d.filas.map((f) => [f.trabajador, f.dias.toStringAsFixed(2)]).toList(),
+          ));
+        }
+        return w;
+      },
+    ));
+    return doc.save();
+  }
+
   // ---------------- Reporte GLOBAL de flujo de caja ----------------
   static Future<Uint8List> flujoCajaGlobal({
     required List<({String obra, ResumenCaja resumen})> porObra,

@@ -66,6 +66,8 @@ class _State extends ConsumerState<CotizacionDetailScreen>
                   await _duplicar();
                 case 'vincular':
                   await _vincular();
+                case 'ajuste':
+                  await _ajusteGlobal();
                 case 'convertir':
                   await _convertir();
               }
@@ -74,6 +76,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
               CheckedPopupMenuItem(
                   value: 'iva', checked: _ivaEnabled, child: const Text('Aplicar IVA 16%')),
               const PopupMenuItem(value: 'estado', child: Text('Cambiar estado')),
+              const PopupMenuItem(value: 'ajuste', child: Text('Ajuste global de precios')),
               const PopupMenuItem(value: 'duplicar', child: Text('Duplicar')),
               const PopupMenuItem(value: 'vincular', child: Text('Vincular a obra')),
               const PopupMenuItem(value: 'convertir', child: Text('Convertir en obra')),
@@ -152,6 +155,44 @@ class _State extends ConsumerState<CotizacionDetailScreen>
         ScaffoldMessenger.of(context)
             .showSnackBar(const SnackBar(content: Text('Cotización vinculada a la obra.')));
       }
+    }
+  }
+
+  Future<void> _ajusteGlobal() async {
+    final ctrl = TextEditingController();
+    final pct = await showDialog<double>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Ajuste global de precios'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Text('Porcentaje a aplicar a TODAS las partidas.\n'
+              'Ej: 10 = +10%, -5 = −5%.'),
+          const SizedBox(height: 12),
+          TextField(
+            controller: ctrl,
+            autofocus: true,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+            decoration: const InputDecoration(labelText: 'Porcentaje (%)', suffixText: '%'),
+          ),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          FilledButton(
+            onPressed: () {
+              final v = double.tryParse(ctrl.text.trim());
+              Navigator.pop(ctx, v);
+            },
+            child: const Text('Aplicar'),
+          ),
+        ],
+      ),
+    );
+    if (pct == null) return;
+    final n = await ref.read(partidaRepositoryProvider)
+        .ajustarPrecios(_cotId, 1 + pct / 100);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ajuste de ${pct > 0 ? '+' : ''}$pct% aplicado a $n partidas.')));
     }
   }
 

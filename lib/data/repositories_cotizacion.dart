@@ -160,6 +160,19 @@ class PartidaRepository {
   Future<void> delete(String id) =>
       (db.delete(db.partidas)..where((t) => t.id.equals(id))).go();
 
+  /// Aplica un factor (ej. 1.10 = +10%) al precio de TODAS las partidas de la
+  /// cotización.
+  Future<int> ajustarPrecios(String cotId, double factor) async {
+    final partidas = await watchDeCotizacion(cotId).first;
+    await db.transaction(() async {
+      for (final p in partidas) {
+        await (db.update(db.partidas)..where((t) => t.id.equals(p.id)))
+            .write(PartidasCompanion(precioUnitario: Value(p.precioUnitario * factor)));
+      }
+    });
+    return partidas.length;
+  }
+
   String newId() => _uuid.v4();
 }
 

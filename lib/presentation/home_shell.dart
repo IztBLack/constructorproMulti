@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/providers.dart';
 import 'colaboradores/colaboradores_screen.dart';
 import 'configuraciones/config_screen.dart';
 import 'cotizaciones/cotizaciones_screen.dart';
@@ -7,15 +9,8 @@ import 'obras/obras_screen.dart';
 import 'resumen/resumen_screen.dart';
 
 /// Shell principal con navegación inferior (Material 3).
-class HomeShell extends StatefulWidget {
+class HomeShell extends ConsumerWidget {
   const HomeShell({super.key});
-
-  @override
-  State<HomeShell> createState() => _HomeShellState();
-}
-
-class _HomeShellState extends State<HomeShell> {
-  int _index = 0;
 
   static const _screens = [
     ObrasScreen(),
@@ -26,12 +21,13 @@ class _HomeShellState extends State<HomeShell> {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final index = ref.watch(homeTabProvider);
     return Scaffold(
-      body: IndexedStack(index: _index, children: _screens),
+      body: IndexedStack(index: index, children: _screens),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (i) => setState(() => _index = i),
+        selectedIndex: index,
+        onDestinationSelected: (i) => ref.read(homeTabProvider.notifier).state = i,
         destinations: const [
           NavigationDestination(
               icon: Icon(Icons.foundation_outlined),

@@ -25,6 +25,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
 
   DateTime _diaAsistencia = DateTime.now();
   int _inicioSemana = Semana.inicioSemana(DateTime.now());
+  bool _asistVistaSemana = false;
 
   String get _obraId => widget.obra.id;
 
@@ -187,24 +188,44 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
 
   // ============ ASISTENCIA ============
   Widget _asistenciaTab() {
-    final diaMillis = Semana.inicioDia(_diaAsistencia);
-    final rango = (obraId: _obraId, start: diaMillis, end: diaMillis);
-    final asignadosAsync = ref.watch(colaboradoresPorObraProvider(_obraId));
-    final asistenciasAsync = ref.watch(asistenciasRangoProvider(rango));
-
     return Column(
       children: [
-        ListTile(
-          leading: const Icon(Icons.event),
-          title: Text('Día: ${Fmt.dayName(_diaAsistencia)}'),
-          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          child: Row(children: [
+            Expanded(
+              child: SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(value: false, label: Text('Día'), icon: Icon(Icons.today)),
+                  ButtonSegment(value: true, label: Text('Semana'), icon: Icon(Icons.grid_view)),
+                ],
+                selected: {_asistVistaSemana},
+                onSelectionChanged: (s) => setState(() => _asistVistaSemana = s.first),
+              ),
+            ),
             IconButton(
               icon: const Icon(Icons.summarize_outlined),
               tooltip: 'Resumen semanal',
               onPressed: _resumenAsistenciasSemana,
             ),
-            const Icon(Icons.edit_calendar),
           ]),
+        ),
+        Expanded(child: _asistVistaSemana ? _asistenciaSemana() : _asistenciaDia()),
+      ],
+    );
+  }
+
+  Widget _asistenciaDia() {
+    final diaMillis = Semana.inicioDia(_diaAsistencia);
+    final rango = (obraId: _obraId, start: diaMillis, end: diaMillis);
+    final asignadosAsync = ref.watch(colaboradoresPorObraProvider(_obraId));
+    final asistenciasAsync = ref.watch(asistenciasRangoProvider(rango));
+    return Column(
+      children: [
+        ListTile(
+          leading: const Icon(Icons.event),
+          title: Text('Día: ${Fmt.dayName(_diaAsistencia)}'),
+          trailing: const Icon(Icons.edit_calendar),
           onTap: () async {
             final d = await showDatePicker(
               context: context,
@@ -223,13 +244,10 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
             data: (asignados) {
               final dia = asignados.where((c) => c.tipoPago == 'DIA').toList();
               if (dia.isEmpty) {
-                return const Center(
-                    child: Text('Sin trabajadores por día asignados.'));
+                return const Center(child: Text('Sin trabajadores por día asignados.'));
               }
               final asistencias = asistenciasAsync.asData?.value ?? [];
-              final fracPorColab = {
-                for (final a in asistencias) a.colaboradorId: a.fraccion
-              };
+              final fracPorColab = {for (final a in asistencias) a.colaboradorId: a.fraccion};
               return ListView(
                 children: dia.map((c) {
                   final frac = fracPorColab[c.id] ?? 0.0;
@@ -240,8 +258,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(c.nombre,
-                              style: Theme.of(context).textTheme.titleMedium),
+                          Text(c.nombre, style: Theme.of(context).textTheme.titleMedium),
                           const SizedBox(height: 8),
                           SegmentedButton<double>(
                             segments: const [
@@ -252,9 +269,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                             ],
                             selected: {frac},
                             onSelectionChanged: (s) async {
-                              await ref
-                                  .read(asistenciaRepositoryProvider)
-                                  .setFraccion(
+                              await ref.read(asistenciaRepositoryProvider).setFraccion(
                                     obraId: _obraId,
                                     colaboradorId: c.id,
                                     fecha: diaMillis,
@@ -273,6 +288,82 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
         ),
       ],
     );
+  }
+
+  Widget _asistenciaSemana() {
+    final inicio = Semana.inicioSemana(_diaAsistencia);
+    final fin = Semana.finSemana(inicio);
+    final dias = List.generate(7, (i) =>
+        DateTime.fromMillisecondsSinceEpoch(inicio).add(Duration(days: i)));
+    final rango = (obraId: _obraId, start: inicio, end: fin);
+    final asignados = ref.watch(colaboradoresPorObraProvider(_obraId)).asData?.value ?? [];
+    final asistencias = ref.watch(asistenciasRangoProvider(rango)).asData?.value ?? [];
+    final trabajadores = asignados.where((c) => c.tipoPago == 'DIA').toList();
+
+    // mapa colaboradorId|fechaDia -> fraccion
+    final mapa = <String, double>{};
+    for (final a in asistencias) {
+      mapa['${a.colaboradorId}|${a.fecha}'] = a.fraccion;
+    }
+
+    if (trabajadores.isEmpty) {
+      return const Center(child: Text('Sin trabajadores por día asignados.'));
+    }
+
+    String etiqueta(double f) =>
+        f == 0 ? '—' : (f == 1.0 ? '1' : (f == 0.75 ? '¾' : '½'));
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: SingleChildScrollView(
+        child: DataTable(
+          columnSpacing: 16,
+          columns: [
+            const DataColumn(label: Text('Trabajador')),
+            ...dias.map((d) => DataColumn(
+                label: Text(Fmt.dayName(d).split(' ').take(2).join('\n'),
+                    style: const TextStyle(fontSize: 11)))),
+          ],
+          rows: trabajadores.map((c) {
+            return DataRow(cells: [
+              DataCell(Text(c.nombre, overflow: TextOverflow.ellipsis)),
+              ...dias.map((d) {
+                final diaMillis = Semana.inicioDia(d);
+                final f = mapa['${c.id}|$diaMillis'] ?? 0.0;
+                return DataCell(
+                  Center(child: Text(etiqueta(f),
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: f > 0 ? Colors.green : Colors.grey))),
+                  onTap: () => _editarCeldaSemana(c.id, c.nombre, d, diaMillis),
+                );
+              }),
+            ]);
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _editarCeldaSemana(
+      String colabId, String nombre, DateTime dia, int diaMillis) async {
+    final f = await showDialog<double>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text('$nombre — ${Fmt.dayName(dia)}'),
+        children: [
+          for (final opt in const [(0.0, 'Falta'), (0.5, '½ día'), (0.75, '¾ día'), (1.0, 'Día completo')])
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, opt.$1),
+              child: Text(opt.$2),
+            ),
+        ],
+      ),
+    );
+    if (f != null) {
+      await ref.read(asistenciaRepositoryProvider).setFraccion(
+            obraId: _obraId, colaboradorId: colabId, fecha: diaMillis, fraccion: f);
+    }
   }
 
   // ============ NÓMINA ============
@@ -342,7 +433,8 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                         trailing: Text(Fmt.money(it.totalPagar),
                             style: const TextStyle(fontWeight: FontWeight.bold)),
                         onTap: esDia
-                            ? null
+                            ? () => _detalleAsistenciaDialog(it.colaborador.nombre,
+                                it.colaborador.id, asistencias)
                             : () => _agregarDestajoDialog(it.colaborador.id),
                       );
                     }).toList(),
@@ -398,6 +490,39 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                     ))
                 .toList(),
           ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cerrar')),
+        ],
+      ),
+    );
+  }
+
+  void _detalleAsistenciaDialog(
+      String nombre, String colaboradorId, List<Asistencia> asistencias) {
+    final dias = asistencias
+        .where((a) => a.colaboradorId == colaboradorId && a.fraccion > 0)
+        .toList()
+      ..sort((a, b) => a.fecha.compareTo(b.fecha));
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Asistencia — $nombre'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: dias.isEmpty
+              ? const Text('Sin días registrados esta semana.')
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: dias
+                      .map((a) => ListTile(
+                            dense: true,
+                            title: Text(Fmt.dayName(
+                                DateTime.fromMillisecondsSinceEpoch(a.fecha))),
+                            trailing: Text('${a.fraccion}'),
+                          ))
+                      .toList(),
+                ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cerrar')),
