@@ -338,6 +338,18 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                     }).toList(),
                   ),
                 ),
+                if (summary.totalNomina > 0)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.account_balance_wallet_outlined),
+                        label: const Text('Registrar nómina en caja'),
+                        onPressed: () => _registrarNominaEnCaja(summary.totalNomina, _inicioSemana, domingo),
+                      ),
+                    ),
+                  ),
                 _totalBar('TOTAL NÓMINA', summary.totalNomina),
               ],
             );
@@ -345,6 +357,25 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
         ),
       ],
     );
+  }
+
+  Future<void> _registrarNominaEnCaja(double total, int lunes, DateTime domingo) async {
+    final ok = await _confirm(
+        '¿Registrar la nómina de ${Fmt.money(total)} como salida en la caja de la obra?',
+        'Registrar');
+    if (!ok) return;
+    await ref.read(movimientoRepositoryProvider).add(
+          obraId: _obraId,
+          fecha: DateTime.now().millisecondsSinceEpoch,
+          tipo: 'SALIDA',
+          categoria: 'NOMINA',
+          concepto:
+              'Nómina ${Fmt.date(lunes)} – ${Fmt.date(domingo.millisecondsSinceEpoch)}',
+          monto: total,
+          metodoPago: 'Efectivo',
+          nominaId: 'nom_${lunes}_$_obraId',
+        );
+    if (mounted) _snack('Nómina registrada en caja.');
   }
 
   Future<void> _agregarDestajoDialog(String colaboradorId) async {
@@ -480,6 +511,19 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     final montoCtrl = TextEditingController();
     String metodo = 'Transferencia';
     final formKey = GlobalKey<FormState>();
+
+    // Para SALIDA: cargar partidas de la cotización de la obra (ligar gasto).
+    Cotizacion? cot;
+    List<Partida> partidasObra = const [];
+    String? partidaId;
+    if (tipo == 'SALIDA') {
+      cot = await ref.read(cotizacionDeObraProvider(_obraId).future);
+      if (cot != null) {
+        partidasObra = await ref.read(partidasDeCotizacionProvider(cot.id).future);
+      }
+    }
+    if (!mounted) return;
+
     await showDialog<void>(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -487,41 +531,64 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
           title: Text(tipo == 'ENTRADA' ? 'Nueva entrada' : 'Nueva salida'),
           content: Form(
             key: formKey,
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              TextFormField(
-                controller: conceptoCtrl,
-                decoration: const InputDecoration(labelText: 'Concepto'),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Requerido' : null,
-              ),
-              TextFormField(
-                controller: montoCtrl,
-                decoration: const InputDecoration(labelText: 'Monto (\$)'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                validator: (v) {
-                  final d = double.tryParse((v ?? '').trim());
-                  return (d == null || d <= 0) ? 'Monto inválido' : null;
-                },
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: metodo,
-                decoration: const InputDecoration(labelText: 'Método'),
-                items: const [
-                  DropdownMenuItem(value: 'Transferencia', child: Text('Transferencia')),
-                  DropdownMenuItem(value: 'Efectivo', child: Text('Efectivo')),
-                  DropdownMenuItem(value: 'Cheque', child: Text('Cheque')),
+            child: SingleChildScrollView(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                TextFormField(
+                  controller: conceptoCtrl,
+                  decoration: const InputDecoration(labelText: 'Concepto'),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+                ),
+                TextFormField(
+                  controller: montoCtrl,
+                  decoration: const InputDecoration(labelText: 'Monto (\$)'),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  validator: (v) {
+                    final d = double.tryParse((v ?? '').trim());
+                    return (d == null || d <= 0) ? 'Monto inválido' : null;
+                  },
+                ),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String>(
+                  initialValue: metodo,
+                  decoration: const InputDecoration(labelText: 'Método'),
+                  items: const [
+                    DropdownMenuItem(value: 'Transferencia', child: Text('Transferencia')),
+                    DropdownMenuItem(value: 'Efectivo', child: Text('Efectivo')),
+                    DropdownMenuItem(value: 'Cheque', child: Text('Cheque')),
+                  ],
+                  onChanged: (v) => setS(() => metodo = v ?? 'Transferencia'),
+                ),
+                if (tipo == 'SALIDA' && partidasObra.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String?>(
+                    initialValue: partidaId,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                        labelText: 'Ligar a partida (opcional)'),
+                    items: [
+                      const DropdownMenuItem(value: null, child: Text('Sin ligar')),
+                      ...partidasObra.map((p) => DropdownMenuItem(
+                            value: p.id,
+                            child: Text(p.descripcion,
+                                maxLines: 1, overflow: TextOverflow.ellipsis),
+                          )),
+                    ],
+                    onChanged: (v) => setS(() => partidaId = v),
+                  ),
                 ],
-                onChanged: (v) => setS(() => metodo = v ?? 'Transferencia'),
-              ),
-            ]),
+              ]),
+            ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
             FilledButton(
               onPressed: () async {
                 if (!formKey.currentState!.validate()) return;
+                final partida = partidaId == null
+                    ? null
+                    : partidasObra.firstWhere((p) => p.id == partidaId);
                 await ref.read(movimientoRepositoryProvider).add(
                       obraId: _obraId,
                       fecha: DateTime.now().millisecondsSinceEpoch,
@@ -530,6 +597,9 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                       concepto: conceptoCtrl.text.trim(),
                       monto: double.parse(montoCtrl.text.trim()),
                       metodoPago: metodo,
+                      cotizacionId: partida != null ? cot?.id : null,
+                      seccionId: partida?.seccionId,
+                      partidaId: partida?.id,
                     );
                 if (ctx.mounted) Navigator.pop(ctx);
               },

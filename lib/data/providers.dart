@@ -95,3 +95,12 @@ final partidasDeCotizacionProvider = StreamProvider.family<List<Partida>, String
 
 final pagosProvider = StreamProvider.family<List<Pago>, String>(
     (ref, cotId) => ref.watch(pagoRepositoryProvider).watchByCotizacion(cotId));
+
+/// Movimientos ligados a una cotización (avance por partida).
+final movimientosDeCotizacionProvider =
+    StreamProvider.family<List<Movimiento>, String>((ref, cotId) =>
+        ref.watch(movimientoRepositoryProvider).watchPorCotizacion(cotId));
+
+/// Cotización ligada a una obra (para ligar gastos a partidas).
+final cotizacionDeObraProvider = FutureProvider.family<Cotizacion?, String>(
+    (ref, obraId) => ref.watch(cotizacionRepositoryProvider).cotizacionDeObra(obraId));

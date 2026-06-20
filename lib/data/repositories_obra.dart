@@ -96,6 +96,10 @@ class MovimientoRepository {
 
   Stream<List<Movimiento>> watchAll() => db.select(db.movimientos).watch();
 
+  /// Movimientos ligados a una cotización (para el avance por partida).
+  Stream<List<Movimiento>> watchPorCotizacion(String cotId) =>
+      (db.select(db.movimientos)..where((t) => t.cotizacionId.equals(cotId))).watch();
+
   Future<void> add({
     required String obraId,
     required int fecha,
@@ -105,6 +109,10 @@ class MovimientoRepository {
     required double monto,
     required String metodoPago,
     String referencia = '',
+    String? nominaId,
+    String? cotizacionId,
+    String? seccionId,
+    String? partidaId,
   }) =>
       db.into(db.movimientos).insert(MovimientosCompanion.insert(
             id: _uuid.v4(),
@@ -116,6 +124,10 @@ class MovimientoRepository {
             monto: monto,
             metodoPago: metodoPago,
             referencia: Value(referencia),
+            nominaId: Value(nominaId),
+            cotizacionId: Value(cotizacionId),
+            seccionId: Value(seccionId),
+            partidaId: Value(partidaId),
           ));
 
   Future<void> delete(String id) =>

@@ -68,13 +68,38 @@ class ColaboradorRepository {
   Future<void> delete(String id) =>
       (db.delete(db.colaboradores)..where((t) => t.id.equals(id))).go();
 
+  /// Activa/desactiva (baja lógica) un colaborador.
+  Future<void> setActivo(String id, bool activo) =>
+      (db.update(db.colaboradores)..where((t) => t.id.equals(id)))
+          .write(ColaboradoresCompanion(activo: Value(activo)));
+
   // --- Asignación N:N obra ↔ colaborador ---
   Future<void> asignarObra(ObraColaboradorCompanion rel) =>
       db.into(db.obraColaborador).insertOnConflictUpdate(rel);
 
+  /// Desvincula con BAJA LÓGICA: marca fechaSalida (conserva el historial).
   Future<void> desvincular(String obraId, String colaboradorId) =>
-      (db.delete(db.obraColaborador)
+      (db.update(db.obraColaborador)
             ..where((t) =>
-                t.obraId.equals(obraId) & t.colaboradorId.equals(colaboradorId)))
-          .go();
+                t.obraId.equals(obraId) &
+                t.colaboradorId.equals(colaboradorId) &
+                t.fechaSalida.isNull()))
+          .write(ObraColaboradorCompanion(
+              fechaSalida: Value(DateTime.now().millisecondsSinceEpoch)));
+
+  /// Historial de obras del colaborador (con fechas de ingreso/salida).
+  Future<List<({ObraColaboradorData rel, Obra obra})>> historial(
+      String colaboradorId) async {
+    final q = db.select(db.obraColaborador).join([
+      innerJoin(db.obras, db.obras.id.equalsExp(db.obraColaborador.obraId)),
+    ])
+      ..where(db.obraColaborador.colaboradorId.equals(colaboradorId));
+    final rows = await q.get();
+    return rows
+        .map((r) => (
+              rel: r.readTable(db.obraColaborador),
+              obra: r.readTable(db.obras),
+            ))
+        .toList();
+  }
 }

@@ -109,6 +109,7 @@ class PdfService {
     required List<Partida> partidas,
     required PresupuestoTotales totales,
     required bool iva,
+    Map<String, double> aportadoPorPartida = const {},
   }) async {
     final doc = pw.Document();
     doc.addPage(pw.MultiPage(
@@ -125,6 +126,7 @@ class PdfService {
             child: pw.Text(s.nombre,
                 style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11)),
           ));
+          final tieneAvance = aportadoPorPartida.isNotEmpty;
           widgets.add(pw.TableHelper.fromTextArray(
             headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
             headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8),
@@ -133,18 +135,29 @@ class PdfService {
               3: pw.Alignment.centerRight,
               4: pw.Alignment.centerRight,
               5: pw.Alignment.centerRight,
+              6: pw.Alignment.centerRight,
+              7: pw.Alignment.centerRight,
             },
-            headers: ['Clave', 'Descripción', 'Unidad', 'Cant.', 'P.U.', 'Importe'],
-            data: pts
-                .map((p) => [
-                      p.clave,
-                      p.descripcion,
-                      p.unidad,
-                      p.cantidad.toString(),
-                      Fmt.money(p.precioUnitario),
-                      Fmt.money(p.cantidad * p.precioUnitario),
-                    ])
-                .toList(),
+            headers: [
+              'Clave', 'Descripción', 'Unidad', 'Cant.', 'P.U.', 'Importe',
+              if (tieneAvance) 'Aportado',
+              if (tieneAvance) '%',
+            ],
+            data: pts.map((p) {
+              final importe = p.cantidad * p.precioUnitario;
+              final aportado = aportadoPorPartida[p.id] ?? 0;
+              final pct = importe > 0 ? aportado / importe * 100 : 0;
+              return [
+                p.clave,
+                p.descripcion,
+                p.unidad,
+                p.cantidad.toString(),
+                Fmt.money(p.precioUnitario),
+                Fmt.money(importe),
+                if (tieneAvance) Fmt.money(aportado),
+                if (tieneAvance) '${pct.toStringAsFixed(0)}%',
+              ];
+            }).toList(),
           ));
         }
         widgets.add(pw.SizedBox(height: 10));

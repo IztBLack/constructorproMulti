@@ -44,18 +44,28 @@ class _State extends ConsumerState<CotizacionDetailScreen>
           ),
           PopupMenuButton<String>(
             onSelected: (v) async {
-              if (v == 'iva') {
-                setState(() => _ivaEnabled = !_ivaEnabled);
-                await ref.read(cotizacionRepositoryProvider).upsert(
-                    CotizacionesCompanion(
-                        id: Value(_cotId), ivaEnabled: Value(_ivaEnabled)));
-              } else if (v == 'convertir') {
-                await _convertir();
+              switch (v) {
+                case 'iva':
+                  setState(() => _ivaEnabled = !_ivaEnabled);
+                  await ref.read(cotizacionRepositoryProvider).upsert(
+                      CotizacionesCompanion(
+                          id: Value(_cotId), ivaEnabled: Value(_ivaEnabled)));
+                case 'estado':
+                  await _cambiarEstado();
+                case 'duplicar':
+                  await _duplicar();
+                case 'vincular':
+                  await _vincular();
+                case 'convertir':
+                  await _convertir();
               }
             },
             itemBuilder: (_) => [
               CheckedPopupMenuItem(
                   value: 'iva', checked: _ivaEnabled, child: const Text('Aplicar IVA 16%')),
+              const PopupMenuItem(value: 'estado', child: Text('Cambiar estado')),
+              const PopupMenuItem(value: 'duplicar', child: Text('Duplicar')),
+              const PopupMenuItem(value: 'vincular', child: Text('Vincular a obra')),
               const PopupMenuItem(value: 'convertir', child: Text('Convertir en obra')),
             ],
           ),
@@ -70,6 +80,67 @@ class _State extends ConsumerState<CotizacionDetailScreen>
         _pagosTab(),
       ]),
     );
+  }
+
+  Future<void> _cambiarEstado() async {
+    const estados = ['BORRADOR', 'ENVIADA', 'ACEPTADA', 'RECHAZADA'];
+    final estado = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Estado de la cotización'),
+        children: estados
+            .map((e) => SimpleDialogOption(
+                  onPressed: () => Navigator.pop(ctx, e),
+                  child: Text(e),
+                ))
+            .toList(),
+      ),
+    );
+    if (estado != null) {
+      await ref.read(cotizacionRepositoryProvider).cambiarEstado(_cotId, estado);
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Estado: $estado')));
+      }
+    }
+  }
+
+  Future<void> _duplicar() async {
+    await ref.read(cotizacionRepositoryProvider).duplicar(_cotId);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cotización duplicada (ver la lista).')));
+    }
+  }
+
+  Future<void> _vincular() async {
+    final obras = ref.read(obrasProvider).asData?.value ?? [];
+    if (obras.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No hay obras para vincular.')));
+      }
+      return;
+    }
+    final obraId = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Vincular a obra'),
+        children: obras
+            .map((o) => SimpleDialogOption(
+                  onPressed: () => Navigator.pop(ctx, o.id),
+                  child: Text(o.nombre),
+                ))
+            .toList(),
+      ),
+    );
+    if (obraId != null) {
+      await ref.read(cotizacionRepositoryProvider).vincularAObra(_cotId, obraId);
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Cotización vinculada a la obra.')));
+      }
+    }
   }
 
   Future<void> _convertir() async {
@@ -87,7 +158,13 @@ class _State extends ConsumerState<CotizacionDetailScreen>
     final secciones = ref.read(seccionesProvider(_cotId)).asData?.value ?? [];
     final partidas = ref.read(partidasDeCotizacionProvider(_cotId)).asData?.value ?? [];
     final pagos = ref.read(pagosProvider(_cotId)).asData?.value ?? [];
+    final movs = ref.read(movimientosDeCotizacionProvider(_cotId)).asData?.value ?? [];
     final totalPagado = pagos.fold<double>(0, (a, p) => a + p.monto);
+    final aportadoPorPartida = <String, double>{};
+    for (final m in movs.where((m) => m.tipo == 'SALIDA' && m.partidaId != null)) {
+      aportadoPorPartida[m.partidaId!] =
+          (aportadoPorPartida[m.partidaId!] ?? 0) + m.monto;
+    }
     final totales = const PresupuestoCalculator().calcular(
       partidas: partidas.map(partidaToDomain).toList(),
       ivaEnabled: _ivaEnabled,
@@ -99,6 +176,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
       partidas: partidas,
       totales: totales,
       iva: _ivaEnabled,
+      aportadoPorPartida: aportadoPorPartida,
     );
     await Printing.sharePdf(bytes: bytes, filename: 'presupuesto.pdf');
   }
@@ -108,6 +186,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
     final seccionesAsync = ref.watch(seccionesProvider(_cotId));
     final partidasAsync = ref.watch(partidasDeCotizacionProvider(_cotId));
     final pagosAsync = ref.watch(pagosProvider(_cotId));
+    final movsAsync = ref.watch(movimientosDeCotizacionProvider(_cotId));
 
     return Scaffold(
       body: seccionesAsync.when(
@@ -116,7 +195,14 @@ class _State extends ConsumerState<CotizacionDetailScreen>
         data: (secciones) {
           final partidas = partidasAsync.asData?.value ?? [];
           final pagos = pagosAsync.asData?.value ?? [];
+          final movs = movsAsync.asData?.value ?? [];
           final totalPagado = pagos.fold<double>(0, (a, p) => a + p.monto);
+          // Aportado (gasto) por partida = Σ salidas ligadas a esa partida.
+          final aportadoPorPartida = <String, double>{};
+          for (final m in movs.where((m) => m.tipo == 'SALIDA' && m.partidaId != null)) {
+            aportadoPorPartida[m.partidaId!] =
+                (aportadoPorPartida[m.partidaId!] ?? 0) + m.monto;
+          }
 
           final totales = const PresupuestoCalculator().calcular(
             partidas: partidas.map(partidaToDomain).toList(),
@@ -136,21 +222,31 @@ class _State extends ConsumerState<CotizacionDetailScreen>
                           final pts = partidas.where((p) => p.seccionId == s.id).toList();
                           final subtotal =
                               pts.fold<double>(0, (a, p) => a + p.cantidad * p.precioUnitario);
+                          final aportadoSec = pts.fold<double>(
+                              0, (a, p) => a + (aportadoPorPartida[p.id] ?? 0));
+                          final pctSec = subtotal > 0 ? aportadoSec / subtotal * 100 : 0;
                           return ExpansionTile(
                             title: Text(s.nombre,
                                 style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text(Fmt.money(subtotal)),
+                            subtitle: Text(
+                                '${Fmt.money(subtotal)}  ·  aportado ${Fmt.money(aportadoSec)} (${pctSec.toStringAsFixed(0)}%)'),
                             childrenPadding: const EdgeInsets.only(bottom: 8),
                             children: [
-                              ...pts.map((p) => ListTile(
+                              ...pts.map((p) {
+                                final total = p.cantidad * p.precioUnitario;
+                                final aportado = aportadoPorPartida[p.id] ?? 0;
+                                final pct = total > 0 ? aportado / total * 100 : 0;
+                                return ListTile(
                                     dense: true,
                                     title: Text(p.descripcion),
                                     subtitle: Text(
-                                        '${p.cantidad} ${p.unidad} × ${Fmt.money(p.precioUnitario)}'),
-                                    trailing: Text(Fmt.money(p.cantidad * p.precioUnitario)),
+                                        '${p.cantidad} ${p.unidad} × ${Fmt.money(p.precioUnitario)}'
+                                        '${aportado > 0 ? '  ·  aportado ${Fmt.money(aportado)} (${pct.toStringAsFixed(0)}%)' : ''}'),
+                                    trailing: Text(Fmt.money(total)),
                                     onTap: () => _partidaDialog(s.id, p),
                                     onLongPress: () => _eliminarPartida(p),
-                                  )),
+                                  );
+                              }),
                               Align(
                                 alignment: Alignment.centerLeft,
                                 child: Padding(
@@ -404,12 +500,26 @@ class _State extends ConsumerState<CotizacionDetailScreen>
   // ============ PAGOS ============
   Widget _pagosTab() {
     final pagosAsync = ref.watch(pagosProvider(_cotId));
+    final movsAsync = ref.watch(movimientosDeCotizacionProvider(_cotId));
     return Scaffold(
       body: pagosAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (pagos) {
-          final total = pagos.fold<double>(0, (a, p) => a + p.monto);
+          final entradas = (movsAsync.asData?.value ?? [])
+              .where((m) => m.tipo == 'ENTRADA')
+              .toList();
+          // Lista unificada: pagos manuales + entradas de caja ligadas.
+          final items = <_PagoUnificado>[
+            ...pagos.map((p) => _PagoUnificado(
+                id: p.id, fecha: p.fecha, monto: p.monto, concepto: p.concepto,
+                metodo: p.metodo, esPagoManual: true)),
+            ...entradas.map((m) => _PagoUnificado(
+                id: m.id, fecha: m.fecha, monto: m.monto, concepto: m.concepto,
+                metodo: m.metodoPago, esPagoManual: false)),
+          ]..sort((a, b) => b.fecha.compareTo(a.fecha));
+          final total = items.fold<double>(0, (a, p) => a + p.monto);
+
           return Column(children: [
             Padding(
               padding: const EdgeInsets.all(16),
@@ -425,27 +535,33 @@ class _State extends ConsumerState<CotizacionDetailScreen>
             ),
             const Divider(height: 1),
             Expanded(
-              child: pagos.isEmpty
+              child: items.isEmpty
                   ? const Center(child: Text('Sin pagos registrados.'))
                   : ListView(
-                      children: pagos
+                      children: items
                           .map((p) => ListTile(
+                                leading: Icon(
+                                    p.esPagoManual ? Icons.payments : Icons.south_west,
+                                    color: Colors.green),
                                 title: Text(p.concepto),
-                                subtitle: Text('${Fmt.date(p.fecha)} · ${p.metodo}'),
+                                subtitle: Text(
+                                    '${Fmt.date(p.fecha)} · ${p.metodo} · ${p.esPagoManual ? 'Pago' : 'Caja'}'),
                                 trailing: Text(Fmt.money(p.monto),
                                     style: const TextStyle(
                                         color: Colors.green,
                                         fontWeight: FontWeight.bold)),
-                                onLongPress: () async {
-                                  final ok = await _confirm(
-                                      '¿Eliminar el pago de ${Fmt.money(p.monto)}?',
-                                      'Eliminar');
-                                  if (ok) {
-                                    await ref
-                                        .read(pagoRepositoryProvider)
-                                        .delete(p.id);
-                                  }
-                                },
+                                onLongPress: p.esPagoManual
+                                    ? () async {
+                                        final ok = await _confirm(
+                                            '¿Eliminar el pago de ${Fmt.money(p.monto)}?',
+                                            'Eliminar');
+                                        if (ok) {
+                                          await ref
+                                              .read(pagoRepositoryProvider)
+                                              .delete(p.id);
+                                        }
+                                      }
+                                    : null,
                               ))
                           .toList(),
                     ),
@@ -554,4 +670,22 @@ class _State extends ConsumerState<CotizacionDetailScreen>
         ),
       ) ??
       false;
+}
+
+/// Renglón unificado de cobranza: pago manual o entrada de caja ligada.
+class _PagoUnificado {
+  final String id;
+  final int fecha;
+  final double monto;
+  final String concepto;
+  final String metodo;
+  final bool esPagoManual;
+  const _PagoUnificado({
+    required this.id,
+    required this.fecha,
+    required this.monto,
+    required this.concepto,
+    required this.metodo,
+    required this.esPagoManual,
+  });
 }

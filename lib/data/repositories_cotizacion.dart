@@ -30,6 +30,67 @@ class CotizacionRepository {
     });
   }
 
+  /// Cotización ligada a una obra (por obraId o por cotizacionOrigen).
+  Future<Cotizacion?> cotizacionDeObra(String obraId) async {
+    final porObra = await (db.select(db.cotizaciones)
+          ..where((t) => t.obraId.equals(obraId))
+          ..limit(1))
+        .getSingleOrNull();
+    if (porObra != null) return porObra;
+    final obra = await (db.select(db.obras)..where((t) => t.id.equals(obraId))).getSingleOrNull();
+    final origen = obra?.cotizacionOrigenId;
+    if (origen == null) return null;
+    return (db.select(db.cotizaciones)..where((t) => t.id.equals(origen))).getSingleOrNull();
+  }
+
+  Future<void> cambiarEstado(String cotId, String estado) =>
+      (db.update(db.cotizaciones)..where((t) => t.id.equals(cotId)))
+          .write(CotizacionesCompanion(estado: Value(estado)));
+
+  /// Liga la cotización a una obra existente (sin crear una nueva).
+  Future<void> vincularAObra(String cotId, String obraId) =>
+      (db.update(db.cotizaciones)..where((t) => t.id.equals(cotId)))
+          .write(CotizacionesCompanion(obraId: Value(obraId)));
+
+  /// Clona la cotización con todas sus secciones y partidas.
+  Future<String> duplicar(String cotId) async {
+    final nuevaId = _uuid.v4();
+    await db.transaction(() async {
+      final orig = await (db.select(db.cotizaciones)
+            ..where((t) => t.id.equals(cotId)))
+          .getSingle();
+      await db.into(db.cotizaciones).insert(CotizacionesCompanion.insert(
+            id: nuevaId,
+            cliente: orig.cliente,
+            nombreProyecto: '${orig.nombreProyecto} (copia)',
+            ubicacion: Value(orig.ubicacion),
+            fecha: DateTime.now().millisecondsSinceEpoch,
+            estado: const Value('BORRADOR'),
+            ivaEnabled: Value(orig.ivaEnabled),
+            descuento: Value(orig.descuento),
+            notas: Value(orig.notas),
+          ));
+      final secs = await (db.select(db.secciones)
+            ..where((t) => t.cotizacionId.equals(cotId)))
+          .get();
+      for (final s in secs) {
+        final nuevaSecId = _uuid.v4();
+        await db.into(db.secciones).insert(SeccionesCompanion.insert(
+            id: nuevaSecId, cotizacionId: nuevaId, nombre: s.nombre, orden: Value(s.orden)));
+        final parts = await (db.select(db.partidas)
+              ..where((t) => t.seccionId.equals(s.id)))
+            .get();
+        for (final p in parts) {
+          await db.into(db.partidas).insert(PartidasCompanion.insert(
+              id: _uuid.v4(), seccionId: nuevaSecId, clave: Value(p.clave),
+              descripcion: p.descripcion, unidad: Value(p.unidad),
+              cantidad: p.cantidad, precioUnitario: p.precioUnitario, orden: Value(p.orden)));
+        }
+      }
+    });
+    return nuevaId;
+  }
+
   /// Crea una obra a partir de la cotización y la marca como CONVERTIDA.
   Future<String> convertirEnObra(Cotizacion c) async {
     final obraId = _uuid.v4();
