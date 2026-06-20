@@ -38,6 +38,9 @@ class ConfigScreen extends ConsumerWidget {
             ),
           ),
           const Divider(),
+          const _Header('Recordatorios'),
+          _reminderTiles(context, ref),
+          const Divider(),
           const _Header('Catálogos'),
           ListTile(
             leading: const Icon(Icons.badge_outlined),
@@ -69,6 +72,55 @@ class ConfigScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  static const _dias = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+  Widget _reminderTiles(BuildContext context, WidgetRef ref) {
+    final rem = ref.watch(reminderProvider);
+    return Column(children: [
+      SwitchListTile(
+        secondary: const Icon(Icons.notifications_active_outlined),
+        title: const Text('Recordatorio semanal de nómina'),
+        value: rem.enabled,
+        onChanged: (v) async {
+          final ok = await ref.read(reminderProvider.notifier).setEnabled(v);
+          if (!ok && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text('Permiso de notificaciones denegado.')));
+          }
+        },
+      ),
+      ListTile(
+        enabled: rem.enabled,
+        leading: const Icon(Icons.schedule),
+        title: const Text('Día y hora'),
+        subtitle: Text('${_dias[rem.weekday]} a las ${rem.hour.toString().padLeft(2, '0')}:00'),
+        onTap: () => _programar(context, ref, rem.weekday, rem.hour),
+      ),
+    ]);
+  }
+
+  Future<void> _programar(BuildContext context, WidgetRef ref, int weekday, int hour) async {
+    final dia = await showDialog<int>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Día del recordatorio'),
+        children: List.generate(7, (i) => i + 1)
+            .map((d) => SimpleDialogOption(
+                  onPressed: () => Navigator.pop(ctx, d),
+                  child: Text(_dias[d]),
+                ))
+            .toList(),
+      ),
+    );
+    if (dia == null || !context.mounted) return;
+    final t = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: hour, minute: 0),
+    );
+    if (t == null) return;
+    await ref.read(reminderProvider.notifier).setSchedule(dia, t.hour);
   }
 
   Future<void> _cargarDemo(BuildContext context, WidgetRef ref) async {

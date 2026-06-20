@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'core/crash/crash_logger.dart';
+import 'core/notifications/notification_service.dart';
 import 'core/settings/settings_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'presentation/home_shell.dart';
@@ -12,6 +13,7 @@ void main() {
   // Captura cualquier crash (Flutter + zona) en un log local offline.
   CrashLogger.runGuarded(() async {
     await initializeDateFormatting('es_MX', null);
+    await NotificationService.init();
     runApp(const ProviderScope(child: ConstructorProApp()));
   });
 }
