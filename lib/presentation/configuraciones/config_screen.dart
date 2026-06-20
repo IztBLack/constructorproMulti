@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
@@ -61,6 +62,12 @@ class ConfigScreen extends ConsumerWidget {
             leading: const Icon(Icons.upload_file),
             title: const Text('Exportar respaldo (JSON)'),
             onTap: () => _exportarRespaldo(context, ref),
+          ),
+          ListTile(
+            leading: const Icon(Icons.restore_page_outlined),
+            title: const Text('Restaurar respaldo (JSON)'),
+            subtitle: const Text('Reemplaza TODOS los datos actuales'),
+            onTap: () => _importarRespaldo(context, ref),
           ),
           const Divider(),
           const _Header('Soporte'),
@@ -139,14 +146,49 @@ class ConfigScreen extends ConsumerWidget {
       final dir = await getTemporaryDirectory();
       final file = File(p.join(dir.path, 'RespaldoConstructorPro.json'));
       await file.writeAsString(json);
-      await SharePlus.instance.share(ShareParams(
-        files: [XFile(file.path)],
-        text: 'Respaldo ConstructorPro',
-      ));
+      await Share.shareXFiles([XFile(file.path)], text: 'Respaldo ConstructorPro');
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Error al exportar: $e')));
+      }
+    }
+  }
+
+  Future<void> _importarRespaldo(BuildContext context, WidgetRef ref) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+    );
+    if (result == null || result.files.single.path == null) return;
+    if (!context.mounted) return;
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Restaurar respaldo'),
+        content: const Text(
+            'Esto REEMPLAZA todos los datos actuales por los del respaldo. '
+            '¿Continuar?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Restaurar')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+
+    try {
+      final json = await File(result.files.single.path!).readAsString();
+      await ref.read(backupServiceProvider).importFromJson(json);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Respaldo restaurado correctamente.')));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error al restaurar: $e')));
       }
     }
   }
@@ -159,10 +201,8 @@ class ConfigScreen extends ConsumerWidget {
           content: Text('No hay reportes de error. La app no ha fallado.')));
       return;
     }
-    await SharePlus.instance.share(ShareParams(
-      files: [XFile(logs.first.path)],
-      text: 'Reporte de error ConstructorPro',
-    ));
+    await Share.shareXFiles([XFile(logs.first.path)],
+        text: 'Reporte de error ConstructorPro');
   }
 }
 
