@@ -67,6 +67,12 @@ class ConfigScreen extends ConsumerWidget {
             onTap: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const PdfConfigScreen())),
           ),
+          ListTile(
+            leading: const Icon(Icons.percent),
+            title: const Text('IVA por defecto'),
+            subtitle: Text('${(ref.watch(ivaPorcentajeProvider).asData?.value ?? 16).toStringAsFixed(0)}%'),
+            onTap: () => _editarIva(context, ref),
+          ),
           const Divider(),
           const _Header('Datos'),
           ListTile(
@@ -205,6 +211,34 @@ class ConfigScreen extends ConsumerWidget {
     );
     if (t == null) return;
     await ref.read(reminderProvider.notifier).setSchedule(dia, t.hour);
+  }
+
+  Future<void> _editarIva(BuildContext context, WidgetRef ref) async {
+    final actual = ref.read(ivaPorcentajeProvider).asData?.value ?? 16.0;
+    final ctrl = TextEditingController(text: actual.toStringAsFixed(0));
+    final v = await showDialog<double>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('IVA por defecto'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(labelText: 'Porcentaje', suffixText: '%'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, double.tryParse(ctrl.text.trim())),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+    if (v != null) {
+      await setIvaPorcentaje(v);
+      ref.invalidate(ivaPorcentajeProvider);
+    }
   }
 
   Future<void> _cargarDemo(BuildContext context, WidgetRef ref) async {

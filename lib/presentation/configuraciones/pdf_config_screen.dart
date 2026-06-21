@@ -20,7 +20,10 @@ class _PdfConfigScreenState extends State<PdfConfigScreen> {
   final _color = TextEditingController();
   final _pie = TextEditingController();
   final _watermark = TextEditingController();
+  final _firmaIzq = TextEditingController();
+  final _firmaDer = TextEditingController();
   bool _mayusculas = false;
+  bool _compacto = false;
   String? _logoPath;
   String? _firmaPath;
   bool _cargado = false;
@@ -38,7 +41,10 @@ class _PdfConfigScreenState extends State<PdfConfigScreen> {
     _color.text = c.colorHex;
     _pie.text = c.pieDePagina;
     _watermark.text = c.watermark;
+    _firmaIzq.text = c.firmaIzquierda;
+    _firmaDer.text = c.firmaDerecha;
     _mayusculas = c.mayusculas;
+    _compacto = c.modoCompacto;
     _logoPath = c.logoPath;
     _firmaPath = c.firmaPath;
     setState(() => _cargado = true);
@@ -61,6 +67,9 @@ class _PdfConfigScreenState extends State<PdfConfigScreen> {
       pieDePagina: _pie.text.trim(),
       watermark: _watermark.text.trim(),
       mayusculas: _mayusculas,
+      modoCompacto: _compacto,
+      firmaIzquierda: _firmaIzq.text.trim().isEmpty ? 'Autorizado por Obra' : _firmaIzq.text.trim(),
+      firmaDerecha: _firmaDer.text.trim().isEmpty ? 'Aceptado por Cliente' : _firmaDer.text.trim(),
       logoPath: _logoPath,
       firmaPath: _firmaPath,
     ));
@@ -109,6 +118,17 @@ class _PdfConfigScreenState extends State<PdfConfigScreen> {
             value: _mayusculas,
             onChanged: (v) => setState(() => _mayusculas = v),
           ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Modo compacto'),
+            subtitle: const Text('Márgenes reducidos'),
+            value: _compacto,
+            onChanged: (v) => setState(() => _compacto = v),
+          ),
+          const SizedBox(height: 8),
+          TextField(controller: _firmaIzq, decoration: const InputDecoration(labelText: 'Firma izquierda')),
+          const SizedBox(height: 8),
+          TextField(controller: _firmaDer, decoration: const InputDecoration(labelText: 'Firma derecha')),
           const Divider(),
           ListTile(
             contentPadding: EdgeInsets.zero,

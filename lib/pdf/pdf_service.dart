@@ -66,6 +66,7 @@ class PdfService {
 
   static pw.PageTheme _pageTheme(PdfConfig cfg) => pw.PageTheme(
         pageFormat: PdfPageFormat.letter,
+        margin: pw.EdgeInsets.all(cfg.modoCompacto ? 24 : 40),
         buildBackground: cfg.watermark.isEmpty
             ? null
             : (ctx) => pw.FullPage(
@@ -104,13 +105,13 @@ class PdfService {
             if (firma != null) pw.Container(height: 40, child: pw.Image(pw.MemoryImage(firma))),
             pw.Container(width: 180, height: 1, color: PdfColors.black),
             pw.SizedBox(height: 4),
-            pw.Text(_u('Autorizado por Obra', cfg), style: const pw.TextStyle(fontSize: 10)),
+            pw.Text(_u(cfg.firmaIzquierda, cfg), style: const pw.TextStyle(fontSize: 10)),
           ]),
           pw.Column(children: [
             pw.SizedBox(height: firma != null ? 40 : 0),
             pw.Container(width: 180, height: 1, color: PdfColors.black),
             pw.SizedBox(height: 4),
-            pw.Text(_u('Aceptado por Cliente', cfg), style: const pw.TextStyle(fontSize: 10)),
+            pw.Text(_u(cfg.firmaDerecha, cfg), style: const pw.TextStyle(fontSize: 10)),
           ]),
         ],
       ),
@@ -235,7 +236,8 @@ class PdfService {
         }
         widgets.add(pw.SizedBox(height: 10));
         widgets.add(_totalLinea('Subtotal', totales.subtotal));
-        if (iva) widgets.add(_totalLinea('IVA 16%', totales.iva));
+        if (totales.descuento > 0) widgets.add(_totalLinea('Descuento', -totales.descuento));
+        if (iva) widgets.add(_totalLinea('IVA', totales.iva));
         widgets.add(_totalLinea('TOTAL', totales.total, bold: true, color: color));
         widgets.add(_firmas(config));
         return widgets;

@@ -12,6 +12,9 @@ class PdfConfig {
   final String pieDePagina;
   final String watermark;
   final bool mayusculas;
+  final bool modoCompacto;
+  final String firmaIzquierda;
+  final String firmaDerecha;
   final String? logoPath;
   final String? firmaPath;
 
@@ -22,9 +25,31 @@ class PdfConfig {
     this.pieDePagina = '',
     this.watermark = '',
     this.mayusculas = false,
+    this.modoCompacto = false,
+    this.firmaIzquierda = 'Autorizado por Obra',
+    this.firmaDerecha = 'Aceptado por Cliente',
     this.logoPath,
     this.firmaPath,
   });
+
+  PdfConfig copyWith({
+    String? watermark,
+    bool? mayusculas,
+    bool? modoCompacto,
+  }) =>
+      PdfConfig(
+        empresaNombre: empresaNombre,
+        empresaContacto: empresaContacto,
+        colorHex: colorHex,
+        pieDePagina: pieDePagina,
+        watermark: watermark ?? this.watermark,
+        mayusculas: mayusculas ?? this.mayusculas,
+        modoCompacto: modoCompacto ?? this.modoCompacto,
+        firmaIzquierda: firmaIzquierda,
+        firmaDerecha: firmaDerecha,
+        logoPath: logoPath,
+        firmaPath: firmaPath,
+      );
 
   /// Bytes del logo (si existe el archivo).
   Uint8List? get logoBytes {
@@ -50,6 +75,9 @@ class PdfPrefs {
       pieDePagina: p.getString('pdf_pie') ?? '',
       watermark: p.getString('pdf_watermark') ?? '',
       mayusculas: p.getBool('pdf_mayusculas') ?? false,
+      modoCompacto: p.getBool('pdf_compacto') ?? false,
+      firmaIzquierda: p.getString('pdf_firma_izq') ?? 'Autorizado por Obra',
+      firmaDerecha: p.getString('pdf_firma_der') ?? 'Aceptado por Cliente',
       logoPath: p.getString('pdf_logo'),
       firmaPath: p.getString('pdf_firma'),
     );
@@ -63,6 +91,9 @@ class PdfPrefs {
     await p.setString('pdf_pie', c.pieDePagina);
     await p.setString('pdf_watermark', c.watermark);
     await p.setBool('pdf_mayusculas', c.mayusculas);
+    await p.setBool('pdf_compacto', c.modoCompacto);
+    await p.setString('pdf_firma_izq', c.firmaIzquierda);
+    await p.setString('pdf_firma_der', c.firmaDerecha);
     if (c.logoPath != null) await p.setString('pdf_logo', c.logoPath!);
     if (c.firmaPath != null) await p.setString('pdf_firma', c.firmaPath!);
   }

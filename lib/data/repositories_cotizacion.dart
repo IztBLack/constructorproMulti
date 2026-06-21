@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:uuid/uuid.dart';
 
 import '../core/db/app_database.dart';
@@ -260,6 +263,38 @@ class CatalogoRepository {
 
   Future<void> delete(String id) =>
       (db.delete(db.catalogoConceptos)..where((t) => t.id.equals(id))).go();
+
+  /// Re-siembra el catálogo oficial desde el asset, sin duplicar claves existentes.
+  /// Devuelve cuántos conceptos se agregaron.
+  Future<int> cargarOficial() async {
+    final raw = await rootBundle.loadString('assets/catalogo_base.json');
+    final List<dynamic> data = json.decode(raw) as List<dynamic>;
+    final existentes = (await db.select(db.catalogoConceptos).get())
+        .map((c) => c.clave)
+        .toSet();
+    var agregados = 0;
+    await db.batch((b) {
+      for (final item in data) {
+        final m = item as Map<String, dynamic>;
+        final clave = m['clave'] as String;
+        if (existentes.contains(clave)) continue;
+        existentes.add(clave);
+        agregados++;
+        b.insert(
+          db.catalogoConceptos,
+          CatalogoConceptosCompanion.insert(
+            id: _uuid.v4(),
+            clave: clave,
+            descripcion: m['descripcion'] as String,
+            unidad: m['unidad'] as String,
+            precioUnitarioDefault: Value((m['precioUnitarioDefault'] as num).toDouble()),
+            categoria: m['categoria'] as String,
+          ),
+        );
+      }
+    });
+    return agregados;
+  }
 
   String newId() => _uuid.v4();
 }

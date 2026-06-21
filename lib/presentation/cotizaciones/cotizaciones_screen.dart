@@ -78,6 +78,8 @@ class CotizacionesScreen extends ConsumerWidget {
     final nombreCtrl = TextEditingController(text: cot?.nombreProyecto ?? '');
     final clienteCtrl = TextEditingController(text: cot?.cliente ?? '');
     final ubicacionCtrl = TextEditingController(text: cot?.ubicacion ?? '');
+    final descuentoCtrl = TextEditingController(
+        text: (cot?.descuento ?? 0) > 0 ? cot!.descuento.toString() : '');
     final formKey = GlobalKey<FormState>();
     await showDialog<void>(
       context: context,
@@ -100,6 +102,12 @@ class CotizacionesScreen extends ConsumerWidget {
               controller: ubicacionCtrl,
               decoration: const InputDecoration(labelText: 'Ubicación'),
             ),
+            TextFormField(
+              controller: descuentoCtrl,
+              decoration: const InputDecoration(
+                  labelText: 'Descuento (%)', suffixText: '%'),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            ),
           ]),
         ),
         actions: [
@@ -116,6 +124,7 @@ class CotizacionesScreen extends ConsumerWidget {
                       fecha: Value(cot?.fecha ?? DateTime.now().millisecondsSinceEpoch),
                       estado: Value(cot?.estado ?? 'BORRADOR'),
                       ivaEnabled: Value(cot?.ivaEnabled ?? true),
+                      descuento: Value(double.tryParse(descuentoCtrl.text.trim()) ?? 0),
                     ),
                   );
               if (ctx.mounted) Navigator.pop(ctx);

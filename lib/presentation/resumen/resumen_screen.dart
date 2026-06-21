@@ -10,7 +10,9 @@ import '../../domain/logic/nomina_calculator.dart';
 import '../../domain/logic/presupuesto_calculator.dart';
 import '../../domain/mappers.dart';
 import '../../pdf/pdf_service.dart';
+import '../asistencia/pase_lista_screen.dart';
 import '../configuraciones/catalogo_screen.dart';
+import '../pdf_pre_dialog.dart';
 
 const _meses = [
   '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -211,7 +213,8 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
   Widget _accesosRapidos() => Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _accion(Icons.add_business, 'Obra', () => ref.read(homeTabProvider.notifier).state = 0),
+          _accion(Icons.fact_check, 'Pase lista',
+              () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PaseListaScreen()))),
           _accion(Icons.note_add, 'Cotizar', () => ref.read(homeTabProvider.notifier).state = 1),
           _accion(Icons.person_add, 'Equipo', () => ref.read(homeTabProvider.notifier).state = 2),
           _accion(Icons.menu_book, 'Catálogo',
@@ -282,15 +285,26 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
                   movs.where((x) => x.obraId == o.id).map(movimientoToDomain).toList()),
             ))
         .toList();
-    final config = await PdfPrefs.load();
+    final base = await PdfPrefs.load();
+    if (!mounted) return;
+    final config = await showPdfPreDialog(context, base);
+    if (config == null) return;
     final bytes = await PdfService.flujoCajaGlobal(porObra: porObra, global: global, config: config);
     await Printing.sharePdf(bytes: bytes, filename: 'flujo_global.pdf');
   }
 
   Future<void> _exportarNominaGlobal(WidgetRef ref) async {
+    final dia = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      helpText: 'Semana de la nómina',
+    );
+    if (dia == null) return;
     final obras = ref.read(obrasProvider).asData?.value ?? [];
     final puestos = await ref.read(puestoRepositoryProvider).getAll();
-    final inicio = Semana.inicioSemana(DateTime.now());
+    final inicio = Semana.inicioSemana(dia);
     final fin = Semana.finSemana(inicio);
     final colabRepo = ref.read(colaboradorRepositoryProvider);
     final asisRepo = ref.read(asistenciaRepositoryProvider);
@@ -309,7 +323,10 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
       );
       if (summary.items.isNotEmpty) datos.add((obra: o.nombre, summary: summary));
     }
-    final config = await PdfPrefs.load();
+    final base = await PdfPrefs.load();
+    if (!mounted) return;
+    final config = await showPdfPreDialog(context, base);
+    if (config == null) return;
     final bytes = await PdfService.nominaGlobal(
         datos: datos, rango: '${Fmt.date(inicio)} – ${Fmt.date(fin)}', config: config);
     await Printing.sharePdf(bytes: bytes, filename: 'nomina_global.pdf');
@@ -336,7 +353,10 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
           .toList();
       if (filas.isNotEmpty) datos.add((obra: o.nombre, filas: filas));
     }
-    final config = await PdfPrefs.load();
+    final base = await PdfPrefs.load();
+    if (!mounted) return;
+    final config = await showPdfPreDialog(context, base);
+    if (config == null) return;
     final bytes = await PdfService.asistenciasGlobal(
         datos: datos, rango: '${Fmt.date(inicio)} – ${Fmt.date(fin)}', config: config);
     await Printing.sharePdf(bytes: bytes, filename: 'asistencias_global.pdf');
@@ -354,7 +374,10 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
       );
       datos.add((proyecto: c.nombreProyecto, cliente: c.cliente, totales: totales));
     }
-    final config = await PdfPrefs.load();
+    final base = await PdfPrefs.load();
+    if (!mounted) return;
+    final config = await showPdfPreDialog(context, base);
+    if (config == null) return;
     final bytes = await PdfService.presupuestosGlobal(datos: datos, config: config);
     await Printing.sharePdf(bytes: bytes, filename: 'presupuestos_global.pdf');
   }

@@ -7,7 +7,7 @@ import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
 import '../../data/providers.dart';
 
-enum _Sort { nombreAsc, nombreDesc, puesto }
+enum _Sort { nombreAsc, nombreDesc, puesto, obra }
 
 class ColaboradoresScreen extends ConsumerStatefulWidget {
   const ColaboradoresScreen({super.key});
@@ -39,6 +39,7 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
               PopupMenuItem(value: _Sort.nombreAsc, child: Text('Nombre (A-Z)')),
               PopupMenuItem(value: _Sort.nombreDesc, child: Text('Nombre (Z-A)')),
               PopupMenuItem(value: _Sort.puesto, child: Text('Por puesto')),
+              PopupMenuItem(value: _Sort.obra, child: Text('Por obra asignada')),
             ],
           ),
           IconButton(
@@ -79,6 +80,10 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
             case _Sort.puesto:
               lista.sort((a, b) => (puestoNombre[a.puestoId] ?? '')
                   .compareTo(puestoNombre[b.puestoId] ?? ''));
+            case _Sort.obra:
+              final obraMap = ref.watch(colaboradorObraMapProvider).asData?.value ?? {};
+              lista.sort((a, b) =>
+                  (obraMap[a.id] ?? 'zzz').compareTo(obraMap[b.id] ?? 'zzz'));
           }
           if (lista.isEmpty) {
             return const Center(

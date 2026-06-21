@@ -22,6 +22,19 @@ class _CatalogoScreenState extends ConsumerState<CatalogoScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Catálogo de conceptos'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.cloud_download_outlined),
+            tooltip: 'Cargar catálogo oficial',
+            onPressed: () async {
+              final n = await ref.read(catalogoRepositoryProvider).cargarOficial();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('$n conceptos oficiales agregados.')));
+              }
+            },
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56),
           child: Padding(

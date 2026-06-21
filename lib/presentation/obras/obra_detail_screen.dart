@@ -1,6 +1,8 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:printing/printing.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
@@ -10,6 +12,7 @@ import '../../domain/logic/flujo_calculator.dart';
 import '../../domain/logic/nomina_calculator.dart';
 import '../../domain/mappers.dart';
 import '../../pdf/pdf_service.dart';
+import '../pdf_pre_dialog.dart';
 
 class ObraDetailScreen extends ConsumerStatefulWidget {
   final Obra obra;
@@ -42,6 +45,11 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
         title: Text(widget.obra.nombre),
         actions: [
           IconButton(
+            icon: const Icon(Icons.swap_horiz),
+            tooltip: 'Cambiar a obra',
+            onPressed: _cambiarObra,
+          ),
+          IconButton(
             icon: const Icon(Icons.picture_as_pdf),
             tooltip: 'Exportar PDF (Nómina/Caja)',
             onPressed: _exportarPdf,
@@ -70,8 +78,36 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     );
   }
 
+  Future<void> _cambiarObra() async {
+    final obras = ref.read(obrasProvider).asData?.value ?? [];
+    final otras = obras.where((o) => o.id != _obraId).toList();
+    if (otras.isEmpty) {
+      _snack('No hay otras obras.');
+      return;
+    }
+    final sel = await showDialog<Obra>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Cambiar a obra'),
+        children: otras
+            .map((o) => SimpleDialogOption(
+                  onPressed: () => Navigator.pop(ctx, o),
+                  child: Text(o.nombre),
+                ))
+            .toList(),
+      ),
+    );
+    if (sel != null && mounted) {
+      Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => ObraDetailScreen(obra: sel)));
+    }
+  }
+
   Future<void> _exportarPdf() async {
-    final config = await PdfPrefs.load();
+    final base = await PdfPrefs.load();
+    if (!mounted) return;
+    final config = await showPdfPreDialog(context, base);
+    if (config == null) return;
     final idx = _tab.index;
     if (idx == 2) {
       // Nómina de la semana activa
@@ -145,36 +181,114 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     );
   }
 
+  Future<void> _asignar(String colaboradorId) =>
+      ref.read(colaboradorRepositoryProvider).asignarObra(
+            ObraColaboradorCompanion.insert(
+              obraId: _obraId,
+              colaboradorId: colaboradorId,
+              fechaIngreso: DateTime.now().millisecondsSinceEpoch,
+            ),
+          );
+
   Future<void> _asignarDialog() async {
     final todos = ref.read(colaboradoresProvider).asData?.value ?? [];
     final asignados = ref.read(colaboradoresPorObraProvider(_obraId)).asData?.value ?? [];
     final asignadosIds = asignados.map((c) => c.id).toSet();
     final disponibles = todos.where((c) => !asignadosIds.contains(c.id)).toList();
 
-    if (disponibles.isEmpty) {
-      _snack('No hay colaboradores disponibles. Crea más en Equipo.');
-      return;
-    }
     await showModalBottomSheet<void>(
       context: context,
       builder: (ctx) => ListView(
-        children: disponibles
-            .map((c) => ListTile(
+        children: [
+          ListTile(
+            leading: const CircleAvatar(child: Icon(Icons.person_add_alt)),
+            title: const Text('Crear nuevo colaborador'),
+            onTap: () {
+              Navigator.pop(ctx);
+              _crearColaboradorInline();
+            },
+          ),
+          const Divider(),
+          if (disponibles.isEmpty)
+            const ListTile(title: Text('No hay colaboradores disponibles.'))
+          else
+            ...disponibles.map((c) => ListTile(
                   leading: CircleAvatar(child: Text(_ini(c.nombre))),
                   title: Text(c.nombre),
                   subtitle: Text(c.tipoPago == 'DIA' ? 'Por día' : 'Por destajo'),
                   onTap: () async {
-                    await ref.read(colaboradorRepositoryProvider).asignarObra(
-                          ObraColaboradorCompanion.insert(
-                            obraId: _obraId,
-                            colaboradorId: c.id,
-                            fechaIngreso: DateTime.now().millisecondsSinceEpoch,
-                          ),
-                        );
+                    await _asignar(c.id);
                     if (ctx.mounted) Navigator.pop(ctx);
                   },
-                ))
-            .toList(),
+                )),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _crearColaboradorInline() async {
+    final puestos = ref.read(puestosProvider).asData?.value ?? [];
+    if (puestos.isEmpty) {
+      _snack('Primero crea un puesto en Configuración.');
+      return;
+    }
+    final nombreCtrl = TextEditingController();
+    String puestoId = puestos.first.id;
+    String tipoPago = 'DIA';
+    final formKey = GlobalKey<FormState>();
+    final id = const Uuid().v4();
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => AlertDialog(
+          title: const Text('Nuevo colaborador'),
+          content: Form(
+            key: formKey,
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              TextFormField(
+                controller: nombreCtrl,
+                decoration: const InputDecoration(labelText: 'Nombre'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                initialValue: puestoId,
+                decoration: const InputDecoration(labelText: 'Puesto'),
+                items: puestos.map((p) => DropdownMenuItem(value: p.id, child: Text(p.nombre))).toList(),
+                onChanged: (v) => setS(() => puestoId = v ?? puestoId),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                initialValue: tipoPago,
+                decoration: const InputDecoration(labelText: 'Tipo de pago'),
+                items: const [
+                  DropdownMenuItem(value: 'DIA', child: Text('Por día')),
+                  DropdownMenuItem(value: 'DESTAJO', child: Text('Por destajo')),
+                ],
+                onChanged: (v) => setS(() => tipoPago = v ?? 'DIA'),
+              ),
+            ]),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+            FilledButton(
+              onPressed: () async {
+                if (!formKey.currentState!.validate()) return;
+                await ref.read(colaboradorRepositoryProvider).upsert(ColaboradoresCompanion(
+                      id: Value(id),
+                      nombre: Value(nombreCtrl.text.trim()),
+                      puestoId: Value(puestoId),
+                      tipoPago: Value(tipoPago),
+                      activo: const Value(true),
+                    ));
+                await _asignar(id);
+                if (ctx.mounted) Navigator.pop(ctx);
+              },
+              child: const Text('Crear y asignar'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -435,7 +549,8 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                         onTap: esDia
                             ? () => _detalleAsistenciaDialog(it.colaborador.nombre,
                                 it.colaborador.id, asistencias)
-                            : () => _agregarDestajoDialog(it.colaborador.id),
+                            : () => _destajosDialog(it.colaborador.id,
+                                it.colaborador.nombre, destajos),
                       );
                     }).toList(),
                   ),
@@ -548,6 +663,49 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
           nominaId: 'nom_${lunes}_$_obraId',
         );
     if (mounted) _snack('Nómina registrada en caja.');
+  }
+
+  void _destajosDialog(String colaboradorId, String nombre, List<Destajo> destajos) {
+    final propios = destajos.where((d) => d.colaboradorId == colaboradorId).toList();
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Destajos — $nombre'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            if (propios.isEmpty)
+              const Padding(padding: EdgeInsets.all(8), child: Text('Sin destajos esta semana.'))
+            else
+              ...propios.map((d) => ListTile(
+                    dense: true,
+                    title: Text(d.concepto),
+                    trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Text(Fmt.money(d.monto)),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, size: 20),
+                        onPressed: () async {
+                          await ref.read(destajoRepositoryProvider).delete(d.id);
+                          if (ctx.mounted) Navigator.pop(ctx);
+                        },
+                      ),
+                    ]),
+                  )),
+          ]),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cerrar')),
+          FilledButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _agregarDestajoDialog(colaboradorId);
+            },
+            icon: const Icon(Icons.add),
+            label: const Text('Agregar'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _agregarDestajoDialog(String colaboradorId) async {

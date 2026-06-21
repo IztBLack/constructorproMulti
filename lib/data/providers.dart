@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart'; // StateProvider
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/db/app_database.dart';
 import 'backup/backup_service.dart';
@@ -10,6 +11,17 @@ import 'repositories_cotizacion.dart';
 
 /// Pestaña seleccionada del shell inferior (para accesos rápidos del dashboard).
 final homeTabProvider = StateProvider<int>((ref) => 0);
+
+/// IVA por defecto (%) configurable, persistido en SharedPreferences.
+final ivaPorcentajeProvider = FutureProvider<double>((ref) async {
+  final p = await SharedPreferences.getInstance();
+  return p.getDouble('iva_pct') ?? 16.0;
+});
+
+Future<void> setIvaPorcentaje(double v) async {
+  final p = await SharedPreferences.getInstance();
+  await p.setDouble('iva_pct', v);
+}
 
 /// Instancia única de la base de datos Drift.
 final databaseProvider = Provider<AppDatabase>((ref) {
@@ -49,6 +61,10 @@ final puestosProvider = StreamProvider<List<Puesto>>(
 
 final colaboradoresProvider = StreamProvider<List<Colaborador>>(
     (ref) => ref.watch(colaboradorRepositoryProvider).watchAll());
+
+/// colaboradorId → nombre de obra asignada (para ordenar por obra).
+final colaboradorObraMapProvider = FutureProvider<Map<String, String>>(
+    (ref) => ref.watch(colaboradorRepositoryProvider).obraPorColaborador());
 
 /// Conteo de conceptos en el catálogo (para verificar el seed).
 final catalogoCountProvider = FutureProvider<int>(

@@ -19,6 +19,7 @@ import '../../domain/logic/presupuesto_calculator.dart';
 import '../../domain/mappers.dart';
 import '../../domain/text_import_parser.dart';
 import '../../pdf/pdf_service.dart';
+import '../pdf_pre_dialog.dart';
 
 class CotizacionDetailScreen extends ConsumerStatefulWidget {
   final Cotizacion cotizacion;
@@ -218,12 +219,18 @@ class _State extends ConsumerState<CotizacionDetailScreen>
       aportadoPorPartida[m.partidaId!] =
           (aportadoPorPartida[m.partidaId!] ?? 0) + m.monto;
     }
+    final ivaPct = await ref.read(ivaPorcentajeProvider.future);
     final totales = const PresupuestoCalculator().calcular(
       partidas: partidas.map(partidaToDomain).toList(),
       ivaEnabled: _ivaEnabled,
+      ivaPercentage: ivaPct,
+      descuentoPorcentaje: widget.cotizacion.descuento,
       totalPagado: totalPagado,
     );
-    final config = await PdfPrefs.load();
+    final base = await PdfPrefs.load();
+    if (!mounted) return;
+    final config = await showPdfPreDialog(context, base);
+    if (config == null) return;
     final bytes = await PdfService.presupuesto(
       cot: widget.cotizacion,
       secciones: secciones,
@@ -259,9 +266,12 @@ class _State extends ConsumerState<CotizacionDetailScreen>
                 (aportadoPorPartida[m.partidaId!] ?? 0) + m.monto;
           }
 
+          final ivaPct = ref.watch(ivaPorcentajeProvider).asData?.value ?? 16.0;
           final totales = const PresupuestoCalculator().calcular(
             partidas: partidas.map(partidaToDomain).toList(),
             ivaEnabled: _ivaEnabled,
+            ivaPercentage: ivaPct,
+            descuentoPorcentaje: widget.cotizacion.descuento,
             totalPagado: totalPagado,
           );
 
@@ -365,7 +375,10 @@ class _State extends ConsumerState<CotizacionDetailScreen>
       padding: const EdgeInsets.all(16),
       child: Column(children: [
         row('Subtotal', t.subtotal),
-        if (_ivaEnabled) row('IVA 16%', t.iva),
+        if (t.descuento > 0)
+          row('Descuento (${widget.cotizacion.descuento.toStringAsFixed(0)}%)', -t.descuento),
+        if (_ivaEnabled)
+          row('IVA (${(ref.watch(ivaPorcentajeProvider).asData?.value ?? 16).toStringAsFixed(0)}%)', t.iva),
         row('TOTAL', t.total, bold: true),
         if (t.total != t.saldoRestante)
           row('Saldo por cobrar', t.saldoRestante, bold: true, color: cs.primary),
@@ -574,10 +587,12 @@ class _State extends ConsumerState<CotizacionDetailScreen>
         text: partida?.precioUnitario.toString() ?? prePrecio?.toString() ?? '');
     final formKey = GlobalKey<FormState>();
     final repo = ref.read(partidaRepositoryProvider);
+    List<CatalogoConcepto> sugerencias = [];
 
     await showDialog<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => AlertDialog(
         title: Text(partida == null ? 'Nueva partida' : 'Editar partida'),
         content: Form(
           key: formKey,
@@ -606,9 +621,37 @@ class _State extends ConsumerState<CotizacionDetailScreen>
               ),
               TextFormField(
                 controller: descCtrl,
-                decoration: const InputDecoration(labelText: 'Descripción'),
+                decoration: const InputDecoration(
+                    labelText: 'Descripción',
+                    helperText: 'Escribe para ver sugerencias del catálogo'),
                 validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+                onChanged: (v) async {
+                  if (v.trim().length >= 2) {
+                    final r = await ref.read(catalogoRepositoryProvider).buscar(v.trim());
+                    setS(() => sugerencias = r.take(6).toList());
+                  } else {
+                    setS(() => sugerencias = []);
+                  }
+                },
               ),
+              if (sugerencias.isNotEmpty)
+                ...sugerencias.map((c) => ListTile(
+                      dense: true,
+                      visualDensity: VisualDensity.compact,
+                      leading: const Icon(Icons.menu_book, size: 18),
+                      title: Text('${c.clave} · ${c.descripcion}',
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12)),
+                      subtitle: Text('${c.unidad} · ${Fmt.money(c.precioUnitarioDefault)}',
+                          style: const TextStyle(fontSize: 11)),
+                      onTap: () {
+                        claveCtrl.text = c.clave;
+                        descCtrl.text = c.descripcion;
+                        unidadCtrl.text = c.unidad;
+                        precioCtrl.text = c.precioUnitarioDefault.toString();
+                        setS(() => sugerencias = []);
+                      },
+                    )),
               TextFormField(controller: unidadCtrl, decoration: const InputDecoration(labelText: 'Unidad (M2, ML, PZA…)')),
               TextFormField(
                 controller: cantidadCtrl,
@@ -647,6 +690,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
             child: const Text('Guardar'),
           ),
         ],
+        ),
       ),
     );
   }

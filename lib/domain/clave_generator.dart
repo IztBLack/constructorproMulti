@@ -29,10 +29,19 @@ class ClaveGenerator {
     'circuito': 'IE', 'canalizacion': 'IE',
     'sanitaria': 'IS', 'hidraulica': 'IS', 'tuberia': 'IS', 'drenaje': 'IS',
     'registro': 'REG', 'pozo': 'POZ', 'inodoro': 'IS', 'lavabo': 'IS',
-    'regadera': 'IS', 'mueble': 'IS', 'wc': 'IS',
-    'escalera': 'ESC', 'rampa': 'ESC', 'forjado': 'ESC',
-    'ventana': 'CAN', 'puerta': 'CAR', 'canceleria': 'CAN', 'herreria': 'HER',
-    'vidrio': 'VID',
+    'regadera': 'IS', 'wc': 'IS',
+    'escalera': 'ESC', 'forjado': 'ESC', 'rampa': 'RAM',
+    'canceleria': 'CAN', 'cancel': 'CAN', 'vidrio': 'VID',
+    'puerta': 'PTA', 'ventana': 'VEN', 'madera': 'MAD', 'mueble': 'MUE',
+    'carpinteria': 'CAR',
+    'herreria': 'HER', 'acero': 'ACE', 'soldadura': 'SOL', 'perfil': 'PER',
+    'lamina': 'LAM', 'fierro': 'FIE',
+    'aire acondicionado': 'AC', 'minisplit': 'AC', 'ducto': 'AC',
+    'jardinera': 'JAR', 'andador': 'AND', 'estacionamiento': 'EST',
+    'suministro': 'SUM', 'fabricacion': 'FAB', 'instalacion': 'INST',
+    'colocacion': 'COLOC', 'construccion': 'CONS', 'habilitado': 'HAB',
+    'vaciado': 'VAC', 'cimbrado': 'CIM', 'armado': 'ARM', 'vibrado': 'VIB',
+    'bombeado': 'BOM', 'impermeabilizar': 'IMP',
   };
 
   static String _sinAcentos(String s) {
