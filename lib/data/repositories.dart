@@ -88,18 +88,19 @@ class ColaboradorRepository {
               fechaSalida: Value(DateTime.now().millisecondsSinceEpoch)));
 
   /// Mapa colaboradorId → nombre de una obra activa asignada (para ordenar).
-  Future<Map<String, String>> obraPorColaborador() async {
+  Stream<Map<String, String>> watchObraPorColaborador() {
     final q = db.select(db.obraColaborador).join([
       innerJoin(db.obras, db.obras.id.equalsExp(db.obraColaborador.obraId)),
     ])
       ..where(db.obraColaborador.fechaSalida.isNull());
-    final rows = await q.get();
-    final map = <String, String>{};
-    for (final r in rows) {
-      map.putIfAbsent(
-          r.readTable(db.obraColaborador).colaboradorId, () => r.readTable(db.obras).nombre);
-    }
-    return map;
+    return q.watch().map((rows) {
+      final map = <String, String>{};
+      for (final r in rows) {
+        map[r.readTable(db.obraColaborador).colaboradorId] =
+            r.readTable(db.obras).nombre;
+      }
+      return map;
+    });
   }
 
   /// Historial de obras del colaborador (con fechas de ingreso/salida).
