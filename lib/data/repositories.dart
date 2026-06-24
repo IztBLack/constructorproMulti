@@ -74,8 +74,24 @@ class ColaboradorRepository {
           .write(ColaboradoresCompanion(activo: Value(activo)));
 
   // --- Asignación N:N obra ↔ colaborador ---
-  Future<void> asignarObra(ObraColaboradorCompanion rel) =>
-      db.into(db.obraColaborador).insertOnConflictUpdate(rel);
+  /// Asigna (o revive) la relación obra↔colaborador. Si ya existía con
+  /// fechaSalida (estaba desvinculado), la limpia y reinicia fechaIngreso.
+  /// Espejo del `asignarObra` de Kotlin: nunca duplica ni deja colgado el
+  /// tombstone de salida.
+  Future<void> asignarObra({
+    required String obraId,
+    required String colaboradorId,
+    double? salarioDiaOverride,
+  }) =>
+      db.into(db.obraColaborador).insertOnConflictUpdate(
+            ObraColaboradorCompanion(
+              obraId: Value(obraId),
+              colaboradorId: Value(colaboradorId),
+              fechaIngreso: Value(DateTime.now().millisecondsSinceEpoch),
+              fechaSalida: const Value(null),
+              salarioDiaOverride: Value(salarioDiaOverride),
+            ),
+          );
 
   /// Desvincula con BAJA LÓGICA: marca fechaSalida (conserva el historial).
   Future<void> desvincular(String obraId, String colaboradorId) =>
@@ -87,17 +103,21 @@ class ColaboradorRepository {
           .write(ObraColaboradorCompanion(
               fechaSalida: Value(DateTime.now().millisecondsSinceEpoch)));
 
-  /// Mapa colaboradorId → nombre de una obra activa asignada (para ordenar).
-  Stream<Map<String, String>> watchObraPorColaborador() {
+  /// Mapa colaboradorId → obras ACTIVAS asignadas (reactivo). Espejo del
+  /// `colaboradorObras` de Kotlin: un colaborador puede estar en varias obras
+  /// a la vez. Solo cuenta relaciones sin fechaSalida y obras activas.
+  Stream<Map<String, List<Obra>>> watchObrasPorColaborador() {
     final q = db.select(db.obraColaborador).join([
       innerJoin(db.obras, db.obras.id.equalsExp(db.obraColaborador.obraId)),
     ])
-      ..where(db.obraColaborador.fechaSalida.isNull());
+      ..where(db.obraColaborador.fechaSalida.isNull() &
+          db.obras.activa.equals(true))
+      ..orderBy([OrderingTerm(expression: db.obras.nombre)]);
     return q.watch().map((rows) {
-      final map = <String, String>{};
+      final map = <String, List<Obra>>{};
       for (final r in rows) {
-        map[r.readTable(db.obraColaborador).colaboradorId] =
-            r.readTable(db.obras).nombre;
+        final colId = r.readTable(db.obraColaborador).colaboradorId;
+        (map[colId] ??= []).add(r.readTable(db.obras));
       }
       return map;
     });

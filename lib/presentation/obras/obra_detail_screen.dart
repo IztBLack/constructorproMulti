@@ -183,11 +183,8 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
 
   Future<void> _asignar(String colaboradorId) =>
       ref.read(colaboradorRepositoryProvider).asignarObra(
-            ObraColaboradorCompanion.insert(
-              obraId: _obraId,
-              colaboradorId: colaboradorId,
-              fechaIngreso: DateTime.now().millisecondsSinceEpoch,
-            ),
+            obraId: _obraId,
+            colaboradorId: colaboradorId,
           );
 
   Future<void> _asignarDialog() async {

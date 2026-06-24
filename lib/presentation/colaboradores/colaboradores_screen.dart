@@ -27,6 +27,9 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
     final colaboradoresAsync = ref.watch(colaboradoresProvider);
     final puestos = ref.watch(puestosProvider).asData?.value ?? const <Puesto>[];
     final puestoNombre = {for (final p in puestos) p.id: p.nombre};
+    final obrasPorColab =
+        ref.watch(colaboradorObrasProvider).asData?.value ??
+            const <String, List<Obra>>{};
 
     return Scaffold(
       appBar: AppBar(
@@ -81,9 +84,18 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
               lista.sort((a, b) => (puestoNombre[a.puestoId] ?? '')
                   .compareTo(puestoNombre[b.puestoId] ?? ''));
             case _Sort.obra:
-              final obraMap = ref.watch(colaboradorObraMapProvider).asData?.value ?? {};
-              lista.sort((a, b) =>
-                  (obraMap[a.id] ?? 'zzz').compareTo(obraMap[b.id] ?? 'zzz'));
+              String obraKey(Colaborador c) {
+                final obras = obrasPorColab[c.id] ?? const <Obra>[];
+                if (obras.isEmpty) return 'zzz';
+                return obras
+                    .map((o) => o.nombre.toLowerCase())
+                    .reduce((a, b) => a.compareTo(b) <= 0 ? a : b);
+              }
+
+              lista.sort((a, b) {
+                final cmp = obraKey(a).compareTo(obraKey(b));
+                return cmp != 0 ? cmp : a.nombre.compareTo(b.nombre);
+              });
           }
           if (lista.isEmpty) {
             return const Center(
@@ -96,7 +108,9 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
             itemBuilder: (context, i) {
               final c = lista[i];
               final tipo = c.tipoPago == 'DIA' ? 'Por día' : 'Por destajo';
+              final obras = obrasPorColab[c.id] ?? const <Obra>[];
               return ListTile(
+                isThreeLine: true,
                 leading: CircleAvatar(
                   backgroundColor: c.activo ? null : Colors.grey,
                   child: Text(c.nombre.isNotEmpty ? c.nombre[0].toUpperCase() : '?'),
@@ -104,14 +118,42 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
                 title: Text(c.nombre,
                     style: TextStyle(
                         decoration: c.activo ? null : TextDecoration.lineThrough)),
-                subtitle: Text(
-                    '${puestoNombre[c.puestoId] ?? 'Sin puesto'} · $tipo${c.activo ? '' : ' · INACTIVO'}'),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                        '${puestoNombre[c.puestoId] ?? 'Sin puesto'} · $tipo${c.activo ? '' : ' · INACTIVO'}'),
+                    const SizedBox(height: 4),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        ...obras.map((o) => Chip(
+                              label: Text(o.nombre),
+                              visualDensity: VisualDensity.compact,
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                              avatar: const Icon(Icons.check, size: 16),
+                            )),
+                        ActionChip(
+                          label: const Text('Asignar'),
+                          avatar: const Icon(Icons.add, size: 16),
+                          visualDensity: VisualDensity.compact,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          onPressed: () => _asignarObraSheet(c),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
                 trailing: PopupMenuButton<String>(
                   onSelected: (v) async {
                     final repo = ref.read(colaboradorRepositoryProvider);
                     switch (v) {
                       case 'editar':
                         _showDialog(c, puestos);
+                      case 'asignar':
+                        _asignarObraSheet(c);
                       case 'toggle':
                         await repo.setActivo(c.id, !c.activo);
                       case 'historial':
@@ -122,6 +164,8 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
                   },
                   itemBuilder: (_) => [
                     const PopupMenuItem(value: 'editar', child: Text('Editar')),
+                    const PopupMenuItem(
+                        value: 'asignar', child: Text('Asignar a obra')),
                     PopupMenuItem(
                         value: 'toggle',
                         child: Text(c.activo ? 'Marcar inactivo' : 'Marcar activo')),
@@ -148,6 +192,84 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
         icon: const Icon(Icons.person_add),
         label: const Text('Nuevo'),
       ),
+    );
+  }
+
+  /// Bottom sheet para asignar/desvincular el colaborador a varias obras
+  /// activas (espejo del bottom sheet de Kotlin). Tocar una obra asignada la
+  /// desvincula (con confirmación); tocar una libre la asigna.
+  Future<void> _asignarObraSheet(Colaborador c) async {
+    final obras = (ref.read(obrasProvider).asData?.value ?? const <Obra>[])
+        .where((o) => o.activa)
+        .toList();
+    if (obras.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No hay obras activas.')));
+      return;
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) {
+        return Consumer(builder: (ctx, ref2, _) {
+          final asignadas = ref2.watch(colaboradorObrasProvider).asData?.value ??
+              const <String, List<Obra>>{};
+          final asignadasIds =
+              (asignadas[c.id] ?? const <Obra>[]).map((o) => o.id).toSet();
+          final repo = ref2.read(colaboradorRepositoryProvider);
+          return ListView(
+            shrinkWrap: true,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text('Obras de ${c.nombre}',
+                    style: Theme.of(ctx).textTheme.titleMedium),
+              ),
+              const Divider(height: 1),
+              ...obras.map((o) {
+                final asignada = asignadasIds.contains(o.id);
+                return ListTile(
+                  leading: Icon(
+                      asignada ? Icons.check_circle : Icons.circle_outlined,
+                      color: asignada
+                          ? Theme.of(ctx).colorScheme.primary
+                          : null),
+                  title: Text(o.nombre),
+                  subtitle: o.cliente.isEmpty ? null : Text(o.cliente),
+                  trailing: asignada
+                      ? const Text('Asignado',
+                          style: TextStyle(fontWeight: FontWeight.bold))
+                      : null,
+                  onTap: () async {
+                    if (asignada) {
+                      final ok = await showDialog<bool>(
+                            context: ctx,
+                            builder: (d) => AlertDialog(
+                              title: const Text('Desvincular obra'),
+                              content: Text(
+                                  '¿Desvincular a "${c.nombre}" de "${o.nombre}"?'),
+                              actions: [
+                                TextButton(
+                                    onPressed: () => Navigator.pop(d, false),
+                                    child: const Text('Cancelar')),
+                                FilledButton(
+                                    onPressed: () => Navigator.pop(d, true),
+                                    child: const Text('Desvincular')),
+                              ],
+                            ),
+                          ) ??
+                          false;
+                      if (ok) await repo.desvincular(o.id, c.id);
+                    } else {
+                      await repo.asignarObra(obraId: o.id, colaboradorId: c.id);
+                    }
+                  },
+                );
+              }),
+              const SizedBox(height: 8),
+            ],
+          );
+        });
+      },
     );
   }
 

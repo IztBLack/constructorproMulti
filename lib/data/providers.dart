@@ -62,9 +62,9 @@ final puestosProvider = StreamProvider<List<Puesto>>(
 final colaboradoresProvider = StreamProvider<List<Colaborador>>(
     (ref) => ref.watch(colaboradorRepositoryProvider).watchAll());
 
-/// colaboradorId → nombre de obra asignada (para ordenar por obra).
-final colaboradorObraMapProvider = StreamProvider<Map<String, String>>(
-    (ref) => ref.watch(colaboradorRepositoryProvider).watchObraPorColaborador());
+/// colaboradorId → obras activas asignadas (un colaborador puede tener varias).
+final colaboradorObrasProvider = StreamProvider<Map<String, List<Obra>>>(
+    (ref) => ref.watch(colaboradorRepositoryProvider).watchObrasPorColaborador());
 
 /// Conteo de conceptos en el catálogo (para verificar el seed).
 final catalogoCountProvider = FutureProvider<int>(
