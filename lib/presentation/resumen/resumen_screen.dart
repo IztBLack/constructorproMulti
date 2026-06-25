@@ -12,6 +12,7 @@ import '../../domain/mappers.dart';
 import '../../pdf/pdf_service.dart';
 import '../asistencia/pase_lista_screen.dart';
 import '../configuraciones/catalogo_screen.dart';
+import '../obras/obra_detail_screen.dart';
 import '../pdf_pre_dialog.dart';
 
 const _meses = [
@@ -60,6 +61,16 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
     final movsAsync = ref.watch(movimientosTodosProvider);
     final colabs = ref.watch(colaboradoresProvider).asData?.value ?? [];
     final cots = ref.watch(cotizacionesProvider).asData?.value ?? [];
+    final pipeline = ref.watch(pipelineValueProvider).asData?.value ?? 0.0;
+    final obrasPorColab =
+        ref.watch(colaboradorObrasProvider).asData?.value ?? const {};
+    // obraId → # de colaboradores activos asignados
+    final equipoPorObra = <String, int>{};
+    obrasPorColab.forEach((_, obras) {
+      for (final o in obras) {
+        equipoPorObra[o.id] = (equipoPorObra[o.id] ?? 0) + 1;
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -144,6 +155,20 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
                 _contador('Cotizaciones', cots.length, Icons.description),
               ]),
               const SizedBox(height: 8),
+              // Pipeline: valor de cotizaciones pendientes
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.trending_up, color: Colors.teal),
+                  title: const Text('Pipeline'),
+                  subtitle: const Text('Cotizaciones pendientes (borrador/enviada)'),
+                  trailing: Text(Fmt.money(pipeline),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.teal)),
+                ),
+              ),
+              const SizedBox(height: 8),
               // Accesos rápidos
               _accesosRapidos(),
               const SizedBox(height: 12),
@@ -192,14 +217,20 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
               else
                 ...obras.map((o) {
                   final r = porObra[o.id]!;
+                  final nEquipo = equipoPorObra[o.id] ?? 0;
+                  final sub = o.cliente.isEmpty
+                      ? '$nEquipo en equipo'
+                      : '${o.cliente} · $nEquipo en equipo';
                   return Card(
                     child: ListTile(
                       title: Text(o.nombre),
-                      subtitle: Text(o.cliente),
+                      subtitle: Text(sub),
                       trailing: Text(Fmt.money(r.saldo),
                           style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: r.saldo >= 0 ? Colors.green : Colors.red)),
+                      onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => ObraDetailScreen(obra: o))),
                     ),
                   );
                 }),

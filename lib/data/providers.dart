@@ -120,6 +120,10 @@ final catalogoTodoProvider = StreamProvider<List<CatalogoConcepto>>(
 final cotizacionesProvider = StreamProvider<List<Cotizacion>>(
     (ref) => ref.watch(cotizacionRepositoryProvider).watchAll());
 
+/// Valor total de cotizaciones pendientes (BORRADOR/ENVIADA) — KPI "Pipeline".
+final pipelineValueProvider = StreamProvider<double>(
+    (ref) => ref.watch(cotizacionRepositoryProvider).watchPipeline());
+
 final seccionesProvider = StreamProvider.family<List<Seccion>, String>(
     (ref, cotId) => ref.watch(seccionRepositoryProvider).watchByCotizacion(cotId));
 

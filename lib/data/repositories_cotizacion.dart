@@ -33,6 +33,40 @@ class CotizacionRepository {
     });
   }
 
+  /// Valor "pipeline": suma de cotizaciones PENDIENTES (BORRADOR / ENVIADA),
+  /// sumando cantidad×precio de cada partida (×1.16 si la cotización lleva IVA).
+  /// Espejo del totalPipeline del dashboard de Kotlin. Reactivo.
+  Stream<double> watchPipeline() {
+    final query = db.select(db.cotizaciones).join([
+      leftOuterJoin(
+          db.secciones, db.secciones.cotizacionId.equalsExp(db.cotizaciones.id)),
+      leftOuterJoin(
+          db.partidas, db.partidas.seccionId.equalsExp(db.secciones.id)),
+    ])
+      ..where(db.cotizaciones.estado.isIn(['BORRADOR', 'ENVIADA']));
+    return query.watch().map((rows) {
+      // subtotal por cotización + flag de IVA
+      final subtotal = <String, double>{};
+      final iva = <String, bool>{};
+      for (final r in rows) {
+        final cot = r.readTable(db.cotizaciones);
+        iva[cot.id] = cot.ivaEnabled;
+        final p = r.readTableOrNull(db.partidas);
+        if (p != null) {
+          subtotal[cot.id] =
+              (subtotal[cot.id] ?? 0) + p.cantidad * p.precioUnitario;
+        } else {
+          subtotal.putIfAbsent(cot.id, () => 0);
+        }
+      }
+      var total = 0.0;
+      subtotal.forEach((id, sub) {
+        total += (iva[id] ?? false) ? sub * 1.16 : sub;
+      });
+      return total;
+    });
+  }
+
   /// Cotización ligada a una obra (por obraId o por cotizacionOrigen).
   Future<Cotizacion?> cotizacionDeObra(String obraId) async {
     final porObra = await (db.select(db.cotizaciones)
