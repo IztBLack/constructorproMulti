@@ -1,8 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:archive/archive.dart';
 import 'package:drift/drift.dart';
+import 'package:path/path.dart' as p;
 
 import '../../core/db/app_database.dart';
+import '../../core/storage/app_paths.dart';
 
 /// Importa/exporta el respaldo JSON con el MISMO esquema que produce la app
 /// Kotlin (`BackupData`): un objeto con 13 listas, cada fila con los nombres de
@@ -27,10 +31,45 @@ class BackupService {
       ((root[key] as List?) ?? const [])
           .cast<Map<String, dynamic>>();
 
+  /// Decodifica y valida que el JSON sea realmente un respaldo de ConstructorPro
+  /// ANTES de tocar la base de datos. Restaurar borra todo el contenido actual,
+  /// así que un archivo inválido o ajeno no debe llegar a esa fase.
+  static Map<String, dynamic> _parseAndValidate(String jsonString) {
+    final dynamic decoded;
+    try {
+      decoded = json.decode(jsonString);
+    } on FormatException {
+      throw const FormatException(
+          'El archivo no es un JSON válido. ¿Seleccionaste el respaldo correcto?');
+    }
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException(
+          'El archivo no tiene el formato de un respaldo de ConstructorPro.');
+    }
+    // Firma mínima de un respaldo real: las tablas núcleo deben venir como listas.
+    const requiredKeys = ['obras', 'colaboradores', 'cotizaciones'];
+    for (final k in requiredKeys) {
+      if (decoded[k] is! List) {
+        throw FormatException(
+            'Respaldo inválido o incompleto: falta la sección "$k". '
+            'No se modificaron tus datos.');
+      }
+    }
+    // Si trae la firma de origen, debe coincidir: así rechazamos un archivo de
+    // otra app que por casualidad tenga esas mismas listas.
+    final app = decoded['app'];
+    if (app != null && app != 'ConstructorPro') {
+      throw const FormatException(
+          'Este respaldo es de otra aplicación, no de ConstructorPro. '
+          'No se modificaron tus datos.');
+    }
+    return decoded;
+  }
+
   // ---------------- Importar ----------------
   /// Restaura desde el JSON de respaldo. Reemplaza TODO el contenido actual.
   Future<void> importFromJson(String jsonString) async {
-    final root = json.decode(jsonString) as Map<String, dynamic>;
+    final root = _parseAndValidate(jsonString);
 
     await db.transaction(() async {
       // Limpia todas las tablas (restauración = reemplazo total).
@@ -213,6 +252,11 @@ class BackupService {
         };
 
     final data = {
+      // Firma de origen: permite validar el respaldo al importar. Los respaldos
+      // antiguos (o de la app Kotlin) sin esta clave se siguen aceptando por
+      // estructura, así que es retrocompatible.
+      'app': 'ConstructorPro',
+      'backupVersion': 1,
       'obras': (await db.select(db.obras).get()).map(obraJson).toList(),
       'puestos': (await db.select(db.puestos).get())
           .map((p) => {
@@ -350,5 +394,62 @@ class BackupService {
     };
 
     return const JsonEncoder.withIndent('  ').convert(data);
+  }
+
+  // ---------------- Respaldo COMPLETO (ZIP: datos + binarios) ----------------
+  /// Exporta un respaldo completo como bytes de un ZIP con esta estructura:
+  ///   `data.json`      -> el mismo contenido que exportToJson() (compatible)
+  ///   `files/<nombre>` -> binarios de los adjuntos de cotización (fotos/planos)
+  /// Incluir los binarios permite restaurar en OTRO dispositivo sin perderlos; el
+  /// JSON por sí solo guarda únicamente referencias a archivos locales.
+  Future<List<int>> exportToZipBytes() async {
+    final archive = Archive();
+
+    final jsonBytes = utf8.encode(await exportToJson());
+    archive.addFile(ArchiveFile('data.json', jsonBytes.length, jsonBytes));
+
+    final archivos = await db.select(db.archivosCotizacion).get();
+    final agregados = <String>{};
+    for (final a in archivos) {
+      final f = File(AppPaths.resolve(a.uri));
+      if (!f.existsSync()) continue;
+      final nombre = p.basename(f.path);
+      if (!agregados.add(nombre)) continue; // evita duplicados por nombre
+      final bytes = await f.readAsBytes();
+      archive.addFile(ArchiveFile('files/$nombre', bytes.length, bytes));
+    }
+
+    return ZipEncoder().encode(archive);
+  }
+
+  /// Restaura desde un respaldo ZIP (datos + binarios). Reemplaza TODO el
+  /// contenido actual. También acepta un ZIP que solo traiga data.json.
+  Future<void> importFromZipBytes(List<int> bytes) async {
+    final Archive archive;
+    try {
+      archive = ZipDecoder().decodeBytes(bytes);
+    } catch (_) {
+      throw const FormatException(
+          'El archivo no es un respaldo ZIP válido de ConstructorPro.');
+    }
+    final dataFile = archive.findFile('data.json');
+    if (dataFile == null) {
+      throw const FormatException(
+          'El respaldo no contiene data.json. ¿Seleccionaste el archivo correcto?');
+    }
+    final jsonString = utf8.decode(dataFile.content as List<int>);
+
+    // Valida ANTES de escribir archivos o tocar la base.
+    _parseAndValidate(jsonString);
+
+    // Restaura los binarios al directorio de documentos vigente.
+    for (final f in archive.files) {
+      if (!f.isFile || !f.name.startsWith('files/')) continue;
+      final destino = File(p.join(AppPaths.documentsDir, p.basename(f.name)));
+      await destino.writeAsBytes(f.content as List<int>);
+    }
+
+    // Restaura los datos (vuelve a validar y reemplaza).
+    await importFromJson(jsonString);
   }
 }

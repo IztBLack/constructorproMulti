@@ -4,6 +4,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../notifications/notification_service.dart';
 
+/// SharedPreferences ya cargado. Se sobreescribe en main() con la instancia real
+/// (precargada antes de runApp) para que los providers lean de forma SÍNCRONA: así
+/// el tema correcto se aplica desde el primer frame (sin parpadeo) y no hay carrera
+/// al arrancar. Lanzar por defecto obliga a configurar el override.
+final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
+  throw UnimplementedError(
+      'sharedPreferencesProvider debe sobreescribirse en main() (ver main.dart).');
+});
+
 /// Modo de tema (sistema/claro/oscuro) persistido en SharedPreferences.
 final themeModeProvider =
     NotifierProvider<ThemeModeNotifier, ThemeMode>(ThemeModeNotifier.new);
@@ -13,14 +22,8 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
 
   @override
   ThemeMode build() {
-    _load();
-    return ThemeMode.system;
-  }
-
-  Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final v = prefs.getString(_key);
-    state = switch (v) {
+    final v = ref.read(sharedPreferencesProvider).getString(_key);
+    return switch (v) {
       'light' => ThemeMode.light,
       'dark' => ThemeMode.dark,
       _ => ThemeMode.system,
@@ -29,8 +32,7 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
 
   Future<void> set(ThemeMode mode) async {
     state = mode;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, mode.name);
+    await ref.read(sharedPreferencesProvider).setString(_key, mode.name);
   }
 }
 
@@ -54,13 +56,8 @@ final reminderProvider =
 class ReminderNotifier extends Notifier<ReminderState> {
   @override
   ReminderState build() {
-    _load();
-    return const ReminderState();
-  }
-
-  Future<void> _load() async {
-    final p = await SharedPreferences.getInstance();
-    state = ReminderState(
+    final p = ref.read(sharedPreferencesProvider);
+    return ReminderState(
       enabled: p.getBool('rem_enabled') ?? false,
       weekday: p.getInt('rem_weekday') ?? 1,
       hour: p.getInt('rem_hour') ?? 8,
@@ -68,7 +65,7 @@ class ReminderNotifier extends Notifier<ReminderState> {
   }
 
   Future<void> _save() async {
-    final p = await SharedPreferences.getInstance();
+    final p = ref.read(sharedPreferencesProvider);
     await p.setBool('rem_enabled', state.enabled);
     await p.setInt('rem_weekday', state.weekday);
     await p.setInt('rem_hour', state.hour);

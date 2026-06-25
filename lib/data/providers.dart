@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart'; // StateProvider
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/db/app_database.dart';
+import '../core/settings/settings_provider.dart'; // sharedPreferencesProvider
 import 'backup/backup_service.dart';
 import 'maintenance_repository.dart';
 import 'repositories.dart';
@@ -13,21 +13,29 @@ import 'repositories_cotizacion.dart';
 final homeTabProvider = StateProvider<int>((ref) => 0);
 
 /// IVA por defecto (%) configurable, persistido en SharedPreferences.
-final ivaPorcentajeProvider = FutureProvider<double>((ref) async {
-  final p = await SharedPreferences.getInstance();
-  return p.getDouble('iva_pct') ?? 16.0;
-});
+/// Notifier síncrono: la UI lee el valor directo (sin AsyncValue) y `set()`
+/// actualiza el estado y notifica a todos los observadores sin invalidación manual.
+final ivaPorcentajeProvider =
+    NotifierProvider<IvaNotifier, double>(IvaNotifier.new);
 
-Future<void> setIvaPorcentaje(double v) async {
-  final p = await SharedPreferences.getInstance();
-  await p.setDouble('iva_pct', v);
+class IvaNotifier extends Notifier<double> {
+  static const _key = 'iva_pct';
+
+  @override
+  double build() => ref.read(sharedPreferencesProvider).getDouble(_key) ?? 16.0;
+
+  Future<void> set(double v) async {
+    state = v;
+    await ref.read(sharedPreferencesProvider).setDouble(_key, v);
+  }
 }
 
-/// Instancia única de la base de datos Drift.
+/// Instancia única de la base de datos Drift. Se sobreescribe en main() con la
+/// instancia real; lanzar por defecto evita abrir una SEGUNDA conexión SQLite al
+/// mismo archivo si algún punto de entrada olvidara el override.
 final databaseProvider = Provider<AppDatabase>((ref) {
-  final db = AppDatabase();
-  ref.onDispose(db.close);
-  return db;
+  throw UnimplementedError(
+      'databaseProvider debe sobreescribirse en main() (ver main.dart).');
 });
 
 // ---------------- Repositorios ----------------

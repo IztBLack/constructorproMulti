@@ -5,6 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../../core/storage/app_paths.dart';
+
 import '../../core/pdf/pdf_config.dart';
 
 class PdfConfigScreen extends StatefulWidget {
@@ -56,7 +58,8 @@ class _PdfConfigScreenState extends State<PdfConfigScreen> {
     final dir = await getApplicationDocumentsDirectory();
     final dest = File(p.join(dir.path, '$nombre${p.extension(picked.path)}'));
     await File(picked.path).copy(dest.path);
-    return dest.path;
+    // Se persiste el nombre relativo (no la ruta absoluta). Ver AppPaths.
+    return AppPaths.toStored(dest.path);
   }
 
   Future<void> _guardar() async {

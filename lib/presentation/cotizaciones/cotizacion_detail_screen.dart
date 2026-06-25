@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+
+import '../../core/storage/app_paths.dart';
 import 'package:pdfx/pdfx.dart';
 import 'package:printing/printing.dart';
 
@@ -75,7 +77,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
             },
             itemBuilder: (_) => [
               CheckedPopupMenuItem(
-                  value: 'iva', checked: _ivaEnabled, child: const Text('Aplicar IVA 16%')),
+                  value: 'iva', checked: _ivaEnabled, child: Text('Aplicar IVA ${ref.read(ivaPorcentajeProvider).toStringAsFixed(0)}%')),
               const PopupMenuItem(value: 'estado', child: Text('Cambiar estado')),
               const PopupMenuItem(value: 'ajuste', child: Text('Ajuste global de precios')),
               const PopupMenuItem(value: 'duplicar', child: Text('Duplicar')),
@@ -219,7 +221,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
       aportadoPorPartida[m.partidaId!] =
           (aportadoPorPartida[m.partidaId!] ?? 0) + m.monto;
     }
-    final ivaPct = await ref.read(ivaPorcentajeProvider.future);
+    final ivaPct = ref.read(ivaPorcentajeProvider);
     final totales = const PresupuestoCalculator().calcular(
       partidas: partidas.map(partidaToDomain).toList(),
       ivaEnabled: _ivaEnabled,
@@ -266,7 +268,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
                 (aportadoPorPartida[m.partidaId!] ?? 0) + m.monto;
           }
 
-          final ivaPct = ref.watch(ivaPorcentajeProvider).asData?.value ?? 16.0;
+          final ivaPct = ref.watch(ivaPorcentajeProvider);
           final totales = const PresupuestoCalculator().calcular(
             partidas: partidas.map(partidaToDomain).toList(),
             ivaEnabled: _ivaEnabled,
@@ -378,7 +380,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
         if (t.descuento > 0)
           row('Descuento (${widget.cotizacion.descuento.toStringAsFixed(0)}%)', -t.descuento),
         if (_ivaEnabled)
-          row('IVA (${(ref.watch(ivaPorcentajeProvider).asData?.value ?? 16).toStringAsFixed(0)}%)', t.iva),
+          row('IVA (${ref.watch(ivaPorcentajeProvider).toStringAsFixed(0)}%)', t.iva),
         row('TOTAL', t.total, bold: true),
         if (t.total != t.saldoRestante)
           row('Saldo por cobrar', t.saldoRestante, bold: true, color: cs.primary),
@@ -935,12 +937,15 @@ class _State extends ConsumerState<CotizacionDetailScreen>
     if (src == null) return;
     final dest = File(path.join(dir.path, '${DateTime.now().millisecondsSinceEpoch}${path.extension(src)}'));
     await File(src).copy(dest.path);
+    // Se persiste solo el nombre (relativo); la ruta absoluta se rompe al
+    // reinstalar/migrar (sobre todo en iOS). Ver AppPaths.
     await ref.read(archivoRepositoryProvider)
-        .add(cotId: _cotId, tipo: tipo, nombre: nombre, uri: dest.path);
+        .add(cotId: _cotId, tipo: tipo, nombre: nombre, uri: AppPaths.toStored(dest.path));
   }
 
   Future<void> _verArchivo(ArchivoCotizacion a) async {
-    if (!File(a.uri).existsSync()) {
+    final ruta = AppPaths.resolve(a.uri);
+    if (!File(ruta).existsSync()) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('El archivo ya no existe.')));
@@ -952,7 +957,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
         context: context,
         builder: (ctx) => Dialog(
           child: InteractiveViewer(
-            child: Image.file(File(a.uri)),
+            child: Image.file(File(ruta)),
           ),
         ),
       );
@@ -962,7 +967,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
         builder: (_) => Scaffold(
           appBar: AppBar(title: Text(a.nombre)),
           body: PdfViewPinch(controller: PdfControllerPinch(
-              document: PdfDocument.openFile(a.uri))),
+              document: PdfDocument.openFile(ruta))),
         ),
       ));
     }
@@ -972,7 +977,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
     final ok = await _confirm('¿Eliminar "${a.nombre}"?', 'Eliminar');
     if (ok) {
       try {
-        final f = File(a.uri);
+        final f = File(AppPaths.resolve(a.uri));
         if (f.existsSync()) f.deleteSync();
       } catch (_) {}
       await ref.read(archivoRepositoryProvider).delete(a.id);

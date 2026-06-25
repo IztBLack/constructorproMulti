@@ -3,6 +3,8 @@ import 'dart:typed_data';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../storage/app_paths.dart';
+
 /// Configuración de personalización de los reportes PDF (equivalente a
 /// PdfPreferencesManager del proyecto Kotlin), persistida en SharedPreferences.
 class PdfConfig {
@@ -54,13 +56,13 @@ class PdfConfig {
   /// Bytes del logo (si existe el archivo).
   Uint8List? get logoBytes {
     if (logoPath == null) return null;
-    final f = File(logoPath!);
+    final f = File(AppPaths.resolve(logoPath!));
     return f.existsSync() ? f.readAsBytesSync() : null;
   }
 
   Uint8List? get firmaBytes {
     if (firmaPath == null) return null;
-    final f = File(firmaPath!);
+    final f = File(AppPaths.resolve(firmaPath!));
     return f.existsSync() ? f.readAsBytesSync() : null;
   }
 }

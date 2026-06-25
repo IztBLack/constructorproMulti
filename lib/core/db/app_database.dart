@@ -44,6 +44,19 @@ class AppDatabase extends _$AppDatabase {
           await m.createAll();
           await _seedInicial();
         },
+        // Punto ÚNICO de migraciones. La BD es 100% local: si cambias el esquema
+        // sin un paso aquí, los usuarios PIERDEN sus datos al actualizar.
+        // Al modificar cualquier tabla:
+        //   1. Sube `schemaVersion` (de 1 a 2, etc.).
+        //   2. Agrega el paso incremental correspondiente, p. ej.:
+        //        if (from < 2) await m.addColumn(obras, obras.comentario);
+        //   3. Genera un snapshot del esquema y prueba la migración:
+        //        dart run drift_dev schema dump lib/core/db/app_database.dart \
+        //          drift_schemas/
+        // Nunca borres ni recrees tablas con datos del usuario.
+        onUpgrade: (m, from, to) async {
+          // Sin migraciones aún (schemaVersion = 1).
+        },
       );
 
   // ---------------- Obras ----------------

@@ -1,0 +1,19 @@
+# Plantilla de configuración de firma de RELEASE para Android.
+#
+# 1. Genera un keystore (una sola vez, guárdalo MUY bien — sin él no podrás
+#    volver a actualizar la app en Play):
+#
+#      keytool -genkey -v -keystore D:\constructorpro_flutter\android\app\release.jks ^
+#        -keyalg RSA -keysize 2048 -validity 10000 -alias constructorpro
+#
+# 2. Copia este archivo como `key.properties` (sin .example) en android/ y llena
+#    los valores reales. `key.properties`, *.jks y *.keystore ya están en
+#    .gitignore: NUNCA los subas a git ni los compartas.
+#
+# 3. Compila el App Bundle firmado:  flutter build appbundle --release
+
+storePassword=TU_PASSWORD_DEL_KEYSTORE
+keyPassword=TU_PASSWORD_DE_LA_CLAVE
+keyAlias=constructorpro
+# Ruta al keystore. Puede ser relativa a android/app/ o absoluta.
+storeFile=release.jks

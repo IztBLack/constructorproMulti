@@ -70,7 +70,7 @@ class ConfigScreen extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.percent),
             title: const Text('IVA por defecto'),
-            subtitle: Text('${(ref.watch(ivaPorcentajeProvider).asData?.value ?? 16).toStringAsFixed(0)}%'),
+            subtitle: Text('${ref.watch(ivaPorcentajeProvider).toStringAsFixed(0)}%'),
             onTap: () => _editarIva(context, ref),
           ),
           const Divider(),
@@ -214,7 +214,7 @@ class ConfigScreen extends ConsumerWidget {
   }
 
   Future<void> _editarIva(BuildContext context, WidgetRef ref) async {
-    final actual = ref.read(ivaPorcentajeProvider).asData?.value ?? 16.0;
+    final actual = ref.read(ivaPorcentajeProvider);
     final ctrl = TextEditingController(text: actual.toStringAsFixed(0));
     final v = await showDialog<double>(
       context: context,
@@ -236,8 +236,7 @@ class ConfigScreen extends ConsumerWidget {
       ),
     );
     if (v != null) {
-      await setIvaPorcentaje(v);
-      ref.invalidate(ivaPorcentajeProvider);
+      await ref.read(ivaPorcentajeProvider.notifier).set(v);
     }
   }
 
@@ -253,10 +252,11 @@ class ConfigScreen extends ConsumerWidget {
 
   Future<void> _exportarRespaldo(BuildContext context, WidgetRef ref) async {
     try {
-      final json = await ref.read(backupServiceProvider).exportToJson();
+      // ZIP completo: datos + archivos adjuntos (fotos/planos).
+      final bytes = await ref.read(backupServiceProvider).exportToZipBytes();
       final dir = await getTemporaryDirectory();
-      final file = File(p.join(dir.path, 'RespaldoConstructorPro.json'));
-      await file.writeAsString(json);
+      final file = File(p.join(dir.path, 'RespaldoConstructorPro.zip'));
+      await file.writeAsBytes(bytes);
       await Share.shareXFiles([XFile(file.path)], text: 'Respaldo ConstructorPro');
     } catch (e) {
       if (context.mounted) {
@@ -269,7 +269,7 @@ class ConfigScreen extends ConsumerWidget {
   Future<void> _importarRespaldo(BuildContext context, WidgetRef ref) async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['json'],
+      allowedExtensions: ['zip', 'json'],
     );
     if (result == null || result.files.single.path == null) return;
     if (!context.mounted) return;
@@ -290,8 +290,14 @@ class ConfigScreen extends ConsumerWidget {
     if (ok != true) return;
 
     try {
-      final json = await File(result.files.single.path!).readAsString();
-      await ref.read(backupServiceProvider).importFromJson(json);
+      final ruta = result.files.single.path!;
+      final svc = ref.read(backupServiceProvider);
+      // ZIP (nuevo, con archivos) o JSON suelto (respaldos viejos / app Kotlin).
+      if (ruta.toLowerCase().endsWith('.zip')) {
+        await svc.importFromZipBytes(await File(ruta).readAsBytes());
+      } else {
+        await svc.importFromJson(await File(ruta).readAsString());
+      }
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Respaldo restaurado correctamente.')));
