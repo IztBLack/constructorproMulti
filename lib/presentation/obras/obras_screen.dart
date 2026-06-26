@@ -5,6 +5,10 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/db/app_database.dart';
 import '../../data/providers.dart';
+import '../common/async_action_button.dart';
+import '../common/confirm_dialog.dart';
+import '../common/empty_state_view.dart';
+import '../common/error_state_view.dart';
 import 'obra_detail_screen.dart';
 
 class ObrasScreen extends ConsumerWidget {
@@ -36,10 +40,17 @@ class ObrasScreen extends ConsumerWidget {
       ),
       body: obrasAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => ErrorStateView(
+          message: 'No se pudieron cargar las obras.',
+          onRetry: () => ref.invalidate(obrasProvider),
+        ),
         data: (obras) {
           if (obras.isEmpty) {
-            return const _EmptyState();
+            return const EmptyStateView(
+              icon: Icons.foundation,
+              title: 'No hay obras registradas.',
+              hint: 'Toca “Nueva obra” para agregar una.',
+            );
           }
           return ListView.separated(
             itemCount: obras.length,
@@ -122,7 +133,7 @@ class ObrasScreen extends ConsumerWidget {
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Cancelar'),
           ),
-          FilledButton(
+          AsyncActionButton(
             onPressed: () async {
               if (!formKey.currentState!.validate()) return;
               final repo = ref.read(obraRepositoryProvider);
@@ -146,45 +157,18 @@ class ObrasScreen extends ConsumerWidget {
 
   Future<void> _confirmDelete(
       BuildContext context, WidgetRef ref, Obra obra) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Confirmar eliminación'),
-        content: Text('¿Eliminar la obra "${obra.nombre}"?'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancelar')),
-          FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Eliminar')),
-        ],
-      ),
+    // Eliminar una obra completa es irreversible y arrastra su historial:
+    // confirmación destructiva (botón en color de error) con mensaje fuerte.
+    final ok = await confirmDialog(
+      context,
+      title: 'Eliminar obra',
+      message:
+          'Se eliminará la obra "${obra.nombre}" y todo su historial relacionado. '
+          'Esta acción no se puede deshacer.',
+      actionLabel: 'Eliminar obra',
     );
-    if (ok == true) {
+    if (ok) {
       await ref.read(obraRepositoryProvider).delete(obra.id);
     }
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.foundation,
-              size: 72, color: Theme.of(context).colorScheme.outline),
-          const SizedBox(height: 12),
-          const Text('No hay obras registradas.'),
-          const SizedBox(height: 4),
-          Text('Toca “Nueva obra” para agregar una.',
-              style: Theme.of(context).textTheme.bodySmall),
-        ],
-      ),
-    );
   }
 }

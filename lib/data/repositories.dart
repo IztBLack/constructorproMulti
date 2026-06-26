@@ -123,6 +123,33 @@ class ColaboradorRepository {
     });
   }
 
+  /// colaboradorId → ÚLTIMA obra activa asignada (la de mayor fechaIngreso).
+  /// Trae las relaciones activas ordenadas por fechaIngreso desc y se queda con
+  /// la primera por colaborador (plegado en Dart): más simple y robusto que
+  /// groupBy+max, y el orden estable de SQLite resuelve empates de forma
+  /// determinista. Usado por el pase de lista para no duplicar a un colaborador
+  /// que está en varias obras a la vez.
+  Stream<Map<String, Obra>> watchUltimaObraActivaPorColaborador() {
+    final q = db.select(db.obraColaborador).join([
+      innerJoin(db.obras, db.obras.id.equalsExp(db.obraColaborador.obraId)),
+    ])
+      ..where(db.obraColaborador.fechaSalida.isNull() &
+          db.obras.activa.equals(true))
+      ..orderBy([
+        OrderingTerm(
+            expression: db.obraColaborador.fechaIngreso,
+            mode: OrderingMode.desc)
+      ]);
+    return q.watch().map((rows) {
+      final map = <String, Obra>{};
+      for (final r in rows) {
+        final colId = r.readTable(db.obraColaborador).colaboradorId;
+        map.putIfAbsent(colId, () => r.readTable(db.obras));
+      }
+      return map;
+    });
+  }
+
   /// Historial de obras del colaborador (con fechas de ingreso/salida).
   Future<List<({ObraColaboradorData rel, Obra obra})>> historial(
       String colaboradorId) async {

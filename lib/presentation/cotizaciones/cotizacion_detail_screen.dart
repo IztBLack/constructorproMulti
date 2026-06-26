@@ -21,6 +21,10 @@ import '../../domain/logic/presupuesto_calculator.dart';
 import '../../domain/mappers.dart';
 import '../../domain/text_import_parser.dart';
 import '../../pdf/pdf_service.dart';
+import '../common/async_action_button.dart';
+import '../common/confirm_dialog.dart';
+import '../common/empty_state_view.dart';
+import '../common/error_state_view.dart';
 import '../pdf_pre_dialog.dart';
 
 class CotizacionDetailScreen extends ConsumerStatefulWidget {
@@ -37,6 +41,15 @@ class _State extends ConsumerState<CotizacionDetailScreen>
   late bool _ivaEnabled = widget.cotizacion.ivaEnabled;
 
   String get _cotId => widget.cotizacion.id;
+
+  // Aportado (gasto) por partida = Σ salidas ligadas a esa partida.
+  Map<String, double> _aportadoPorPartida(List<Movimiento> movs) {
+    final result = <String, double>{};
+    for (final m in movs.where((m) => m.tipo == 'SALIDA' && m.partidaId != null)) {
+      result[m.partidaId!] = (result[m.partidaId!] ?? 0) + m.monto;
+    }
+    return result;
+  }
 
   @override
   void dispose() {
@@ -216,11 +229,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
     final pagos = ref.read(pagosProvider(_cotId)).asData?.value ?? [];
     final movs = ref.read(movimientosDeCotizacionProvider(_cotId)).asData?.value ?? [];
     final totalPagado = pagos.fold<double>(0, (a, p) => a + p.monto);
-    final aportadoPorPartida = <String, double>{};
-    for (final m in movs.where((m) => m.tipo == 'SALIDA' && m.partidaId != null)) {
-      aportadoPorPartida[m.partidaId!] =
-          (aportadoPorPartida[m.partidaId!] ?? 0) + m.monto;
-    }
+    final aportadoPorPartida = _aportadoPorPartida(movs);
     final ivaPct = ref.read(ivaPorcentajeProvider);
     final totales = const PresupuestoCalculator().calcular(
       partidas: partidas.map(partidaToDomain).toList(),
@@ -255,18 +264,16 @@ class _State extends ConsumerState<CotizacionDetailScreen>
     return Scaffold(
       body: seccionesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => ErrorStateView(
+          message: 'No se pudo cargar el presupuesto.',
+          onRetry: () => ref.invalidate(seccionesProvider(_cotId)),
+        ),
         data: (secciones) {
           final partidas = partidasAsync.asData?.value ?? [];
           final pagos = pagosAsync.asData?.value ?? [];
           final movs = movsAsync.asData?.value ?? [];
           final totalPagado = pagos.fold<double>(0, (a, p) => a + p.monto);
-          // Aportado (gasto) por partida = Σ salidas ligadas a esa partida.
-          final aportadoPorPartida = <String, double>{};
-          for (final m in movs.where((m) => m.tipo == 'SALIDA' && m.partidaId != null)) {
-            aportadoPorPartida[m.partidaId!] =
-                (aportadoPorPartida[m.partidaId!] ?? 0) + m.monto;
-          }
+          final aportadoPorPartida = _aportadoPorPartida(movs);
 
           final ivaPct = ref.watch(ivaPorcentajeProvider);
           final totales = const PresupuestoCalculator().calcular(
@@ -281,9 +288,11 @@ class _State extends ConsumerState<CotizacionDetailScreen>
             children: [
               Expanded(
                 child: secciones.isEmpty
-                    ? const Center(
-                        child: Text('Sin secciones.\nToca + para agregar una.',
-                            textAlign: TextAlign.center))
+                    ? const EmptyStateView(
+                        icon: Icons.create_new_folder_outlined,
+                        title: 'Sin secciones.',
+                        hint: 'Toca “Sección” para agregar una.',
+                      )
                     : ListView(
                         children: secciones.map((s) {
                           final pts = partidas.where((p) => p.seccionId == s.id).toList();
@@ -309,7 +318,19 @@ class _State extends ConsumerState<CotizacionDetailScreen>
                                     subtitle: Text(
                                         '${p.cantidad} ${p.unidad} × ${Fmt.money(p.precioUnitario)}'
                                         '${aportado > 0 ? '  ·  aportado ${Fmt.money(aportado)} (${pct.toStringAsFixed(0)}%)' : ''}'),
-                                    trailing: Text(Fmt.money(total)),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(Fmt.money(total)),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete_outline),
+                                          tooltip: 'Eliminar partida',
+                                          visualDensity: VisualDensity.compact,
+                                          color: Theme.of(context).colorScheme.error,
+                                          onPressed: () => _eliminarPartida(p),
+                                        ),
+                                      ],
+                                    ),
                                     onTap: () => _partidaDialog(s.id, p),
                                     onLongPress: () => _eliminarPartida(p),
                                   );
@@ -446,7 +467,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-            FilledButton(
+            AsyncActionButton(
               onPressed: preview.isEmpty
                   ? null
                   : () async {
@@ -645,7 +666,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
                           maxLines: 1, overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontSize: 12)),
                       subtitle: Text('${c.unidad} · ${Fmt.money(c.precioUnitarioDefault)}',
-                          style: const TextStyle(fontSize: 11)),
+                          style: const TextStyle(fontSize: 12)),
                       onTap: () {
                         claveCtrl.text = c.clave;
                         descCtrl.text = c.descripcion;
@@ -674,7 +695,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-          FilledButton(
+          AsyncActionButton(
             onPressed: () async {
               if (!formKey.currentState!.validate()) return;
               await repo.upsert(PartidasCompanion(
@@ -702,6 +723,12 @@ class _State extends ConsumerState<CotizacionDetailScreen>
     if (ok) await ref.read(partidaRepositoryProvider).delete(p.id);
   }
 
+  Future<void> _eliminarPago(_PagoUnificado p) async {
+    final ok =
+        await _confirm('¿Eliminar el pago de ${Fmt.money(p.monto)}?', 'Eliminar');
+    if (ok) await ref.read(pagoRepositoryProvider).delete(p.id);
+  }
+
   // ============ PAGOS ============
   Widget _pagosTab() {
     final pagosAsync = ref.watch(pagosProvider(_cotId));
@@ -709,7 +736,10 @@ class _State extends ConsumerState<CotizacionDetailScreen>
     return Scaffold(
       body: pagosAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => ErrorStateView(
+          message: 'No se pudieron cargar los pagos.',
+          onRetry: () => ref.invalidate(pagosProvider(_cotId)),
+        ),
         data: (pagos) {
           final entradas = (movsAsync.asData?.value ?? [])
               .where((m) => m.tipo == 'ENTRADA')
@@ -741,7 +771,11 @@ class _State extends ConsumerState<CotizacionDetailScreen>
             const Divider(height: 1),
             Expanded(
               child: items.isEmpty
-                  ? const Center(child: Text('Sin pagos registrados.'))
+                  ? const EmptyStateView(
+                      icon: Icons.payments_outlined,
+                      title: 'Sin pagos registrados.',
+                      hint: 'Toca “Registrar pago” para agregar uno.',
+                    )
                   : ListView(
                       children: items
                           .map((p) => ListTile(
@@ -751,22 +785,25 @@ class _State extends ConsumerState<CotizacionDetailScreen>
                                 title: Text(p.concepto),
                                 subtitle: Text(
                                     '${Fmt.date(p.fecha)} · ${p.metodo} · ${p.esPagoManual ? 'Pago' : 'Caja'}'),
-                                trailing: Text(Fmt.money(p.monto),
-                                    style: const TextStyle(
-                                        color: Colors.green,
-                                        fontWeight: FontWeight.bold)),
-                                onLongPress: p.esPagoManual
-                                    ? () async {
-                                        final ok = await _confirm(
-                                            '¿Eliminar el pago de ${Fmt.money(p.monto)}?',
-                                            'Eliminar');
-                                        if (ok) {
-                                          await ref
-                                              .read(pagoRepositoryProvider)
-                                              .delete(p.id);
-                                        }
-                                      }
-                                    : null,
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(Fmt.money(p.monto),
+                                        style: const TextStyle(
+                                            color: Colors.green,
+                                            fontWeight: FontWeight.bold)),
+                                    if (p.esPagoManual)
+                                      IconButton(
+                                        icon: const Icon(Icons.delete_outline),
+                                        tooltip: 'Eliminar pago',
+                                        visualDensity: VisualDensity.compact,
+                                        color: Theme.of(context).colorScheme.error,
+                                        onPressed: () => _eliminarPago(p),
+                                      ),
+                                  ],
+                                ),
+                                onLongPress:
+                                    p.esPagoManual ? () => _eliminarPago(p) : null,
                               ))
                           .toList(),
                     ),
@@ -824,7 +861,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-            FilledButton(
+            AsyncActionButton(
               onPressed: () async {
                 if (!formKey.currentState!.validate()) return;
                 await ref.read(pagoRepositoryProvider).add(
@@ -850,38 +887,61 @@ class _State extends ConsumerState<CotizacionDetailScreen>
     return Scaffold(
       body: archivosAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => ErrorStateView(
+          message: 'No se pudieron cargar los archivos.',
+          onRetry: () => ref.invalidate(archivosProvider(_cotId)),
+        ),
         data: (archivos) {
           if (archivos.isEmpty) {
-            return const Center(
-                child: Text('Sin archivos.\nAgrega fotos o planos PDF.',
-                    textAlign: TextAlign.center));
+            return const EmptyStateView(
+              icon: Icons.folder_open_outlined,
+              title: 'Sin archivos.',
+              hint: 'Agrega fotos o planos PDF.',
+            );
           }
-          return GridView.count(
-            crossAxisCount: 3,
+          // Extent fijo en vez de columnas fijas: 3 columnas en teléfono,
+          // más en tablet (objetivo Samsung SM X510) sin miniaturas enormes.
+          return GridView.extent(
+            maxCrossAxisExtent: 160,
             padding: const EdgeInsets.all(8),
             children: archivos.map((a) {
               final esImagen = a.tipo == 'IMAGEN';
-              return GestureDetector(
-                onTap: () => _verArchivo(a),
-                onLongPress: () => _eliminarArchivo(a),
-                child: Card(
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: esImagen && File(a.uri).existsSync()
-                            ? Image.file(File(a.uri), fit: BoxFit.cover, width: double.infinity)
-                            : const Icon(Icons.picture_as_pdf, size: 48, color: Colors.red),
+              return Stack(
+                children: [
+                  GestureDetector(
+                    onTap: () => _verArchivo(a),
+                    onLongPress: () => _eliminarArchivo(a),
+                    child: Card(
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: esImagen && File(a.uri).existsSync()
+                                ? Image.file(File(a.uri), fit: BoxFit.cover, width: double.infinity)
+                                : const Icon(Icons.picture_as_pdf, size: 48, color: Colors.red),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: Text(a.nombre,
+                                maxLines: 1, overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 12)),
+                          ),
+                        ],
                       ),
-                      Padding(
-                        padding: const EdgeInsets.all(4),
-                        child: Text(a.nombre,
-                            maxLines: 1, overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 11)),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
+                  // Affordance visible de borrado (además del long-press).
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      tooltip: 'Eliminar archivo',
+                      visualDensity: VisualDensity.compact,
+                      color: Theme.of(context).colorScheme.error,
+                      onPressed: () => _eliminarArchivo(a),
+                    ),
+                  ),
+                ],
               );
             }).toList(),
           );
@@ -985,19 +1045,13 @@ class _State extends ConsumerState<CotizacionDetailScreen>
   }
 
   // ============ Helpers ============
-  Future<bool> _confirm(String msg, String accion) async =>
-      await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Confirmar'),
-          content: Text(msg),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(accion)),
-          ],
-        ),
-      ) ??
-      false;
+  Future<bool> _confirm(String msg, String accion) => confirmDialog(
+        context,
+        message: msg,
+        actionLabel: accion,
+        // Las acciones de borrado se marcan en color de error; "Convertir" no.
+        destructive: accion.toLowerCase().startsWith('eliminar'),
+      );
 
   Future<bool> _inputDialog(String title, String label, TextEditingController ctrl) async =>
       await showDialog<bool>(

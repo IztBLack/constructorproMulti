@@ -22,6 +22,23 @@ class AsistenciaRepository {
             ..where((t) => t.obraId.equals(obraId) & t.fecha.equals(fecha)))
           .get();
 
+  /// Asistencias de un conjunto de colaboradores en un rango, SIN filtrar obra.
+  /// Permite a la tabla semanal detectar días en que el trabajador estuvo en
+  /// OTRA obra distinta a la mostrada. SOLO para overlay visual de UI; no usar
+  /// para nómina (ver watchRango / asistenciasRangoProvider).
+  Stream<List<Asistencia>> watchSemanaTodasObras(
+    List<String> colaboradorIds,
+    int start,
+    int end,
+  ) {
+    if (colaboradorIds.isEmpty) return Stream.value(const []);
+    return (db.select(db.asistencias)
+          ..where((t) =>
+              t.colaboradorId.isIn(colaboradorIds) &
+              t.fecha.isBetweenValues(start, end)))
+        .watch();
+  }
+
   /// Registra/actualiza la fracción de un colaborador en un día (índice único).
   Future<void> setFraccion({
     required String obraId,

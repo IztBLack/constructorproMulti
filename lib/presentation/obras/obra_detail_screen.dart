@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -411,18 +412,42 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     final asistencias = ref.watch(asistenciasRangoProvider(rango)).asData?.value ?? [];
     final trabajadores = asignados.where((c) => c.tipoPago == 'DIA').toList();
 
-    // mapa colaboradorId|fechaDia -> fraccion
+    if (trabajadores.isEmpty) {
+      return const Center(child: Text('Sin trabajadores por día asignados.'));
+    }
+
+    // mapa colaboradorId|fechaDia -> fraccion (asistencia en ESTA obra)
     final mapa = <String, double>{};
     for (final a in asistencias) {
       mapa['${a.colaboradorId}|${a.fecha}'] = a.fraccion;
     }
 
-    if (trabajadores.isEmpty) {
-      return const Center(child: Text('Sin trabajadores por día asignados.'));
+    // Overlay multi-obra: asistencias de estos trabajadores en la semana en
+    // CUALQUIER obra, para marcar los días que fueron en otra obra.
+    final idsClave = (trabajadores.map((c) => c.id).toList()..sort()).join(',');
+    final todasObras = ref.watch(obrasProvider).asData?.value ?? [];
+    final nombreObra = {for (final o in todasObras) o.id: o.nombre};
+    final todasAsist = ref
+            .watch(asistenciasSemanaTodasObrasProvider(
+                (colaboradorIds: idsClave, start: inicio, end: fin)))
+            .asData
+            ?.value ??
+        [];
+    // clave -> asistencias en OTRAS obras (obraId != esta)
+    final otrasPorCelda = <String, List<Asistencia>>{};
+    for (final a in todasAsist) {
+      if (a.obraId == _obraId) continue;
+      (otrasPorCelda['${a.colaboradorId}|${a.fecha}'] ??= []).add(a);
     }
 
     String etiqueta(double f) =>
         f == 0 ? '—' : (f == 1.0 ? '1' : (f == 0.75 ? '¾' : '½'));
+    String inicial(String obraId) {
+      final n = nombreObra[obraId] ?? '?';
+      return n.isEmpty ? '?' : n[0].toUpperCase();
+    }
+
+    final cs = Theme.of(context).colorScheme;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -440,7 +465,34 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
               DataCell(Text(c.nombre, overflow: TextOverflow.ellipsis)),
               ...dias.map((d) {
                 final diaMillis = Semana.inicioDia(d);
-                final f = mapa['${c.id}|$diaMillis'] ?? 0.0;
+                final key = '${c.id}|$diaMillis';
+                final otras = otrasPorCelda[key];
+                if (otras != null && otras.isNotEmpty) {
+                  // Día trabajado en otra obra: chip con inicial de la obra de
+                  // mayor fracción. Tap -> detalle de todas las obras del día.
+                  final principal = otras
+                      .reduce((a, b) => a.fraccion >= b.fraccion ? a : b);
+                  return DataCell(
+                    Center(
+                      child: Container(
+                        constraints: const BoxConstraints(minWidth: 24),
+                        padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
+                        decoration: BoxDecoration(
+                          color: cs.tertiaryContainer,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(inicial(principal.obraId),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: cs.onTertiaryContainer)),
+                      ),
+                    ),
+                    onTap: () => _detalleCeldaOtraObra(
+                        c.nombre, d, otras, nombreObra),
+                  );
+                }
+                final f = mapa[key] ?? 0.0;
                 return DataCell(
                   Center(child: Text(etiqueta(f),
                       style: TextStyle(
@@ -452,6 +504,31 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
             ]);
           }).toList(),
         ),
+      ),
+    );
+  }
+
+  /// Detalle de un día que el trabajador pasó en otra(s) obra(s).
+  Future<void> _detalleCeldaOtraObra(String nombre, DateTime dia,
+      List<Asistencia> otras, Map<String, String> nombreObra) async {
+    String frac(double f) =>
+        f == 1.0 ? 'Día completo' : (f == 0.75 ? '¾ día' : (f == 0.5 ? '½ día' : 'Falta'));
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text('$nombre — ${Fmt.dayName(dia)}'),
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(24, 0, 24, 8),
+            child: Text('Este día asistió en otra obra:',
+                style: TextStyle(fontStyle: FontStyle.italic)),
+          ),
+          ...otras.map((a) => ListTile(
+                leading: const Icon(Icons.engineering),
+                title: Text(nombreObra[a.obraId] ?? 'Obra desconocida'),
+                trailing: Text(frac(a.fraccion)),
+              )),
+        ],
       ),
     );
   }
@@ -915,7 +992,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                 if (!formKey.currentState!.validate()) return;
                 final partida = partidaId == null
                     ? null
-                    : partidasObra.firstWhere((p) => p.id == partidaId);
+                    : partidasObra.firstWhereOrNull((p) => p.id == partidaId);
                 await ref.read(movimientoRepositoryProvider).add(
                       obraId: _obraId,
                       fecha: DateTime.now().millisecondsSinceEpoch,

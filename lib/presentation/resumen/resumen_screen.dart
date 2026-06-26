@@ -12,6 +12,7 @@ import '../../domain/mappers.dart';
 import '../../pdf/pdf_service.dart';
 import '../asistencia/pase_lista_screen.dart';
 import '../configuraciones/catalogo_screen.dart';
+import '../common/error_state_view.dart';
 import '../obras/obra_detail_screen.dart';
 import '../pdf_pre_dialog.dart';
 
@@ -96,7 +97,10 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
       ),
       body: obrasAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => ErrorStateView(
+          message: 'No se pudo cargar el resumen.',
+          onRetry: () => ref.invalidate(obrasProvider),
+        ),
         data: (obras) {
           final movs = movsAsync.asData?.value ?? [];
           final (pIni, pFin) = _periodo();
@@ -256,7 +260,7 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
   Widget _accion(IconData icon, String label, VoidCallback onTap) => Column(
         children: [
           IconButton.filledTonal(onPressed: onTap, icon: Icon(icon)),
-          Text(label, style: const TextStyle(fontSize: 11)),
+          Text(label, style: const TextStyle(fontSize: 12)),
         ],
       );
 
@@ -278,7 +282,7 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
         ),
         const SizedBox(width: 8),
         SizedBox(width: 80, child: Text(Fmt.money(valor),
-            textAlign: TextAlign.right, style: const TextStyle(fontSize: 11))),
+            textAlign: TextAlign.right, style: const TextStyle(fontSize: 12))),
       ]),
     );
   }

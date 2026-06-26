@@ -6,6 +6,10 @@ import 'package:uuid/uuid.dart';
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
 import '../../data/providers.dart';
+import '../common/async_action_button.dart';
+import '../common/confirm_dialog.dart';
+import '../common/empty_state_view.dart';
+import '../common/error_state_view.dart';
 import 'cotizacion_detail_screen.dart';
 
 class CotizacionesScreen extends ConsumerWidget {
@@ -19,12 +23,17 @@ class CotizacionesScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Cotizaciones')),
       body: cotsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => ErrorStateView(
+          message: 'No se pudieron cargar las cotizaciones.',
+          onRetry: () => ref.invalidate(cotizacionesProvider),
+        ),
         data: (cots) {
           if (cots.isEmpty) {
-            return const Center(
-                child: Text('No hay cotizaciones.\nToca + para crear una.',
-                    textAlign: TextAlign.center));
+            return const EmptyStateView(
+              icon: Icons.description_outlined,
+              title: 'No hay cotizaciones.',
+              hint: 'Toca “Nueva” para crear una.',
+            );
           }
           return ListView.separated(
             itemCount: cots.length,
@@ -112,7 +121,7 @@ class CotizacionesScreen extends ConsumerWidget {
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-          FilledButton(
+          AsyncActionButton(
             onPressed: () async {
               if (!formKey.currentState!.validate()) return;
               await ref.read(cotizacionRepositoryProvider).upsert(
@@ -137,18 +146,14 @@ class CotizacionesScreen extends ConsumerWidget {
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref, Cotizacion c) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Confirmar eliminación'),
-        content: Text(
-            '¿Eliminar la cotización "${c.nombreProyecto}"? Se borran sus secciones, partidas y pagos.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Eliminar')),
-        ],
-      ),
+    final ok = await confirmDialog(
+      context,
+      title: 'Eliminar cotización',
+      message:
+          '¿Eliminar la cotización "${c.nombreProyecto}"? Se borran sus secciones, partidas y pagos. '
+          'Esta acción no se puede deshacer.',
+      actionLabel: 'Eliminar',
     );
-    if (ok == true) await ref.read(cotizacionRepositoryProvider).delete(c.id);
+    if (ok) await ref.read(cotizacionRepositoryProvider).delete(c.id);
   }
 }

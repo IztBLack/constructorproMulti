@@ -36,6 +36,18 @@ class _PdfConfigScreenState extends State<PdfConfigScreen> {
     _load();
   }
 
+  @override
+  void dispose() {
+    _empresa.dispose();
+    _contacto.dispose();
+    _color.dispose();
+    _pie.dispose();
+    _watermark.dispose();
+    _firmaIzq.dispose();
+    _firmaDer.dispose();
+    super.dispose();
+  }
+
   Future<void> _load() async {
     final c = await PdfPrefs.load();
     _empresa.text = c.empresaNombre;

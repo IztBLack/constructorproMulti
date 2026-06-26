@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/legacy.dart'; // StateProvider
 
 import '../core/db/app_database.dart';
 import '../core/settings/settings_provider.dart'; // sharedPreferencesProvider
+import '../domain/logic/movimiento_colaborador_service.dart';
 import 'backup/backup_service.dart';
 import 'maintenance_repository.dart';
 import 'repositories.dart';
@@ -96,6 +97,36 @@ final asistenciasRangoProvider =
     StreamProvider.family<List<Asistencia>, RangoObra>((ref, r) => ref
         .watch(asistenciaRepositoryProvider)
         .watchRango(r.obraId, r.start, r.end));
+
+/// colaboradorId → última obra activa asignada (mayor fechaIngreso).
+/// Usado por el pase de lista para mostrar a cada colaborador una sola vez.
+final ultimaObraPorColaboradorProvider = StreamProvider<Map<String, Obra>>(
+    (ref) => ref
+        .watch(colaboradorRepositoryProvider)
+        .watchUltimaObraActivaPorColaborador());
+
+/// Clave para la familia de asistencias semanales multi-obra. `colaboradorIds`
+/// es un String de IDs ordenados unidos por ',' (no `List<String>` crudo: Dart no
+/// da igualdad estructural de listas en records y causaría cache-miss/rebuilds).
+typedef RangoColaboradores = ({String colaboradorIds, int start, int end});
+
+/// Asistencias de la semana para un conjunto de colaboradores, SIN filtrar obra.
+/// SOLO para overlay visual de la tabla semanal. NO usar para cálculo de nómina
+/// (esa usa asistenciasRangoProvider, filtrado por obraId).
+final asistenciasSemanaTodasObrasProvider =
+    StreamProvider.family<List<Asistencia>, RangoColaboradores>((ref, r) {
+  final ids = r.colaboradorIds.isEmpty ? <String>[] : r.colaboradorIds.split(',');
+  return ref
+      .watch(asistenciaRepositoryProvider)
+      .watchSemanaTodasObras(ids, r.start, r.end);
+});
+
+final movimientoColaboradorServiceProvider =
+    Provider<MovimientoColaboradorService>((ref) => MovimientoColaboradorService(
+          ref.watch(colaboradorRepositoryProvider),
+          ref.watch(asistenciaRepositoryProvider),
+          ref.watch(databaseProvider),
+        ));
 
 final destajosRangoProvider =
     StreamProvider.family<List<Destajo>, RangoObra>((ref, r) =>

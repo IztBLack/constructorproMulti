@@ -6,6 +6,10 @@ import 'package:uuid/uuid.dart';
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
 import '../../data/providers.dart';
+import '../common/async_action_button.dart';
+import '../common/confirm_dialog.dart';
+import '../common/empty_state_view.dart';
+import '../common/error_state_view.dart';
 
 enum _Sort { nombreAsc, nombreDesc, puesto, obra }
 
@@ -69,7 +73,10 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
       ),
       body: colaboradoresAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => ErrorStateView(
+          message: 'No se pudieron cargar los colaboradores.',
+          onRetry: () => ref.invalidate(colaboradoresProvider),
+        ),
         data: (todos) {
           var lista = todos
               .where((c) => _mostrarInactivos || c.activo)
@@ -98,9 +105,11 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
               });
           }
           if (lista.isEmpty) {
-            return const Center(
-                child: Text('No hay colaboradores.\nToca + para agregar uno.',
-                    textAlign: TextAlign.center));
+            return const EmptyStateView(
+              icon: Icons.groups_outlined,
+              title: 'No hay colaboradores.',
+              hint: 'Toca “Nuevo” para agregar uno.',
+            );
           }
           return ListView.separated(
             itemCount: lista.length,
@@ -241,23 +250,14 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
                       : null,
                   onTap: () async {
                     if (asignada) {
-                      final ok = await showDialog<bool>(
-                            context: ctx,
-                            builder: (d) => AlertDialog(
-                              title: const Text('Desvincular obra'),
-                              content: Text(
-                                  '¿Desvincular a "${c.nombre}" de "${o.nombre}"?'),
-                              actions: [
-                                TextButton(
-                                    onPressed: () => Navigator.pop(d, false),
-                                    child: const Text('Cancelar')),
-                                FilledButton(
-                                    onPressed: () => Navigator.pop(d, true),
-                                    child: const Text('Desvincular')),
-                              ],
-                            ),
-                          ) ??
-                          false;
+                      final ok = await confirmDialog(
+                        ctx,
+                        title: 'Desvincular obra',
+                        message:
+                            '¿Desvincular a "${c.nombre}" de "${o.nombre}"?',
+                        actionLabel: 'Desvincular',
+                        destructive: false,
+                      );
                       if (ok) await repo.desvincular(o.id, c.id);
                     } else {
                       await repo.asignarObra(obraId: o.id, colaboradorId: c.id);
@@ -401,7 +401,7 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-            FilledButton(
+            AsyncActionButton(
               onPressed: () async {
                 if (!formKey.currentState!.validate()) return;
                 final salarioText = salarioCtrl.text.trim();
@@ -431,18 +431,13 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
   }
 
   Future<void> _confirmDelete(Colaborador c) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Confirmar eliminación'),
-        content: Text(
-            '¿Eliminar a "${c.nombre}"? Si tiene asistencias o pagos, mejor márcalo como inactivo.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Eliminar')),
-        ],
-      ),
+    final ok = await confirmDialog(
+      context,
+      title: 'Eliminar colaborador',
+      message:
+          '¿Eliminar a "${c.nombre}"? Si tiene asistencias o pagos, mejor márcalo como inactivo.',
+      actionLabel: 'Eliminar',
     );
-    if (ok == true) await ref.read(colaboradorRepositoryProvider).delete(c.id);
+    if (ok) await ref.read(colaboradorRepositoryProvider).delete(c.id);
   }
 }
