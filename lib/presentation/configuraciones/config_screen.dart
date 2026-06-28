@@ -11,6 +11,7 @@ import '../../core/crash/crash_logger.dart';
 import '../../core/settings/settings_provider.dart';
 import '../../data/demo_data.dart';
 import '../../data/providers.dart';
+import '../onboarding/tutorial_screen.dart';
 import 'catalogo_screen.dart';
 import 'pdf_config_screen.dart';
 import 'puestos_screen.dart';
@@ -94,6 +95,15 @@ class ConfigScreen extends ConsumerWidget {
           ),
           const Divider(),
           const _Header('Soporte'),
+          ListTile(
+            leading: const Icon(Icons.school_outlined),
+            title: const Text('Ver tutorial de uso'),
+            subtitle: const Text('Repasa cómo funciona cada módulo'),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(
+              fullscreenDialog: true,
+              builder: (_) => const TutorialScreen(),
+            )),
+          ),
           ListTile(
             leading: const Icon(Icons.bug_report_outlined),
             title: const Text('Compartir reporte de errores'),

@@ -36,6 +36,30 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
   }
 }
 
+// ---------------- Tutorial / onboarding ----------------
+/// Marca si el usuario ya vio (o omitió) el tutorial de uso. Persistido para
+/// que solo aparezca en el primer arranque; reabrible desde Configuración.
+final tutorialVistoProvider =
+    NotifierProvider<TutorialVistoNotifier, bool>(TutorialVistoNotifier.new);
+
+class TutorialVistoNotifier extends Notifier<bool> {
+  static const _key = 'tutorial_visto';
+
+  @override
+  bool build() => ref.read(sharedPreferencesProvider).getBool(_key) ?? false;
+
+  Future<void> marcarVisto() async {
+    state = true;
+    await ref.read(sharedPreferencesProvider).setBool(_key, true);
+  }
+
+  /// Resetea el flag (para volver a mostrar el tutorial desde Configuración).
+  Future<void> reabrir() async {
+    state = false;
+    await ref.read(sharedPreferencesProvider).setBool(_key, false);
+  }
+}
+
 // ---------------- Recordatorio de nómina ----------------
 class ReminderState {
   final bool enabled;

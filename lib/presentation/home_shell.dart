@@ -1,17 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/settings/settings_provider.dart';
 import '../data/providers.dart';
 import 'colaboradores/colaboradores_screen.dart';
 import 'configuraciones/config_screen.dart';
 import 'cotizaciones/cotizaciones_screen.dart';
 import 'obras/obras_screen.dart';
+import 'onboarding/tutorial_screen.dart';
 import 'resumen/resumen_screen.dart';
 
 /// Shell principal con navegación inferior (Material 3).
-class HomeShell extends ConsumerWidget {
+class HomeShell extends ConsumerStatefulWidget {
   const HomeShell({super.key});
 
+  @override
+  ConsumerState<HomeShell> createState() => _HomeShellState();
+}
+
+class _HomeShellState extends ConsumerState<HomeShell> {
   static const _screens = [
     ObrasScreen(),
     CotizacionesScreen(),
@@ -21,7 +28,22 @@ class HomeShell extends ConsumerWidget {
   ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    // En el primer arranque (tutorial no visto), mostrarlo tras el primer frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!ref.read(tutorialVistoProvider)) {
+        Navigator.of(context).push(MaterialPageRoute(
+          fullscreenDialog: true,
+          builder: (_) => const TutorialScreen(),
+        ));
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final index = ref.watch(homeTabProvider);
     return Scaffold(
       body: IndexedStack(index: index, children: _screens),

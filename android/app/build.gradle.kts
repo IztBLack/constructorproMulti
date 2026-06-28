@@ -60,20 +60,9 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
-        }
-    }
-}
-
-kotlin {
-    compilerOptions {
-        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
-    }
-}
-
-flutter {
-    source = "../.."
-}
-
-dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
-}
+            // R8/ProGuard: reduce tamaño y ofusca el bytecode.
+            isMinifyEnabled = true
+            isShrinkResourcesEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+     
