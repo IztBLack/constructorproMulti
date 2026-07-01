@@ -1,0 +1,5971 @@
+{
+  "app": "ConstructorPro",
+  "backupVersion": 1,
+  "obras": [
+    {
+      "id": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "nombre": "Costa Verde",
+      "cliente": "Arq Barradas",
+      "ubicacion": "Jacarandas",
+      "fechaInicio": 1780899147121,
+      "activa": true,
+      "cotizacionOrigenId": null,
+      "pdfConfigJson": "{\"colorHex\":\"#000000\",\"duracion\":\"\",\"empresaContacto\":\"Orlando Ramos Mendoza\\n2299151549\",\"empresaNombre\":\"`\",\"fecha\":\"08/06/2026\",\"firmaDerechaTexto\":\"Aceptado por Cliente\",\"firmaIzquierdaTexto\":\"Autorizado por Obra\",\"folio\":\"\",\"ivaPercentage\":16.0,\"modoCompacto\":false,\"pieDePagina\":\"\",\"proyecto\":\"Costa Verde\",\"showCantidad\":true,\"showClave\":true,\"showFirmas\":false,\"showIva\":true,\"showPrecioUnitario\":true,\"showTotal\":true,\"showUnidad\":true,\"supervision\":\"\",\"todoMayusculas\":false,\"ubicacion\":\"Jacarandas\",\"watermarkText\":\"\"}"
+    },
+    {
+      "id": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "nombre": "Punta Tiburón",
+      "cliente": "Aqr",
+      "ubicacion": "Marina 4 Lt 76",
+      "fechaInicio": 1780899181745,
+      "activa": true,
+      "cotizacionOrigenId": null,
+      "pdfConfigJson": null
+    },
+    {
+      "id": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "nombre": "Boticaria",
+      "cliente": "Don Pepe",
+      "ubicacion": "Adalberto Tejada",
+      "fechaInicio": 1780899327604,
+      "activa": true,
+      "cotizacionOrigenId": null,
+      "pdfConfigJson": null
+    },
+    {
+      "id": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "nombre": "Revolución",
+      "cliente": "?",
+      "ubicacion": "Calle 9",
+      "fechaInicio": 1780899417809,
+      "activa": true,
+      "cotizacionOrigenId": null,
+      "pdfConfigJson": "{\"colorHex\":\"#000000\",\"duracion\":\"\",\"empresaContacto\":\"Orlando Ramos Mendoza\\n2299151549\",\"empresaNombre\":\"`\",\"fecha\":\"08/06/2026\",\"firmaDerechaTexto\":\"Aceptado por Cliente\",\"firmaIzquierdaTexto\":\"Autorizado por Obra\",\"folio\":\"\",\"ivaPercentage\":16.0,\"modoCompacto\":true,\"pieDePagina\":\"\",\"proyecto\":\"Revolución\",\"showCantidad\":true,\"showClave\":true,\"showFirmas\":false,\"showIva\":true,\"showPrecioUnitario\":true,\"showTotal\":true,\"showUnidad\":true,\"supervision\":\"\",\"todoMayusculas\":true,\"ubicacion\":\"Calle 9\",\"watermarkText\":\"\"}"
+    },
+    {
+      "id": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "nombre": "Playa De Vaca",
+      "cliente": "Arq Barradas",
+      "ubicacion": "Playa De Vaca",
+      "fechaInicio": 1780899519733,
+      "activa": true,
+      "cotizacionOrigenId": null,
+      "pdfConfigJson": "{\"colorHex\":\"#000000\",\"duracion\":\"\",\"empresaContacto\":\"Orlando Ramos Mendoza\\n2299151549\",\"empresaNombre\":\"`\",\"fecha\":\"09/06/2026\",\"firmaDerechaTexto\":\"Aceptado por Cliente\",\"firmaIzquierdaTexto\":\"Autorizado por Obra\",\"folio\":\"\",\"ivaPercentage\":16.0,\"modoCompacto\":true,\"pieDePagina\":\"\",\"proyecto\":\"Playa De Vaca\",\"showCantidad\":true,\"showClave\":true,\"showFirmas\":false,\"showIva\":true,\"showPrecioUnitario\":true,\"showTotal\":true,\"showUnidad\":true,\"supervision\":\"\",\"todoMayusculas\":true,\"ubicacion\":\"Playa De Vaca\",\"watermarkText\":\"\"}"
+    },
+    {
+      "id": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "nombre": "Reserva 3",
+      "cliente": "Gringa",
+      "ubicacion": "Pimienta",
+      "fechaInicio": 1780899615481,
+      "activa": true,
+      "cotizacionOrigenId": null,
+      "pdfConfigJson": null
+    },
+    {
+      "id": "621abad1-bd03-4e30-9c72-5879b4baff35",
+      "nombre": "Senderos",
+      "cliente": "",
+      "ubicacion": "Fracc Senderls",
+      "fechaInicio": 1782362878528,
+      "activa": true,
+      "cotizacionOrigenId": null,
+      "pdfConfigJson": null
+    }
+  ],
+  "puestos": [
+    {
+      "id": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "nombre": "Ayudante",
+      "salarioDiaDefault": 500
+    },
+    {
+      "id": "83519009-458b-4685-9600-95af1b231223",
+      "nombre": "Maestro albañil",
+      "salarioDiaDefault": 600
+    }
+  ],
+  "colaboradores": [
+    {
+      "id": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "nombre": "Eulices Mendoza",
+      "puestoId": "9d3d1310-617b-4371-a499-73255cceb76e",
+      "tipoPago": "DIA",
+      "telefono": "",
+      "contactoNombre": "",
+      "contactoTelefono": "",
+      "contactoParentesco": "",
+      "activo": true,
+      "salarioPersonalizado": 1000
+    },
+    {
+      "id": "83519009-458b-4685-9600-95af1b231223",
+      "nombre": "Alfredo Muñoz",
+      "puestoId": "83519009-458b-4685-9600-95af1b231223",
+      "tipoPago": "DIA",
+      "telefono": "",
+      "contactoNombre": "",
+      "contactoTelefono": "",
+      "contactoParentesco": "",
+      "activo": true,
+      "salarioPersonalizado": 666.67
+    },
+    {
+      "id": "9d3d1310-617b-4371-a499-73255cceb76e",
+      "nombre": "David Herrera",
+      "puestoId": "9d3d1310-617b-4371-a499-73255cceb76e",
+      "tipoPago": "DIA",
+      "telefono": "",
+      "contactoNombre": "",
+      "contactoTelefono": "",
+      "contactoParentesco": "",
+      "activo": true,
+      "salarioPersonalizado": 700
+    },
+    {
+      "id": "df8164d1-9c0d-43e6-9fd6-faab19157b8c",
+      "nombre": "Guero OF",
+      "puestoId": "83519009-458b-4685-9600-95af1b231223",
+      "tipoPago": "DIA",
+      "telefono": "",
+      "contactoNombre": "",
+      "contactoTelefono": "",
+      "contactoParentesco": "",
+      "activo": true,
+      "salarioPersonalizado": 666.67
+    },
+    {
+      "id": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "nombre": "Daniel Pelayo",
+      "puestoId": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "tipoPago": "DIA",
+      "telefono": "",
+      "contactoNombre": "",
+      "contactoTelefono": "",
+      "contactoParentesco": "",
+      "activo": false,
+      "salarioPersonalizado": null
+    },
+    {
+      "id": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "nombre": "Mario Zauce",
+      "puestoId": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "tipoPago": "DIA",
+      "telefono": "",
+      "contactoNombre": "",
+      "contactoTelefono": "",
+      "contactoParentesco": "",
+      "activo": false,
+      "salarioPersonalizado": null
+    },
+    {
+      "id": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "nombre": "Luis Vasquez",
+      "puestoId": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "tipoPago": "DIA",
+      "telefono": "",
+      "contactoNombre": "",
+      "contactoTelefono": "",
+      "contactoParentesco": "",
+      "activo": true,
+      "salarioPersonalizado": 583.33
+    },
+    {
+      "id": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "nombre": "Narciso Reyes",
+      "puestoId": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "tipoPago": "DIA",
+      "telefono": "",
+      "contactoNombre": "",
+      "contactoTelefono": "",
+      "contactoParentesco": "",
+      "activo": true,
+      "salarioPersonalizado": 500
+    },
+    {
+      "id": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "nombre": "Mudo",
+      "puestoId": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "tipoPago": "DIA",
+      "telefono": "",
+      "contactoNombre": "",
+      "contactoTelefono": "",
+      "contactoParentesco": "",
+      "activo": true,
+      "salarioPersonalizado": null
+    },
+    {
+      "id": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "nombre": "Daniel Ruiz",
+      "puestoId": "83519009-458b-4685-9600-95af1b231223",
+      "tipoPago": "DIA",
+      "telefono": "",
+      "contactoNombre": "",
+      "contactoTelefono": "",
+      "contactoParentesco": "",
+      "activo": true,
+      "salarioPersonalizado": 750
+    },
+    {
+      "id": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "nombre": "Enrique Paez",
+      "puestoId": "83519009-458b-4685-9600-95af1b231223",
+      "tipoPago": "DIA",
+      "telefono": "",
+      "contactoNombre": "",
+      "contactoTelefono": "",
+      "contactoParentesco": "",
+      "activo": true,
+      "salarioPersonalizado": 750
+    },
+    {
+      "id": "c3647701-f7ee-4fc8-9f36-cf785135b5bf",
+      "nombre": "Eloy Cruz",
+      "puestoId": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "tipoPago": "DIA",
+      "telefono": "",
+      "contactoNombre": "",
+      "contactoTelefono": "",
+      "contactoParentesco": "",
+      "activo": true,
+      "salarioPersonalizado": 533.33
+    },
+    {
+      "id": "61a897a7-6ab3-4d4a-bd2b-ea317fc97848",
+      "nombre": "Yael Manuel",
+      "puestoId": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "tipoPago": "DIA",
+      "telefono": "",
+      "contactoNombre": "",
+      "contactoTelefono": "",
+      "contactoParentesco": "",
+      "activo": true,
+      "salarioPersonalizado": 500
+    },
+    {
+      "id": "e2810c6a-6ea2-4290-8b67-ae58eb969b12",
+      "nombre": "Nacho Macario",
+      "puestoId": "83519009-458b-4685-9600-95af1b231223",
+      "tipoPago": "DIA",
+      "telefono": "",
+      "contactoNombre": "",
+      "contactoTelefono": "",
+      "contactoParentesco": "",
+      "activo": true,
+      "salarioPersonalizado": 750
+    },
+    {
+      "id": "cdcb33ed-a4a7-473a-8aa6-f5081be459cb",
+      "nombre": "Camilo",
+      "puestoId": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "tipoPago": "DIA",
+      "telefono": "",
+      "contactoNombre": "",
+      "contactoTelefono": "",
+      "contactoParentesco": "",
+      "activo": true,
+      "salarioPersonalizado": 583.33
+    },
+    {
+      "id": "5a8ba46b-a91a-4247-8d6b-08b921809fad",
+      "nombre": "Emanuel Osorio",
+      "puestoId": "83519009-458b-4685-9600-95af1b231223",
+      "tipoPago": "DIA",
+      "telefono": "",
+      "contactoNombre": "",
+      "contactoTelefono": "",
+      "contactoParentesco": "",
+      "activo": true,
+      "salarioPersonalizado": 833.33
+    },
+    {
+      "id": "845a8f70-163c-4a95-bdc2-b2045e3fb33f",
+      "nombre": "Gonzalo Dominguez",
+      "puestoId": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "tipoPago": "DIA",
+      "telefono": "",
+      "contactoNombre": "",
+      "contactoTelefono": "",
+      "contactoParentesco": "",
+      "activo": true,
+      "salarioPersonalizado": 666.67
+    },
+    {
+      "id": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "nombre": "Miguel",
+      "puestoId": "83519009-458b-4685-9600-95af1b231223",
+      "tipoPago": "DIA",
+      "telefono": "",
+      "contactoNombre": "",
+      "contactoTelefono": "",
+      "contactoParentesco": "",
+      "activo": true,
+      "salarioPersonalizado": 750
+    },
+    {
+      "id": "5bf5e166-9826-41ea-865f-8a9f0ca7937f",
+      "nombre": "Leonardo Miguel",
+      "puestoId": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "tipoPago": "DIA",
+      "telefono": "",
+      "contactoNombre": "",
+      "contactoTelefono": "",
+      "contactoParentesco": "",
+      "activo": true,
+      "salarioPersonalizado": 500
+    },
+    {
+      "id": "38c4bd2c-4123-44a5-ab08-3832e997d84e",
+      "nombre": "Gilberto",
+      "puestoId": "83519009-458b-4685-9600-95af1b231223",
+      "tipoPago": "DIA",
+      "telefono": "",
+      "contactoNombre": "",
+      "contactoTelefono": "",
+      "contactoParentesco": "",
+      "activo": true,
+      "salarioPersonalizado": 666.67
+    }
+  ],
+  "obraColaboradores": [
+    {
+      "obraId": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "colaboradorId": "cdcb33ed-a4a7-473a-8aa6-f5081be459cb",
+      "fechaIngreso": 1780899446269,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "colaboradorId": "9d3d1310-617b-4371-a499-73255cceb76e",
+      "fechaIngreso": 1780899465558,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "colaboradorId": "c3647701-f7ee-4fc8-9f36-cf785135b5bf",
+      "fechaIngreso": 1782362593443,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "colaboradorId": "c3647701-f7ee-4fc8-9f36-cf785135b5bf",
+      "fechaIngreso": 1780899480301,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "colaboradorId": "61a897a7-6ab3-4d4a-bd2b-ea317fc97848",
+      "fechaIngreso": 1780899538336,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "colaboradorId": "e2810c6a-6ea2-4290-8b67-ae58eb969b12",
+      "fechaIngreso": 1780899640180,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "colaboradorId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fechaIngreso": 1780899648618,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "colaboradorId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fechaIngreso": 1780899652738,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "colaboradorId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "fechaIngreso": 1780899662256,
+      "fechaSalida": 1782278903429,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "colaboradorId": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "fechaIngreso": 1780899666958,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "colaboradorId": "df8164d1-9c0d-43e6-9fd6-faab19157b8c",
+      "fechaIngreso": 1780899673851,
+      "fechaSalida": 1780899690435,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "colaboradorId": "df8164d1-9c0d-43e6-9fd6-faab19157b8c",
+      "fechaIngreso": 1780899686246,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "colaboradorId": "845a8f70-163c-4a95-bdc2-b2045e3fb33f",
+      "fechaIngreso": 1780899700909,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "colaboradorId": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "fechaIngreso": 1782362168119,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "colaboradorId": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "fechaIngreso": 1780899719084,
+      "fechaSalida": 1782278932336,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "colaboradorId": "5a8ba46b-a91a-4247-8d6b-08b921809fad",
+      "fechaIngreso": 1780899723890,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "colaboradorId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "fechaIngreso": 1780899772894,
+      "fechaSalida": 1782278901112,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "colaboradorId": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "fechaIngreso": 1782362591224,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "colaboradorId": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "fechaIngreso": 1780899977527,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "colaboradorId": "83519009-458b-4685-9600-95af1b231223",
+      "fechaIngreso": 1782354958319,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "colaboradorId": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "fechaIngreso": 1780935606833,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "colaboradorId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fechaIngreso": 1780935614644,
+      "fechaSalida": 1780943760780,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "colaboradorId": "83519009-458b-4685-9600-95af1b231223",
+      "fechaIngreso": 1782570999379,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "colaboradorId": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "fechaIngreso": 1782570997248,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "colaboradorId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fechaIngreso": 1780943760780,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "colaboradorId": "5bf5e166-9826-41ea-865f-8a9f0ca7937f",
+      "fechaIngreso": 1780988847464,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "colaboradorId": "38c4bd2c-4123-44a5-ab08-3832e997d84e",
+      "fechaIngreso": 1781111890340,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "colaboradorId": "e2810c6a-6ea2-4290-8b67-ae58eb969b12",
+      "fechaIngreso": 1770865922700,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "colaboradorId": "5a8ba46b-a91a-4247-8d6b-08b921809fad",
+      "fechaIngreso": 1773457922700,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "colaboradorId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fechaIngreso": 1773457922700,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "colaboradorId": "9d3d1310-617b-4371-a499-73255cceb76e",
+      "fechaIngreso": 1773457922700,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "colaboradorId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "fechaIngreso": 1773457922700,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "colaboradorId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fechaIngreso": 1778641922700,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "colaboradorId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "fechaIngreso": 1782283627616,
+      "fechaSalida": 1782283629785,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "colaboradorId": "5a8ba46b-a91a-4247-8d6b-08b921809fad",
+      "fechaIngreso": 1782283645927,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "colaboradorId": "845a8f70-163c-4a95-bdc2-b2045e3fb33f",
+      "fechaIngreso": 1782283649160,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "colaboradorId": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "fechaIngreso": 1782362023881,
+      "fechaSalida": 1782362336575,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "colaboradorId": "cdcb33ed-a4a7-473a-8aa6-f5081be459cb",
+      "fechaIngreso": 1782362037537,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "colaboradorId": "e2810c6a-6ea2-4290-8b67-ae58eb969b12",
+      "fechaIngreso": 1782362042883,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "colaboradorId": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "fechaIngreso": 1782362058844,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "colaboradorId": "c3647701-f7ee-4fc8-9f36-cf785135b5bf",
+      "fechaIngreso": 1782362065043,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "colaboradorId": "38c4bd2c-4123-44a5-ab08-3832e997d84e",
+      "fechaIngreso": 1782362069612,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "colaboradorId": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "fechaIngreso": 1782753749652,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "colaboradorId": "61a897a7-6ab3-4d4a-bd2b-ea317fc97848",
+      "fechaIngreso": 1782753751120,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "colaboradorId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fechaIngreso": 1782753752986,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "colaboradorId": "5bf5e166-9826-41ea-865f-8a9f0ca7937f",
+      "fechaIngreso": 1782753754393,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "colaboradorId": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "fechaIngreso": 1782834654544,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    },
+    {
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "colaboradorId": "c3647701-f7ee-4fc8-9f36-cf785135b5bf",
+      "fechaIngreso": 1782834657163,
+      "fechaSalida": null,
+      "salarioDiaOverride": null
+    }
+  ],
+  "asistencias": [
+    {
+      "id": "a9ad5e46-6616-4ae6-b02a-ccb14e8eb698",
+      "colaboradorId": "83519009-458b-4685-9600-95af1b231223",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1780898400000,
+      "fraccion": 1
+    },
+    {
+      "id": "1067aa2c-8fe7-40a8-a320-34a92222b9d0",
+      "colaboradorId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1780898400000,
+      "fraccion": 1
+    },
+    {
+      "id": "e784a57b-c505-4af0-8b23-9672e8cbe632",
+      "colaboradorId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1780898400000,
+      "fraccion": 1
+    },
+    {
+      "id": "3d313a2d-a074-4ea9-8352-9d8e6b59e2cc",
+      "colaboradorId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1780898400000,
+      "fraccion": 1
+    },
+    {
+      "id": "4d31baf3-0697-44df-8181-06a1451ac4c0",
+      "colaboradorId": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1780898400000,
+      "fraccion": 1
+    },
+    {
+      "id": "39a477f3-c268-4c49-93d6-f6c1f52a617f",
+      "colaboradorId": "c3647701-f7ee-4fc8-9f36-cf785135b5bf",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1780898400000,
+      "fraccion": 1
+    },
+    {
+      "id": "54ee95a4-033c-40cd-857f-3306d8cb8f86",
+      "colaboradorId": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1780898400000,
+      "fraccion": 1
+    },
+    {
+      "id": "c45a8561-22e8-4d6b-9231-ae2f7bad4478",
+      "colaboradorId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1780898400000,
+      "fraccion": 1
+    },
+    {
+      "id": "73302623-3972-470d-b31f-a435f5c15b5d",
+      "colaboradorId": "61a897a7-6ab3-4d4a-bd2b-ea317fc97848",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1780898400000,
+      "fraccion": 1
+    },
+    {
+      "id": "cce29ddc-511b-40f7-b82d-59643e543a7e",
+      "colaboradorId": "5a8ba46b-a91a-4247-8d6b-08b921809fad",
+      "obraId": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "fecha": 1780898400000,
+      "fraccion": 1
+    },
+    {
+      "id": "402dfd59-3483-4bda-bb8c-217d867f8530",
+      "colaboradorId": "845a8f70-163c-4a95-bdc2-b2045e3fb33f",
+      "obraId": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "fecha": 1780898400000,
+      "fraccion": 0
+    },
+    {
+      "id": "b9a77bea-3b4a-4753-9566-840741e1afba",
+      "colaboradorId": "cdcb33ed-a4a7-473a-8aa6-f5081be459cb",
+      "obraId": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "fecha": 1780898400000,
+      "fraccion": 0
+    },
+    {
+      "id": "18ad0cec-12c6-4111-8e11-3eef545cbfcf",
+      "colaboradorId": "e2810c6a-6ea2-4290-8b67-ae58eb969b12",
+      "obraId": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "fecha": 1780898400000,
+      "fraccion": 1
+    },
+    {
+      "id": "2b0032be-49dd-461a-8995-c4cdb93c0e1e",
+      "colaboradorId": "5bf5e166-9826-41ea-865f-8a9f0ca7937f",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1780898400000,
+      "fraccion": 1
+    },
+    {
+      "id": "4df16029-f163-45eb-9baf-a1911f5b07d9",
+      "colaboradorId": "cdcb33ed-a4a7-473a-8aa6-f5081be459cb",
+      "obraId": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "fecha": 1781071200000,
+      "fraccion": 1
+    },
+    {
+      "id": "612f7c5d-ff75-4336-93e6-bcc98ebbdeb2",
+      "colaboradorId": "e2810c6a-6ea2-4290-8b67-ae58eb969b12",
+      "obraId": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "fecha": 1781071200000,
+      "fraccion": 1
+    },
+    {
+      "id": "faf3ebe3-0b40-4d9d-a82a-75518ea72289",
+      "colaboradorId": "83519009-458b-4685-9600-95af1b231223",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1781071200000,
+      "fraccion": 1
+    },
+    {
+      "id": "3c3c7428-e74d-43cf-a9ef-be99255caeb3",
+      "colaboradorId": "9d3d1310-617b-4371-a499-73255cceb76e",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1781071200000,
+      "fraccion": 1
+    },
+    {
+      "id": "e9ff0c15-510c-493f-a47d-79fc1a7919aa",
+      "colaboradorId": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1781071200000,
+      "fraccion": 1
+    },
+    {
+      "id": "66f84c77-5c12-44dd-9824-7102f693f783",
+      "colaboradorId": "df8164d1-9c0d-43e6-9fd6-faab19157b8c",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1781071200000,
+      "fraccion": 0
+    },
+    {
+      "id": "d41df50b-5cb3-4931-815f-a87ce1cb0d45",
+      "colaboradorId": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1781071200000,
+      "fraccion": 1
+    },
+    {
+      "id": "0767eeeb-7c72-44f0-8a22-4addb4fb0004",
+      "colaboradorId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1781071200000,
+      "fraccion": 1
+    },
+    {
+      "id": "12f24beb-e37a-4c07-9a8a-719cc520fcb3",
+      "colaboradorId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1781071200000,
+      "fraccion": 1
+    },
+    {
+      "id": "12301f40-eda2-4562-9bfe-528c45a2dd5d",
+      "colaboradorId": "61a897a7-6ab3-4d4a-bd2b-ea317fc97848",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1781071200000,
+      "fraccion": 1
+    },
+    {
+      "id": "705b0706-21f5-422a-a939-7064dd5ad46e",
+      "colaboradorId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1781071200000,
+      "fraccion": 1
+    },
+    {
+      "id": "ad29dadf-67ed-435e-9486-52c3808dc9fb",
+      "colaboradorId": "5bf5e166-9826-41ea-865f-8a9f0ca7937f",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1781071200000,
+      "fraccion": 1
+    },
+    {
+      "id": "ae475c6a-c67d-4f40-ac9d-9931e25bcce8",
+      "colaboradorId": "c3647701-f7ee-4fc8-9f36-cf785135b5bf",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1781071200000,
+      "fraccion": 1
+    },
+    {
+      "id": "bf35e143-c8cb-48be-a8aa-eee9493a3c3f",
+      "colaboradorId": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1781071200000,
+      "fraccion": 1
+    },
+    {
+      "id": "969773e7-5469-41b2-87b3-5c5f913d76b7",
+      "colaboradorId": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1781071200000,
+      "fraccion": 1
+    },
+    {
+      "id": "ef967823-a8b6-4e1b-8d16-ec936ddbb879",
+      "colaboradorId": "cdcb33ed-a4a7-473a-8aa6-f5081be459cb",
+      "obraId": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "fecha": 1780984800000,
+      "fraccion": 1
+    },
+    {
+      "id": "4b6b23bd-bb3f-48d4-a515-12fa5c65a9c7",
+      "colaboradorId": "e2810c6a-6ea2-4290-8b67-ae58eb969b12",
+      "obraId": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "fecha": 1780984800000,
+      "fraccion": 1
+    },
+    {
+      "id": "d4b9415b-188e-4b0f-96cc-69972225542b",
+      "colaboradorId": "83519009-458b-4685-9600-95af1b231223",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1780984800000,
+      "fraccion": 1
+    },
+    {
+      "id": "752503ee-149a-4759-8580-e04fd4af0523",
+      "colaboradorId": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1780984800000,
+      "fraccion": 1
+    },
+    {
+      "id": "bd7b0861-205f-4011-a4d4-ff3eb9454418",
+      "colaboradorId": "df8164d1-9c0d-43e6-9fd6-faab19157b8c",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1780984800000,
+      "fraccion": 1
+    },
+    {
+      "id": "701000ed-a930-43f6-8f59-ac43d3129af6",
+      "colaboradorId": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1780984800000,
+      "fraccion": 1
+    },
+    {
+      "id": "55a7fed3-5f47-43be-a8b1-904c727b32c5",
+      "colaboradorId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1780984800000,
+      "fraccion": 1
+    },
+    {
+      "id": "69cda4d0-d3ba-4dc3-b54c-6c2b84c69432",
+      "colaboradorId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1780984800000,
+      "fraccion": 1
+    },
+    {
+      "id": "cd7f323c-a635-45fe-af4c-67f65ada9bd7",
+      "colaboradorId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1780984800000,
+      "fraccion": 1
+    },
+    {
+      "id": "5f258019-1f91-4bee-bdaa-86fe7d1995b5",
+      "colaboradorId": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1780984800000,
+      "fraccion": 1
+    },
+    {
+      "id": "a1b97b97-eeb6-41f2-bdc2-4841675a2e49",
+      "colaboradorId": "c3647701-f7ee-4fc8-9f36-cf785135b5bf",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1780984800000,
+      "fraccion": 1
+    },
+    {
+      "id": "f90a9c9d-12c9-4a55-8d60-eef77a93011d",
+      "colaboradorId": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1780984800000,
+      "fraccion": 1
+    },
+    {
+      "id": "dfbb2f75-a717-4155-8977-4e960b1fbbd0",
+      "colaboradorId": "5bf5e166-9826-41ea-865f-8a9f0ca7937f",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1780984800000,
+      "fraccion": 1
+    },
+    {
+      "id": "333920f7-5974-46a4-8e66-37aa16a43148",
+      "colaboradorId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1780984800000,
+      "fraccion": 1
+    },
+    {
+      "id": "e97ce39f-9ccc-49ff-9b25-b6fa37b87185",
+      "colaboradorId": "61a897a7-6ab3-4d4a-bd2b-ea317fc97848",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1780984800000,
+      "fraccion": 1
+    },
+    {
+      "id": "9412da96-1dc5-481a-b10a-6a22fa1af67a",
+      "colaboradorId": "5a8ba46b-a91a-4247-8d6b-08b921809fad",
+      "obraId": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "fecha": 1780984800000,
+      "fraccion": 1
+    },
+    {
+      "id": "34d64f73-0eec-4439-9483-de0e77c6e41d",
+      "colaboradorId": "845a8f70-163c-4a95-bdc2-b2045e3fb33f",
+      "obraId": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "fecha": 1780984800000,
+      "fraccion": 1
+    },
+    {
+      "id": "91a3a07c-b94d-4b27-815c-ee26e3b2ddf9",
+      "colaboradorId": "38c4bd2c-4123-44a5-ab08-3832e997d84e",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1780984800000,
+      "fraccion": 1
+    },
+    {
+      "id": "249e7b0c-b7e8-460a-b0cf-b4df85c0a6e9",
+      "colaboradorId": "cdcb33ed-a4a7-473a-8aa6-f5081be459cb",
+      "obraId": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "fecha": 1781157600000,
+      "fraccion": 1
+    },
+    {
+      "id": "b9cc67af-6870-4135-8608-50bbe0fb0594",
+      "colaboradorId": "e2810c6a-6ea2-4290-8b67-ae58eb969b12",
+      "obraId": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "fecha": 1781157600000,
+      "fraccion": 1
+    },
+    {
+      "id": "3bc6e52b-e3ae-4c35-8fac-4a7cdb70b1b3",
+      "colaboradorId": "83519009-458b-4685-9600-95af1b231223",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1781157600000,
+      "fraccion": 1
+    },
+    {
+      "id": "a69da326-47f0-4a02-996e-b9b0f06ffa23",
+      "colaboradorId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1781157600000,
+      "fraccion": 0
+    },
+    {
+      "id": "7abc8d5d-c51a-4cb8-9568-17d0fc5e8942",
+      "colaboradorId": "9d3d1310-617b-4371-a499-73255cceb76e",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1781157600000,
+      "fraccion": 1
+    },
+    {
+      "id": "74995d21-c660-4f50-ac29-2741aa9daae9",
+      "colaboradorId": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1781157600000,
+      "fraccion": 1
+    },
+    {
+      "id": "043f39d6-774a-4d9b-bb13-76158dc7ad81",
+      "colaboradorId": "df8164d1-9c0d-43e6-9fd6-faab19157b8c",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1781157600000,
+      "fraccion": 1
+    },
+    {
+      "id": "7bb46b2e-3bb7-4517-9145-97138da82758",
+      "colaboradorId": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1781157600000,
+      "fraccion": 1
+    },
+    {
+      "id": "a8d6a8b9-226d-44d5-a26f-74a1108a9089",
+      "colaboradorId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1781157600000,
+      "fraccion": 1
+    },
+    {
+      "id": "bbaab606-fa78-486d-a5a8-e242c025c42a",
+      "colaboradorId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1781157600000,
+      "fraccion": 1
+    },
+    {
+      "id": "3dd068d4-66e6-461c-b94e-50be50c5fed6",
+      "colaboradorId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1781157600000,
+      "fraccion": 1
+    },
+    {
+      "id": "0ddbc39f-78bc-4605-9af7-6aa89bd9d802",
+      "colaboradorId": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1781157600000,
+      "fraccion": 1
+    },
+    {
+      "id": "f455a3ab-2374-4484-857d-95dc6ae736f1",
+      "colaboradorId": "c3647701-f7ee-4fc8-9f36-cf785135b5bf",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1781157600000,
+      "fraccion": 1
+    },
+    {
+      "id": "603744d1-b561-47fe-9f85-79fabf9ea794",
+      "colaboradorId": "38c4bd2c-4123-44a5-ab08-3832e997d84e",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1781157600000,
+      "fraccion": 1
+    },
+    {
+      "id": "666e92f8-9ed3-4336-8c92-120a27414d74",
+      "colaboradorId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1781157600000,
+      "fraccion": 1
+    },
+    {
+      "id": "dbe43311-2a42-4248-809a-5d7205a389fa",
+      "colaboradorId": "61a897a7-6ab3-4d4a-bd2b-ea317fc97848",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1781157600000,
+      "fraccion": 1
+    },
+    {
+      "id": "4dbeb204-8d94-4370-a7f4-c879f22accaa",
+      "colaboradorId": "5a8ba46b-a91a-4247-8d6b-08b921809fad",
+      "obraId": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "fecha": 1781157600000,
+      "fraccion": 1
+    },
+    {
+      "id": "3f865a2e-f623-4484-bdaf-b99e635edcfd",
+      "colaboradorId": "845a8f70-163c-4a95-bdc2-b2045e3fb33f",
+      "obraId": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "fecha": 1781157600000,
+      "fraccion": 1
+    },
+    {
+      "id": "745ab6ab-510b-432d-8e38-c337b99b3be8",
+      "colaboradorId": "5bf5e166-9826-41ea-865f-8a9f0ca7937f",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1781157600000,
+      "fraccion": 1
+    },
+    {
+      "id": "dafad61f-f9b9-4e1f-85c7-46523c8504e1",
+      "colaboradorId": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1781157600000,
+      "fraccion": 1
+    },
+    {
+      "id": "0f3ca584-2a98-4be1-9cc3-2e481b7a0335",
+      "colaboradorId": "5a8ba46b-a91a-4247-8d6b-08b921809fad",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782194400000,
+      "fraccion": 1
+    },
+    {
+      "id": "c7492139-7b33-4d6b-9830-dcfbaff35a68",
+      "colaboradorId": "5a8ba46b-a91a-4247-8d6b-08b921809fad",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782280800000,
+      "fraccion": 1
+    },
+    {
+      "id": "7283e9b2-fe4d-400e-b039-f36a22c3695a",
+      "colaboradorId": "38c4bd2c-4123-44a5-ab08-3832e997d84e",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782280800000,
+      "fraccion": 1
+    },
+    {
+      "id": "0eb5700f-693c-4982-949e-c1b580e53bfe",
+      "colaboradorId": "9d3d1310-617b-4371-a499-73255cceb76e",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782280800000,
+      "fraccion": 1
+    },
+    {
+      "id": "fcaead1d-b1c5-4041-baea-e32785fbb3e5",
+      "colaboradorId": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782280800000,
+      "fraccion": 1
+    },
+    {
+      "id": "3b11c6ef-10c7-43e4-8f58-15e7471f7df9",
+      "colaboradorId": "df8164d1-9c0d-43e6-9fd6-faab19157b8c",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782280800000,
+      "fraccion": 1
+    },
+    {
+      "id": "fbcc6b1b-7cd2-45e1-9473-eec8fd73a552",
+      "colaboradorId": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782194400000,
+      "fraccion": 1
+    },
+    {
+      "id": "6101dada-2d0e-423d-92bf-b4370323b079",
+      "colaboradorId": "9d3d1310-617b-4371-a499-73255cceb76e",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782194400000,
+      "fraccion": 1
+    },
+    {
+      "id": "195afddf-6e50-4bf8-8ee2-48cc3c3cbf4c",
+      "colaboradorId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782194400000,
+      "fraccion": 1
+    },
+    {
+      "id": "b6eb4348-0741-431a-b62f-0e0648160856",
+      "colaboradorId": "e2810c6a-6ea2-4290-8b67-ae58eb969b12",
+      "obraId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "fecha": 1782280800000,
+      "fraccion": 1
+    },
+    {
+      "id": "4ee48a0e-7d53-464f-a1c7-976b8dd11e5c",
+      "colaboradorId": "cdcb33ed-a4a7-473a-8aa6-f5081be459cb",
+      "obraId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "fecha": 1782280800000,
+      "fraccion": 1
+    },
+    {
+      "id": "c1c0bd70-5ce5-4630-a76a-f3407483107e",
+      "colaboradorId": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "obraId": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "fecha": 1782280800000,
+      "fraccion": 1
+    },
+    {
+      "id": "3be5b7ca-44c2-4de8-96fd-1f7c69cd17c0",
+      "colaboradorId": "83519009-458b-4685-9600-95af1b231223",
+      "obraId": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "fecha": 1782280800000,
+      "fraccion": 1
+    },
+    {
+      "id": "935c9ac9-7bec-4238-aaae-8f3917b618ff",
+      "colaboradorId": "5bf5e166-9826-41ea-865f-8a9f0ca7937f",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1782280800000,
+      "fraccion": 1
+    },
+    {
+      "id": "b5eafc24-34c9-41dd-833c-be70441314a6",
+      "colaboradorId": "5bf5e166-9826-41ea-865f-8a9f0ca7937f",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1782194400000,
+      "fraccion": 1
+    },
+    {
+      "id": "0f094b43-3a94-4846-915f-13162e2804fd",
+      "colaboradorId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1782280800000,
+      "fraccion": 1
+    },
+    {
+      "id": "9339d979-59e1-4502-ac1f-c712315968bd",
+      "colaboradorId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1782194400000,
+      "fraccion": 1
+    },
+    {
+      "id": "3a82a04a-8839-4198-92bb-4114c4c5a178",
+      "colaboradorId": "61a897a7-6ab3-4d4a-bd2b-ea317fc97848",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1782280800000,
+      "fraccion": 1
+    },
+    {
+      "id": "4173a9ac-2922-4f32-a3ff-5282a1ee5be0",
+      "colaboradorId": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1782280800000,
+      "fraccion": 1
+    },
+    {
+      "id": "6fbe0fb5-eaaf-44c8-a5ad-b11fce8207ee",
+      "colaboradorId": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1782194400000,
+      "fraccion": 1
+    },
+    {
+      "id": "a90e9197-a2d2-4306-947b-172522522e4a",
+      "colaboradorId": "845a8f70-163c-4a95-bdc2-b2045e3fb33f",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782194400000,
+      "fraccion": 1
+    },
+    {
+      "id": "0a349fde-6d59-4287-a461-3dc9bb65d85a",
+      "colaboradorId": "c3647701-f7ee-4fc8-9f36-cf785135b5bf",
+      "obraId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "fecha": 1782194400000,
+      "fraccion": 1
+    },
+    {
+      "id": "a6ce692a-7087-4862-be3b-9aa24761941e",
+      "colaboradorId": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "obraId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "fecha": 1782194400000,
+      "fraccion": 1
+    },
+    {
+      "id": "755f1ef5-3f6f-4515-a6a8-ba599b70dd78",
+      "colaboradorId": "c3647701-f7ee-4fc8-9f36-cf785135b5bf",
+      "obraId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "fecha": 1782280800000,
+      "fraccion": 1
+    },
+    {
+      "id": "018a55ac-3347-4c2f-bed5-d5a5158350ed",
+      "colaboradorId": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "obraId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "fecha": 1782280800000,
+      "fraccion": 1
+    },
+    {
+      "id": "781c4cd3-b453-424e-8579-a61dbc63ae2e",
+      "colaboradorId": "38c4bd2c-4123-44a5-ab08-3832e997d84e",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782367200000,
+      "fraccion": 1
+    },
+    {
+      "id": "1c257614-42ef-496f-baac-f1d76caf05e1",
+      "colaboradorId": "9d3d1310-617b-4371-a499-73255cceb76e",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782367200000,
+      "fraccion": 1
+    },
+    {
+      "id": "014cdf3f-f108-4992-a38a-23b1a78c584c",
+      "colaboradorId": "df8164d1-9c0d-43e6-9fd6-faab19157b8c",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782367200000,
+      "fraccion": 1
+    },
+    {
+      "id": "fa259806-f4cc-4f3c-8b5e-beecdf198fd5",
+      "colaboradorId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782367200000,
+      "fraccion": 1
+    },
+    {
+      "id": "ad47b690-2412-4554-838c-2ef52a2af696",
+      "colaboradorId": "845a8f70-163c-4a95-bdc2-b2045e3fb33f",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782367200000,
+      "fraccion": 1
+    },
+    {
+      "id": "e1c5c11e-910f-49ed-8533-246449cec889",
+      "colaboradorId": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782367200000,
+      "fraccion": 1
+    },
+    {
+      "id": "cb89d9c9-4d28-4700-b1da-fec5c0f8927c",
+      "colaboradorId": "61a897a7-6ab3-4d4a-bd2b-ea317fc97848",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1782367200000,
+      "fraccion": 1
+    },
+    {
+      "id": "a7a94a75-cbeb-41b2-b130-b5d3ec128ad2",
+      "colaboradorId": "5bf5e166-9826-41ea-865f-8a9f0ca7937f",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1782367200000,
+      "fraccion": 1
+    },
+    {
+      "id": "a4bbacb8-a752-4e5d-a381-31597121d450",
+      "colaboradorId": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "obraId": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "fecha": 1782367200000,
+      "fraccion": 1
+    },
+    {
+      "id": "9cd4f5a0-9f46-4b98-85af-3ab077d108c2",
+      "colaboradorId": "c3647701-f7ee-4fc8-9f36-cf785135b5bf",
+      "obraId": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "fecha": 1782367200000,
+      "fraccion": 1
+    },
+    {
+      "id": "c1f5ae5e-cd66-455a-ae0e-7870c5b84cf2",
+      "colaboradorId": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "obraId": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "fecha": 1782367200000,
+      "fraccion": 1
+    },
+    {
+      "id": "c97e1eb7-3e1e-4680-b8fa-186726d6fb51",
+      "colaboradorId": "83519009-458b-4685-9600-95af1b231223",
+      "obraId": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "fecha": 1782367200000,
+      "fraccion": 1
+    },
+    {
+      "id": "f1927510-fa9a-4a2c-9cde-c345e20d64ac",
+      "colaboradorId": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1782367200000,
+      "fraccion": 1
+    },
+    {
+      "id": "f0187fdb-a775-4a70-94e4-ea61a017fe4c",
+      "colaboradorId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1782367200000,
+      "fraccion": 1
+    },
+    {
+      "id": "ee6c74d4-589c-43e3-b451-b0a901ad9681",
+      "colaboradorId": "c3647701-f7ee-4fc8-9f36-cf785135b5bf",
+      "obraId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "fecha": 1782453600000,
+      "fraccion": 1
+    },
+    {
+      "id": "b674e167-fa45-438d-8759-209bfbcda576",
+      "colaboradorId": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "obraId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "fecha": 1782453600000,
+      "fraccion": 1
+    },
+    {
+      "id": "1615a135-59c7-4645-aba0-bf2aef82b40a",
+      "colaboradorId": "e2810c6a-6ea2-4290-8b67-ae58eb969b12",
+      "obraId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "fecha": 1782453600000,
+      "fraccion": 1
+    },
+    {
+      "id": "ea1ed58f-90b8-4da9-bfc8-774077f182c4",
+      "colaboradorId": "cdcb33ed-a4a7-473a-8aa6-f5081be459cb",
+      "obraId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "fecha": 1782453600000,
+      "fraccion": 1
+    },
+    {
+      "id": "92111d16-30b1-45ab-be5e-f9fb33b60b5c",
+      "colaboradorId": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "obraId": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "fecha": 1782453600000,
+      "fraccion": 1
+    },
+    {
+      "id": "d1c5ae2e-cd1d-45e3-b216-b0048c03164c",
+      "colaboradorId": "83519009-458b-4685-9600-95af1b231223",
+      "obraId": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "fecha": 1782453600000,
+      "fraccion": 1
+    },
+    {
+      "id": "f8255539-5136-469e-a81c-6464738d3b1e",
+      "colaboradorId": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1782453600000,
+      "fraccion": 1
+    },
+    {
+      "id": "3beb3fa2-626f-4794-9db2-53418d2866ce",
+      "colaboradorId": "61a897a7-6ab3-4d4a-bd2b-ea317fc97848",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1782453600000,
+      "fraccion": 1
+    },
+    {
+      "id": "abfeb0ca-e6b8-400e-a263-594936f2e230",
+      "colaboradorId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1782453600000,
+      "fraccion": 1
+    },
+    {
+      "id": "f6bca9d6-0320-477a-ae65-823b39f4b924",
+      "colaboradorId": "5bf5e166-9826-41ea-865f-8a9f0ca7937f",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1782453600000,
+      "fraccion": 1
+    },
+    {
+      "id": "8c9c2654-1a57-4c39-8181-70f3d50b6e70",
+      "colaboradorId": "38c4bd2c-4123-44a5-ab08-3832e997d84e",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782453600000,
+      "fraccion": 1
+    },
+    {
+      "id": "1d016739-2b91-404e-b14f-39fcd9e9fde8",
+      "colaboradorId": "9d3d1310-617b-4371-a499-73255cceb76e",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782453600000,
+      "fraccion": 1
+    },
+    {
+      "id": "9afc49bf-961a-45b7-90f1-411ba1a07429",
+      "colaboradorId": "df8164d1-9c0d-43e6-9fd6-faab19157b8c",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782453600000,
+      "fraccion": 1
+    },
+    {
+      "id": "fdfec5ff-b90b-4093-9155-6119b8317de0",
+      "colaboradorId": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782453600000,
+      "fraccion": 1
+    },
+    {
+      "id": "d9479665-3d58-4926-a615-2e9373725e3b",
+      "colaboradorId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782453600000,
+      "fraccion": 1
+    },
+    {
+      "id": "44cd665a-5b06-461a-8c13-6ed2c841cfb0",
+      "colaboradorId": "38c4bd2c-4123-44a5-ab08-3832e997d84e",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782540000000,
+      "fraccion": 1
+    },
+    {
+      "id": "b211d6c6-edf6-470c-9a9b-1c20f2fecd47",
+      "colaboradorId": "9d3d1310-617b-4371-a499-73255cceb76e",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782540000000,
+      "fraccion": 1
+    },
+    {
+      "id": "c8547c51-8551-4fbe-ab88-faa94ec1639b",
+      "colaboradorId": "df8164d1-9c0d-43e6-9fd6-faab19157b8c",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782540000000,
+      "fraccion": 0
+    },
+    {
+      "id": "9a284d1b-8b43-42de-9f74-3a5e2468c8f1",
+      "colaboradorId": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782540000000,
+      "fraccion": 1
+    },
+    {
+      "id": "0c960d62-2ad1-413d-9896-c008bfffca93",
+      "colaboradorId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782540000000,
+      "fraccion": 1
+    },
+    {
+      "id": "a94fd3c3-357e-4a87-b127-361aef197082",
+      "colaboradorId": "5a8ba46b-a91a-4247-8d6b-08b921809fad",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782367200000,
+      "fraccion": 1
+    },
+    {
+      "id": "279e0e5f-15d6-4840-9a25-54c9f989a611",
+      "colaboradorId": "845a8f70-163c-4a95-bdc2-b2045e3fb33f",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782453600000,
+      "fraccion": 0
+    },
+    {
+      "id": "f4428462-eca7-4c89-9180-e9fe3c83c272",
+      "colaboradorId": "5a8ba46b-a91a-4247-8d6b-08b921809fad",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782453600000,
+      "fraccion": 0
+    },
+    {
+      "id": "383c8a5c-799f-4a82-bed0-de1f2e881312",
+      "colaboradorId": "5a8ba46b-a91a-4247-8d6b-08b921809fad",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782540000000,
+      "fraccion": 0
+    },
+    {
+      "id": "99323c17-0ab0-418c-bc40-71845d8d2e74",
+      "colaboradorId": "845a8f70-163c-4a95-bdc2-b2045e3fb33f",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782540000000,
+      "fraccion": 0
+    },
+    {
+      "id": "774138b6-01b1-45d5-a03e-a1256f8f2f59",
+      "colaboradorId": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1782540000000,
+      "fraccion": 1
+    },
+    {
+      "id": "bf3a07bf-8c7e-4dac-8b85-88093afb2dc7",
+      "colaboradorId": "61a897a7-6ab3-4d4a-bd2b-ea317fc97848",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1782540000000,
+      "fraccion": 1
+    },
+    {
+      "id": "67e941f7-5693-41bb-94fe-0fcb5acabc23",
+      "colaboradorId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1782540000000,
+      "fraccion": 1
+    },
+    {
+      "id": "30bf4684-cb93-4208-a62b-8b0751b97276",
+      "colaboradorId": "5bf5e166-9826-41ea-865f-8a9f0ca7937f",
+      "obraId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "fecha": 1782540000000,
+      "fraccion": 1
+    },
+    {
+      "id": "7bd833cf-4e98-4dfc-9959-3704b6bed118",
+      "colaboradorId": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "obraId": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "fecha": 1782540000000,
+      "fraccion": 0
+    },
+    {
+      "id": "5bf630c4-511f-4050-bedc-4873e6b623ff",
+      "colaboradorId": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782540000000,
+      "fraccion": 1
+    },
+    {
+      "id": "7a918852-ba48-4ed5-bb9a-c8552902c8b6",
+      "colaboradorId": "83519009-458b-4685-9600-95af1b231223",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782540000000,
+      "fraccion": 1
+    },
+    {
+      "id": "bf3c8adf-d099-4b15-889d-0b2b87d94e3a",
+      "colaboradorId": "e2810c6a-6ea2-4290-8b67-ae58eb969b12",
+      "obraId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "fecha": 1782540000000,
+      "fraccion": 1
+    },
+    {
+      "id": "d40cb4f4-19e1-4271-a3a7-52997b4e1982",
+      "colaboradorId": "cdcb33ed-a4a7-473a-8aa6-f5081be459cb",
+      "obraId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "fecha": 1782540000000,
+      "fraccion": 1
+    },
+    {
+      "id": "4abd4760-bfae-4600-8d30-7b7a6d380450",
+      "colaboradorId": "38c4bd2c-4123-44a5-ab08-3832e997d84e",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782712800000,
+      "fraccion": 1
+    },
+    {
+      "id": "6210ab9d-758c-4fb2-a544-bb7d90e9e209",
+      "colaboradorId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782712800000,
+      "fraccion": 1
+    },
+    {
+      "id": "a02efbed-64d6-40de-8531-cdbd79045c90",
+      "colaboradorId": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782712800000,
+      "fraccion": 1
+    },
+    {
+      "id": "df7003ca-1148-4996-89dd-c0f9cb075741",
+      "colaboradorId": "61a897a7-6ab3-4d4a-bd2b-ea317fc97848",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782712800000,
+      "fraccion": 1
+    },
+    {
+      "id": "06a4eb76-84ce-4375-88e5-c850a259d2a8",
+      "colaboradorId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782712800000,
+      "fraccion": 1
+    },
+    {
+      "id": "b9215292-feac-4349-b270-827c696849db",
+      "colaboradorId": "5bf5e166-9826-41ea-865f-8a9f0ca7937f",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782712800000,
+      "fraccion": 1
+    },
+    {
+      "id": "129e5210-4a11-4bf1-9c62-edea49e524d7",
+      "colaboradorId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782712800000,
+      "fraccion": 1
+    },
+    {
+      "id": "76f07ae5-1f4e-4693-b00d-5752ea1ddaf9",
+      "colaboradorId": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782712800000,
+      "fraccion": 0.5
+    },
+    {
+      "id": "b8ba7cd1-8b2c-4c95-9ab6-19bee763ebdd",
+      "colaboradorId": "83519009-458b-4685-9600-95af1b231223",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782712800000,
+      "fraccion": 0.5
+    },
+    {
+      "id": "ee3a60b5-5711-432b-8d48-49ec5124be1e",
+      "colaboradorId": "845a8f70-163c-4a95-bdc2-b2045e3fb33f",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782712800000,
+      "fraccion": 1
+    },
+    {
+      "id": "2d14d0e5-2bdc-47a0-a9ec-4268c0166bea",
+      "colaboradorId": "5a8ba46b-a91a-4247-8d6b-08b921809fad",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782712800000,
+      "fraccion": 1
+    },
+    {
+      "id": "e56834ae-d3b4-49a7-9a59-5791a858b4bd",
+      "colaboradorId": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782799200000,
+      "fraccion": 1
+    },
+    {
+      "id": "95e30bcf-449d-404d-bb7a-560473a0cc04",
+      "colaboradorId": "61a897a7-6ab3-4d4a-bd2b-ea317fc97848",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782799200000,
+      "fraccion": 1
+    },
+    {
+      "id": "e612af6d-1f32-4c0e-9b6c-6a86e10cddcb",
+      "colaboradorId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782799200000,
+      "fraccion": 1
+    },
+    {
+      "id": "ff7e6848-a8be-417c-a5f8-38734e240706",
+      "colaboradorId": "5bf5e166-9826-41ea-865f-8a9f0ca7937f",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782799200000,
+      "fraccion": 1
+    },
+    {
+      "id": "41102353-551d-4f38-91d7-44a588795a70",
+      "colaboradorId": "845a8f70-163c-4a95-bdc2-b2045e3fb33f",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782799200000,
+      "fraccion": 1
+    },
+    {
+      "id": "5ff22255-d261-442b-bdf6-a3e3ca0b0a8f",
+      "colaboradorId": "5a8ba46b-a91a-4247-8d6b-08b921809fad",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782799200000,
+      "fraccion": 1
+    },
+    {
+      "id": "ba173b42-8470-48c6-83ee-e695aa9a55fb",
+      "colaboradorId": "38c4bd2c-4123-44a5-ab08-3832e997d84e",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782799200000,
+      "fraccion": 1
+    },
+    {
+      "id": "1c075bd6-8a88-4807-993b-3253951f27fa",
+      "colaboradorId": "df8164d1-9c0d-43e6-9fd6-faab19157b8c",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782799200000,
+      "fraccion": 1
+    },
+    {
+      "id": "3dce1575-537e-4317-8ff5-90420f487e83",
+      "colaboradorId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782799200000,
+      "fraccion": 1
+    },
+    {
+      "id": "4c1ee277-b0b9-4218-adec-ddc68d8935e8",
+      "colaboradorId": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "obraId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "fecha": 1782799200000,
+      "fraccion": 1
+    },
+    {
+      "id": "09b69520-75e5-40d8-837c-149b85dc8d2b",
+      "colaboradorId": "c3647701-f7ee-4fc8-9f36-cf785135b5bf",
+      "obraId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "fecha": 1782799200000,
+      "fraccion": 1
+    },
+    {
+      "id": "2d3fb22e-a304-4cb0-8daf-40c6de90973e",
+      "colaboradorId": "e2810c6a-6ea2-4290-8b67-ae58eb969b12",
+      "obraId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "fecha": 1782799200000,
+      "fraccion": 1
+    },
+    {
+      "id": "6c335456-f2da-46b8-995e-c3a97846779b",
+      "colaboradorId": "cdcb33ed-a4a7-473a-8aa6-f5081be459cb",
+      "obraId": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "fecha": 1782799200000,
+      "fraccion": 1
+    },
+    {
+      "id": "0f4625b3-7731-4e06-b204-b1b77b61ed4d",
+      "colaboradorId": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782799200000,
+      "fraccion": 1
+    },
+    {
+      "id": "62a899d9-690a-49f5-9300-243b983d3d28",
+      "colaboradorId": "c3647701-f7ee-4fc8-9f36-cf785135b5bf",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782799200000,
+      "fraccion": 1
+    },
+    {
+      "id": "4a5c8f22-b96d-4d38-afd8-d630001414c5",
+      "colaboradorId": "83519009-458b-4685-9600-95af1b231223",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782799200000,
+      "fraccion": 1
+    },
+    {
+      "id": "00e85490-7fb3-4e5a-9e08-ec7e873bf661",
+      "colaboradorId": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782799200000,
+      "fraccion": 1
+    },
+    {
+      "id": "24785000-c2a9-4c2c-9acf-aa2ac3d65ebf",
+      "colaboradorId": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "obraId": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "fecha": 1782799200000,
+      "fraccion": 1
+    }
+  ],
+  "destajos": [],
+  "cotizaciones": [
+    {
+      "id": "df8164d1-9c0d-43e6-9fd6-faab19157b8c",
+      "cliente": "",
+      "nombreProyecto": "Punta Brest",
+      "ubicacion": "",
+      "fecha": 1780935636659,
+      "estado": "BORRADOR",
+      "ivaEnabled": false,
+      "descuento": 0,
+      "notas": "no",
+      "obraId": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "pdfConfigJson": "{\"colorHex\":\"#000000\",\"duracion\":\"\",\"empresaContacto\":\"Orlando Ramos Mendoza\\n2299151549\",\"empresaNombre\":\"`\",\"fecha\":\"08/06/2026\",\"firmaDerechaTexto\":\"Aceptado por Cliente\",\"firmaIzquierdaTexto\":\"Autorizado por Obra\",\"folio\":\"\",\"ivaPercentage\":16.0,\"modoCompacto\":true,\"pieDePagina\":\"\",\"proyecto\":\"Punta Brest\",\"showCantidad\":true,\"showClave\":true,\"showFirmas\":false,\"showIva\":true,\"showPrecioUnitario\":true,\"showTotal\":true,\"showUnidad\":true,\"supervision\":\"\",\"todoMayusculas\":true,\"ubicacion\":\"Punta Tiburón\",\"watermarkText\":\"\"}"
+    },
+    {
+      "id": "9d72660b-5eb1-48d2-85e5-eec382eab4e5",
+      "cliente": "",
+      "nombreProyecto": "Senderos",
+      "ubicacion": "Fracc Senderos",
+      "fecha": 1782363102946,
+      "estado": "BORRADOR",
+      "ivaEnabled": true,
+      "descuento": 0,
+      "notas": "",
+      "obraId": "621abad1-bd03-4e30-9c72-5879b4baff35",
+      "pdfConfigJson": null
+    }
+  ],
+  "archivosCotizacion": [
+    {
+      "id": "7534ab63-22f3-41e3-98b1-c917378046f0",
+      "cotizacionId": "df8164d1-9c0d-43e6-9fd6-faab19157b8c",
+      "tipo": "PDF",
+      "nombre": "Entrecalles.pdf",
+      "uri": "1782362848622.pdf",
+      "fechaAgregado": 1782362848655
+    },
+    {
+      "id": "ddb74f0d-c94f-4d60-b339-5f8325f0587e",
+      "cotizacionId": "9d72660b-5eb1-48d2-85e5-eec382eab4e5",
+      "tipo": "PDF",
+      "nombre": "4DESIGN MX - CASA SENDERO - ESTRUCTURALES - 13 MAR 2026 - AMC-Model.pdf",
+      "uri": "1782363122331.pdf",
+      "fechaAgregado": 1782363122346
+    },
+    {
+      "id": "16878467-6358-40cb-a6b2-2ae1e12734c1",
+      "cotizacionId": "9d72660b-5eb1-48d2-85e5-eec382eab4e5",
+      "tipo": "PDF",
+      "nombre": "ZONA DESIGN MX - CASA SENDERO - ESTRUCTURALES - 13 MAR 2026 - AMC-Model.pdf",
+      "uri": "1782363125148.pdf",
+      "fechaAgregado": 1782363125164
+    },
+    {
+      "id": "8522577f-2b68-4b69-b01b-e57f764a60d4",
+      "cotizacionId": "9d72660b-5eb1-48d2-85e5-eec382eab4e5",
+      "tipo": "PDF",
+      "nombre": "4SENDERO - ESTRUCTURALES - 13 MAR 2026 - AMC-Model.pdf",
+      "uri": "1782363128438.pdf",
+      "fechaAgregado": 1782363128451
+    },
+    {
+      "id": "db6a3d44-5c44-43b1-aa39-c6a1a9f13ded",
+      "cotizacionId": "9d72660b-5eb1-48d2-85e5-eec382eab4e5",
+      "tipo": "PDF",
+      "nombre": "3SENDERO - ESTRUCTURALES - 13 MAR 2026 - AMC-Model.pdf",
+      "uri": "1782363135471.pdf",
+      "fechaAgregado": 1782363135485
+    },
+    {
+      "id": "e6e762f9-bea5-42ae-b180-6d67cfc2412c",
+      "cotizacionId": "9d72660b-5eb1-48d2-85e5-eec382eab4e5",
+      "tipo": "PDF",
+      "nombre": "2DESIGN MX - CASA SENDERO - ESTRUCTURALES - 13 MAR 2026 - AMC-Model.pdf",
+      "uri": "1782363142537.pdf",
+      "fechaAgregado": 1782363142552
+    }
+  ],
+  "secciones": [
+    {
+      "id": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "cotizacionId": "df8164d1-9c0d-43e6-9fd6-faab19157b8c",
+      "nombre": "Detalle",
+      "orden": 1
+    }
+  ],
+  "partidas": [
+    {
+      "id": "64bceccd-baa8-4ac4-8303-e1ea3cf87bef",
+      "seccionId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "clave": "PCM-33",
+      "descripcion": "Piso cerámico 33x33",
+      "unidad": "m2",
+      "cantidad": 1,
+      "precioUnitario": 220,
+      "orden": 1
+    },
+    {
+      "id": "ec1c5e9f-fb17-4b3d-b1a1-37ec8f8271c5",
+      "seccionId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "clave": "PCM-60",
+      "descripcion": "Piso Cerámico 60x60",
+      "unidad": "m2",
+      "cantidad": 1,
+      "precioUnitario": 220,
+      "orden": 2
+    },
+    {
+      "id": "be33e08a-b790-489b-9301-1612183ae1d4",
+      "seccionId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "clave": "PCM-45",
+      "descripcion": "Piso Cerámico 45x90",
+      "unidad": "m2",
+      "cantidad": 1,
+      "precioUnitario": 220,
+      "orden": 3
+    },
+    {
+      "id": "8f7d6d1b-4a2a-46cd-8448-7774097e31e1",
+      "seccionId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "clave": "PCM-80",
+      "descripcion": "Piso Cerámico 80x80",
+      "unidad": "m2",
+      "cantidad": 1,
+      "precioUnitario": 270,
+      "orden": 4
+    },
+    {
+      "id": "bfdd3716-eadf-4794-8f81-250243a61965",
+      "seccionId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "clave": "PCM",
+      "descripcion": "Piso Cerámico",
+      "unidad": "m2",
+      "cantidad": 1,
+      "precioUnitario": 320,
+      "orden": 5
+    },
+    {
+      "id": "439c399d-ce9a-4c5d-ad33-3e4314ab7e07",
+      "seccionId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "clave": "ZCLS",
+      "descripcion": "Zoclos en ceramico",
+      "unidad": "ml",
+      "cantidad": 1,
+      "precioUnitario": 80,
+      "orden": 6
+    },
+    {
+      "id": "5bf5e166-9826-41ea-865f-8a9f0ca7937f",
+      "seccionId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "clave": "FCTL",
+      "descripcion": "Fachaleta",
+      "unidad": "m2",
+      "cantidad": 1,
+      "precioUnitario": 370,
+      "orden": 7
+    },
+    {
+      "id": "38c4bd2c-4123-44a5-ab08-3832e997d84e",
+      "seccionId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "clave": "CRFT",
+      "descripcion": "Colocación de cerámico en fachaleta",
+      "unidad": "m2",
+      "cantidad": 1,
+      "precioUnitario": 450,
+      "orden": 8
+    },
+    {
+      "id": "d91879c4-24d4-4023-bae7-127627232d5a",
+      "seccionId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "clave": "CPLJ",
+      "descripcion": "colocación de piedra laja en muro",
+      "unidad": "m2",
+      "cantidad": 1,
+      "precioUnitario": 450,
+      "orden": 9
+    },
+    {
+      "id": "753c72c0-d9b0-4cc9-b244-7e703f906c48",
+      "seccionId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "clave": "CPTVN",
+      "descripcion": "colocación de piso tipo vinil",
+      "unidad": "m2",
+      "cantidad": 1,
+      "precioUnitario": 210,
+      "orden": 10
+    },
+    {
+      "id": "65a12814-37e3-4732-9ed4-fc9a5c31e1b4",
+      "seccionId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "clave": "CMRL",
+      "descripcion": "colocación de mármol de 1cm media 30xlargo libre",
+      "unidad": "m2",
+      "cantidad": 1,
+      "precioUnitario": 270,
+      "orden": 11
+    },
+    {
+      "id": "7bf2ba7f-e349-4f2a-abfc-fac61b5502b8",
+      "seccionId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "clave": "SK",
+      "descripcion": "largos libres colocación de mármol de 2cm 30xlargo libre",
+      "unidad": "m2",
+      "cantidad": 1,
+      "precioUnitario": 310,
+      "orden": 12
+    },
+    {
+      "id": "9860b602-fb00-4b41-86ca-97ad06c56935",
+      "seccionId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "clave": "CMMR",
+      "descripcion": "colocación de mármol 120x120",
+      "unidad": "m2",
+      "cantidad": 1,
+      "precioUnitario": 350,
+      "orden": 13
+    },
+    {
+      "id": "11e90ee2-7ac0-4ebd-8347-ff64cdcc7e47",
+      "seccionId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "clave": "CMMCT",
+      "descripcion": "colocación de mármol 120x120 cortando pieza",
+      "unidad": "m2",
+      "cantidad": 1,
+      "precioUnitario": 570,
+      "orden": 14
+    },
+    {
+      "id": "51528005-00b7-4dcd-9d99-4f07bdf46821",
+      "seccionId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "clave": "CMMPC",
+      "descripcion": "colocación de mármol con pieza completa (incluye corte de piezas)",
+      "unidad": "m2",
+      "cantidad": 1,
+      "precioUnitario": 1100,
+      "orden": 15
+    },
+    {
+      "id": "b25d05b5-1c32-41ee-9e09-2f3c7f0c9a9e",
+      "seccionId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "clave": "ZCMM",
+      "descripcion": "zoclo de marmol (incluye cortar las piezas a la medida indicada)",
+      "unidad": "m2",
+      "cantidad": 1,
+      "precioUnitario": 150,
+      "orden": 16
+    },
+    {
+      "id": "2352af3a-c0d0-4b75-b465-584e2231d5e1",
+      "seccionId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "clave": "FNNVL",
+      "descripcion": "Fino para Nivelacion",
+      "unidad": "m2",
+      "cantidad": 1,
+      "precioUnitario": 110,
+      "orden": 17
+    },
+    {
+      "id": "51548ac7-9f72-4722-b211-ddbab8a98b66",
+      "seccionId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "clave": "CTJ",
+      "descripcion": "colocación de teja",
+      "unidad": "m2",
+      "cantidad": 1,
+      "precioUnitario": 310,
+      "orden": 18
+    },
+    {
+      "id": "6ea8d101-533e-4a27-a1c3-ba0307054116",
+      "seccionId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "clave": "FDACC",
+      "descripcion": "forrado de huella de acceso pieza (incluye las 4 boquillas)",
+      "unidad": "m2",
+      "cantidad": 1,
+      "precioUnitario": 250,
+      "orden": 19
+    },
+    {
+      "id": "2d5bdf0b-920b-4dd7-be56-7e8e2f44e09f",
+      "seccionId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "clave": "CVN-WC",
+      "descripcion": "colocación de veneciano (baño x paquete)",
+      "unidad": "m2",
+      "cantidad": 1,
+      "precioUnitario": 380,
+      "orden": 20
+    },
+    {
+      "id": "6b23aea2-53ed-42bf-9cfa-d3b19e6fb886",
+      "seccionId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "clave": "MMRPL",
+      "descripcion": "pulir mármol (incluye material y mano de obra",
+      "unidad": "m2",
+      "cantidad": 1,
+      "precioUnitario": 100,
+      "orden": 21
+    },
+    {
+      "id": "ae0c1cda-65f9-43b2-a70b-74978363d9fc",
+      "seccionId": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "clave": "STR",
+      "descripcion": "escaleras x paquete",
+      "unidad": "°",
+      "cantidad": 1,
+      "precioUnitario": 9000,
+      "orden": 22
+    }
+  ],
+  "pagos": [],
+  "movimientos": [
+    {
+      "id": "99144bec-c554-40a3-b4c7-95229bb4c5a4",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1770952322729,
+      "tipo": "ENTRADA",
+      "categoria": "ANTICIPO",
+      "concepto": "Anticipo de Obra",
+      "monto": 70310.04925605778,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "1f37c0aa-62e4-49df-b093-73afb39065cd",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1779803751015,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 2383.4449627353947,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "14a575ed-0f23-4301-bf26-7f53b168579d",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1774557053452,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 7306.304495897898,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "1d7cf000-7a73-470b-a669-6d58fa4395fb",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1775946285527,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 6282.95442028658,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "1478cb1e-5bbe-42f2-80b4-9ae6ed796dc0",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1774076138646,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 3113.1358573843095,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "ea06efa3-5db2-4ac6-bc8a-5dcec26f1555",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1775939032094,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 5657.07312116946,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "9afae60a-4083-41fb-83d4-e1efe1825f08",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1780057992500,
+      "tipo": "ENTRADA",
+      "categoria": "PAGO_ESTIMACION",
+      "concepto": "Pago de Estimación",
+      "monto": 16158.462345142018,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "1e3040a5-9f69-4846-a88b-84e768483a94",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1774007332866,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 5292.349426458458,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "9119758d-0791-4966-a272-49b7df8c92f5",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1780865336422,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 2020.974132719562,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "d33b787b-d4d1-4ff6-b916-32ece2fa26d8",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1777692533817,
+      "tipo": "ENTRADA",
+      "categoria": "PAGO_ESTIMACION",
+      "concepto": "Pago de Estimación",
+      "monto": 17932.76969286038,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "c8563c89-9446-4ce7-a115-0da1b27f6b47",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1771552543961,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 7118.27534172416,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "f1f472df-a433-494d-8c28-69c9a7716430",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1777741034097,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 2968.9395492700805,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "e9bf36aa-fed6-4576-b2be-dbd04bf80f0b",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1772467291486,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 5838.440194302645,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "4df16029-f163-45eb-9baf-a1911f5b07d9",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1771951677851,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 7593.488315657906,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "612f7c5d-ff75-4336-93e6-bcc98ebbdeb2",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1776221160146,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 5820.226851697513,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "faf3ebe3-0b40-4d9d-a82a-75518ea72289",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1779565043267,
+      "tipo": "ENTRADA",
+      "categoria": "PAGO_ESTIMACION",
+      "concepto": "Pago de Estimación",
+      "monto": 12780.321719811316,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "3c3c7428-e74d-43cf-a9ef-be99255caeb3",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1776227853580,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 10421.574376549483,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "e9ff0c15-510c-493f-a47d-79fc1a7919aa",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1771641722900,
+      "tipo": "ENTRADA",
+      "categoria": "PAGO_ESTIMACION",
+      "concepto": "Pago de Estimación",
+      "monto": 17582.817009935483,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "66f84c77-5c12-44dd-9824-7102f693f783",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1771096478072,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 10717.82577922517,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "d41df50b-5cb3-4931-815f-a87ce1cb0d45",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1777296440287,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 3881.6767830972617,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "0767eeeb-7c72-44f0-8a22-4addb4fb0004",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1779465369137,
+      "tipo": "ENTRADA",
+      "categoria": "PAGO_ESTIMACION",
+      "concepto": "Pago de Estimación",
+      "monto": 5443.620307342193,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "12f24beb-e37a-4c07-9a8a-719cc520fcb3",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1773407553718,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 2249.609787229589,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "12301f40-eda2-4562-9bfe-528c45a2dd5d",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1775763192540,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 7314.773494963146,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "705b0706-21f5-422a-a939-7064dd5ad46e",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1773833726085,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 6578.23696640134,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "ad29dadf-67ed-435e-9486-52c3808dc9fb",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1781218421944,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 6204.437117769591,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "ae475c6a-c67d-4f40-ac9d-9931e25bcce8",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1780593595164,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 8316.741038348886,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "bf35e143-c8cb-48be-a8aa-eee9493a3c3f",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1779751779086,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 3307.1558945881466,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "969773e7-5469-41b2-87b3-5c5f913d76b7",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1775007001851,
+      "tipo": "ENTRADA",
+      "categoria": "PAGO_ESTIMACION",
+      "concepto": "Pago de Estimación",
+      "monto": 18095.819680330056,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "ef967823-a8b6-4e1b-8d16-ec936ddbb879",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1772938249320,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 6139.8651029878965,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "4b6b23bd-bb3f-48d4-a515-12fa5c65a9c7",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1776059174944,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 6652.839396727858,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "d4b9415b-188e-4b0f-96cc-69972225542b",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1777042000924,
+      "tipo": "ENTRADA",
+      "categoria": "PAGO_ESTIMACION",
+      "concepto": "Pago de Estimación",
+      "monto": 7908.148577887241,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "752503ee-149a-4759-8580-e04fd4af0523",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1778534456431,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 7723.643887019821,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "bd7b0861-205f-4011-a4d4-ff3eb9454418",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1773818119520,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 5218.532730452204,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "701000ed-a930-43f6-8f59-ac43d3129af6",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1770952322790,
+      "tipo": "ENTRADA",
+      "categoria": "ANTICIPO",
+      "concepto": "Anticipo de Obra",
+      "monto": 86070.5411441284,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "55a7fed3-5f47-43be-a8b1-904c727b32c5",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1778491116594,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 7276.513276011462,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "69cda4d0-d3ba-4dc3-b54c-6c2b84c69432",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1776608981330,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 5176.793818746299,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "cd7f323c-a635-45fe-af4c-67f65ada9bd7",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1778140567893,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 7552.499878426853,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "5f258019-1f91-4bee-bdaa-86fe7d1995b5",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1772744823424,
+      "tipo": "ENTRADA",
+      "categoria": "PAGO_ESTIMACION",
+      "concepto": "Pago de Estimación",
+      "monto": 6341.070831744553,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "a1b97b97-eeb6-41f2-bdc2-4841675a2e49",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1773647402323,
+      "tipo": "ENTRADA",
+      "categoria": "PAGO_ESTIMACION",
+      "concepto": "Pago de Estimación",
+      "monto": 12959.301480189662,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "f90a9c9d-12c9-4a55-8d60-eef77a93011d",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1780401479484,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 5168.790090064742,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "dfbb2f75-a717-4155-8977-4e960b1fbbd0",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1775972475266,
+      "tipo": "ENTRADA",
+      "categoria": "PAGO_ESTIMACION",
+      "concepto": "Pago de Estimación",
+      "monto": 5196.9885369486365,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "333920f7-5974-46a4-8e66-37aa16a43148",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1780436388468,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 4239.927238106918,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "e97ce39f-9ccc-49ff-9b25-b6fa37b87185",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1772503663138,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 11970.84557337032,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "9412da96-1dc5-481a-b10a-6a22fa1af67a",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1780034294211,
+      "tipo": "ENTRADA",
+      "categoria": "PAGO_ESTIMACION",
+      "concepto": "Pago de Estimación",
+      "monto": 18287.596124188574,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "34d64f73-0eec-4439-9483-de0e77c6e41d",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1777763299067,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 3698.234004934334,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "91a3a07c-b94d-4b27-815c-ee26e3b2ddf9",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1776494990140,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 5228.599058527123,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "dee6a960-f550-4a0e-81ab-e2e4bdf10412",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1775216364927,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 3630.9456393275013,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "2ae518b9-c32b-4d8e-ac8c-bbad8f6f3587",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1779387743595,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 9325.535822750722,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "933dfa62-ea27-4185-a092-30af1a7e2227",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1776666166873,
+      "tipo": "ENTRADA",
+      "categoria": "PAGO_ESTIMACION",
+      "concepto": "Pago de Estimación",
+      "monto": 15538.43576142875,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "57c819a9-5842-4919-8514-076948993543",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1773025473563,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 7548.420520285613,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "2b89ccff-dbcc-4a8b-bd69-f69c32522738",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1777790034862,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 8219.088010282052,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "a852f198-17b8-47ba-9c3f-fc56028bfb9f",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1777429929758,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 6572.196475088581,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "1391cb89-7adb-410a-a3aa-fe87621ca96f",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1780142328573,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 5356.474626301725,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "d3709a86-fbcf-4b64-b0c5-cbeb59a9fcf7",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1776342417899,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 9748.334811462251,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "f5cb18e1-10a6-4e0d-8681-6be4962887d5",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1772517738176,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 13085.999350115628,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "be937678-e819-4810-ace4-5009e12dd145",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1775581806269,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 13792.361789309693,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "27a15b82-7d45-4933-8ad1-3d96e7abbade",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1780106851797,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 8253.417263309573,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "54fbbf67-821f-4f17-8788-06085cf0bba7",
+      "obraId": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "fecha": 1779815849078,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 12008.960824892525,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "80429265-6d4e-45bd-b4b2-9f2a5184fc92",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1770952322829,
+      "tipo": "ENTRADA",
+      "categoria": "ANTICIPO",
+      "concepto": "Anticipo de Obra",
+      "monto": 27243.955297926055,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "0118ab88-642e-434b-9b9a-29988d194e9f",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1771958163643,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 5113.224702202335,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "ce4bb216-2440-4ff2-b08c-7a61f6fcd8a6",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1774906718271,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 6127.879436827572,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "043c5eaf-4ff0-4ac6-afb6-351c7f1d32a5",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1777784908942,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 2692.189835543275,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "617c9745-ef5d-44a3-88d0-25203f2a9179",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1780192488461,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 2682.568731464309,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "fd3ac56a-9fbc-419b-ad1b-2af298f4ff16",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1775168426493,
+      "tipo": "ENTRADA",
+      "categoria": "PAGO_ESTIMACION",
+      "concepto": "Pago de Estimación",
+      "monto": 5933.455687050056,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "495ccaf3-50fb-4ac2-9232-aaea5052aac3",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1771421342011,
+      "tipo": "ENTRADA",
+      "categoria": "PAGO_ESTIMACION",
+      "concepto": "Pago de Estimación",
+      "monto": 11263.006377669657,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "433e2d0e-be5d-4fc5-aaf7-d188e285ed15",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1778528280488,
+      "tipo": "ENTRADA",
+      "categoria": "PAGO_ESTIMACION",
+      "concepto": "Pago de Estimación",
+      "monto": 16187.502375149223,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "2a81a20c-9f9e-450d-9c2f-fb0a0296d806",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1770956731566,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 7035.2362835581725,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "01287848-9aae-41b1-becc-27f464f6d4d8",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1772829561096,
+      "tipo": "ENTRADA",
+      "categoria": "PAGO_ESTIMACION",
+      "concepto": "Pago de Estimación",
+      "monto": 12045.390691480708,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "2163d1de-df5c-4007-8419-f2b712065a16",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1771621225191,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 11765.681834829355,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "174a7749-a5a6-49cc-85c9-75e01314d7a9",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1779236041825,
+      "tipo": "ENTRADA",
+      "categoria": "PAGO_ESTIMACION",
+      "concepto": "Pago de Estimación",
+      "monto": 6934.01173134349,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "62197648-b98f-4caa-99af-80c67b5e7b12",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1772948814033,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 6579.9327264840385,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "a9cbc38a-21e3-4953-a733-eb0305f88ca2",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1781214853383,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 6727.728048128408,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "09a92355-9708-4925-ad57-bb169a5f9909",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1773234874686,
+      "tipo": "ENTRADA",
+      "categoria": "PAGO_ESTIMACION",
+      "concepto": "Pago de Estimación",
+      "monto": 18284.877649898743,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "e8bb1ae4-6ae4-480f-9478-2892d748099a",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1773572098082,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 6754.237147914471,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "a70ed5ef-ba2c-490d-8cd6-88d1c7872266",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1776685429513,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 7937.642318543969,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "1ce86f4b-e858-4205-9281-a779dbd019a5",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1771947137004,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 2144.966876451125,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "7a9fa9e5-66ca-42a9-832d-9b4cba313ff8",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1779796506028,
+      "tipo": "ENTRADA",
+      "categoria": "PAGO_ESTIMACION",
+      "concepto": "Pago de Estimación",
+      "monto": 11994.653436563221,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "6408d3ef-2655-4a13-8164-a2210c6327b0",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1779905321101,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 4442.397749804395,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "e9986b72-2123-435e-b68b-3d6ac7efc78e",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1776841881504,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 1389.462161050794,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "d51985e1-e721-40fa-ad59-d4be0a863c70",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1772450701296,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 10178.18528697953,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "a4b13899-1eab-4a48-b56c-1ca518395033",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1773819682839,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 7577.773257359795,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "40f05570-53ac-4535-a784-ca408c12633e",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1772206804256,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 5296.940535497948,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "d803f437-d7a6-48e9-9de5-877bda8d4c96",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1777981336820,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 7552.516012771486,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "d5e04b75-beb6-487c-ab2d-fb5795e82f5f",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1775778786090,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 5941.520204460911,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "90583383-ddf5-488b-990a-b03369522dab",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1777001970260,
+      "tipo": "ENTRADA",
+      "categoria": "PAGO_ESTIMACION",
+      "concepto": "Pago de Estimación",
+      "monto": 11247.605029677388,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "6229fefd-a2cb-4ee0-9602-65eeb1fd0bcb",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1778129684746,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 1324.7904582192325,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "57e9ac86-3430-478f-b8fb-4d14ec227e85",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1779887157225,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 7653.503930283267,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "b1140225-f621-4696-a425-dd51607bd028",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1771901410564,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 8020.686665052655,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "83d1e7be-70fc-4ed3-88f1-d13315e25e62",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1771159090779,
+      "tipo": "ENTRADA",
+      "categoria": "PAGO_ESTIMACION",
+      "concepto": "Pago de Estimación",
+      "monto": 18991.908707990537,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "0f7cd6d0-f0fc-43b8-98ac-68e0a1177d91",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1780811203233,
+      "tipo": "SALIDA",
+      "categoria": "MATERIAL",
+      "concepto": "Compra de Materiales",
+      "monto": 3417.3325846367825,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "b0286683-1103-43c1-94e7-7cb580dba2f8",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1778438365392,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 5378.0010610929585,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "0604b5c1-0e39-450f-89d4-4ce19b9e72d6",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1776820059056,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 4697.2876335180335,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "ed90613c-d5f4-4e3a-8893-0036c4d4f0c7",
+      "obraId": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "fecha": 1780909600740,
+      "tipo": "SALIDA",
+      "categoria": "NOMINA",
+      "concepto": "Pago de Nómina Semanal",
+      "monto": 3425.1540442502305,
+      "metodoPago": "Transferencia",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "740117bd-46f4-48c3-a200-f1c977c8ce73",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1781233968490,
+      "tipo": "SALIDA",
+      "categoria": "GASTO_LIBRE",
+      "concepto": "Ej",
+      "monto": 1,
+      "metodoPago": "Efectivo",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": "61a897a7-6ab3-4d4a-bd2b-ea317fc97848",
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "479544f3-2d8b-41d6-8cf5-a711e5554a89",
+      "obraId": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "fecha": 1781233976645,
+      "tipo": "ENTRADA",
+      "categoria": "INGRESO_LIBRE",
+      "concepto": "6",
+      "monto": 3,
+      "metodoPago": "Efectivo",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": null,
+      "partidaId": null
+    },
+    {
+      "id": "2f3647bd-7105-4c00-9bec-a94b4071d661",
+      "obraId": "164c47c1-0660-4066-843f-7e466ce9b728",
+      "fecha": 1781235505927,
+      "tipo": "ENTRADA",
+      "categoria": "INGRESO_LIBRE",
+      "concepto": "D",
+      "monto": 4,
+      "metodoPago": "Efectivo",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": "be33e08a-b790-489b-9301-1612183ae1d4",
+      "partidaId": "14a575ed-0f23-4301-bf26-7f53b168579d"
+    },
+    {
+      "id": "491dd73c-730e-44b0-a7fe-9a00ea76e37b",
+      "obraId": "164c47c1-0660-4066-843f-7e466ce9b728",
+      "fecha": 1781235655157,
+      "tipo": "ENTRADA",
+      "categoria": "INGRESO_LIBRE",
+      "concepto": "D",
+      "monto": 222,
+      "metodoPago": "Efectivo",
+      "referencia": "",
+      "nominaId": null,
+      "cotizacionId": null,
+      "seccionId": "be33e08a-b790-489b-9301-1612183ae1d4",
+      "partidaId": "66f84c77-5c12-44dd-9824-7102f693f783"
+    }
+  ],
+  "catalogosConceptos": [
+    {
+      "id": "dd227d7f-b4a6-4440-833d-7eb9e41170f3",
+      "clave": "PRE.10",
+      "descripcion": "Trazo y nivelación a mano para establecer ejes y niveles",
+      "unidad": "M2",
+      "precioUnitarioDefault": 11.17,
+      "categoria": "PRELIMINARES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "83519009-458b-4685-9600-95af1b231223",
+      "clave": "PRE.20",
+      "descripcion": "Despalme de terreno para retirar maleza",
+      "unidad": "M2",
+      "precioUnitarioDefault": 6.52,
+      "categoria": "PRELIMINARES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "9d3d1310-617b-4371-a499-73255cceb76e",
+      "clave": "PRE.30",
+      "descripcion": "Excavación a mano de material tipo A",
+      "unidad": "M3",
+      "precioUnitarioDefault": 38.19,
+      "categoria": "PRELIMINARES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "df8164d1-9c0d-43e6-9fd6-faab19157b8c",
+      "clave": "PRE.40",
+      "descripcion": "Afine, nivelación y compactación con equipo al 95% PVSM",
+      "unidad": "M2",
+      "precioUnitarioDefault": 23.37,
+      "categoria": "PRELIMINARES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "6f9b7125-e92f-428d-9cc6-54edd34cf9c7",
+      "clave": "PRE.70",
+      "descripcion": "Carga y acarreo en camión de volteo de material y residuos",
+      "unidad": "M3",
+      "precioUnitarioDefault": 104.37,
+      "categoria": "PRELIMINARES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "ac360194-14fc-47d8-acfc-c883458feb32",
+      "clave": "PLA.10",
+      "descripcion": "Plantilla de cimentación 5 cm espesor concreto F'C=100 KG/CM2",
+      "unidad": "M2",
+      "precioUnitarioDefault": 66.22,
+      "categoria": "CIMENTACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "f183661a-05a2-4540-999b-ad716bcc0786",
+      "clave": "ZAP.ZC1",
+      "descripcion": "Zapata corrida ZC1 60 cm ancho, 15 cm espesor, varilla #3 @ 20 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 308.76,
+      "categoria": "CIMENTACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "68d7b106-eee8-4190-b774-91ac1d81b80b",
+      "clave": "ZAP.ZC2",
+      "descripcion": "Zapata corrida ZC2 100 cm ancho, 15 cm espesor, varilla #3 @ 10×20 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 387.2,
+      "categoria": "CIMENTACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "3c68363f-e660-4844-89cf-a5f0a41e5a18",
+      "clave": "CTR.CT2",
+      "descripcion": "Contratrabe CT2 35×40 cm, 8 varillas #5, doble estribo #2 @ 15 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 445.13,
+      "categoria": "CIMENTACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "4dd192a1-35fc-4c79-87f8-25d700e97e60",
+      "clave": "CTR.CT3",
+      "descripcion": "Contratrabe CT3 15×35×30 cm ARMEX 15×30-4 concreto premezclado",
+      "unidad": "ML",
+      "precioUnitarioDefault": 208.06,
+      "categoria": "CIMENTACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "02b4ac03-934e-4eec-90ea-d68f6f399373",
+      "clave": "CTR.CT4",
+      "descripcion": "Contratrabe CT4 15-35×30 cm, 4 varillas #5, estribos #2 @ 15 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 266.39,
+      "categoria": "CIMENTACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "c3647701-f7ee-4fc8-9f36-cf785135b5bf",
+      "clave": "CTR.CT5",
+      "descripcion": "Contratrabe CT5 20-40×30 cm, 6 varillas #5, estribos #2 @ 15 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 339.51,
+      "categoria": "CIMENTACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "61a897a7-6ab3-4d4a-bd2b-ea317fc97848",
+      "clave": "CTR.CT6",
+      "descripcion": "Contratrabe CT6 15-25×40 cm, 4 varillas #3, estribos #2 @ 15 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 277.32,
+      "categoria": "CIMENTACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "e2810c6a-6ea2-4290-8b67-ae58eb969b12",
+      "clave": "CTR.CT7",
+      "descripcion": "Contratrabe CT7 35-45×40 cm, 8 varillas #5, doble estribo #2 @ 20 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 526.6,
+      "categoria": "CIMENTACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "cdcb33ed-a4a7-473a-8aa6-f5081be459cb",
+      "clave": "LOSA.CIM.10",
+      "descripcion": "Losa de cimentación 10 cm, malla electrosoldada 6×6-6/6, F'C=250",
+      "unidad": "M2",
+      "precioUnitarioDefault": 204.48,
+      "categoria": "CIMENTACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "5a8ba46b-a91a-4247-8d6b-08b921809fad",
+      "clave": "RELL.LIM",
+      "descripcion": "Relleno limpio de banco compactado al 95% PVSM, capas ≤20 cm",
+      "unidad": "M3",
+      "precioUnitarioDefault": 156.36,
+      "categoria": "CIMENTACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "845a8f70-163c-4a95-bdc2-b2045e3fb33f",
+      "clave": "MEM.POLIE",
+      "descripcion": "Membrana de polietileno cal. 600",
+      "unidad": "M2",
+      "precioUnitarioDefault": 9.08,
+      "categoria": "CIMENTACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "164c47c1-0660-4066-843f-7e466ce9b728",
+      "clave": "IMP.ASF",
+      "descripcion": "Impermeabilizante asfáltico fibratado base agua",
+      "unidad": "M2",
+      "precioUnitarioDefault": 40.28,
+      "categoria": "CIMENTACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "b60d43b5-0ab5-4b76-9c10-8300217b890a",
+      "clave": "REF.60",
+      "descripcion": "Refuerzo 60 cm varilla #3 @ 20 cm en unión contratrabe-losa",
+      "unidad": "ML",
+      "precioUnitarioDefault": 60.7,
+      "categoria": "CIMENTACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "8887da4d-81ff-4562-a7ef-e49ede96d266",
+      "clave": "REF.85",
+      "descripcion": "Refuerzo 85 cm varilla #3 @ 20 cm en unión contratrabe-losa",
+      "unidad": "ML",
+      "precioUnitarioDefault": 76.71,
+      "categoria": "CIMENTACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "3722889d-7968-42cf-8809-7c8914e3b4cc",
+      "clave": "REF.90",
+      "descripcion": "Refuerzo 90 cm varilla #3 @ 20 cm en unión contratrabe-losa",
+      "unidad": "ML",
+      "precioUnitarioDefault": 77.68,
+      "categoria": "CIMENTACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "64bceccd-baa8-4ac4-8303-e1ea3cf87bef",
+      "clave": "FIRM.10",
+      "descripcion": "Firme 10 cm malla electrosoldada 6×6-10/10, F'C=150 KG/CM2",
+      "unidad": "M2",
+      "precioUnitarioDefault": 180,
+      "categoria": "ALBAÑILERÍA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "ec1c5e9f-fb17-4b3d-b1a1-37ec8f8271c5",
+      "clave": "DENTE.10",
+      "descripcion": "Dentellón remate de firme 15-25 cm ancho × 30 cm altura ARMEX",
+      "unidad": "ML",
+      "precioUnitarioDefault": 215.12,
+      "categoria": "ALBAÑILERÍA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "be33e08a-b790-489b-9301-1612183ae1d4",
+      "clave": "DESP.CAST",
+      "descripcion": "Desplante de castillo para muros, 4 varillas #3, 1 ml desarrollo",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 48.51,
+      "categoria": "ALBAÑILERÍA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "8f7d6d1b-4a2a-46cd-8448-7774097e31e1",
+      "clave": "MUR.TAB12",
+      "descripcion": "Muro novablock multiperforado 12 cm, mortero hidráulico-arena 1:4",
+      "unidad": "M2",
+      "precioUnitarioDefault": 201.34,
+      "categoria": "ALBAÑILERÍA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "bfdd3716-eadf-4794-8f81-250243a61965",
+      "clave": "MUR.CON.10",
+      "descripcion": "Muro concreto 10 cm doble malla electrosoldada 6×6-6/6, F'C=250",
+      "unidad": "M2",
+      "precioUnitarioDefault": 796.46,
+      "categoria": "ALBAÑILERÍA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "439c399d-ce9a-4c5d-ad33-3e4314ab7e07",
+      "clave": "MUR.CON.15",
+      "descripcion": "Muro concreto 15 cm doble parrilla varilla #3 @ 20 cm, F'C=250",
+      "unidad": "M2",
+      "precioUnitarioDefault": 1175.85,
+      "categoria": "ALBAÑILERÍA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "5bf5e166-9826-41ea-865f-8a9f0ca7937f",
+      "clave": "MUR.20",
+      "descripcion": "Muro 20 cm tabique rojo recocido, mortero hidráulico-arena 1:4",
+      "unidad": "M2",
+      "precioUnitarioDefault": 313.16,
+      "categoria": "ALBAÑILERÍA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "38c4bd2c-4123-44a5-ab08-3832e997d84e",
+      "clave": "APLA.INT",
+      "descripcion": "Aplanado interior a plomo, mortero hidráulico-arena 1:4",
+      "unidad": "M2",
+      "precioUnitarioDefault": 91.68,
+      "categoria": "ALBAÑILERÍA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "d91879c4-24d4-4023-bae7-127627232d5a",
+      "clave": "APLA.EXT",
+      "descripcion": "Aplanado exterior a plomo, mortero hidráulico-arena 1:4",
+      "unidad": "M2",
+      "precioUnitarioDefault": 113.36,
+      "categoria": "ALBAÑILERÍA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "753c72c0-d9b0-4cc9-b244-7e703f906c48",
+      "clave": "APLA.PUL",
+      "descripcion": "Aplanado pulido a plomo, mezcla cemento-arena 1:3",
+      "unidad": "M2",
+      "precioUnitarioDefault": 42.99,
+      "categoria": "ALBAÑILERÍA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "65a12814-37e3-4732-9ed4-fc9a5c31e1b4",
+      "clave": "EMB.15",
+      "descripcion": "Emboquillado de muro 15 cm, mezcla cemento-arena 1:3",
+      "unidad": "ML",
+      "precioUnitarioDefault": 65.66,
+      "categoria": "ALBAÑILERÍA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "7bf2ba7f-e349-4f2a-abfc-fac61b5502b8",
+      "clave": "CAS.K1",
+      "descripcion": "Castillo K1 15×15 cm ARMEX 12×12-4, F'C=150 KG/CM2",
+      "unidad": "ML",
+      "precioUnitarioDefault": 104.4,
+      "categoria": "CASTILLOS Y COLUMNAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "9860b602-fb00-4b41-86ca-97ad06c56935",
+      "clave": "CAS.K2",
+      "descripcion": "Castillo K2 15×15 cm, 4 varillas #3, estribo #2 @ 7/15 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 129.65,
+      "categoria": "CASTILLOS Y COLUMNAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "11e90ee2-7ac0-4ebd-8347-ff64cdcc7e47",
+      "clave": "CAS.K3",
+      "descripcion": "Castillo K3 15×20 cm, 4 varillas #4, estribo #2 @ 7/15 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 173.44,
+      "categoria": "CASTILLOS Y COLUMNAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "51528005-00b7-4dcd-9d99-4f07bdf46821",
+      "clave": "CAS.K4",
+      "descripcion": "Castillo K4 15×20 cm, 4 varillas #3, estribo #2 @ 7/15 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 148.76,
+      "categoria": "CASTILLOS Y COLUMNAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "b25d05b5-1c32-41ee-9e09-2f3c7f0c9a9e",
+      "clave": "CAS.K5",
+      "descripcion": "Castillo K5 25×15 cm, 6 varillas #4, estribo #2 @ 7/15 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 212.63,
+      "categoria": "CASTILLOS Y COLUMNAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "2352af3a-c0d0-4b75-b465-584e2231d5e1",
+      "clave": "CAS.K6",
+      "descripcion": "Castillo K6 30×15 cm, 6 varillas #4, estribo #2 @ 7/15 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 250.97,
+      "categoria": "CASTILLOS Y COLUMNAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "51548ac7-9f72-4722-b211-ddbab8a98b66",
+      "clave": "CAS.K7",
+      "descripcion": "Castillo K7 30×15 cm, 4 varillas #3, estribo #2 @ 7/15 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 204.05,
+      "categoria": "CASTILLOS Y COLUMNAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "6ea8d101-533e-4a27-a1c3-ba0307054116",
+      "clave": "COL.C1",
+      "descripcion": "Columna C1 20×20 cm, 4 varillas #5, estribo #2 @ 15 cm, F'C=250",
+      "unidad": "ML",
+      "precioUnitarioDefault": 368.45,
+      "categoria": "CASTILLOS Y COLUMNAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "2d5bdf0b-920b-4dd7-be56-7e8e2f44e09f",
+      "clave": "COL.C2",
+      "descripcion": "Columna C2 30×30 cm, 8 varillas #5, doble estribo #3 @ 10 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 688.44,
+      "categoria": "CASTILLOS Y COLUMNAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "6b23aea2-53ed-42bf-9cfa-d3b19e6fb886",
+      "clave": "DAL.CERR",
+      "descripcion": "Dala de cerramiento 15×20 cm ARMEX 12×20-4, F'C=150 KG/CM2",
+      "unidad": "ML",
+      "precioUnitarioDefault": 123.77,
+      "categoria": "CASTILLOS Y COLUMNAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "ae0c1cda-65f9-43b2-a70b-74978363d9fc",
+      "clave": "LOSA.MAC.12",
+      "descripcion": "Losa maciza 12 cm varilla #3 @ 20 cm, concreto premezclado F'C=250",
+      "unidad": "M2",
+      "precioUnitarioDefault": 540.89,
+      "categoria": "LOSAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "246d1f40-c738-4337-a41e-41679078d974",
+      "clave": "LOSA.RET.30",
+      "descripcion": "Losa reticular 30 cm, casetón 25 cm + capa compresión 5 cm",
+      "unidad": "M2",
+      "precioUnitarioDefault": 477.68,
+      "categoria": "LOSAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "940cb593-fe10-4195-a854-2f108be514f2",
+      "clave": "LOSA.15",
+      "descripcion": "Losa tapa maciza 15 cm, parrilla varilla #3 @ 15×20 cm, F'C=250",
+      "unidad": "M2",
+      "precioUnitarioDefault": 563.57,
+      "categoria": "LOSAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "a9ad5e46-6616-4ae6-b02a-ccb14e8eb698",
+      "clave": "TE1",
+      "descripcion": "Trabe TE1 15×30 cm, 4 varillas #5, estribos #2 @ 15 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 407.04,
+      "categoria": "TRABES Y NERVADURAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "1067aa2c-8fe7-40a8-a320-34a92222b9d0",
+      "clave": "TE2",
+      "descripcion": "Trabe TE2 40×30 cm, 12 varillas #5 + bastones, estribos (6R)",
+      "unidad": "ML",
+      "precioUnitarioDefault": 864.36,
+      "categoria": "TRABES Y NERVADURAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "e784a57b-c505-4af0-8b23-9672e8cbe632",
+      "clave": "TE3",
+      "descripcion": "Trabe TE3 30×50 cm, 8 varillas #5 + bastones, estribos (4R)",
+      "unidad": "ML",
+      "precioUnitarioDefault": 899.93,
+      "categoria": "TRABES Y NERVADURAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "3d313a2d-a074-4ea9-8352-9d8e6b59e2cc",
+      "clave": "TE4",
+      "descripcion": "Trabe TE4 20×50 cm, 6 varillas #6 + bastones (3R) @ 15 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 863.33,
+      "categoria": "TRABES Y NERVADURAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "4d31baf3-0697-44df-8181-06a1451ac4c0",
+      "clave": "TE5",
+      "descripcion": "Trabe TE5 15×50 cm, 4 varillas #5 + bastones, estribos @ 15 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 492.44,
+      "categoria": "TRABES Y NERVADURAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "39a477f3-c268-4c49-93d6-f6c1f52a617f",
+      "clave": "TE6",
+      "descripcion": "Trabe TE6 15×30 cm, 4 varillas #5 + bastones + estribos #3 @ 20 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 360.27,
+      "categoria": "TRABES Y NERVADURAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "54ee95a4-033c-40cd-857f-3306d8cb8f86",
+      "clave": "N1",
+      "descripcion": "Nervadura N1 10×30 cm, 2 varillas #3, grapa #2 @ 15 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 136.23,
+      "categoria": "TRABES Y NERVADURAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "c45a8561-22e8-4d6b-9231-ae2f7bad4478",
+      "clave": "N2",
+      "descripcion": "Nervadura N2 15×30 cm, 4 varillas #3, estribos #2 @ 15 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 166.13,
+      "categoria": "TRABES Y NERVADURAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "73302623-3972-470d-b31f-a435f5c15b5d",
+      "clave": "N4",
+      "descripcion": "Nervadura N4 20×30 cm, 4 varillas #3, estribos #2 @ 15 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 264.29,
+      "categoria": "TRABES Y NERVADURAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "cce29ddc-511b-40f7-b82d-59643e543a7e",
+      "clave": "N5",
+      "descripcion": "Nervadura N5 35×30 cm, 8 varillas #3, estribos (4R) @ 15 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 397.92,
+      "categoria": "TRABES Y NERVADURAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "402dfd59-3483-4bda-bb8c-217d867f8530",
+      "clave": "N6",
+      "descripcion": "Nervadura N6 35×30 cm, 8 varillas #5 + bastones, estribos (4R)",
+      "unidad": "ML",
+      "precioUnitarioDefault": 622.59,
+      "categoria": "TRABES Y NERVADURAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "b9a77bea-3b4a-4753-9566-840741e1afba",
+      "clave": "N7",
+      "descripcion": "Nervadura N7 15/20×30 cm, 4 varillas #4, estribos #2 @ 15 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 214.84,
+      "categoria": "TRABES Y NERVADURAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "18ad0cec-12c6-4111-8e11-3eef545cbfcf",
+      "clave": "AZ.10",
+      "descripcion": "Pretil 40 cm altura, novablock 12 cm, mortero 1:4",
+      "unidad": "ML",
+      "precioUnitarioDefault": 114.04,
+      "categoria": "AZOTEA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "2b0032be-49dd-461a-8995-c4cdb93c0e1e",
+      "clave": "AZ.35",
+      "descripcion": "Relleno tepetzil para pendiente en losa azotea, ≤8 cm promedio",
+      "unidad": "M2",
+      "precioUnitarioDefault": 134.32,
+      "categoria": "AZOTEA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "2ef3b6e6-fb07-4f30-936a-a0eca124ca90",
+      "clave": "AZ.40",
+      "descripcion": "Fino en losa azotea 2.5 cm, mezcla cemento-arena 1:3",
+      "unidad": "M2",
+      "precioUnitarioDefault": 117.3,
+      "categoria": "AZOTEA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "9e361f4a-257f-46b7-b38e-2e8acc12bced",
+      "clave": "AZ.50",
+      "descripcion": "Chaflán en arista de pretil y losa, mezcla cemento-arena 1:3",
+      "unidad": "ML",
+      "precioUnitarioDefault": 53.6,
+      "categoria": "AZOTEA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "7393a49e-96e4-4e96-965a-0657b318ea9a",
+      "clave": "AZ.60",
+      "descripcion": "Base de tinado 1,100 lt, muretes y losa maciza 10 cm",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 5261.77,
+      "categoria": "AZOTEA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "f256d409-9885-45db-89b7-f305b1e8e472",
+      "clave": "DALA.AZ",
+      "descripcion": "Dala de cerramiento azotea 15×15 cm ARMEX 12×12-4",
+      "unidad": "ML",
+      "precioUnitarioDefault": 129.35,
+      "categoria": "AZOTEA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "ea310eec-70ec-4926-bc75-e10f87fdc55f",
+      "clave": "ESC.10",
+      "descripcion": "Rampa escalera 12 cm, parrilla #3 @ 20 cm + bastones, F'C=250",
+      "unidad": "M2",
+      "precioUnitarioDefault": 662.32,
+      "categoria": "ESCALERAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "8b40e0e6-86a5-4748-abad-6702d8526857",
+      "clave": "ESC.30",
+      "descripcion": "Forjado de escalón tabique rojo, 30 cm huella × 18.2 cm peralte",
+      "unidad": "ML",
+      "precioUnitarioDefault": 307.84,
+      "categoria": "ESCALERAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "9f19212d-66ba-49ab-b924-267289af5745",
+      "clave": "LCIM.C20",
+      "descripcion": "Losa cimentación cisterna 15 cm, doble parrilla #3 @ 20 cm",
+      "unidad": "M2",
+      "precioUnitarioDefault": 455.65,
+      "categoria": "CISTERNA Y ALBERCA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "3732e8b0-8a94-4002-a6ae-b7730506c6e1",
+      "clave": "TRA.PER.10",
+      "descripcion": "Trabe perimetral cisterna 20×35 cm, 4 varillas #4, F'C=250",
+      "unidad": "ML",
+      "precioUnitarioDefault": 237.04,
+      "categoria": "CISTERNA Y ALBERCA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "cabe46d6-0c14-485c-9ea6-bcaeb784495a",
+      "clave": "CAS.KC1",
+      "descripcion": "Castillo cisterna KC1 20×20 cm, 4 varillas #3",
+      "unidad": "ML",
+      "precioUnitarioDefault": 185.22,
+      "categoria": "CISTERNA Y ALBERCA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "7cb44e74-02fc-492a-a9a1-d3ead79a8197",
+      "clave": "CAS.KC2",
+      "descripcion": "Castillo cisterna KC2 20×20 cm, 4 varillas #4",
+      "unidad": "ML",
+      "precioUnitarioDefault": 210.9,
+      "categoria": "CISTERNA Y ALBERCA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "a8a846ff-fae5-4b26-a3e1-a20b814c7d93",
+      "clave": "LCIM.15",
+      "descripcion": "Losa cimentación alberca 15 cm, doble parrilla #3 @ 20 cm",
+      "unidad": "M2",
+      "precioUnitarioDefault": 503.69,
+      "categoria": "CISTERNA Y ALBERCA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "1bafa90e-2845-4dea-a805-e43f45500d70",
+      "clave": "MUR.CON.15",
+      "descripcion": "Muro concreto alberca 15 cm, doble parrilla #3 @ 20 cm",
+      "unidad": "M2",
+      "precioUnitarioDefault": 1175.85,
+      "categoria": "CISTERNA Y ALBERCA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "6940b65b-702a-49ff-9a8c-6977d05fe812",
+      "clave": "FIRM.15",
+      "descripcion": "Firme en losas 10 cm, malla electrosoldada 6×6-10/10",
+      "unidad": "M2",
+      "precioUnitarioDefault": 285.71,
+      "categoria": "ÁREAS EXTERIORES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "db5f9e3a-a43a-499f-9d10-33d568c9d5ec",
+      "clave": "REG.40-60",
+      "descripcion": "Registro 40×60 cm medidas interiores hasta 80 cm profundidad",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 1079.26,
+      "categoria": "ÁREAS EXTERIORES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "4ec99f31-5817-4527-b0ec-a84e61dc372f",
+      "clave": "POZ.AB",
+      "descripcion": "Pozo de absorción 1.50 m Ø, profundidad 1.50 m, tabique 28 cm",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 10679.35,
+      "categoria": "ÁREAS EXTERIORES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "e6ed93ba-b017-4767-b6ae-ffe2f6301a2c",
+      "clave": "PCM-33",
+      "descripcion": "Piso cerámico 33x33",
+      "unidad": "m2",
+      "precioUnitarioDefault": 220,
+      "categoria": "Detalle",
+      "esPersonalizado": true
+    },
+    {
+      "id": "f2929f94-248c-4432-b765-b76d39679ca7",
+      "clave": "PCM-60",
+      "descripcion": "Piso Cerámico 60x60",
+      "unidad": "m2",
+      "precioUnitarioDefault": 220,
+      "categoria": "Detalle",
+      "esPersonalizado": true
+    },
+    {
+      "id": "fc38ee8b-a349-4895-ba43-6be7c6a57b1c",
+      "clave": "PCM-45",
+      "descripcion": "Piso Cerámico 45x90",
+      "unidad": "m2",
+      "precioUnitarioDefault": 220,
+      "categoria": "Detalle",
+      "esPersonalizado": true
+    },
+    {
+      "id": "fd36eff1-e9a8-4214-b330-ca5a77630da5",
+      "clave": "PCM-80",
+      "descripcion": "Piso Cerámico 80x80",
+      "unidad": "m2",
+      "precioUnitarioDefault": 270,
+      "categoria": "Detalle",
+      "esPersonalizado": true
+    },
+    {
+      "id": "af49beff-e48e-4989-844b-8d3ae1c2f5cb",
+      "clave": "PCM",
+      "descripcion": "Piso Cerámico",
+      "unidad": "m2",
+      "precioUnitarioDefault": 320,
+      "categoria": "Detalle",
+      "esPersonalizado": true
+    },
+    {
+      "id": "f1acae3a-87e2-428c-992b-b74699b19263",
+      "clave": "ZCLS",
+      "descripcion": "Zoclos en ceramico",
+      "unidad": "ml",
+      "precioUnitarioDefault": 80,
+      "categoria": "Detalle",
+      "esPersonalizado": true
+    },
+    {
+      "id": "042d7482-a0d4-491b-a26b-2b883e480b12",
+      "clave": "FCTL",
+      "descripcion": "Fachaleta",
+      "unidad": "m2",
+      "precioUnitarioDefault": 370,
+      "categoria": "Detalle",
+      "esPersonalizado": true
+    },
+    {
+      "id": "e757b3f9-9af3-4c0d-8075-0ab1c82941b0",
+      "clave": "CRFT",
+      "descripcion": "Colocación de cerámico en fachaleta",
+      "unidad": "m2",
+      "precioUnitarioDefault": 450,
+      "categoria": "Detalle",
+      "esPersonalizado": true
+    },
+    {
+      "id": "41ada1ae-d876-4273-a4d5-1450b0aefdb5",
+      "clave": "CPLJ",
+      "descripcion": "colocación de piedra laja en muro",
+      "unidad": "m2",
+      "precioUnitarioDefault": 450,
+      "categoria": "Detalle",
+      "esPersonalizado": true
+    },
+    {
+      "id": "ea04662a-dda4-4b69-8e44-31202f29b923",
+      "clave": "CPTVN",
+      "descripcion": "colocación de piso tipo vinil",
+      "unidad": "m2",
+      "precioUnitarioDefault": 210,
+      "categoria": "Detalle",
+      "esPersonalizado": true
+    },
+    {
+      "id": "c0c914e7-f55f-4fc8-b989-c3dbbb47a65c",
+      "clave": "CMRL",
+      "descripcion": "colocación de mármol de 1cm media 30xlargo libre",
+      "unidad": "m2",
+      "precioUnitarioDefault": 270,
+      "categoria": "Detalle",
+      "esPersonalizado": true
+    },
+    {
+      "id": "eabf9128-d43c-4498-b8d7-14cf88c624ca",
+      "clave": "SK",
+      "descripcion": "colocación de mármol de 2cm 30xlargo libre",
+      "unidad": "m2",
+      "precioUnitarioDefault": 310,
+      "categoria": "Detalle",
+      "esPersonalizado": true
+    },
+    {
+      "id": "bb893112-1682-4d0d-849f-d845923df587",
+      "clave": "CMMR",
+      "descripcion": "colocación de mármol 120x120",
+      "unidad": "m2",
+      "precioUnitarioDefault": 350,
+      "categoria": "Detalle",
+      "esPersonalizado": true
+    },
+    {
+      "id": "be202a31-9ace-4b00-b098-f306653db83d",
+      "clave": "CMMCT",
+      "descripcion": "colocación de mármol 120x120 cortando pieza",
+      "unidad": "m2",
+      "precioUnitarioDefault": 570,
+      "categoria": "Detalle",
+      "esPersonalizado": true
+    },
+    {
+      "id": "0343c9e5-8b8f-42a4-aa4a-ae3027690896",
+      "clave": "CMMPC",
+      "descripcion": "colocación de mármol con pieza completa (incluye corte de piezas)",
+      "unidad": "m2",
+      "precioUnitarioDefault": 1100,
+      "categoria": "Detalle",
+      "esPersonalizado": true
+    },
+    {
+      "id": "0be61601-e463-4e83-8f8e-b8e736884ecb",
+      "clave": "ZCMM",
+      "descripcion": "zoclo de marmol (incluye cortar las piezas a la medida indicada)",
+      "unidad": "m2",
+      "precioUnitarioDefault": 150,
+      "categoria": "Detalle",
+      "esPersonalizado": true
+    },
+    {
+      "id": "405112d4-2977-4594-ace4-83d4372cdeb8",
+      "clave": "FNNVL",
+      "descripcion": "Fino para Nivelacion",
+      "unidad": "m2",
+      "precioUnitarioDefault": 110,
+      "categoria": "Detalle",
+      "esPersonalizado": true
+    },
+    {
+      "id": "e6b8ed8e-bffb-4330-a137-bee277de4b5e",
+      "clave": "CTJ",
+      "descripcion": "colocación de teja",
+      "unidad": "m2",
+      "precioUnitarioDefault": 310,
+      "categoria": "Detalle",
+      "esPersonalizado": true
+    },
+    {
+      "id": "59802814-963b-4350-ab39-4553868a7caf",
+      "clave": "FDACC",
+      "descripcion": "forrado de huella de acceso pieza (incluye las 4 boquillas)",
+      "unidad": "m2",
+      "precioUnitarioDefault": 250,
+      "categoria": "Detalle",
+      "esPersonalizado": true
+    },
+    {
+      "id": "68195ecd-1761-4451-b693-84909a7c5b3e",
+      "clave": "CVN-WC",
+      "descripcion": "colocación de veneciano (baño x paquete)",
+      "unidad": "m2",
+      "precioUnitarioDefault": 380,
+      "categoria": "Detalle",
+      "esPersonalizado": true
+    },
+    {
+      "id": "139b560f-b5ca-45f9-b3fb-32bf70c264ef",
+      "clave": "MMRPL",
+      "descripcion": "pulir mármol (incluye material y mano de obra",
+      "unidad": "m2",
+      "precioUnitarioDefault": 100,
+      "categoria": "Detalle",
+      "esPersonalizado": true
+    },
+    {
+      "id": "de15fdc7-c049-47e7-92de-ea506eb8f396",
+      "clave": "STR",
+      "descripcion": "escaleras x paquete",
+      "unidad": "°",
+      "precioUnitarioDefault": 9000,
+      "categoria": "Detalle",
+      "esPersonalizado": true
+    },
+    {
+      "id": "bc933621-080a-456d-9912-9b3a57792d93",
+      "clave": "CTM-001",
+      "descripcion": "Trazo y nivelación de obra",
+      "unidad": "M2",
+      "precioUnitarioDefault": 20,
+      "categoria": "PRELIMINARES Y EXCAVACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "8a3f0cd2-a1ac-4d22-b940-3b7b983d226c",
+      "clave": "CTM-002",
+      "descripcion": "Excavación en tierra blanda de 0 a 1 mts. de profundidad",
+      "unidad": "M3",
+      "precioUnitarioDefault": 203,
+      "categoria": "PRELIMINARES Y EXCAVACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "0eba5afb-05dc-4d65-90c8-c0f833bd81ec",
+      "clave": "CTM-003",
+      "descripcion": "Excavación en tierra arcillosa de 0 a 1 mts. de profundidad",
+      "unidad": "M3",
+      "precioUnitarioDefault": 573,
+      "categoria": "PRELIMINARES Y EXCAVACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "2ffd3138-e84a-4be1-b5f5-b310d4a81c4c",
+      "clave": "CTM-004",
+      "descripcion": "Excavación en tierra blanda de 0 a 2 mts. de profundidad",
+      "unidad": "M3",
+      "precioUnitarioDefault": 242,
+      "categoria": "PRELIMINARES Y EXCAVACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "dfaeaaa5-6c8b-45b4-b37c-245aa4064efb",
+      "clave": "CTM-005",
+      "descripcion": "Excavación en tierra arcillosa de 0 a 2 mts. de profundidad",
+      "unidad": "M3",
+      "precioUnitarioDefault": 614,
+      "categoria": "PRELIMINARES Y EXCAVACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "736d8363-0146-4117-95c1-22e2314370b7",
+      "clave": "CTM-006",
+      "descripcion": "Relleno y compactación de material, producto de excavación en tierra blanda",
+      "unidad": "M3",
+      "precioUnitarioDefault": 233,
+      "categoria": "PRELIMINARES Y EXCAVACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "7e7adc65-8f78-478f-8336-98089cf9709f",
+      "clave": "CTM-007",
+      "descripcion": "Relleno y compactación de material, producto de excavación en tierra arcillosa",
+      "unidad": "M3",
+      "precioUnitarioDefault": 377,
+      "categoria": "PRELIMINARES Y EXCAVACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "0ea7b858-3bba-4a1f-bf61-5e703bebb280",
+      "clave": "CTM-008",
+      "descripcion": "Firme de concreto simple de 5 cms. de espesor",
+      "unidad": "M2",
+      "precioUnitarioDefault": 119,
+      "categoria": "FIRMES Y CIMENTACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "698cc790-b346-4a66-b9ce-0022ca87aaa4",
+      "clave": "CTM-009",
+      "descripcion": "Firme de concreto simple de 10 cms. de espesor",
+      "unidad": "M2",
+      "precioUnitarioDefault": 156,
+      "categoria": "FIRMES Y CIMENTACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "38b5933c-9e2f-4a16-914c-5470a181096f",
+      "clave": "CTM-010",
+      "descripcion": "Firme de concreto simple de 15 cms. de espesor",
+      "unidad": "M2",
+      "precioUnitarioDefault": 223,
+      "categoria": "FIRMES Y CIMENTACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "6459a15f-6548-4f1b-ab4c-1b84953fa273",
+      "clave": "CTM-011",
+      "descripcion": "Cimentación de mampostería de piedra brasa",
+      "unidad": "M3",
+      "precioUnitarioDefault": 634,
+      "categoria": "FIRMES Y CIMENTACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "701efe03-274c-4ce6-a166-c4d6f65f17d8",
+      "clave": "CTM-012",
+      "descripcion": "Cimentación de muros aparente de piedra rústica a una cara de 40 cm de ancho",
+      "unidad": "M2",
+      "precioUnitarioDefault": 661,
+      "categoria": "FIRMES Y CIMENTACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "44fd8950-aa69-4815-8904-f99d7b3a3e91",
+      "clave": "CTM-013",
+      "descripcion": "Cimentación de concreto armado tipo económico, zapata 60x12 cm. y contratrabe 20x30 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 573,
+      "categoria": "FIRMES Y CIMENTACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "0626d1f2-c294-4969-a85c-90c4d7f186e0",
+      "clave": "CTM-014",
+      "descripcion": "Hechura y vaciado de concreto en cimentación (con revolvedora)",
+      "unidad": "M3",
+      "precioUnitarioDefault": 785,
+      "categoria": "FIRMES Y CIMENTACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "5d5bb300-8b19-4f86-8fb7-bda7956b92fb",
+      "clave": "CTM-015",
+      "descripcion": "Vaciado de concreto en cimentación (concreto pre-mezclado)",
+      "unidad": "M2",
+      "precioUnitarioDefault": 670,
+      "categoria": "FIRMES Y CIMENTACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "70630222-583d-4a82-a792-6c3f9990ee13",
+      "clave": "CTM-016",
+      "descripcion": "Muro de tabique de 15 cm. de espesor",
+      "unidad": "M2",
+      "precioUnitarioDefault": 189,
+      "categoria": "MUROS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "0c9363ec-cf25-4f1c-97e6-9e17d3735a16",
+      "clave": "CTM-017",
+      "descripcion": "Muro de tabique de 21 cm. de espesor",
+      "unidad": "M2",
+      "precioUnitarioDefault": 241,
+      "categoria": "MUROS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "94fa6f63-8b1c-4890-8a8e-2b37631be6ca",
+      "clave": "CTM-018",
+      "descripcion": "Muro de tabique de 28 cm. de espesor",
+      "unidad": "M2",
+      "precioUnitarioDefault": 277,
+      "categoria": "MUROS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "be2413d9-e910-4650-bc1b-bac63d98e0c5",
+      "clave": "CTM-019",
+      "descripcion": "Muro de tabique acabado aparente",
+      "unidad": "M2",
+      "precioUnitarioDefault": 315,
+      "categoria": "MUROS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "626ee7e8-f7e2-4a23-967e-50d09e0d278e",
+      "clave": "CTM-020",
+      "descripcion": "Muros de enrace no mayores de 40 cm. de altura",
+      "unidad": "M2",
+      "precioUnitarioDefault": 161,
+      "categoria": "MUROS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "aabe030d-f56d-45d9-8157-07c0732efd58",
+      "clave": "CTM-021",
+      "descripcion": "Muros de vitricota",
+      "unidad": "M2",
+      "precioUnitarioDefault": 394,
+      "categoria": "MUROS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "cdc0e009-3f64-4696-b84c-a97d4b5aa162",
+      "clave": "CTM-022",
+      "descripcion": "Pretiles de tabique de 0.14 de barro recocido sin revestimiento en azotea hasta 0.50 cm. de altura",
+      "unidad": "ML",
+      "precioUnitarioDefault": 186,
+      "categoria": "MUROS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "c6e9bcee-5782-4b6c-8767-be38afd4aba1",
+      "clave": "CTM-023",
+      "descripcion": "Muros de block de 0.20 x 0.15 x 0.40",
+      "unidad": "M2",
+      "precioUnitarioDefault": 187,
+      "categoria": "MUROS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "0d316870-4724-456c-a851-f2f563cafe26",
+      "clave": "CTM-024",
+      "descripcion": "Muro de block aparente por una cara",
+      "unidad": "M2",
+      "precioUnitarioDefault": 254,
+      "categoria": "MUROS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "a1e41178-2079-4e69-9335-fbe8be6b37f2",
+      "clave": "CTM-025",
+      "descripcion": "Muros de block aparentes por dos caras",
+      "unidad": "M2",
+      "precioUnitarioDefault": 263,
+      "categoria": "MUROS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "605d7a09-0ba8-4029-9ddf-bb1735c52c9c",
+      "clave": "CTM-026",
+      "descripcion": "Repisón de concreto sobre muros de 14 x 80 x 25 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 345,
+      "categoria": "MUROS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "0a4640d2-8ded-40cf-867d-f7f24d5a6c5d",
+      "clave": "CTM-027",
+      "descripcion": "Dalas y castillo de 14 x 15 cm. con ARMEX, incluye: cimbra, fierro y colado",
+      "unidad": "ML",
+      "precioUnitarioDefault": 252,
+      "categoria": "CASTILLOS Y DALAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "a53774bb-88ce-40c3-878f-013d12c72c9f",
+      "clave": "CTM-028",
+      "descripcion": "Dalas y castillos de 15 x 25 cm. con ARMEX, incluye: cimbra, fierro y colado",
+      "unidad": "ML",
+      "precioUnitarioDefault": 252,
+      "categoria": "CASTILLOS Y DALAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "cfa9498f-deeb-4015-9855-d435ea8344e3",
+      "clave": "CTM-029",
+      "descripcion": "Castillo de 15 x 30 cm. con ARMEX, incluye: cimbra, fierro y colado",
+      "unidad": "ML",
+      "precioUnitarioDefault": 263,
+      "categoria": "CASTILLOS Y DALAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "05eb53d4-ec00-4443-a428-87a2ca7f6c04",
+      "clave": "CTM-030",
+      "descripcion": "Hechuras y vaciado de concreto en trabes y losa",
+      "unidad": "M3",
+      "precioUnitarioDefault": 941,
+      "categoria": "TRABES Y LOSAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "e18ef988-47cf-4f16-9c23-9d7771368fd3",
+      "clave": "CTM-031",
+      "descripcion": "Vaciado de concreto en trabes y losa (concreto pre-mezclado)",
+      "unidad": "M3",
+      "precioUnitarioDefault": 878,
+      "categoria": "TRABES Y LOSAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "47c7ea8d-25ba-4684-97c9-1ff96a80f5d0",
+      "clave": "CTM-032",
+      "descripcion": "Colocación de concreto bombeado",
+      "unidad": "M3",
+      "precioUnitarioDefault": 320,
+      "categoria": "TRABES Y LOSAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "83ead456-be25-4773-b89d-f4aaeb7aacec",
+      "clave": "CTM-033",
+      "descripcion": "Subida, trazo y colocación de block en losa aligerada",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 22,
+      "categoria": "TRABES Y LOSAS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "3820d9f1-b306-4789-8d66-efb2e43afd3a",
+      "clave": "CTM-038",
+      "descripcion": "Aplanado en trabes de 20 x 40 cm en losa",
+      "unidad": "ML",
+      "precioUnitarioDefault": 188,
+      "categoria": "APLANADOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "781eee27-1b98-4eb4-b60a-a621a2796ee5",
+      "clave": "CTM-039",
+      "descripcion": "Aplanado en cejas de cuadros de 10 x 20 cm",
+      "unidad": "ML",
+      "precioUnitarioDefault": 153,
+      "categoria": "APLANADOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "dfc968a5-cd25-4f76-a372-622cf5f4bcb6",
+      "clave": "CTM-040",
+      "descripcion": "Aplanado en muros interiores, con cemento, cal y arena",
+      "unidad": "M2",
+      "precioUnitarioDefault": 164,
+      "categoria": "APLANADOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "e79dc5e7-6ba7-4468-8d2a-d90f80113c96",
+      "clave": "CTM-041",
+      "descripcion": "Aplanado de plafond con cemento, cal y arena",
+      "unidad": "M2",
+      "precioUnitarioDefault": 206,
+      "categoria": "APLANADOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "bb51a606-a6c4-44be-a3fc-91e07f3651d2",
+      "clave": "CTM-042",
+      "descripcion": "Aplanado exterior en muros con cemento, cal y arena",
+      "unidad": "M2",
+      "precioUnitarioDefault": 153,
+      "categoria": "APLANADOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "14247d41-9266-4fea-90ae-2255a0b50906",
+      "clave": "CTM-043",
+      "descripcion": "Emboquillado de puertas y ventanas",
+      "unidad": "ML",
+      "precioUnitarioDefault": 88,
+      "categoria": "APLANADOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "f94dc726-2446-4ee2-a528-f942004015b9",
+      "clave": "CTM-044",
+      "descripcion": "Perfilado de trabes y columnas",
+      "unidad": "ML",
+      "precioUnitarioDefault": 67,
+      "categoria": "APLANADOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "dfb465d5-3c12-41be-8d8e-d9e7d4f4f6fd",
+      "clave": "CTM-045",
+      "descripcion": "Perfilado en muros donde no van marcos",
+      "unidad": "ML",
+      "precioUnitarioDefault": 138,
+      "categoria": "APLANADOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "5f64bee5-acf6-417d-9e40-2a8520fd4152",
+      "clave": "CTM-046",
+      "descripcion": "Colocación de tubería de albañal hasta 6\" incluyendo excavación y relleno",
+      "unidad": "ML",
+      "precioUnitarioDefault": 217,
+      "categoria": "INSTALACIÓN SANITARIA Y DRENAJE",
+      "esPersonalizado": false
+    },
+    {
+      "id": "ce4c1161-c5cc-43f4-9f96-7429354bf422",
+      "clave": "CTM-047",
+      "descripcion": "Pozo de absorción de 1.50 de diámetro hasta 2 mts. de profundidad, incluye: excavación y relleno",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 4939,
+      "categoria": "INSTALACIÓN SANITARIA Y DRENAJE",
+      "esPersonalizado": false
+    },
+    {
+      "id": "66482ada-c238-4cd9-ad60-859215c892e5",
+      "clave": "CTM-048",
+      "descripcion": "Registro de albañal 40x60 cms. tabique rojo, incluye: excavación y relleno",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 803,
+      "categoria": "INSTALACIÓN SANITARIA Y DRENAJE",
+      "esPersonalizado": false
+    },
+    {
+      "id": "e1dc565e-092c-4abd-8d5e-fb3b39cd3168",
+      "clave": "CTM-049",
+      "descripcion": "Registro de albañal 40x60 cms. concreto, incluye: cimbra, fierro y colado, excavación y relleno",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 1613,
+      "categoria": "INSTALACIÓN SANITARIA Y DRENAJE",
+      "esPersonalizado": false
+    },
+    {
+      "id": "b78c4a39-9717-435f-ba49-7347a6538688",
+      "clave": "CTM-050",
+      "descripcion": "Registro tipo mediano de 30 x 30 cms. a base de tabique rojo",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 345,
+      "categoria": "INSTALACIÓN SANITARIA Y DRENAJE",
+      "esPersonalizado": false
+    },
+    {
+      "id": "4c7dca31-3b8b-453c-affd-18d5b4f550bb",
+      "clave": "CTM-051",
+      "descripcion": "Registro tipo mediano de 30 x 30 cms. de concreto",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 345,
+      "categoria": "INSTALACIÓN SANITARIA Y DRENAJE",
+      "esPersonalizado": false
+    },
+    {
+      "id": "23c6d354-7d3e-47b6-bc30-a3e05a5f9b79",
+      "clave": "CTM-052",
+      "descripcion": "Hechura de cajita para llaves de paso común",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 209,
+      "categoria": "INSTALACIÓN SANITARIA Y DRENAJE",
+      "esPersonalizado": false
+    },
+    {
+      "id": "ef2f05ae-34c1-44f3-80d7-89b363abdde2",
+      "clave": "CTM-053",
+      "descripcion": "Fosa séptica con 2 departamentos, incluye: excavación, relleno y tapa",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 10068,
+      "categoria": "INSTALACIÓN SANITARIA Y DRENAJE",
+      "esPersonalizado": false
+    },
+    {
+      "id": "7f01188a-242d-48d6-b376-837f7713c163",
+      "clave": "CTM-054",
+      "descripcion": "Colocación de coladera con cajas chicas",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 237,
+      "categoria": "INSTALACIÓN SANITARIA Y DRENAJE",
+      "esPersonalizado": false
+    },
+    {
+      "id": "92028b99-42ac-48b2-8dd2-4c62b5a0c35b",
+      "clave": "CTM-IH01",
+      "descripcion": "Instalación de WC, incluye: ramaleo, ranurado y colocación",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 1503,
+      "categoria": "INSTALACIÓN SANITARIA Y DRENAJE",
+      "esPersonalizado": false
+    },
+    {
+      "id": "b0348941-8e0c-489c-b834-66eabe3eb1a4",
+      "clave": "CTM-IH02",
+      "descripcion": "Instalación de lavabo con agua fría y caliente, incluye: ramaleo, ranurado y conexión",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 1258,
+      "categoria": "INSTALACIÓN SANITARIA Y DRENAJE",
+      "esPersonalizado": false
+    },
+    {
+      "id": "a5ef05d7-918b-4c32-abdc-735d65aab5e4",
+      "clave": "CTM-IH03",
+      "descripcion": "Instalación de regadera con agua fría y caliente, incluye: ramaleo, ranurado y conexión",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 1436,
+      "categoria": "INSTALACIÓN SANITARIA Y DRENAJE",
+      "esPersonalizado": false
+    },
+    {
+      "id": "f35e58a1-9b48-4815-a8e6-ce733306daf8",
+      "clave": "CTM-IH04",
+      "descripcion": "Instalación de tina de hidromasaje",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 8225,
+      "categoria": "INSTALACIÓN SANITARIA Y DRENAJE",
+      "esPersonalizado": false
+    },
+    {
+      "id": "d0c6a12a-32f2-4b95-ac21-d4a4387214fc",
+      "clave": "CTM-IH05",
+      "descripcion": "Instalación de bidet",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 2000,
+      "categoria": "INSTALACIÓN SANITARIA Y DRENAJE",
+      "esPersonalizado": false
+    },
+    {
+      "id": "1b287bf9-b0f3-46a5-910d-4b56834565cb",
+      "clave": "CTM-IH06",
+      "descripcion": "Instalación de lavadero o lavado de granito",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 1193,
+      "categoria": "INSTALACIÓN SANITARIA Y DRENAJE",
+      "esPersonalizado": false
+    },
+    {
+      "id": "6abec39f-0b36-4b82-a730-52ab298f7020",
+      "clave": "CTM-IH07",
+      "descripcion": "Conexión de calentador sin línea de gas",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 1278,
+      "categoria": "INSTALACIÓN SANITARIA Y DRENAJE",
+      "esPersonalizado": false
+    },
+    {
+      "id": "71274425-9d75-4f0d-9407-5b2d985f4425",
+      "clave": "CTM-IH08",
+      "descripcion": "Instalación de vertedero de una llave",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 1225,
+      "categoria": "INSTALACIÓN SANITARIA Y DRENAJE",
+      "esPersonalizado": false
+    },
+    {
+      "id": "e4407d18-03f4-4429-be1b-01811bd4b607",
+      "clave": "CTM-IH09",
+      "descripcion": "Instalación de llave de riego",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 657,
+      "categoria": "INSTALACIÓN SANITARIA Y DRENAJE",
+      "esPersonalizado": false
+    },
+    {
+      "id": "12bca08e-606d-4eb2-8d4b-8119dcd0a3f2",
+      "clave": "CTM-IH10",
+      "descripcion": "Instalación de migitorio",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 1210,
+      "categoria": "INSTALACIÓN SANITARIA Y DRENAJE",
+      "esPersonalizado": false
+    },
+    {
+      "id": "a256ce2c-4c92-4341-ac0d-738cfd24a89b",
+      "clave": "CTM-IH11",
+      "descripcion": "Instalación de tinaco",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 1870,
+      "categoria": "INSTALACIÓN SANITARIA Y DRENAJE",
+      "esPersonalizado": false
+    },
+    {
+      "id": "d573aeb3-2c4f-465d-beb3-d199510e8204",
+      "clave": "CTM-IE01",
+      "descripcion": "Salida de luz visible (casa tipo económico)",
+      "unidad": "SALIDA",
+      "precioUnitarioDefault": 388,
+      "categoria": "INSTALACIÓN ELÉCTRICA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "1c3ddbb2-28ca-4938-a1a2-3ac14b3ae45c",
+      "clave": "CTM-IE02",
+      "descripcion": "Salida de luz oculta (casa tipo económico)",
+      "unidad": "SALIDA",
+      "precioUnitarioDefault": 470,
+      "categoria": "INSTALACIÓN ELÉCTRICA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "1320a8bb-ed73-4a9d-9b46-6eaee92af9f7",
+      "clave": "CTM-IE03",
+      "descripcion": "Salida de luz oculta (casa tipo residencial)",
+      "unidad": "SALIDA",
+      "precioUnitarioDefault": 470,
+      "categoria": "INSTALACIÓN ELÉCTRICA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "18c1cdbb-eca7-4c5f-a20b-3a7deb9ff967",
+      "clave": "CTM-055",
+      "descripcion": "Chaflanes en azotea",
+      "unidad": "ML",
+      "precioUnitarioDefault": 81,
+      "categoria": "ESCALERAS Y ACABADOS EXTERIORES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "7bb2d8ec-14b7-45f1-86b2-d19ddcec4011",
+      "clave": "CTM-056",
+      "descripcion": "Forjado de escaleras",
+      "unidad": "ML",
+      "precioUnitarioDefault": 274,
+      "categoria": "ESCALERAS Y ACABADOS EXTERIORES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "99144bec-c554-40a3-b4c7-95229bb4c5a4",
+      "clave": "CTM-057",
+      "descripcion": "Forrado de escaleras con revestimiento de cemento",
+      "unidad": "ML",
+      "precioUnitarioDefault": 274,
+      "categoria": "ESCALERAS Y ACABADOS EXTERIORES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "1f37c0aa-62e4-49df-b093-73afb39065cd",
+      "clave": "CTM-058",
+      "descripcion": "Forrado de escaleras con loseta",
+      "unidad": "ML",
+      "precioUnitarioDefault": 274,
+      "categoria": "ESCALERAS Y ACABADOS EXTERIORES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "14a575ed-0f23-4301-bf26-7f53b168579d",
+      "clave": "CTM-059",
+      "descripcion": "Forjado en bajantes por dos caras",
+      "unidad": "ML",
+      "precioUnitarioDefault": 209,
+      "categoria": "ESCALERAS Y ACABADOS EXTERIORES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "1d7cf000-7a73-470b-a669-6d58fa4395fb",
+      "clave": "CTM-063",
+      "descripcion": "Losas para andador de concreto con junta de separación",
+      "unidad": "M2",
+      "precioUnitarioDefault": 388,
+      "categoria": "ESCALERAS Y ACABADOS EXTERIORES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "1478cb1e-5bbe-42f2-80b4-9ae6ed796dc0",
+      "clave": "CTM-064",
+      "descripcion": "Colocación de lavaderos o fregaderos sin resanes",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 409,
+      "categoria": "ESCALERAS Y ACABADOS EXTERIORES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "ea06efa3-5db2-4ac6-bc8a-5dcec26f1555",
+      "clave": "CTM-065",
+      "descripcion": "Guarniciones de concreto hasta de 0.40 de peralte",
+      "unidad": "ML",
+      "precioUnitarioDefault": 209,
+      "categoria": "ESCALERAS Y ACABADOS EXTERIORES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "9afae60a-4083-41fb-83d4-e1efe1825f08",
+      "clave": "CTM-066",
+      "descripcion": "Colado de guarniciones tipo L de 0.40 x 0.15 con cimbra",
+      "unidad": "ML",
+      "precioUnitarioDefault": 403,
+      "categoria": "ESCALERAS Y ACABADOS EXTERIORES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "1e3040a5-9f69-4846-a88b-84e768483a94",
+      "clave": "CTM-067",
+      "descripcion": "Tinacos verticales y horizontales con base",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 2258,
+      "categoria": "ESCALERAS Y ACABADOS EXTERIORES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "9119758d-0791-4966-a272-49b7df8c92f5",
+      "clave": "CTM-068",
+      "descripcion": "Junta de separación de barda perfilada",
+      "unidad": "ML",
+      "precioUnitarioDefault": 101,
+      "categoria": "ESCALERAS Y ACABADOS EXTERIORES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "d33b787b-d4d1-4ff6-b916-32ece2fa26d8",
+      "clave": "CTM-069",
+      "descripcion": "Colocación y nivelación de barandales",
+      "unidad": "M2",
+      "precioUnitarioDefault": 271,
+      "categoria": "ESCALERAS Y ACABADOS EXTERIORES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "c8563c89-9446-4ce7-a115-0da1b27f6b47",
+      "clave": "CTM-070",
+      "descripcion": "Colocación de portones de madera",
+      "unidad": "M2",
+      "precioUnitarioDefault": 271,
+      "categoria": "ESCALERAS Y ACABADOS EXTERIORES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "f1f472df-a433-494d-8c28-69c9a7716430",
+      "clave": "CTM-071",
+      "descripcion": "Colocación de rejas de protección",
+      "unidad": "M2",
+      "precioUnitarioDefault": 271,
+      "categoria": "ESCALERAS Y ACABADOS EXTERIORES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "e9bf36aa-fed6-4576-b2be-dbd04bf80f0b",
+      "clave": "CTM-072",
+      "descripcion": "Alero de protección de barda colindante",
+      "unidad": "ML",
+      "precioUnitarioDefault": 338,
+      "categoria": "ESCALERAS Y ACABADOS EXTERIORES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "4df16029-f163-45eb-9baf-a1911f5b07d9",
+      "clave": "CTM-073",
+      "descripcion": "Alero de protección de barda colindante con vaciado de concreto",
+      "unidad": "ML",
+      "precioUnitarioDefault": 389,
+      "categoria": "ESCALERAS Y ACABADOS EXTERIORES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "612f7c5d-ff75-4336-93e6-bcc98ebbdeb2",
+      "clave": "CTM-074",
+      "descripcion": "Escalera de tipo común",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 9838,
+      "categoria": "ESCALERAS Y ACABADOS EXTERIORES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "faf3ebe3-0b40-4d9d-a82a-75518ea72289",
+      "clave": "CTM-075",
+      "descripcion": "Gotero colgante con boquilla",
+      "unidad": "ML",
+      "precioUnitarioDefault": 221,
+      "categoria": "ESCALERAS Y ACABADOS EXTERIORES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "3c3c7428-e74d-43cf-a9ef-be99255caeb3",
+      "clave": "CTM-060",
+      "descripcion": "Piso de cemento hasta 7 cm. de espesor, firme y fino",
+      "unidad": "M2",
+      "precioUnitarioDefault": 188,
+      "categoria": "PISOS Y RECUBRIMIENTOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "e9ff0c15-510c-493f-a47d-79fc1a7919aa",
+      "clave": "CTM-061",
+      "descripcion": "Fino en azotea primer nivel",
+      "unidad": "M2",
+      "precioUnitarioDefault": 113,
+      "categoria": "PISOS Y RECUBRIMIENTOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "66f84c77-5c12-44dd-9824-7102f693f783",
+      "clave": "CTM-062",
+      "descripcion": "Firme, fino y pulido",
+      "unidad": "M2",
+      "precioUnitarioDefault": 169,
+      "categoria": "PISOS Y RECUBRIMIENTOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "d41df50b-5cb3-4931-815f-a87ce1cb0d45",
+      "clave": "CTM-076",
+      "descripcion": "Piso de mosaico de pasta o granito",
+      "unidad": "M2",
+      "precioUnitarioDefault": 209,
+      "categoria": "PISOS Y RECUBRIMIENTOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "0767eeeb-7c72-44f0-8a22-4addb4fb0004",
+      "clave": "CTM-077",
+      "descripcion": "Colocación de piso Interceramic hasta 0.50x0.50 cm sin incluir fino",
+      "unidad": "M2",
+      "precioUnitarioDefault": 335,
+      "categoria": "PISOS Y RECUBRIMIENTOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "12f24beb-e37a-4c07-9a8a-719cc520fcb3",
+      "clave": "CTM-078",
+      "descripcion": "Cortes de mosaico o celosías se harán con disco",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 32,
+      "categoria": "PISOS Y RECUBRIMIENTOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "12301f40-eda2-4562-9bfe-528c45a2dd5d",
+      "clave": "CTM-079",
+      "descripcion": "Zoclo de piso Interceramic",
+      "unidad": "ML",
+      "precioUnitarioDefault": 85,
+      "categoria": "PISOS Y RECUBRIMIENTOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "705b0706-21f5-422a-a939-7064dd5ad46e",
+      "clave": "CTM-080",
+      "descripcion": "Colocación de mosaico Interceramic",
+      "unidad": "M2",
+      "precioUnitarioDefault": 242,
+      "categoria": "PISOS Y RECUBRIMIENTOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "ad29dadf-67ed-435e-9486-52c3808dc9fb",
+      "clave": "CTM-081",
+      "descripcion": "Colocación de lambrín de azulejo de 11x11 de medialeta",
+      "unidad": "M2",
+      "precioUnitarioDefault": 242,
+      "categoria": "PISOS Y RECUBRIMIENTOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "ae475c6a-c67d-4f40-ac9d-9931e25bcce8",
+      "clave": "CTM-082",
+      "descripcion": "Colocación de lambrín veneciano",
+      "unidad": "M2",
+      "precioUnitarioDefault": 307,
+      "categoria": "PISOS Y RECUBRIMIENTOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "bf35e143-c8cb-48be-a8aa-eee9493a3c3f",
+      "clave": "CTM-083",
+      "descripcion": "Colocación de accesorios para baño incluyendo botiquín",
+      "unidad": "JGO",
+      "precioUnitarioDefault": 862,
+      "categoria": "PISOS Y RECUBRIMIENTOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "969773e7-5469-41b2-87b3-5c5f913d76b7",
+      "clave": "CTM-084",
+      "descripcion": "Colocación de azulejo en boquilla",
+      "unidad": "ML",
+      "precioUnitarioDefault": 109,
+      "categoria": "PISOS Y RECUBRIMIENTOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "ef967823-a8b6-4e1b-8d16-ec936ddbb879",
+      "clave": "CTM-085",
+      "descripcion": "Colocación de celosía de barro",
+      "unidad": "M2",
+      "precioUnitarioDefault": 426,
+      "categoria": "PISOS Y RECUBRIMIENTOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "4b6b23bd-bb3f-48d4-a515-12fa5c65a9c7",
+      "clave": "CTM-086",
+      "descripcion": "Colocación de balaostres incluye base y pasamanos",
+      "unidad": "ML",
+      "precioUnitarioDefault": 484,
+      "categoria": "PISOS Y RECUBRIMIENTOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "d4b9415b-188e-4b0f-96cc-69972225542b",
+      "clave": "CTM-087",
+      "descripcion": "Colocación de celosía de cemento",
+      "unidad": "M2",
+      "precioUnitarioDefault": 470,
+      "categoria": "PISOS Y RECUBRIMIENTOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "752503ee-149a-4759-8580-e04fd4af0523",
+      "clave": "CTM-088",
+      "descripcion": "Piso de cemento con huella, costal de malla",
+      "unidad": "M2",
+      "precioUnitarioDefault": 181,
+      "categoria": "PISOS Y RECUBRIMIENTOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "bd7b0861-205f-4011-a4d4-ff3eb9454418",
+      "clave": "CTM-089",
+      "descripcion": "Colocación de piedrín en muros",
+      "unidad": "M2",
+      "precioUnitarioDefault": 352,
+      "categoria": "PISOS Y RECUBRIMIENTOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "701000ed-a930-43f6-8f59-ac43d3129af6",
+      "clave": "CTM-090",
+      "descripcion": "Colocación de loseta en lambrines y pisos de mármol",
+      "unidad": "M2",
+      "precioUnitarioDefault": 258,
+      "categoria": "PISOS Y RECUBRIMIENTOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "55a7fed3-5f47-43be-a8b1-904c727b32c5",
+      "clave": "CTM-091",
+      "descripcion": "Colocación de adoquín sobre tierra blanda o balastro sin incluir compactación",
+      "unidad": "M2",
+      "precioUnitarioDefault": 146,
+      "categoria": "PISOS Y RECUBRIMIENTOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "69cda4d0-d3ba-4dc3-b54c-6c2b84c69432",
+      "clave": "CTM-092",
+      "descripcion": "Lambrín de galleta o loseta española",
+      "unidad": "M2",
+      "precioUnitarioDefault": 258,
+      "categoria": "PISOS Y RECUBRIMIENTOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "cd7f323c-a635-45fe-af4c-67f65ada9bd7",
+      "clave": "CTM-093",
+      "descripcion": "Colocación de teja acanalada de barro tipo colonial",
+      "unidad": "M2",
+      "precioUnitarioDefault": 436,
+      "categoria": "PISOS Y RECUBRIMIENTOS",
+      "esPersonalizado": false
+    },
+    {
+      "id": "5f258019-1f91-4bee-bdaa-86fe7d1995b5",
+      "clave": "CTM-094",
+      "descripcion": "Hechura de cisterna de 2000 lts. terminada",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 11806,
+      "categoria": "CISTERNA Y OBRAS ESPECIALES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "a1b97b97-eeb6-41f2-bdc2-4841675a2e49",
+      "clave": "CTM-095",
+      "descripcion": "Relleno mezclado con tepetzil en primer nivel",
+      "unidad": "M3",
+      "precioUnitarioDefault": 719,
+      "categoria": "CISTERNA Y OBRAS ESPECIALES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "f90a9c9d-12c9-4a55-8d60-eef77a93011d",
+      "clave": "CTM-096",
+      "descripcion": "Registro de 60 x 40 cm. profundidad mayor de 1.04",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 786,
+      "categoria": "CISTERNA Y OBRAS ESPECIALES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "dfbb2f75-a717-4155-8977-4e960b1fbbd0",
+      "clave": "CTM-097",
+      "descripcion": "Hechura de banqueta, acabado escobillado con volteador sin incluir malla",
+      "unidad": "M2",
+      "precioUnitarioDefault": 236,
+      "categoria": "CISTERNA Y OBRAS ESPECIALES",
+      "esPersonalizado": false
+    },
+    {
+      "id": "333920f7-5974-46a4-8e66-37aa16a43148",
+      "clave": "CTM-098",
+      "descripcion": "Colocación de tecnomalla 6x6 2/2",
+      "unidad": "M2",
+      "precioUnitarioDefault": 67,
+      "categoria": "HABILITADO DE ACERO",
+      "esPersonalizado": false
+    },
+    {
+      "id": "e97ce39f-9ccc-49ff-9b25-b6fa37b87185",
+      "clave": "CTM-099",
+      "descripcion": "Colocación de ARMEX diferentes medidas",
+      "unidad": "ML",
+      "precioUnitarioDefault": 62,
+      "categoria": "HABILITADO DE ACERO",
+      "esPersonalizado": false
+    },
+    {
+      "id": "9412da96-1dc5-481a-b10a-6a22fa1af67a",
+      "clave": "CTM-100",
+      "descripcion": "Cortado, doblado y armado de varillas hasta 3/8",
+      "unidad": "TM",
+      "precioUnitarioDefault": 10087,
+      "categoria": "HABILITADO DE ACERO",
+      "esPersonalizado": false
+    },
+    {
+      "id": "34d64f73-0eec-4439-9483-de0e77c6e41d",
+      "clave": "CTM-101",
+      "descripcion": "Cortado, doblado y armado de varillas de 1\" a 1/2\"",
+      "unidad": "TM",
+      "precioUnitarioDefault": 7903,
+      "categoria": "HABILITADO DE ACERO",
+      "esPersonalizado": false
+    },
+    {
+      "id": "91a3a07c-b94d-4b27-815c-ee26e3b2ddf9",
+      "clave": "CTM-102",
+      "descripcion": "Hechura de anillos de 1/4\" alambrón de 10x30 cm",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 36,
+      "categoria": "HABILITADO DE ACERO",
+      "esPersonalizado": false
+    },
+    {
+      "id": "dee6a960-f550-4a0e-81ab-e2e4bdf10412",
+      "clave": "CTM-103",
+      "descripcion": "Hechura de anillos de alambrón de 1/4\" de 35 a 100 cm",
+      "unidad": "PZA",
+      "precioUnitarioDefault": 36,
+      "categoria": "HABILITADO DE ACERO",
+      "esPersonalizado": false
+    },
+    {
+      "id": "2ae518b9-c32b-4d8e-ac8c-bbad8f6f3587",
+      "clave": "CTM-P01",
+      "descripcion": "Pintura vinílica a dos manos",
+      "unidad": "M2",
+      "precioUnitarioDefault": 113,
+      "categoria": "PINTURA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "933dfa62-ea27-4185-a092-30af1a7e2227",
+      "clave": "CTM-P02",
+      "descripcion": "Pintura esmalte a dos manos",
+      "unidad": "M2",
+      "precioUnitarioDefault": 155,
+      "categoria": "PINTURA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "57c819a9-5842-4919-8514-076948993543",
+      "clave": "CTM-P03",
+      "descripcion": "Rebatido en muros a 3 manos",
+      "unidad": "M2",
+      "precioUnitarioDefault": 101,
+      "categoria": "PINTURA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "2b89ccff-dbcc-4a8b-bd69-f69c32522738",
+      "clave": "CTM-P04",
+      "descripcion": "Pasta tipo impermeable en muros interiores y exteriores, rayada, caracoleada y tipo mecano",
+      "unidad": "M2",
+      "precioUnitarioDefault": 116,
+      "categoria": "PINTURA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "a852f198-17b8-47ba-9c3f-fc56028bfb9f",
+      "clave": "CTM-IMP01",
+      "descripcion": "Impermeabilización base agua tipo económico con dos capas de membrana de refuerzo",
+      "unidad": "M2",
+      "precioUnitarioDefault": 177,
+      "categoria": "IMPERMEABILIZACIÓN",
+      "esPersonalizado": false
+    },
+    {
+      "id": "1391cb89-7adb-410a-a3aa-fe87621ca96f",
+      "clave": "CTM-Y01",
+      "descripcion": "Aplanados en plafones",
+      "unidad": "M2",
+      "precioUnitarioDefault": 148,
+      "categoria": "YESERÍA Y TABLAROCA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "d3709a86-fbcf-4b64-b0c5-cbeb59a9fcf7",
+      "clave": "CTM-Y02",
+      "descripcion": "Aplanados en plafones y muros a nivel y a plomo",
+      "unidad": "M2",
+      "precioUnitarioDefault": 177,
+      "categoria": "YESERÍA Y TABLAROCA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "f5cb18e1-10a6-4e0d-8681-6be4962887d5",
+      "clave": "CTM-Y03",
+      "descripcion": "Aplanado en vigas con octavos en esquina hasta de 60 cm. de altura",
+      "unidad": "ML",
+      "precioUnitarioDefault": 242,
+      "categoria": "YESERÍA Y TABLAROCA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "be937678-e819-4810-ace4-5009e12dd145",
+      "clave": "CTM-Y04",
+      "descripcion": "Aplanados de medidas muestras",
+      "unidad": "ML",
+      "precioUnitarioDefault": 187,
+      "categoria": "YESERÍA Y TABLAROCA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "27a15b82-7d45-4933-8ad1-3d96e7abbade",
+      "clave": "CTM-Y05",
+      "descripcion": "Aplanados de columnas hasta de 0.50 x 0.50 con chaflán",
+      "unidad": "ML",
+      "precioUnitarioDefault": 316,
+      "categoria": "YESERÍA Y TABLAROCA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "54fbbf67-821f-4f17-8788-06085cf0bba7",
+      "clave": "CTM-Y06",
+      "descripcion": "Plafón de tablaroca con bastidor metálico hasta 3 mts. altura, incluye: calafateo y terminado",
+      "unidad": "M2",
+      "precioUnitarioDefault": 316,
+      "categoria": "YESERÍA Y TABLAROCA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "80429265-6d4e-45bd-b4b2-9f2a5184fc92",
+      "clave": "CTM-Y07",
+      "descripcion": "Muro divisorio por dos caras con bastidor metálico, incluye: calafateo y terminado",
+      "unidad": "M2",
+      "precioUnitarioDefault": 316,
+      "categoria": "YESERÍA Y TABLAROCA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "0118ab88-642e-434b-9b9a-29988d194e9f",
+      "clave": "CTM-Y08",
+      "descripcion": "Muro de lambrín de tablaroca a una cara con bastidor metálico",
+      "unidad": "M2",
+      "precioUnitarioDefault": 316,
+      "categoria": "YESERÍA Y TABLAROCA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "ce4bb216-2440-4ff2-b08c-7a61f6fcd8a6",
+      "clave": "CTM-Y09",
+      "descripcion": "Cajillo de tablaroca con bastidor metálico, hasta 60x60 cm. a 3 mts.",
+      "unidad": "ML",
+      "precioUnitarioDefault": 357,
+      "categoria": "YESERÍA Y TABLAROCA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "043c5eaf-4ff0-4ac6-afb6-351c7f1d32a5",
+      "clave": "CTM-Y10",
+      "descripcion": "Plafón modulado 60x60 cm. con retículo prefabricado esmaltada blanco hasta 3 mts.",
+      "unidad": "M2",
+      "precioUnitarioDefault": 316,
+      "categoria": "YESERÍA Y TABLAROCA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "617c9745-ef5d-44a3-88d0-25203f2a9179",
+      "clave": "CTM-C01",
+      "descripcion": "Cimbra en cimentación",
+      "unidad": "M2",
+      "precioUnitarioDefault": 564,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "fd3ac56a-9fbc-419b-ad1b-2af298f4ff16",
+      "clave": "CTM-C02",
+      "descripcion": "Cimbra en columnas (común o hasta de 30x30)",
+      "unidad": "M2",
+      "precioUnitarioDefault": 564,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "495ccaf3-50fb-4ac2-9232-aaea5052aac3",
+      "clave": "CTM-C03",
+      "descripcion": "Hechura de moldes de columna",
+      "unidad": "M2",
+      "precioUnitarioDefault": 564,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "433e2d0e-be5d-4fc5-aaf7-d188e285ed15",
+      "clave": "CTM-C04",
+      "descripcion": "Cimbra de columnas (triplay)",
+      "unidad": "M2",
+      "precioUnitarioDefault": 709,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "2a81a20c-9f9e-450d-9c2f-fb0a0296d806",
+      "clave": "CTM-C05",
+      "descripcion": "Cimbra de trabes hacia abajo (común)",
+      "unidad": "M2",
+      "precioUnitarioDefault": 541,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "01287848-9aae-41b1-becc-27f464f6d4d8",
+      "clave": "CTM-C06",
+      "descripcion": "Cimbra de trabes hacia abajo (triplay)",
+      "unidad": "M2",
+      "precioUnitarioDefault": 524,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "2163d1de-df5c-4007-8419-f2b712065a16",
+      "clave": "CTM-C07",
+      "descripcion": "Cimbra en común en losa plana",
+      "unidad": "M2",
+      "precioUnitarioDefault": 355,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "174a7749-a5a6-49cc-85c9-75e01314d7a9",
+      "clave": "CTM-C08",
+      "descripcion": "Cimbra en triplay en losa plana",
+      "unidad": "M2",
+      "precioUnitarioDefault": 408,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "62197648-b98f-4caa-99af-80c67b5e7b12",
+      "clave": "CTM-C09",
+      "descripcion": "Cimbra en común en losa inclinada",
+      "unidad": "M2",
+      "precioUnitarioDefault": 448,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "a9cbc38a-21e3-4953-a733-eb0305f88ca2",
+      "clave": "CTM-C10",
+      "descripcion": "Cimbra de losa reticular plana de triplay",
+      "unidad": "M2",
+      "precioUnitarioDefault": 466,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "09a92355-9708-4925-ad57-bb169a5f9909",
+      "clave": "CTM-C11",
+      "descripcion": "Cimbra de losa reticular incluida (triplay)",
+      "unidad": "M2",
+      "precioUnitarioDefault": 470,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "e8bb1ae4-6ae4-480f-9478-2892d748099a",
+      "clave": "CTM-C12",
+      "descripcion": "Cimbra en trabes invertidos",
+      "unidad": "M2",
+      "precioUnitarioDefault": 376,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "a70ed5ef-ba2c-490d-8cd6-88d1c7872266",
+      "clave": "CTM-C13",
+      "descripcion": "Cimbra en común muros",
+      "unidad": "M2",
+      "precioUnitarioDefault": 493,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "1ce86f4b-e858-4205-9281-a779dbd019a5",
+      "clave": "CTM-C14",
+      "descripcion": "Cimbra triplay en muros",
+      "unidad": "M2",
+      "precioUnitarioDefault": 553,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "7a9fa9e5-66ca-42a9-832d-9b4cba313ff8",
+      "clave": "CTM-C15",
+      "descripcion": "Cimbra en redoblon común",
+      "unidad": "M2",
+      "precioUnitarioDefault": 364,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "6408d3ef-2655-4a13-8164-a2210c6327b0",
+      "clave": "CTM-C16",
+      "descripcion": "Cimbra en redoblon triplay",
+      "unidad": "M2",
+      "precioUnitarioDefault": 457,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "e9986b72-2123-435e-b68b-3d6ac7efc78e",
+      "clave": "CTM-C17",
+      "descripcion": "Cimbra en costados de losa reticular",
+      "unidad": "M2",
+      "precioUnitarioDefault": 540,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "d51985e1-e721-40fa-ad59-d4be0a863c70",
+      "clave": "CTM-C18",
+      "descripcion": "Cimbra de faldon común incluyendo obra falsa",
+      "unidad": "M2",
+      "precioUnitarioDefault": 566,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "a4b13899-1eab-4a48-b56c-1ca518395033",
+      "clave": "CTM-C19",
+      "descripcion": "Cimbra de faldon triplay incluido obra falsa",
+      "unidad": "M2",
+      "precioUnitarioDefault": 652,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "40f05570-53ac-4535-a784-ca408c12633e",
+      "clave": "CTM-C20",
+      "descripcion": "Cimbra de estructura común (edificios)",
+      "unidad": "M2",
+      "precioUnitarioDefault": 431,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "d803f437-d7a6-48e9-9de5-877bda8d4c96",
+      "clave": "CTM-C21",
+      "descripcion": "Cimbra de estructura triplay (edificios)",
+      "unidad": "M2",
+      "precioUnitarioDefault": 457,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "d5e04b75-beb6-487c-ab2d-fb5795e82f5f",
+      "clave": "CTM-C22",
+      "descripcion": "Cimbra de losa hasta 5.00 mts. de altura (común) con saracha",
+      "unidad": "M2",
+      "precioUnitarioDefault": 605,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "90583383-ddf5-488b-990a-b03369522dab",
+      "clave": "CTM-C23",
+      "descripcion": "Cimbra de losa hasta 5 mts. de altura (triplay)",
+      "unidad": "M2",
+      "precioUnitarioDefault": 519,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "6229fefd-a2cb-4ee0-9602-65eeb1fd0bcb",
+      "clave": "CTM-C24",
+      "descripcion": "Cimbra vigueta de bovedilla (común)",
+      "unidad": "M2",
+      "precioUnitarioDefault": 251,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "57e9ac86-3430-478f-b8fb-4d14ec227e85",
+      "clave": "CTM-C25",
+      "descripcion": "Cimbra de hechura de subidero planta baja",
+      "unidad": "M2",
+      "precioUnitarioDefault": 1422,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "b1140225-f621-4696-a425-dd51607bd028",
+      "clave": "CTM-C26",
+      "descripcion": "Cimbra de hechura de subidero planta alta",
+      "unidad": "M2",
+      "precioUnitarioDefault": 2857,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "83d1e7be-70fc-4ed3-88f1-d13315e25e62",
+      "clave": "CTM-C27",
+      "descripcion": "Chaflán de pulgada",
+      "unidad": "M2",
+      "precioUnitarioDefault": 75,
+      "categoria": "CIMBRA",
+      "esPersonalizado": false
+    },
+    {
+      "id": "0f7cd6d0-f0fc-43b8-98ac-68e0a1177d91",
+      "clave": "CTM-PUL01",
+      "descripcion": "Pulido y brillado en piso de granito",
+      "unidad": "M2",
+      "precioUnitarioDefault": 188,
+      "categoria": "PULIDO",
+      "esPersonalizado": false
+    },
+    {
+      "id": "b0286683-1103-43c1-94e7-7cb580dba2f8",
+      "clave": "CTM-PUL02",
+      "descripcion": "Pulido de piso terrazo",
+      "unidad": "M2",
+      "precioUnitarioDefault": 249,
+      "categoria": "PULIDO",
+      "esPersonalizado": false
+    },
+    {
+      "id": "0604b5c1-0e39-450f-89d4-4ce19b9e72d6",
+      "clave": "CTM-PUL03",
+      "descripcion": "Pulido de piso de mármol",
+      "unidad": "M2",
+      "precioUnitarioDefault": 249,
+      "categoria": "PULIDO",
+      "esPersonalizado": false
+    },
+    {
+      "id": "ed90613c-d5f4-4e3a-8893-0036c4d4f0c7",
+      "clave": "CTM-PUL04",
+      "descripcion": "Pulido de piso de pasta",
+      "unidad": "M2",
+      "precioUnitarioDefault": 181,
+      "categoria": "PULIDO",
+      "esPersonalizado": false
+    },
+    {
+      "id": "740117bd-46f4-48c3-a200-f1c977c8ce73",
+      "clave": "CTM-PUL05",
+      "descripcion": "Pulido de zoclo de granito",
+      "unidad": "ML",
+      "precioUnitarioDefault": 128,
+      "categoria": "PULIDO",
+      "esPersonalizado": false
+    },
+    {
+      "id": "479544f3-2d8b-41d6-8cf5-a711e5554a89",
+      "clave": "CTM-PUL06",
+      "descripcion": "Pulido de zoclo de mármol",
+      "unidad": "ML",
+      "precioUnitarioDefault": 128,
+      "categoria": "PULIDO",
+      "esPersonalizado": false
+    },
+    {
+      "id": "2f3647bd-7105-4c00-9bec-a94b4071d661",
+      "clave": "CTM-PUL07",
+      "descripcion": "Pulido de zoclo de pasta",
+      "unidad": "ML",
+      "precioUnitarioDefault": 128,
+      "categoria": "PULIDO",
+      "esPersonalizado": false
+    },
+    {
+      "id": "491dd73c-730e-44b0-a7fe-9a00ea76e37b",
+      "clave": "CTM-PUL08",
+      "descripcion": "Encerado de piso de granito, mármol pasta y terrazo",
+      "unidad": "M2",
+      "precioUnitarioDefault": 87,
+      "categoria": "PULIDO",
+      "esPersonalizado": false
+    },
+    {
+      "id": "be2f90be-162c-45ff-8f55-a8c903227ead",
+      "clave": "CTM-PUL09",
+      "descripcion": "Devastado de piso de concreto",
+      "unidad": "M2",
+      "precioUnitarioDefault": 128,
+      "categoria": "PULIDO",
+      "esPersonalizado": false
+    },
+    {
+      "id": "b3023f70-ec65-4dbb-8b1a-f89ea107d6b9",
+      "clave": "CTM-PUL10",
+      "descripcion": "Lavado de piso de cerámica con máquina",
+      "unidad": "M2",
+      "precioUnitarioDefault": 128,
+      "categoria": "PULIDO",
+      "esPersonalizado": false
+    }
+  ]
+}

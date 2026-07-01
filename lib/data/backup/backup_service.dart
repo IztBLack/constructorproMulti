@@ -25,12 +25,10 @@ class BackupService {
   static double _d(Map m, String k, [double def = 0.0]) =>
       (m[k] as num?)?.toDouble() ?? def;
   static double? _dn(Map m, String k) => (m[k] as num?)?.toDouble();
-  static bool _b(Map m, String k, [bool def = false]) =>
-      (m[k] as bool?) ?? def;
+  static bool _b(Map m, String k, [bool def = false]) => (m[k] as bool?) ?? def;
 
   List<Map<String, dynamic>> _list(Map root, String key) =>
-      ((root[key] as List?) ?? const [])
-          .cast<Map<String, dynamic>>();
+      ((root[key] as List?) ?? const []).cast<Map<String, dynamic>>();
 
   /// Decodifica y valida que el JSON sea realmente un respaldo de ConstructorPro
   /// ANTES de tocar la base de datos. Restaurar borra todo el contenido actual,
@@ -41,19 +39,22 @@ class BackupService {
       decoded = json.decode(jsonString);
     } on FormatException {
       throw const FormatException(
-          'El archivo no es un JSON válido. ¿Seleccionaste el respaldo correcto?');
+        'El archivo no es un JSON válido. ¿Seleccionaste el respaldo correcto?',
+      );
     }
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException(
-          'El archivo no tiene el formato de un respaldo de ConstructorPro.');
+        'El archivo no tiene el formato de un respaldo de ConstructorPro.',
+      );
     }
     // Firma mínima de un respaldo real: las tablas núcleo deben venir como listas.
     const requiredKeys = ['obras', 'colaboradores', 'cotizaciones'];
     for (final k in requiredKeys) {
       if (decoded[k] is! List) {
         throw FormatException(
-            'Respaldo inválido o incompleto: falta la sección "$k". '
-            'No se modificaron tus datos.');
+          'Respaldo inválido o incompleto: falta la sección "$k". '
+          'No se modificaron tus datos.',
+        );
       }
     }
     // Si trae la firma de origen, debe coincidir: así rechazamos un archivo de
@@ -61,8 +62,9 @@ class BackupService {
     final app = decoded['app'];
     if (app != null && app != 'ConstructorPro') {
       throw const FormatException(
-          'Este respaldo es de otra aplicación, no de ConstructorPro. '
-          'No se modificaron tus datos.');
+        'Este respaldo es de otra aplicación, no de ConstructorPro. '
+        'No se modificaron tus datos.',
+      );
     }
     return decoded;
   }
@@ -72,8 +74,9 @@ class BackupService {
   static const _uuid = Uuid();
 
   static final _uuidRe = RegExp(
-      r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
-      caseSensitive: false);
+    r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+    caseSensitive: false,
+  );
 
   /// Remapea IDs no-UUID (legacy Room/Kotlin con auto-increment "1","2"…)
   /// a UUIDs válidos, manteniendo la integridad de FK en todo el respaldo.
@@ -97,63 +100,99 @@ class BackupService {
 
     // Fase 1: Registrar todos los PKs (id) para que existan en el mapa.
     for (final key in [
-      'puestos', 'obras', 'colaboradores', 'cotizaciones',
-      'secciones', 'partidas', 'pagos', 'asistencias',
-      'destajos', 'movimientos', 'catalogosConceptos', 'archivosCotizacion',
+      'puestos',
+      'obras',
+      'colaboradores',
+      'cotizaciones',
+      'secciones',
+      'partidas',
+      'pagos',
+      'asistencias',
+      'destajos',
+      'movimientos',
+      'catalogosConceptos',
+      'archivosCotizacion',
     ]) {
-      for (final m in ((root[key] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+      for (final m
+          in ((root[key] as List?) ?? const []).cast<Map<String, dynamic>>()) {
         if (m.containsKey('id')) fix(m['id']?.toString());
       }
     }
     // obraColaborador no tiene 'id' propio — sus FKs se remap abajo.
 
     // Fase 2: Aplicar remap a cada registro (PK + FK).
-    for (final m in ((root['puestos'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+    for (final m
+        in ((root['puestos'] as List?) ?? const [])
+            .cast<Map<String, dynamic>>()) {
       m['id'] = fix(m['id']?.toString());
     }
-    for (final m in ((root['obras'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+    for (final m
+        in ((root['obras'] as List?) ?? const [])
+            .cast<Map<String, dynamic>>()) {
       m['id'] = fix(m['id']?.toString());
-      m['cotizacionOrigenId'] = fixNullable(m['cotizacionOrigenId']?.toString());
+      m['cotizacionOrigenId'] = fixNullable(
+        m['cotizacionOrigenId']?.toString(),
+      );
     }
-    for (final m in ((root['colaboradores'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+    for (final m
+        in ((root['colaboradores'] as List?) ?? const [])
+            .cast<Map<String, dynamic>>()) {
       m['id'] = fix(m['id']?.toString());
       m['puestoId'] = fix(m['puestoId']?.toString());
     }
-    for (final m in ((root['obraColaboradores'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+    for (final m
+        in ((root['obraColaboradores'] as List?) ?? const [])
+            .cast<Map<String, dynamic>>()) {
       m['obraId'] = fix(m['obraId']?.toString());
       m['colaboradorId'] = fix(m['colaboradorId']?.toString());
     }
-    for (final m in ((root['asistencias'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+    for (final m
+        in ((root['asistencias'] as List?) ?? const [])
+            .cast<Map<String, dynamic>>()) {
       m['id'] = fix(m['id']?.toString());
       m['colaboradorId'] = fix(m['colaboradorId']?.toString());
       m['obraId'] = fix(m['obraId']?.toString());
     }
-    for (final m in ((root['destajos'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+    for (final m
+        in ((root['destajos'] as List?) ?? const [])
+            .cast<Map<String, dynamic>>()) {
       m['id'] = fix(m['id']?.toString());
       m['colaboradorId'] = fix(m['colaboradorId']?.toString());
       m['obraId'] = fix(m['obraId']?.toString());
     }
-    for (final m in ((root['cotizaciones'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+    for (final m
+        in ((root['cotizaciones'] as List?) ?? const [])
+            .cast<Map<String, dynamic>>()) {
       m['id'] = fix(m['id']?.toString());
       m['obraId'] = fixNullable(m['obraId']?.toString());
     }
-    for (final m in ((root['archivosCotizacion'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+    for (final m
+        in ((root['archivosCotizacion'] as List?) ?? const [])
+            .cast<Map<String, dynamic>>()) {
       m['id'] = fix(m['id']?.toString());
       m['cotizacionId'] = fix(m['cotizacionId']?.toString());
     }
-    for (final m in ((root['secciones'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+    for (final m
+        in ((root['secciones'] as List?) ?? const [])
+            .cast<Map<String, dynamic>>()) {
       m['id'] = fix(m['id']?.toString());
       m['cotizacionId'] = fix(m['cotizacionId']?.toString());
     }
-    for (final m in ((root['partidas'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+    for (final m
+        in ((root['partidas'] as List?) ?? const [])
+            .cast<Map<String, dynamic>>()) {
       m['id'] = fix(m['id']?.toString());
       m['seccionId'] = fix(m['seccionId']?.toString());
     }
-    for (final m in ((root['pagos'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+    for (final m
+        in ((root['pagos'] as List?) ?? const [])
+            .cast<Map<String, dynamic>>()) {
       m['id'] = fix(m['id']?.toString());
       m['cotizacionId'] = fix(m['cotizacionId']?.toString());
     }
-    for (final m in ((root['movimientos'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+    for (final m
+        in ((root['movimientos'] as List?) ?? const [])
+            .cast<Map<String, dynamic>>()) {
       m['id'] = fix(m['id']?.toString());
       m['obraId'] = fix(m['obraId']?.toString());
       m['nominaId'] = fixNullable(m['nominaId']?.toString());
@@ -161,9 +200,130 @@ class BackupService {
       m['seccionId'] = fixNullable(m['seccionId']?.toString());
       m['partidaId'] = fixNullable(m['partidaId']?.toString());
     }
-    for (final m in ((root['catalogosConceptos'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+    for (final m
+        in ((root['catalogosConceptos'] as List?) ?? const [])
+            .cast<Map<String, dynamic>>()) {
       m['id'] = fix(m['id']?.toString());
     }
+
+    return root;
+  }
+
+  /// Limpia registros huérfanos con Foreign Keys rotas, algo común
+  /// en respaldos de la app SQLite original donde no se forzaba la integridad.
+  /// Evita que el posterior sync con Supabase (Postgres) falle por constraints.
+  static Map<String, dynamic> _cleanOrphanedRecords(Map<String, dynamic> root) {
+    Set<String> getIds(String key) =>
+        (((root[key] as List?) ?? const []).cast<Map<String, dynamic>>())
+            .map((m) => m['id']?.toString() ?? '')
+            .where((id) => id.isNotEmpty)
+            .toSet();
+
+    final puestos = getIds('puestos');
+    final obras = getIds('obras');
+    final colabs = getIds('colaboradores');
+    final cots = getIds('cotizaciones');
+    final secs = getIds('secciones');
+    final parts = getIds('partidas');
+
+    List<Map<String, dynamic>> getList(String key) =>
+        ((root[key] as List?) ?? const []).cast<Map<String, dynamic>>();
+
+    void setList(String key, Iterable<Map<String, dynamic>> list) {
+      root[key] = list.toList();
+    }
+
+    // 1. Colaboradores con puestoId inválido
+    // No podemos borrarlos porque tienen asistencias y obraColaboradores.
+    // Creamos un puesto "Sin Puesto (Recuperado)" si hay huérfanos.
+    final colabsList = getList('colaboradores');
+    final badPuestos = colabsList
+        .where((c) => !puestos.contains(c['puestoId']?.toString()))
+        .toList();
+    if (badPuestos.isNotEmpty) {
+      final fallbackPuestoId = _uuid.v4();
+      final p = {
+        'id': fallbackPuestoId,
+        'nombre': 'Sin Puesto (Recuperado)',
+        'salarioDiaDefault': 0.0,
+      };
+      (root['puestos'] as List).add(p);
+      puestos.add(fallbackPuestoId);
+      for (final c in badPuestos) {
+        c['puestoId'] = fallbackPuestoId;
+      }
+    }
+
+    // 2. Tablas asociativas (borramos si falta padre)
+    setList(
+      'obraColaboradores',
+      getList('obraColaboradores').where(
+        (m) =>
+            obras.contains(m['obraId']?.toString()) &&
+            colabs.contains(m['colaboradorId']?.toString()),
+      ),
+    );
+
+    setList(
+      'asistencias',
+      getList('asistencias').where(
+        (m) =>
+            obras.contains(m['obraId']?.toString()) &&
+            colabs.contains(m['colaboradorId']?.toString()),
+      ),
+    );
+
+    setList(
+      'destajos',
+      getList('destajos').where(
+        (m) =>
+            obras.contains(m['obraId']?.toString()) &&
+            colabs.contains(m['colaboradorId']?.toString()),
+      ),
+    );
+
+    // 3. Tablas con FK nullable (anulamos si falta padre)
+    for (final m in getList('cotizaciones')) {
+      if (!obras.contains(m['obraId']?.toString())) m['obraId'] = null;
+    }
+
+    // 4. Jerarquía de Cotizaciones (borramos hijos si falta padre)
+    setList(
+      'archivosCotizacion',
+      getList(
+        'archivosCotizacion',
+      ).where((m) => cots.contains(m['cotizacionId']?.toString())),
+    );
+    setList(
+      'secciones',
+      getList(
+        'secciones',
+      ).where((m) => cots.contains(m['cotizacionId']?.toString())),
+    );
+    setList(
+      'partidas',
+      getList(
+        'partidas',
+      ).where((m) => secs.contains(m['seccionId']?.toString())),
+    );
+    setList(
+      'pagos',
+      getList(
+        'pagos',
+      ).where((m) => cots.contains(m['cotizacionId']?.toString())),
+    );
+
+    // 5. Movimientos (borramos si falta obra, anulamos resto)
+    final movs = getList(
+      'movimientos',
+    ).where((m) => obras.contains(m['obraId']?.toString())).toList();
+    for (final m in movs) {
+      if (!cots.contains(m['cotizacionId']?.toString()))
+        m['cotizacionId'] = null;
+      if (!secs.contains(m['seccionId']?.toString())) m['seccionId'] = null;
+      if (!parts.contains(m['partidaId']?.toString())) m['partidaId'] = null;
+    }
+    setList('movimientos', movs);
 
     return root;
   }
@@ -173,7 +333,9 @@ class BackupService {
   /// manteniendo la integridad referencial, para que el sync con Supabase
   /// funcione sin problemas.
   Future<void> importFromJson(String jsonString) async {
-    final root = _remapLegacyIds(_parseAndValidate(jsonString));
+    final root = _cleanOrphanedRecords(
+      _remapLegacyIds(_parseAndValidate(jsonString)),
+    );
 
     await db.transaction(() async {
       // Limpia todas las tablas (restauración = reemplazo total).
@@ -193,149 +355,188 @@ class BackupService {
 
       await db.batch((b) {
         for (final m in _list(root, 'puestos')) {
-          b.insert(db.puestos, PuestosCompanion.insert(
-            id: _s(m, 'id'),
-            nombre: _s(m, 'nombre'),
-            salarioDiaDefault: Value(_d(m, 'salarioDiaDefault')),
-          ));
+          b.insert(
+            db.puestos,
+            PuestosCompanion.insert(
+              id: _s(m, 'id'),
+              nombre: _s(m, 'nombre'),
+              salarioDiaDefault: Value(_d(m, 'salarioDiaDefault')),
+            ),
+          );
         }
         for (final m in _list(root, 'obras')) {
-          b.insert(db.obras, ObrasCompanion.insert(
-            id: _s(m, 'id'),
-            nombre: _s(m, 'nombre'),
-            cliente: Value(_s(m, 'cliente')),
-            ubicacion: Value(_s(m, 'ubicacion')),
-            fechaInicio: _i(m, 'fechaInicio'),
-            activa: Value(_b(m, 'activa', true)),
-            cotizacionOrigenId: Value(_sn(m, 'cotizacionOrigenId')),
-            pdfConfigJson: Value(_sn(m, 'pdfConfigJson')),
-          ));
+          b.insert(
+            db.obras,
+            ObrasCompanion.insert(
+              id: _s(m, 'id'),
+              nombre: _s(m, 'nombre'),
+              cliente: Value(_s(m, 'cliente')),
+              ubicacion: Value(_s(m, 'ubicacion')),
+              fechaInicio: _i(m, 'fechaInicio'),
+              activa: Value(_b(m, 'activa', true)),
+              cotizacionOrigenId: Value(_sn(m, 'cotizacionOrigenId')),
+              pdfConfigJson: Value(_sn(m, 'pdfConfigJson')),
+            ),
+          );
         }
         for (final m in _list(root, 'colaboradores')) {
-          b.insert(db.colaboradores, ColaboradoresCompanion.insert(
-            id: _s(m, 'id'),
-            nombre: _s(m, 'nombre'),
-            puestoId: _s(m, 'puestoId'),
-            tipoPago: _s(m, 'tipoPago'),
-            telefono: Value(_s(m, 'telefono')),
-            contactoNombre: Value(_s(m, 'contactoNombre')),
-            contactoTelefono: Value(_s(m, 'contactoTelefono')),
-            contactoParentesco: Value(_s(m, 'contactoParentesco')),
-            activo: Value(_b(m, 'activo', true)),
-            salarioPersonalizado: Value(_dn(m, 'salarioPersonalizado')),
-          ));
+          b.insert(
+            db.colaboradores,
+            ColaboradoresCompanion.insert(
+              id: _s(m, 'id'),
+              nombre: _s(m, 'nombre'),
+              puestoId: _s(m, 'puestoId'),
+              tipoPago: _s(m, 'tipoPago'),
+              telefono: Value(_s(m, 'telefono')),
+              contactoNombre: Value(_s(m, 'contactoNombre')),
+              contactoTelefono: Value(_s(m, 'contactoTelefono')),
+              contactoParentesco: Value(_s(m, 'contactoParentesco')),
+              activo: Value(_b(m, 'activo', true)),
+              salarioPersonalizado: Value(_dn(m, 'salarioPersonalizado')),
+            ),
+          );
         }
         for (final m in _list(root, 'obraColaboradores')) {
-          b.insert(db.obraColaborador, ObraColaboradorCompanion.insert(
-            obraId: _s(m, 'obraId'),
-            colaboradorId: _s(m, 'colaboradorId'),
-            fechaIngreso: _i(m, 'fechaIngreso'),
-            fechaSalida: Value(_in(m, 'fechaSalida')),
-            salarioDiaOverride: Value(_dn(m, 'salarioDiaOverride')),
-          ));
+          b.insert(
+            db.obraColaborador,
+            ObraColaboradorCompanion.insert(
+              obraId: _s(m, 'obraId'),
+              colaboradorId: _s(m, 'colaboradorId'),
+              fechaIngreso: _i(m, 'fechaIngreso'),
+              fechaSalida: Value(_in(m, 'fechaSalida')),
+              salarioDiaOverride: Value(_dn(m, 'salarioDiaOverride')),
+            ),
+          );
         }
         for (final m in _list(root, 'asistencias')) {
-          b.insert(db.asistencias, AsistenciasCompanion.insert(
-            id: _s(m, 'id'),
-            colaboradorId: _s(m, 'colaboradorId'),
-            obraId: _s(m, 'obraId'),
-            fecha: _i(m, 'fecha'),
-            fraccion: _d(m, 'fraccion'),
-          ));
+          b.insert(
+            db.asistencias,
+            AsistenciasCompanion.insert(
+              id: _s(m, 'id'),
+              colaboradorId: _s(m, 'colaboradorId'),
+              obraId: _s(m, 'obraId'),
+              fecha: _i(m, 'fecha'),
+              fraccion: _d(m, 'fraccion'),
+            ),
+          );
         }
         for (final m in _list(root, 'destajos')) {
-          b.insert(db.destajos, DestajosCompanion.insert(
-            id: _s(m, 'id'),
-            colaboradorId: _s(m, 'colaboradorId'),
-            obraId: _s(m, 'obraId'),
-            fecha: _i(m, 'fecha'),
-            concepto: _s(m, 'concepto'),
-            monto: _d(m, 'monto'),
-          ));
+          b.insert(
+            db.destajos,
+            DestajosCompanion.insert(
+              id: _s(m, 'id'),
+              colaboradorId: _s(m, 'colaboradorId'),
+              obraId: _s(m, 'obraId'),
+              fecha: _i(m, 'fecha'),
+              concepto: _s(m, 'concepto'),
+              monto: _d(m, 'monto'),
+            ),
+          );
         }
         for (final m in _list(root, 'cotizaciones')) {
-          b.insert(db.cotizaciones, CotizacionesCompanion.insert(
-            id: _s(m, 'id'),
-            cliente: _s(m, 'cliente'),
-            nombreProyecto: _s(m, 'nombreProyecto'),
-            ubicacion: Value(_s(m, 'ubicacion')),
-            fecha: _i(m, 'fecha'),
-            estado: Value(_s(m, 'estado', 'BORRADOR')),
-            ivaEnabled: Value(_b(m, 'ivaEnabled', true)),
-            descuento: Value(_d(m, 'descuento')),
-            notas: Value(_s(m, 'notas')),
-            obraId: Value(_sn(m, 'obraId')),
-            pdfConfigJson: Value(_sn(m, 'pdfConfigJson')),
-          ));
+          b.insert(
+            db.cotizaciones,
+            CotizacionesCompanion.insert(
+              id: _s(m, 'id'),
+              cliente: _s(m, 'cliente'),
+              nombreProyecto: _s(m, 'nombreProyecto'),
+              ubicacion: Value(_s(m, 'ubicacion')),
+              fecha: _i(m, 'fecha'),
+              estado: Value(_s(m, 'estado', 'BORRADOR')),
+              ivaEnabled: Value(_b(m, 'ivaEnabled', true)),
+              descuento: Value(_d(m, 'descuento')),
+              notas: Value(_s(m, 'notas')),
+              obraId: Value(_sn(m, 'obraId')),
+              pdfConfigJson: Value(_sn(m, 'pdfConfigJson')),
+            ),
+          );
         }
         for (final m in _list(root, 'archivosCotizacion')) {
-          b.insert(db.archivosCotizacion, ArchivosCotizacionCompanion.insert(
-            id: _s(m, 'id'),
-            cotizacionId: _s(m, 'cotizacionId'),
-            tipo: _s(m, 'tipo'),
-            nombre: _s(m, 'nombre'),
-            uri: _s(m, 'uri'),
-            fechaAgregado: _i(m, 'fechaAgregado'),
-          ));
+          b.insert(
+            db.archivosCotizacion,
+            ArchivosCotizacionCompanion.insert(
+              id: _s(m, 'id'),
+              cotizacionId: _s(m, 'cotizacionId'),
+              tipo: _s(m, 'tipo'),
+              nombre: _s(m, 'nombre'),
+              uri: _s(m, 'uri'),
+              fechaAgregado: _i(m, 'fechaAgregado'),
+            ),
+          );
         }
         for (final m in _list(root, 'secciones')) {
-          b.insert(db.secciones, SeccionesCompanion.insert(
-            id: _s(m, 'id'),
-            cotizacionId: _s(m, 'cotizacionId'),
-            nombre: _s(m, 'nombre'),
-            orden: Value(_i(m, 'orden')),
-          ));
+          b.insert(
+            db.secciones,
+            SeccionesCompanion.insert(
+              id: _s(m, 'id'),
+              cotizacionId: _s(m, 'cotizacionId'),
+              nombre: _s(m, 'nombre'),
+              orden: Value(_i(m, 'orden')),
+            ),
+          );
         }
         for (final m in _list(root, 'partidas')) {
-          b.insert(db.partidas, PartidasCompanion.insert(
-            id: _s(m, 'id'),
-            seccionId: _s(m, 'seccionId'),
-            clave: Value(_s(m, 'clave')),
-            descripcion: _s(m, 'descripcion'),
-            unidad: Value(_s(m, 'unidad')),
-            cantidad: _d(m, 'cantidad'),
-            precioUnitario: _d(m, 'precioUnitario'),
-            orden: Value(_i(m, 'orden')),
-          ));
+          b.insert(
+            db.partidas,
+            PartidasCompanion.insert(
+              id: _s(m, 'id'),
+              seccionId: _s(m, 'seccionId'),
+              clave: Value(_s(m, 'clave')),
+              descripcion: _s(m, 'descripcion'),
+              unidad: Value(_s(m, 'unidad')),
+              cantidad: _d(m, 'cantidad'),
+              precioUnitario: _d(m, 'precioUnitario'),
+              orden: Value(_i(m, 'orden')),
+            ),
+          );
         }
         for (final m in _list(root, 'pagos')) {
-          b.insert(db.pagos, PagosCompanion.insert(
-            id: _s(m, 'id'),
-            cotizacionId: _s(m, 'cotizacionId'),
-            fecha: _i(m, 'fecha'),
-            monto: _d(m, 'monto'),
-            metodo: _s(m, 'metodo'),
-            concepto: _s(m, 'concepto'),
-            referencia: Value(_sn(m, 'referencia')),
-          ));
+          b.insert(
+            db.pagos,
+            PagosCompanion.insert(
+              id: _s(m, 'id'),
+              cotizacionId: _s(m, 'cotizacionId'),
+              fecha: _i(m, 'fecha'),
+              monto: _d(m, 'monto'),
+              metodo: _s(m, 'metodo'),
+              concepto: _s(m, 'concepto'),
+              referencia: Value(_sn(m, 'referencia')),
+            ),
+          );
         }
         for (final m in _list(root, 'movimientos')) {
-          b.insert(db.movimientos, MovimientosCompanion.insert(
-            id: _s(m, 'id'),
-            obraId: _s(m, 'obraId'),
-            fecha: _i(m, 'fecha'),
-            tipo: _s(m, 'tipo'),
-            categoria: _s(m, 'categoria'),
-            concepto: _s(m, 'concepto'),
-            monto: _d(m, 'monto'),
-            metodoPago: _s(m, 'metodoPago'),
-            referencia: Value(_s(m, 'referencia')),
-            nominaId: Value(_sn(m, 'nominaId')),
-            cotizacionId: Value(_sn(m, 'cotizacionId')),
-            seccionId: Value(_sn(m, 'seccionId')),
-            partidaId: Value(_sn(m, 'partidaId')),
-          ));
+          b.insert(
+            db.movimientos,
+            MovimientosCompanion.insert(
+              id: _s(m, 'id'),
+              obraId: _s(m, 'obraId'),
+              fecha: _i(m, 'fecha'),
+              tipo: _s(m, 'tipo'),
+              categoria: _s(m, 'categoria'),
+              concepto: _s(m, 'concepto'),
+              monto: _d(m, 'monto'),
+              metodoPago: _s(m, 'metodoPago'),
+              referencia: Value(_s(m, 'referencia')),
+              nominaId: Value(_sn(m, 'nominaId')),
+              cotizacionId: Value(_sn(m, 'cotizacionId')),
+              seccionId: Value(_sn(m, 'seccionId')),
+              partidaId: Value(_sn(m, 'partidaId')),
+            ),
+          );
         }
         for (final m in _list(root, 'catalogosConceptos')) {
-          b.insert(db.catalogoConceptos, CatalogoConceptosCompanion.insert(
-            id: _s(m, 'id'),
-            clave: _s(m, 'clave'),
-            descripcion: _s(m, 'descripcion'),
-            unidad: _s(m, 'unidad'),
-            precioUnitarioDefault: Value(_d(m, 'precioUnitarioDefault')),
-            categoria: _s(m, 'categoria'),
-            esPersonalizado: Value(_b(m, 'esPersonalizado')),
-          ));
+          b.insert(
+            db.catalogoConceptos,
+            CatalogoConceptosCompanion.insert(
+              id: _s(m, 'id'),
+              clave: _s(m, 'clave'),
+              descripcion: _s(m, 'descripcion'),
+              unidad: _s(m, 'unidad'),
+              precioUnitarioDefault: Value(_d(m, 'precioUnitarioDefault')),
+              categoria: _s(m, 'categoria'),
+              esPersonalizado: Value(_b(m, 'esPersonalizado')),
+            ),
+          );
         }
       });
     });
@@ -345,15 +546,15 @@ class BackupService {
   /// Genera el JSON de respaldo con el mismo esquema que la app Kotlin.
   Future<String> exportToJson() async {
     Map<String, dynamic> obraJson(Obra o) => {
-          'id': o.id,
-          'nombre': o.nombre,
-          'cliente': o.cliente,
-          'ubicacion': o.ubicacion,
-          'fechaInicio': o.fechaInicio,
-          'activa': o.activa,
-          'cotizacionOrigenId': o.cotizacionOrigenId,
-          'pdfConfigJson': o.pdfConfigJson,
-        };
+      'id': o.id,
+      'nombre': o.nombre,
+      'cliente': o.cliente,
+      'ubicacion': o.ubicacion,
+      'fechaInicio': o.fechaInicio,
+      'activa': o.activa,
+      'cotizacionOrigenId': o.cotizacionOrigenId,
+      'pdfConfigJson': o.pdfConfigJson,
+    };
 
     final data = {
       // Firma de origen: permite validar el respaldo al importar. Los respaldos
@@ -363,137 +564,161 @@ class BackupService {
       'backupVersion': 1,
       'obras': (await db.select(db.obras).get()).map(obraJson).toList(),
       'puestos': (await db.select(db.puestos).get())
-          .map((p) => {
-                'id': p.id,
-                'nombre': p.nombre,
-                'salarioDiaDefault': p.salarioDiaDefault,
-              })
+          .map(
+            (p) => {
+              'id': p.id,
+              'nombre': p.nombre,
+              'salarioDiaDefault': p.salarioDiaDefault,
+            },
+          )
           .toList(),
       'colaboradores': (await db.select(db.colaboradores).get())
-          .map((c) => {
-                'id': c.id,
-                'nombre': c.nombre,
-                'puestoId': c.puestoId,
-                'tipoPago': c.tipoPago,
-                'telefono': c.telefono,
-                'contactoNombre': c.contactoNombre,
-                'contactoTelefono': c.contactoTelefono,
-                'contactoParentesco': c.contactoParentesco,
-                'activo': c.activo,
-                'salarioPersonalizado': c.salarioPersonalizado,
-              })
+          .map(
+            (c) => {
+              'id': c.id,
+              'nombre': c.nombre,
+              'puestoId': c.puestoId,
+              'tipoPago': c.tipoPago,
+              'telefono': c.telefono,
+              'contactoNombre': c.contactoNombre,
+              'contactoTelefono': c.contactoTelefono,
+              'contactoParentesco': c.contactoParentesco,
+              'activo': c.activo,
+              'salarioPersonalizado': c.salarioPersonalizado,
+            },
+          )
           .toList(),
       'obraColaboradores': (await db.select(db.obraColaborador).get())
-          .map((r) => {
-                'obraId': r.obraId,
-                'colaboradorId': r.colaboradorId,
-                'fechaIngreso': r.fechaIngreso,
-                'fechaSalida': r.fechaSalida,
-                'salarioDiaOverride': r.salarioDiaOverride,
-              })
+          .map(
+            (r) => {
+              'obraId': r.obraId,
+              'colaboradorId': r.colaboradorId,
+              'fechaIngreso': r.fechaIngreso,
+              'fechaSalida': r.fechaSalida,
+              'salarioDiaOverride': r.salarioDiaOverride,
+            },
+          )
           .toList(),
       'asistencias': (await db.select(db.asistencias).get())
-          .map((a) => {
-                'id': a.id,
-                'colaboradorId': a.colaboradorId,
-                'obraId': a.obraId,
-                'fecha': a.fecha,
-                'fraccion': a.fraccion,
-              })
+          .map(
+            (a) => {
+              'id': a.id,
+              'colaboradorId': a.colaboradorId,
+              'obraId': a.obraId,
+              'fecha': a.fecha,
+              'fraccion': a.fraccion,
+            },
+          )
           .toList(),
       'destajos': (await db.select(db.destajos).get())
-          .map((d) => {
-                'id': d.id,
-                'colaboradorId': d.colaboradorId,
-                'obraId': d.obraId,
-                'fecha': d.fecha,
-                'concepto': d.concepto,
-                'monto': d.monto,
-              })
+          .map(
+            (d) => {
+              'id': d.id,
+              'colaboradorId': d.colaboradorId,
+              'obraId': d.obraId,
+              'fecha': d.fecha,
+              'concepto': d.concepto,
+              'monto': d.monto,
+            },
+          )
           .toList(),
       'cotizaciones': (await db.select(db.cotizaciones).get())
-          .map((c) => {
-                'id': c.id,
-                'cliente': c.cliente,
-                'nombreProyecto': c.nombreProyecto,
-                'ubicacion': c.ubicacion,
-                'fecha': c.fecha,
-                'estado': c.estado,
-                'ivaEnabled': c.ivaEnabled,
-                'descuento': c.descuento,
-                'notas': c.notas,
-                'obraId': c.obraId,
-                'pdfConfigJson': c.pdfConfigJson,
-              })
+          .map(
+            (c) => {
+              'id': c.id,
+              'cliente': c.cliente,
+              'nombreProyecto': c.nombreProyecto,
+              'ubicacion': c.ubicacion,
+              'fecha': c.fecha,
+              'estado': c.estado,
+              'ivaEnabled': c.ivaEnabled,
+              'descuento': c.descuento,
+              'notas': c.notas,
+              'obraId': c.obraId,
+              'pdfConfigJson': c.pdfConfigJson,
+            },
+          )
           .toList(),
       'archivosCotizacion': (await db.select(db.archivosCotizacion).get())
-          .map((a) => {
-                'id': a.id,
-                'cotizacionId': a.cotizacionId,
-                'tipo': a.tipo,
-                'nombre': a.nombre,
-                'uri': a.uri,
-                'fechaAgregado': a.fechaAgregado,
-              })
+          .map(
+            (a) => {
+              'id': a.id,
+              'cotizacionId': a.cotizacionId,
+              'tipo': a.tipo,
+              'nombre': a.nombre,
+              'uri': a.uri,
+              'fechaAgregado': a.fechaAgregado,
+            },
+          )
           .toList(),
       'secciones': (await db.select(db.secciones).get())
-          .map((s) => {
-                'id': s.id,
-                'cotizacionId': s.cotizacionId,
-                'nombre': s.nombre,
-                'orden': s.orden,
-              })
+          .map(
+            (s) => {
+              'id': s.id,
+              'cotizacionId': s.cotizacionId,
+              'nombre': s.nombre,
+              'orden': s.orden,
+            },
+          )
           .toList(),
       'partidas': (await db.select(db.partidas).get())
-          .map((p) => {
-                'id': p.id,
-                'seccionId': p.seccionId,
-                'clave': p.clave,
-                'descripcion': p.descripcion,
-                'unidad': p.unidad,
-                'cantidad': p.cantidad,
-                'precioUnitario': p.precioUnitario,
-                'orden': p.orden,
-              })
+          .map(
+            (p) => {
+              'id': p.id,
+              'seccionId': p.seccionId,
+              'clave': p.clave,
+              'descripcion': p.descripcion,
+              'unidad': p.unidad,
+              'cantidad': p.cantidad,
+              'precioUnitario': p.precioUnitario,
+              'orden': p.orden,
+            },
+          )
           .toList(),
       'pagos': (await db.select(db.pagos).get())
-          .map((p) => {
-                'id': p.id,
-                'cotizacionId': p.cotizacionId,
-                'fecha': p.fecha,
-                'monto': p.monto,
-                'metodo': p.metodo,
-                'concepto': p.concepto,
-                'referencia': p.referencia,
-              })
+          .map(
+            (p) => {
+              'id': p.id,
+              'cotizacionId': p.cotizacionId,
+              'fecha': p.fecha,
+              'monto': p.monto,
+              'metodo': p.metodo,
+              'concepto': p.concepto,
+              'referencia': p.referencia,
+            },
+          )
           .toList(),
       'movimientos': (await db.select(db.movimientos).get())
-          .map((mv) => {
-                'id': mv.id,
-                'obraId': mv.obraId,
-                'fecha': mv.fecha,
-                'tipo': mv.tipo,
-                'categoria': mv.categoria,
-                'concepto': mv.concepto,
-                'monto': mv.monto,
-                'metodoPago': mv.metodoPago,
-                'referencia': mv.referencia,
-                'nominaId': mv.nominaId,
-                'cotizacionId': mv.cotizacionId,
-                'seccionId': mv.seccionId,
-                'partidaId': mv.partidaId,
-              })
+          .map(
+            (mv) => {
+              'id': mv.id,
+              'obraId': mv.obraId,
+              'fecha': mv.fecha,
+              'tipo': mv.tipo,
+              'categoria': mv.categoria,
+              'concepto': mv.concepto,
+              'monto': mv.monto,
+              'metodoPago': mv.metodoPago,
+              'referencia': mv.referencia,
+              'nominaId': mv.nominaId,
+              'cotizacionId': mv.cotizacionId,
+              'seccionId': mv.seccionId,
+              'partidaId': mv.partidaId,
+            },
+          )
           .toList(),
       'catalogosConceptos': (await db.select(db.catalogoConceptos).get())
-          .map((c) => {
-                'id': c.id,
-                'clave': c.clave,
-                'descripcion': c.descripcion,
-                'unidad': c.unidad,
-                'precioUnitarioDefault': c.precioUnitarioDefault,
-                'categoria': c.categoria,
-                'esPersonalizado': c.esPersonalizado,
-              })
+          .map(
+            (c) => {
+              'id': c.id,
+              'clave': c.clave,
+              'descripcion': c.descripcion,
+              'unidad': c.unidad,
+              'precioUnitarioDefault': c.precioUnitarioDefault,
+              'categoria': c.categoria,
+              'esPersonalizado': c.esPersonalizado,
+            },
+          )
           .toList(),
     };
 
@@ -534,12 +759,14 @@ class BackupService {
       archive = ZipDecoder().decodeBytes(bytes);
     } catch (_) {
       throw const FormatException(
-          'El archivo no es un respaldo ZIP válido de ConstructorPro.');
+        'El archivo no es un respaldo ZIP válido de ConstructorPro.',
+      );
     }
     final dataFile = archive.findFile('data.json');
     if (dataFile == null) {
       throw const FormatException(
-          'El respaldo no contiene data.json. ¿Seleccionaste el archivo correcto?');
+        'El respaldo no contiene data.json. ¿Seleccionaste el archivo correcto?',
+      );
     }
     final jsonString = utf8.decode(dataFile.content as List<int>);
 
