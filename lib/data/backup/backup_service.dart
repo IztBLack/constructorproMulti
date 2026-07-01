@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:drift/drift.dart';
 import 'package:path/path.dart' as p;
+import 'package:uuid/uuid.dart';
 
 import '../../core/db/app_database.dart';
 import '../../core/storage/app_paths.dart';
@@ -67,9 +68,112 @@ class BackupService {
   }
 
   // ---------------- Importar ----------------
+
+  static const _uuid = Uuid();
+
+  static final _uuidRe = RegExp(
+      r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+      caseSensitive: false);
+
+  /// Remapea IDs no-UUID (legacy Room/Kotlin con auto-increment "1","2"…)
+  /// a UUIDs válidos, manteniendo la integridad de FK en todo el respaldo.
+  /// Devuelve el root modificado in-place.
+  static Map<String, dynamic> _remapLegacyIds(Map<String, dynamic> root) {
+    // Mapa global: oldId → newUuid. Se comparte entre tablas porque las FK
+    // cruzan tablas (ej. colaborador.puestoId → puesto.id).
+    final remap = <String, String>{};
+
+    String fix(String? oldId) {
+      if (oldId == null || oldId.isEmpty) return oldId ?? '';
+      if (_uuidRe.hasMatch(oldId)) return oldId; // ya es UUID
+      return remap.putIfAbsent(oldId, () => _uuid.v4());
+    }
+
+    String? fixNullable(String? oldId) {
+      if (oldId == null || oldId.isEmpty) return oldId;
+      if (_uuidRe.hasMatch(oldId)) return oldId;
+      return remap.putIfAbsent(oldId, () => _uuid.v4());
+    }
+
+    // Fase 1: Registrar todos los PKs (id) para que existan en el mapa.
+    for (final key in [
+      'puestos', 'obras', 'colaboradores', 'cotizaciones',
+      'secciones', 'partidas', 'pagos', 'asistencias',
+      'destajos', 'movimientos', 'catalogosConceptos', 'archivosCotizacion',
+    ]) {
+      for (final m in ((root[key] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+        if (m.containsKey('id')) fix(m['id']?.toString());
+      }
+    }
+    // obraColaborador no tiene 'id' propio — sus FKs se remap abajo.
+
+    // Fase 2: Aplicar remap a cada registro (PK + FK).
+    for (final m in ((root['puestos'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+      m['id'] = fix(m['id']?.toString());
+    }
+    for (final m in ((root['obras'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+      m['id'] = fix(m['id']?.toString());
+      m['cotizacionOrigenId'] = fixNullable(m['cotizacionOrigenId']?.toString());
+    }
+    for (final m in ((root['colaboradores'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+      m['id'] = fix(m['id']?.toString());
+      m['puestoId'] = fix(m['puestoId']?.toString());
+    }
+    for (final m in ((root['obraColaboradores'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+      m['obraId'] = fix(m['obraId']?.toString());
+      m['colaboradorId'] = fix(m['colaboradorId']?.toString());
+    }
+    for (final m in ((root['asistencias'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+      m['id'] = fix(m['id']?.toString());
+      m['colaboradorId'] = fix(m['colaboradorId']?.toString());
+      m['obraId'] = fix(m['obraId']?.toString());
+    }
+    for (final m in ((root['destajos'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+      m['id'] = fix(m['id']?.toString());
+      m['colaboradorId'] = fix(m['colaboradorId']?.toString());
+      m['obraId'] = fix(m['obraId']?.toString());
+    }
+    for (final m in ((root['cotizaciones'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+      m['id'] = fix(m['id']?.toString());
+      m['obraId'] = fixNullable(m['obraId']?.toString());
+    }
+    for (final m in ((root['archivosCotizacion'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+      m['id'] = fix(m['id']?.toString());
+      m['cotizacionId'] = fix(m['cotizacionId']?.toString());
+    }
+    for (final m in ((root['secciones'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+      m['id'] = fix(m['id']?.toString());
+      m['cotizacionId'] = fix(m['cotizacionId']?.toString());
+    }
+    for (final m in ((root['partidas'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+      m['id'] = fix(m['id']?.toString());
+      m['seccionId'] = fix(m['seccionId']?.toString());
+    }
+    for (final m in ((root['pagos'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+      m['id'] = fix(m['id']?.toString());
+      m['cotizacionId'] = fix(m['cotizacionId']?.toString());
+    }
+    for (final m in ((root['movimientos'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+      m['id'] = fix(m['id']?.toString());
+      m['obraId'] = fix(m['obraId']?.toString());
+      m['nominaId'] = fixNullable(m['nominaId']?.toString());
+      m['cotizacionId'] = fixNullable(m['cotizacionId']?.toString());
+      m['seccionId'] = fixNullable(m['seccionId']?.toString());
+      m['partidaId'] = fixNullable(m['partidaId']?.toString());
+    }
+    for (final m in ((root['catalogosConceptos'] as List?) ?? const []).cast<Map<String, dynamic>>()) {
+      m['id'] = fix(m['id']?.toString());
+    }
+
+    return root;
+  }
+
   /// Restaura desde el JSON de respaldo. Reemplaza TODO el contenido actual.
+  /// Si detecta IDs legacy (no UUID), los remapea automáticamente a UUIDs
+  /// manteniendo la integridad referencial, para que el sync con Supabase
+  /// funcione sin problemas.
   Future<void> importFromJson(String jsonString) async {
-    final root = _parseAndValidate(jsonString);
+    final root = _remapLegacyIds(_parseAndValidate(jsonString));
 
     await db.transaction(() async {
       // Limpia todas las tablas (restauración = reemplazo total).
