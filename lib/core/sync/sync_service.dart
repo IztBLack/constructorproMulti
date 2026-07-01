@@ -133,11 +133,32 @@ class SyncService {
       .map((c) => c.name)
       .toSet();
 
+  /// Columnas TEXT de Drift que mapean a uuid en Postgres: `id` y todo `*_id`.
+  Set<String> _uuidCols(TableInfo t) => t.$columns
+      .where((c) =>
+          c.type == DriftSqlType.string &&
+          (c.name == 'id' || c.name.endsWith('_id')))
+      .map((c) => c.name)
+      .toSet();
+
+  static final _uuidRe = RegExp(
+      r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+      caseSensitive: false);
+
+  /// Devuelve true si [value] es null, vacío, o un UUID válido.
+  static bool _isValidUuid(dynamic value) {
+    if (value == null) return true;
+    if (value is! String) return false;
+    if (value.isEmpty) return true;
+    return _uuidRe.hasMatch(value);
+  }
+
   // ---------------- PUSH ----------------
   Future<void> _pushTabla(String name, String empresaId) async {
     final t = _info(name);
     final pk = _pk(t);
     final boolCols = _boolCols(t);
+    final uuidCols = _uuidCols(t)..remove('empresa_id'); // la forzamos nosotros
 
     final pendientes =
         await db.customSelect("SELECT * FROM $name WHERE sync_status = 'pending'").get();
@@ -150,12 +171,35 @@ class SyncService {
       final data = Map<String, dynamic>.from(r.data);
       data.remove('sync_status'); // no existe en el servidor
       data.remove('server_updated_at'); // lo pone el trigger
-      // Sobrescribimos siempre con el empresaId actual para evitar que datos 
+      // Sobrescribimos siempre con el empresaId actual para evitar que datos
       // cacheados de sesiones/empresas anteriores rompan RLS.
       data['empresa_id'] = empresaId;
       // SQLite guarda bool como 0/1; Postgres espera boolean.
       for (final c in boolCols) {
         if (data[c] is int) data[c] = data[c] != 0;
+      }
+
+      // ── Validar UUID: saltar filas legacy con IDs no-UUID (ej. "1","2") ──
+      String? colInvalida;
+      for (final c in uuidCols) {
+        if (!_isValidUuid(data[c])) {
+          colInvalida = c;
+          break;
+        }
+      }
+      if (colInvalida != null) {
+        final pkVals = pk.map((c) => '$c=${r.data[c]}').join(', ');
+        debugPrint(
+            '[SyncService] ⚠ SKIP $name ($pkVals): '
+            '$colInvalida="${data[colInvalida]}" no es UUID válido');
+        // Marcar como error para no reintentar cada ciclo.
+        final whereSql = pk.map((c) => '$c = ?').join(' AND ');
+        final whereArgs = pk.map((c) => r.data[c]).toList();
+        await db.customStatement(
+          "UPDATE $name SET sync_status='error' WHERE $whereSql",
+          whereArgs,
+        );
+        continue;
       }
 
       try {
