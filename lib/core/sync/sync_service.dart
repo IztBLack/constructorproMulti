@@ -100,9 +100,13 @@ class SyncService {
       for (final t in pushOrder) {
         await _pullTabla(t);
       }
+      ultimoError = null;
       return SyncOutcome.ok;
-    } catch (e) {
-      debugPrint('[SyncService] syncAll error: $e');
+    } catch (e, st) {
+      ultimoError = e.toString();
+      debugPrint('[SyncService] ══════ syncAll ERROR ══════');
+      debugPrint('[SyncService] $e');
+      debugPrint('[SyncService] $st');
       return SyncOutcome.error;
     } finally {
       _enCurso = false;
@@ -138,6 +142,10 @@ class SyncService {
     final pendientes =
         await db.customSelect("SELECT * FROM $name WHERE sync_status = 'pending'").get();
 
+    if (pendientes.isNotEmpty) {
+      debugPrint('[SyncService] PUSH $name: ${pendientes.length} pendientes');
+    }
+
     for (final r in pendientes) {
       final data = Map<String, dynamic>.from(r.data);
       data.remove('sync_status'); // no existe en el servidor
@@ -150,20 +158,27 @@ class SyncService {
         if (data[c] is int) data[c] = data[c] != 0;
       }
 
-      final resp = await client
-          .from(name)
-          .upsert(data, onConflict: pk.join(','))
-          .select('server_updated_at')
-          .maybeSingle();
-      final serverUpd = (resp?['server_updated_at'] as num?)?.toInt();
+      try {
+        final resp = await client
+            .from(name)
+            .upsert(data, onConflict: pk.join(','))
+            .select('server_updated_at')
+            .maybeSingle();
+        final serverUpd = (resp?['server_updated_at'] as num?)?.toInt();
 
-      final whereSql = pk.map((c) => '$c = ?').join(' AND ');
-      final whereArgs = pk.map((c) => r.data[c]).toList();
-      await db.customStatement(
-        "UPDATE $name SET sync_status='synced', server_updated_at=?, empresa_id=? "
-        "WHERE $whereSql",
-        [serverUpd, empresaId, ...whereArgs],
-      );
+        final whereSql = pk.map((c) => '$c = ?').join(' AND ');
+        final whereArgs = pk.map((c) => r.data[c]).toList();
+        await db.customStatement(
+          "UPDATE $name SET sync_status='synced', server_updated_at=?, empresa_id=? "
+          "WHERE $whereSql",
+          [serverUpd, empresaId, ...whereArgs],
+        );
+      } catch (e) {
+        final pkVals = pk.map((c) => '$c=${r.data[c]}').join(', ');
+        debugPrint('[SyncService] ✖ PUSH $name fallo en fila ($pkVals): $e');
+        debugPrint('[SyncService]   data enviada: $data');
+        rethrow;
+      }
     }
   }
 

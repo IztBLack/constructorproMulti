@@ -260,16 +260,22 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
   Future<void> _sincronizar() async {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _loading = true);
-    final outcome = await ref.read(syncServiceProvider).syncAll();
+    final syncService = ref.read(syncServiceProvider);
+    final outcome = await syncService.syncAll();
     if (!mounted) return;
     setState(() => _loading = false);
-    messenger.showSnackBar(SnackBar(content: Text(_mensajeOutcome(outcome))));
+    messenger.showSnackBar(SnackBar(
+      content: Text(_mensajeOutcome(outcome, syncService.ultimoError)),
+      duration: outcome == SyncOutcome.error
+          ? const Duration(seconds: 8)
+          : const Duration(seconds: 4),
+    ));
   }
 
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
-  String _mensajeOutcome(SyncOutcome o) {
+  String _mensajeOutcome(SyncOutcome o, [String? detalle]) {
     switch (o) {
       case SyncOutcome.ok:
         return 'Sincronizado.';
@@ -280,7 +286,11 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
       case SyncOutcome.sinEmpresa:
         return 'Tu usuario no está vinculado a ninguna empresa.';
       case SyncOutcome.error:
-        return 'Error al sincronizar. Revisa la conexión e inténtalo de nuevo.';
+        final base = 'Error al sincronizar.';
+        if (detalle != null && detalle.isNotEmpty) {
+          return '$base\n$detalle';
+        }
+        return '$base Revisa la conexión e inténtalo de nuevo.';
     }
   }
 
