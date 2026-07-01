@@ -14,12 +14,17 @@ class AsistenciaRepository {
   Stream<List<Asistencia>> watchRango(String obraId, int start, int end) =>
       (db.select(db.asistencias)
             ..where((t) =>
-                t.obraId.equals(obraId) & t.fecha.isBetweenValues(start, end)))
+                t.obraId.equals(obraId) &
+                t.fecha.isBetweenValues(start, end) &
+                t.deletedAt.isNull()))
           .watch();
 
   Future<List<Asistencia>> getDia(String obraId, int fecha) =>
       (db.select(db.asistencias)
-            ..where((t) => t.obraId.equals(obraId) & t.fecha.equals(fecha)))
+            ..where((t) =>
+                t.obraId.equals(obraId) &
+                t.fecha.equals(fecha) &
+                t.deletedAt.isNull()))
           .get();
 
   /// Asistencias de un conjunto de colaboradores en un rango, SIN filtrar obra.
@@ -35,7 +40,8 @@ class AsistenciaRepository {
     return (db.select(db.asistencias)
           ..where((t) =>
               t.colaboradorId.isIn(colaboradorIds) &
-              t.fecha.isBetweenValues(start, end)))
+              t.fecha.isBetweenValues(start, end) &
+              t.deletedAt.isNull()))
         .watch();
   }
 
@@ -74,7 +80,9 @@ class DestajoRepository {
   Stream<List<Destajo>> watchRango(String obraId, int start, int end) =>
       (db.select(db.destajos)
             ..where((t) =>
-                t.obraId.equals(obraId) & t.fecha.isBetweenValues(start, end))
+                t.obraId.equals(obraId) &
+                t.fecha.isBetweenValues(start, end) &
+                t.deletedAt.isNull())
             ..orderBy([(t) => OrderingTerm(expression: t.fecha)]))
           .watch();
 
@@ -94,8 +102,16 @@ class DestajoRepository {
             monto: monto,
           ));
 
-  Future<void> delete(String id) =>
-      (db.delete(db.destajos)..where((t) => t.id.equals(id))).go();
+  Future<void> delete(String id) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return (db.update(db.destajos)..where((t) => t.id.equals(id))).write(
+      DestajosCompanion(
+        deletedAt: Value(now),
+        updatedAt: Value(now),
+        syncStatus: const Value('pending'),
+      ),
+    );
+  }
 }
 
 class MovimientoRepository {
@@ -104,18 +120,21 @@ class MovimientoRepository {
 
   Stream<List<Movimiento>> watchByObra(String obraId) =>
       (db.select(db.movimientos)
-            ..where((t) => t.obraId.equals(obraId))
+            ..where((t) => t.obraId.equals(obraId) & t.deletedAt.isNull())
             ..orderBy([
               (t) => OrderingTerm(
                   expression: t.fecha, mode: OrderingMode.desc)
             ]))
           .watch();
 
-  Stream<List<Movimiento>> watchAll() => db.select(db.movimientos).watch();
+  Stream<List<Movimiento>> watchAll() =>
+      (db.select(db.movimientos)..where((t) => t.deletedAt.isNull())).watch();
 
   /// Movimientos ligados a una cotización (para el avance por partida).
   Stream<List<Movimiento>> watchPorCotizacion(String cotId) =>
-      (db.select(db.movimientos)..where((t) => t.cotizacionId.equals(cotId))).watch();
+      (db.select(db.movimientos)
+            ..where((t) => t.cotizacionId.equals(cotId) & t.deletedAt.isNull()))
+          .watch();
 
   Future<void> add({
     required String obraId,
@@ -147,6 +166,14 @@ class MovimientoRepository {
             partidaId: Value(partidaId),
           ));
 
-  Future<void> delete(String id) =>
-      (db.delete(db.movimientos)..where((t) => t.id.equals(id))).go();
+  Future<void> delete(String id) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return (db.update(db.movimientos)..where((t) => t.id.equals(id))).write(
+      MovimientosCompanion(
+        deletedAt: Value(now),
+        updatedAt: Value(now),
+        syncStatus: const Value('pending'),
+      ),
+    );
+  }
 }

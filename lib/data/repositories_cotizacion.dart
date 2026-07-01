@@ -13,23 +13,43 @@ class CotizacionRepository {
   CotizacionRepository(this.db);
 
   Stream<List<Cotizacion>> watchAll() => (db.select(db.cotizaciones)
+        ..where((t) => t.deletedAt.isNull())
         ..orderBy([(t) => OrderingTerm(expression: t.fecha, mode: OrderingMode.desc)]))
       .watch();
 
   Future<void> upsert(CotizacionesCompanion c) =>
       db.into(db.cotizaciones).insertOnConflictUpdate(c);
 
+  /// Baja lógica en cascada: tombstone de cotización + sus secciones, partidas y
+  /// pagos. Nunca borrado físico (el sync resucitaría las filas).
   Future<void> delete(String id) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
     await db.transaction(() async {
       final secs = await (db.select(db.secciones)
             ..where((t) => t.cotizacionId.equals(id)))
           .get();
       for (final s in secs) {
-        await (db.delete(db.partidas)..where((t) => t.seccionId.equals(s.id))).go();
+        await (db.update(db.partidas)..where((t) => t.seccionId.equals(s.id)))
+            .write(PartidasCompanion(
+                deletedAt: Value(now),
+                updatedAt: Value(now),
+                syncStatus: const Value('pending')));
       }
-      await (db.delete(db.secciones)..where((t) => t.cotizacionId.equals(id))).go();
-      await (db.delete(db.pagos)..where((t) => t.cotizacionId.equals(id))).go();
-      await (db.delete(db.cotizaciones)..where((t) => t.id.equals(id))).go();
+      await (db.update(db.secciones)..where((t) => t.cotizacionId.equals(id)))
+          .write(SeccionesCompanion(
+              deletedAt: Value(now),
+              updatedAt: Value(now),
+              syncStatus: const Value('pending')));
+      await (db.update(db.pagos)..where((t) => t.cotizacionId.equals(id)))
+          .write(PagosCompanion(
+              deletedAt: Value(now),
+              updatedAt: Value(now),
+              syncStatus: const Value('pending')));
+      await (db.update(db.cotizaciones)..where((t) => t.id.equals(id)))
+          .write(CotizacionesCompanion(
+              deletedAt: Value(now),
+              updatedAt: Value(now),
+              syncStatus: const Value('pending')));
     });
   }
 
@@ -43,7 +63,10 @@ class CotizacionRepository {
       leftOuterJoin(
           db.partidas, db.partidas.seccionId.equalsExp(db.secciones.id)),
     ])
-      ..where(db.cotizaciones.estado.isIn(['BORRADOR', 'ENVIADA']));
+      ..where(db.cotizaciones.estado.isIn(['BORRADOR', 'ENVIADA']) &
+          db.cotizaciones.deletedAt.isNull() &
+          db.secciones.deletedAt.isNull() &
+          db.partidas.deletedAt.isNull());
     return query.watch().map((rows) {
       // subtotal por cotización + flag de IVA
       final subtotal = <String, double>{};
@@ -70,14 +93,18 @@ class CotizacionRepository {
   /// Cotización ligada a una obra (por obraId o por cotizacionOrigen).
   Future<Cotizacion?> cotizacionDeObra(String obraId) async {
     final porObra = await (db.select(db.cotizaciones)
-          ..where((t) => t.obraId.equals(obraId))
+          ..where((t) => t.obraId.equals(obraId) & t.deletedAt.isNull())
           ..limit(1))
         .getSingleOrNull();
     if (porObra != null) return porObra;
-    final obra = await (db.select(db.obras)..where((t) => t.id.equals(obraId))).getSingleOrNull();
+    final obra = await (db.select(db.obras)
+          ..where((t) => t.id.equals(obraId) & t.deletedAt.isNull()))
+        .getSingleOrNull();
     final origen = obra?.cotizacionOrigenId;
     if (origen == null) return null;
-    return (db.select(db.cotizaciones)..where((t) => t.id.equals(origen))).getSingleOrNull();
+    return (db.select(db.cotizaciones)
+          ..where((t) => t.id.equals(origen) & t.deletedAt.isNull()))
+        .getSingleOrNull();
   }
 
   Future<void> cambiarEstado(String cotId, String estado) =>
@@ -108,14 +135,14 @@ class CotizacionRepository {
             notas: Value(orig.notas),
           ));
       final secs = await (db.select(db.secciones)
-            ..where((t) => t.cotizacionId.equals(cotId)))
+            ..where((t) => t.cotizacionId.equals(cotId) & t.deletedAt.isNull()))
           .get();
       for (final s in secs) {
         final nuevaSecId = _uuid.v4();
         await db.into(db.secciones).insert(SeccionesCompanion.insert(
             id: nuevaSecId, cotizacionId: nuevaId, nombre: s.nombre, orden: Value(s.orden)));
         final parts = await (db.select(db.partidas)
-              ..where((t) => t.seccionId.equals(s.id)))
+              ..where((t) => t.seccionId.equals(s.id) & t.deletedAt.isNull()))
             .get();
         for (final p in parts) {
           await db.into(db.partidas).insert(PartidasCompanion.insert(
@@ -154,7 +181,7 @@ class SeccionRepository {
 
   Stream<List<Seccion>> watchByCotizacion(String cotId) =>
       (db.select(db.secciones)
-            ..where((t) => t.cotizacionId.equals(cotId))
+            ..where((t) => t.cotizacionId.equals(cotId) & t.deletedAt.isNull())
             ..orderBy([(t) => OrderingTerm(expression: t.orden)]))
           .watch();
 
@@ -171,9 +198,18 @@ class SeccionRepository {
           .write(SeccionesCompanion(nombre: Value(nombre)));
 
   Future<void> delete(String id) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
     await db.transaction(() async {
-      await (db.delete(db.partidas)..where((t) => t.seccionId.equals(id))).go();
-      await (db.delete(db.secciones)..where((t) => t.id.equals(id))).go();
+      await (db.update(db.partidas)..where((t) => t.seccionId.equals(id)))
+          .write(PartidasCompanion(
+              deletedAt: Value(now),
+              updatedAt: Value(now),
+              syncStatus: const Value('pending')));
+      await (db.update(db.secciones)..where((t) => t.id.equals(id)))
+          .write(SeccionesCompanion(
+              deletedAt: Value(now),
+              updatedAt: Value(now),
+              syncStatus: const Value('pending')));
     });
   }
 }
@@ -187,15 +223,25 @@ class PartidaRepository {
     final q = db.select(db.partidas).join([
       innerJoin(db.secciones, db.secciones.id.equalsExp(db.partidas.seccionId)),
     ])
-      ..where(db.secciones.cotizacionId.equals(cotId));
+      ..where(db.secciones.cotizacionId.equals(cotId) &
+          db.partidas.deletedAt.isNull() &
+          db.secciones.deletedAt.isNull());
     return q.map((row) => row.readTable(db.partidas)).watch();
   }
 
   Future<void> upsert(PartidasCompanion p) =>
       db.into(db.partidas).insertOnConflictUpdate(p);
 
-  Future<void> delete(String id) =>
-      (db.delete(db.partidas)..where((t) => t.id.equals(id))).go();
+  Future<void> delete(String id) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return (db.update(db.partidas)..where((t) => t.id.equals(id))).write(
+      PartidasCompanion(
+        deletedAt: Value(now),
+        updatedAt: Value(now),
+        syncStatus: const Value('pending'),
+      ),
+    );
+  }
 
   /// Aplica un factor (ej. 1.10 = +10%) al precio de TODAS las partidas de la
   /// cotización.
@@ -218,7 +264,7 @@ class PagoRepository {
   PagoRepository(this.db);
 
   Stream<List<Pago>> watchByCotizacion(String cotId) => (db.select(db.pagos)
-        ..where((t) => t.cotizacionId.equals(cotId))
+        ..where((t) => t.cotizacionId.equals(cotId) & t.deletedAt.isNull())
         ..orderBy([(t) => OrderingTerm(expression: t.fecha, mode: OrderingMode.desc)]))
       .watch();
 
@@ -238,8 +284,16 @@ class PagoRepository {
             concepto: concepto,
           ));
 
-  Future<void> delete(String id) =>
-      (db.delete(db.pagos)..where((t) => t.id.equals(id))).go();
+  Future<void> delete(String id) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return (db.update(db.pagos)..where((t) => t.id.equals(id))).write(
+      PagosCompanion(
+        deletedAt: Value(now),
+        updatedAt: Value(now),
+        syncStatus: const Value('pending'),
+      ),
+    );
+  }
 }
 
 class ArchivoRepository {
@@ -248,7 +302,7 @@ class ArchivoRepository {
 
   Stream<List<ArchivoCotizacion>> watchByCotizacion(String cotId) =>
       (db.select(db.archivosCotizacion)
-            ..where((t) => t.cotizacionId.equals(cotId))
+            ..where((t) => t.cotizacionId.equals(cotId) & t.deletedAt.isNull())
             ..orderBy([(t) => OrderingTerm(expression: t.fechaAgregado, mode: OrderingMode.desc)]))
           .watch();
 
@@ -267,8 +321,15 @@ class ArchivoRepository {
             fechaAgregado: DateTime.now().millisecondsSinceEpoch,
           ));
 
-  Future<void> delete(String id) =>
-      (db.delete(db.archivosCotizacion)..where((t) => t.id.equals(id))).go();
+  Future<void> delete(String id) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return (db.update(db.archivosCotizacion)..where((t) => t.id.equals(id)))
+        .write(ArchivosCotizacionCompanion(
+      deletedAt: Value(now),
+      updatedAt: Value(now),
+      syncStatus: const Value('pending'),
+    ));
+  }
 }
 
 class CatalogoRepository {
@@ -279,13 +340,15 @@ class CatalogoRepository {
     final q = '%$query%';
     return (db.select(db.catalogoConceptos)
           ..where((t) =>
-              t.clave.like(q) | t.descripcion.like(q) | t.categoria.like(q))
+              (t.clave.like(q) | t.descripcion.like(q) | t.categoria.like(q)) &
+              t.deletedAt.isNull())
           ..orderBy([(t) => OrderingTerm(expression: t.clave)])
           ..limit(50))
         .get();
   }
 
   Stream<List<CatalogoConcepto>> watchAll() => (db.select(db.catalogoConceptos)
+        ..where((t) => t.deletedAt.isNull())
         ..orderBy([
           (t) => OrderingTerm(expression: t.categoria),
           (t) => OrderingTerm(expression: t.clave),
@@ -295,8 +358,15 @@ class CatalogoRepository {
   Future<void> upsert(CatalogoConceptosCompanion c) =>
       db.into(db.catalogoConceptos).insertOnConflictUpdate(c);
 
-  Future<void> delete(String id) =>
-      (db.delete(db.catalogoConceptos)..where((t) => t.id.equals(id))).go();
+  Future<void> delete(String id) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return (db.update(db.catalogoConceptos)..where((t) => t.id.equals(id)))
+        .write(CatalogoConceptosCompanion(
+      deletedAt: Value(now),
+      updatedAt: Value(now),
+      syncStatus: const Value('pending'),
+    ));
+  }
 
   /// Re-siembra el catálogo oficial desde el asset, sin duplicar claves existentes.
   /// Devuelve cuántos conceptos se agregaron.

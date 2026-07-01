@@ -55,6 +55,9 @@ dependencies:
   file_picker: ^8.1.7
   archive: ^4.0.9
   collection: ^1.19.1
+  # Sync nube (Fase 2): cliente Supabase + detección de conectividad.
+  supabase_flutter: ^2.9.0
+  connectivity_plus: ^6.1.0
 
 dev_dependencies:
   flutter_test:

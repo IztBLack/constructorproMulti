@@ -13,6 +13,7 @@ import '../../data/demo_data.dart';
 import '../../data/providers.dart';
 import '../onboarding/tutorial_screen.dart';
 import 'catalogo_screen.dart';
+import 'cloud_sync_screen.dart';
 import 'pdf_config_screen.dart';
 import 'puestos_screen.dart';
 
@@ -73,6 +74,16 @@ class ConfigScreen extends ConsumerWidget {
             title: const Text('IVA por defecto'),
             subtitle: Text('${ref.watch(ivaPorcentajeProvider).toStringAsFixed(0)}%'),
             onTap: () => _editarIva(context, ref),
+          ),
+          const Divider(),
+          const _Header('Nube'),
+          ListTile(
+            leading: const Icon(Icons.cloud_sync_outlined),
+            title: const Text('Sincronización en la nube'),
+            subtitle: const Text('Conecta tu cuenta para sincronizar con la web'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const CloudSyncScreen())),
           ),
           const Divider(),
           const _Header('Datos'),

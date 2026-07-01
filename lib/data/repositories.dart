@@ -9,32 +9,75 @@ class ObraRepository {
   final AppDatabase db;
   ObraRepository(this.db);
 
-  Stream<List<Obra>> watchAll() =>
-      (db.select(db.obras)..orderBy([(t) => OrderingTerm(expression: t.nombre)]))
-          .watch();
+  Stream<List<Obra>> watchAll() => (db.select(db.obras)
+        ..where((t) => t.deletedAt.isNull())
+        ..orderBy([(t) => OrderingTerm(expression: t.nombre)]))
+      .watch();
 
   Future<void> upsert(ObrasCompanion obra) =>
       db.into(db.obras).insertOnConflictUpdate(obra);
 
-  Future<void> delete(String id) =>
-      (db.delete(db.obras)..where((t) => t.id.equals(id))).go();
+  /// Baja lógica (tombstone) EN CASCADA: la obra + sus movimientos, asistencias,
+  /// destajos y relaciones de equipo (obra_colaborador). Así no quedan filas
+  /// huérfanas ocultas ni el sync las resucita. Nunca borrado físico.
+  /// No toca la cotización de origen (vive por su cuenta).
+  Future<void> delete(String id) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await db.transaction(() async {
+      await (db.update(db.movimientos)..where((t) => t.obraId.equals(id)))
+          .write(MovimientosCompanion(
+              deletedAt: Value(now),
+              updatedAt: Value(now),
+              syncStatus: const Value('pending')));
+      await (db.update(db.asistencias)..where((t) => t.obraId.equals(id)))
+          .write(AsistenciasCompanion(
+              deletedAt: Value(now),
+              updatedAt: Value(now),
+              syncStatus: const Value('pending')));
+      await (db.update(db.destajos)..where((t) => t.obraId.equals(id)))
+          .write(DestajosCompanion(
+              deletedAt: Value(now),
+              updatedAt: Value(now),
+              syncStatus: const Value('pending')));
+      await (db.update(db.obraColaborador)..where((t) => t.obraId.equals(id)))
+          .write(ObraColaboradorCompanion(
+              deletedAt: Value(now),
+              updatedAt: Value(now),
+              syncStatus: const Value('pending')));
+      await (db.update(db.obras)..where((t) => t.id.equals(id)))
+          .write(ObrasCompanion(
+              deletedAt: Value(now),
+              updatedAt: Value(now),
+              syncStatus: const Value('pending')));
+    });
+  }
 }
 
 class PuestoRepository {
   final AppDatabase db;
   PuestoRepository(this.db);
 
-  Stream<List<Puesto>> watchAll() =>
-      (db.select(db.puestos)..orderBy([(t) => OrderingTerm(expression: t.nombre)]))
-          .watch();
+  Stream<List<Puesto>> watchAll() => (db.select(db.puestos)
+        ..where((t) => t.deletedAt.isNull())
+        ..orderBy([(t) => OrderingTerm(expression: t.nombre)]))
+      .watch();
 
-  Future<List<Puesto>> getAll() => db.select(db.puestos).get();
+  Future<List<Puesto>> getAll() =>
+      (db.select(db.puestos)..where((t) => t.deletedAt.isNull())).get();
 
   Future<void> upsert(PuestosCompanion puesto) =>
       db.into(db.puestos).insertOnConflictUpdate(puesto);
 
-  Future<void> delete(String id) =>
-      (db.delete(db.puestos)..where((t) => t.id.equals(id))).go();
+  Future<void> delete(String id) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return (db.update(db.puestos)..where((t) => t.id.equals(id))).write(
+      PuestosCompanion(
+        deletedAt: Value(now),
+        updatedAt: Value(now),
+        syncStatus: const Value('pending'),
+      ),
+    );
+  }
 }
 
 class ColaboradorRepository {
@@ -43,6 +86,7 @@ class ColaboradorRepository {
 
   Stream<List<Colaborador>> watchAll() =>
       (db.select(db.colaboradores)
+            ..where((t) => t.deletedAt.isNull())
             ..orderBy([(t) => OrderingTerm(expression: t.nombre)]))
           .watch();
 
@@ -56,6 +100,8 @@ class ColaboradorRepository {
     ])
       ..where(db.obraColaborador.obraId.equals(obraId) &
           db.obraColaborador.fechaSalida.isNull() &
+          db.obraColaborador.deletedAt.isNull() &
+          db.colaboradores.deletedAt.isNull() &
           db.colaboradores.activo.equals(true));
     return query
         .map((row) => row.readTable(db.colaboradores))
@@ -65,8 +111,16 @@ class ColaboradorRepository {
   Future<void> upsert(ColaboradoresCompanion colaborador) =>
       db.into(db.colaboradores).insertOnConflictUpdate(colaborador);
 
-  Future<void> delete(String id) =>
-      (db.delete(db.colaboradores)..where((t) => t.id.equals(id))).go();
+  Future<void> delete(String id) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return (db.update(db.colaboradores)..where((t) => t.id.equals(id))).write(
+      ColaboradoresCompanion(
+        deletedAt: Value(now),
+        updatedAt: Value(now),
+        syncStatus: const Value('pending'),
+      ),
+    );
+  }
 
   /// Activa/desactiva (baja lógica) un colaborador.
   Future<void> setActivo(String id, bool activo) =>
@@ -111,6 +165,8 @@ class ColaboradorRepository {
       innerJoin(db.obras, db.obras.id.equalsExp(db.obraColaborador.obraId)),
     ])
       ..where(db.obraColaborador.fechaSalida.isNull() &
+          db.obraColaborador.deletedAt.isNull() &
+          db.obras.deletedAt.isNull() &
           db.obras.activa.equals(true))
       ..orderBy([OrderingTerm(expression: db.obras.nombre)]);
     return q.watch().map((rows) {
@@ -134,6 +190,8 @@ class ColaboradorRepository {
       innerJoin(db.obras, db.obras.id.equalsExp(db.obraColaborador.obraId)),
     ])
       ..where(db.obraColaborador.fechaSalida.isNull() &
+          db.obraColaborador.deletedAt.isNull() &
+          db.obras.deletedAt.isNull() &
           db.obras.activa.equals(true))
       ..orderBy([
         OrderingTerm(
@@ -156,7 +214,9 @@ class ColaboradorRepository {
     final q = db.select(db.obraColaborador).join([
       innerJoin(db.obras, db.obras.id.equalsExp(db.obraColaborador.obraId)),
     ])
-      ..where(db.obraColaborador.colaboradorId.equals(colaboradorId));
+      ..where(db.obraColaborador.colaboradorId.equals(colaboradorId) &
+          db.obraColaborador.deletedAt.isNull() &
+          db.obras.deletedAt.isNull());
     final rows = await q.get();
     return rows
         .map((r) => (

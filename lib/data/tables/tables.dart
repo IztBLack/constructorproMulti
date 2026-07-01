@@ -2,8 +2,35 @@ import 'package:drift/drift.dart';
 
 /// Tablas Drift que espejan las 13 entidades Room del proyecto Kotlin.
 /// IDs como TEXT (UUID), fechas como INTEGER (epoch millis).
+///
+/// Fase 0 (sync nube): cada tabla lleva el bloque [SyncCols] vía mixin —
+/// `empresaId`, `createdAt`, `updatedAt`, `serverUpdatedAt`, `deletedAt`,
+/// `syncStatus`. La app sigue 100% offline; estas columnas solo habilitan
+/// el sync offline-first (LWW por fila, tombstones, cursor de pull).
 
-class Obras extends Table {
+/// Columnas de sincronización comunes a todas las tablas.
+mixin SyncCols on Table {
+  /// Llave multitenant + RLS. Vacío mientras no haya backend.
+  TextColumn get empresaId => text().withDefault(const Constant(''))();
+
+  /// Alta (UTC ms). 0 en filas previas a la migración.
+  IntColumn get createdAt => integer().withDefault(const Constant(0))();
+
+  /// Última edición de cliente (UTC ms). Árbitro local de LWW + dirty flag.
+  IntColumn get updatedAt => integer().withDefault(const Constant(0))();
+
+  /// Lo pone Postgres; árbitro de LWW y cursor de pull. Null hasta sincronizar.
+  IntColumn get serverUpdatedAt => integer().nullable()();
+
+  /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
+  IntColumn get deletedAt => integer().nullable()();
+
+  /// 'pending' | 'synced' | 'error'.
+  TextColumn get syncStatus =>
+      text().withDefault(const Constant('pending'))();
+}
+
+class Obras extends Table with SyncCols {
   TextColumn get id => text()();
   TextColumn get nombre => text()();
   TextColumn get cliente => text().withDefault(const Constant(''))();
@@ -17,7 +44,7 @@ class Obras extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-class Puestos extends Table {
+class Puestos extends Table with SyncCols {
   TextColumn get id => text()();
   TextColumn get nombre => text()();
   RealColumn get salarioDiaDefault => real().withDefault(const Constant(0.0))();
@@ -27,7 +54,7 @@ class Puestos extends Table {
 }
 
 @DataClassName('Colaborador')
-class Colaboradores extends Table {
+class Colaboradores extends Table with SyncCols {
   TextColumn get id => text()();
   TextColumn get nombre => text()();
   TextColumn get puestoId => text()();
@@ -43,7 +70,7 @@ class Colaboradores extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-class ObraColaborador extends Table {
+class ObraColaborador extends Table with SyncCols {
   TextColumn get obraId => text()();
   TextColumn get colaboradorId => text()();
   IntColumn get fechaIngreso => integer()();
@@ -54,7 +81,7 @@ class ObraColaborador extends Table {
   Set<Column> get primaryKey => {obraId, colaboradorId};
 }
 
-class Asistencias extends Table {
+class Asistencias extends Table with SyncCols {
   TextColumn get id => text()();
   TextColumn get colaboradorId => text()();
   TextColumn get obraId => text()();
@@ -70,7 +97,7 @@ class Asistencias extends Table {
       ];
 }
 
-class Destajos extends Table {
+class Destajos extends Table with SyncCols {
   TextColumn get id => text()();
   TextColumn get colaboradorId => text()();
   TextColumn get obraId => text()();
@@ -83,7 +110,7 @@ class Destajos extends Table {
 }
 
 @DataClassName('Cotizacion')
-class Cotizaciones extends Table {
+class Cotizaciones extends Table with SyncCols {
   TextColumn get id => text()();
   TextColumn get cliente => text()();
   TextColumn get nombreProyecto => text()();
@@ -101,7 +128,7 @@ class Cotizaciones extends Table {
 }
 
 @DataClassName('Seccion')
-class Secciones extends Table {
+class Secciones extends Table with SyncCols {
   TextColumn get id => text()();
   TextColumn get cotizacionId => text()();
   TextColumn get nombre => text()();
@@ -111,7 +138,7 @@ class Secciones extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-class Partidas extends Table {
+class Partidas extends Table with SyncCols {
   TextColumn get id => text()();
   TextColumn get seccionId => text()();
   TextColumn get clave => text().withDefault(const Constant(''))();
@@ -125,7 +152,7 @@ class Partidas extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-class Pagos extends Table {
+class Pagos extends Table with SyncCols {
   TextColumn get id => text()();
   TextColumn get cotizacionId => text()();
   IntColumn get fecha => integer()();
@@ -138,7 +165,7 @@ class Pagos extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-class Movimientos extends Table {
+class Movimientos extends Table with SyncCols {
   TextColumn get id => text()();
   TextColumn get obraId => text()();
   IntColumn get fecha => integer()();
@@ -157,7 +184,7 @@ class Movimientos extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-class CatalogoConceptos extends Table {
+class CatalogoConceptos extends Table with SyncCols {
   TextColumn get id => text()();
   TextColumn get clave => text()();
   TextColumn get descripcion => text()();
@@ -172,7 +199,7 @@ class CatalogoConceptos extends Table {
 }
 
 @DataClassName('ArchivoCotizacion')
-class ArchivosCotizacion extends Table {
+class ArchivosCotizacion extends Table with SyncCols {
   TextColumn get id => text()();
   TextColumn get cotizacionId => text()();
   TextColumn get tipo => text()();

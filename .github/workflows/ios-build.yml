@@ -76,7 +76,7 @@ jobs:
       - name: Generar apps.json (manifiesto SideStore)
         run: |
           DL="https://github.com/${{ github.repository }}/releases/download/sidestore/ConstructorPro.ipa"
-          ICON="https://raw.githubusercontent.com/${{ github.repository }}/main/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png"
+          ICON="https://raw.githubusercontent.com/${{ github.repository }}/main/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-1024.png"
           cat > apps.json <<EOF
           {
             "name": "ConstructorPro (Mario)",

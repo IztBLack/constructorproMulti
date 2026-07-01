@@ -10,6 +10,8 @@ import 'core/db/app_database.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/settings/settings_provider.dart';
 import 'core/storage/app_paths.dart';
+import 'core/sync/cloud_providers.dart';
+import 'core/sync/supabase_config.dart';
 import 'core/theme/app_theme.dart';
 import 'data/demo_data.dart';
 import 'data/providers.dart';
@@ -20,6 +22,15 @@ void main() {
   CrashLogger.runGuarded(() async {
     await initializeDateFormatting('es_MX', null);
     await NotificationService.init();
+
+    // Cliente Supabase para el sync nube. Si falla (p. ej. sin red al arrancar),
+    // la app continúa 100% offline; el sync reintenta luego.
+    try {
+      await SupabaseConfig.init();
+    } catch (e) {
+      // Sin red al arrancar: la app sigue offline; el sync reintenta luego.
+      debugPrint('Supabase init falló (se continúa offline): $e');
+    }
 
     // Se precargan antes de runApp para que los providers (tema, recordatorio,
     // IVA) lean de forma síncrona y no haya parpadeo ni carreras al arrancar.
@@ -50,6 +61,8 @@ class ConstructorProApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
+    // Arranca el sync automático (arranque/reconexión/post-escritura).
+    ref.watch(syncControllerProvider);
     return MaterialApp(
       title: 'ConstructorPro',
       debugShowCheckedModeBanner: false,

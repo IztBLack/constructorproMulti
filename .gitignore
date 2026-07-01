@@ -51,3 +51,6 @@ app.*.map.json
 # Build artifacts (redirigidos a ../../build)
 /android/build/
 /build/
+
+# Bitácora local (no publicar)
+docs/BITACORA.md
