@@ -46,6 +46,10 @@ class SyncService {
   /// Provider singleton, cualquier llamante usa esta misma instancia.
   bool _enCurso = false;
 
+  /// Último error detallado de sync (para diagnóstico en la UI). Null si el
+  /// último intento fue exitoso.
+  String? ultimoError;
+
   /// Orden topológico de push: padres antes que hijos (respeta las FK de
   /// `supabase/migrations/0002_schema.sql`).
   static const List<String> pushOrder = [
@@ -138,9 +142,9 @@ class SyncService {
       final data = Map<String, dynamic>.from(r.data);
       data.remove('sync_status'); // no existe en el servidor
       data.remove('server_updated_at'); // lo pone el trigger
-      if (data['empresa_id'] == null || data['empresa_id'] == '') {
-        data['empresa_id'] = empresaId;
-      }
+      // Sobrescribimos siempre con el empresaId actual para evitar que datos 
+      // cacheados de sesiones/empresas anteriores rompan RLS.
+      data['empresa_id'] = empresaId;
       // SQLite guarda bool como 0/1; Postgres espera boolean.
       for (final c in boolCols) {
         if (data[c] is int) data[c] = data[c] != 0;
