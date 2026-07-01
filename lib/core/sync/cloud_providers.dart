@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -50,19 +51,52 @@ final syncControllerProvider = Provider<SyncController>((ref) {
 /// `usuarios_empresa`, protegido por RLS), lo persiste y **sella** las filas
 /// locales que se crearon offline sin empresa. Devuelve el `empresa_id` o null
 /// si el usuario aún no está vinculado a ninguna empresa.
+///
+/// Si la empresa resuelta es DISTINTA a la que había en prefs (cambio de
+/// cuenta/empresa), resetea todos los cursores de sync antes de sellar para
+/// forzar un pull completo de la empresa nueva y evitar mezcla de datos.
 Future<String?> resolverEmpresaYsellar(WidgetRef ref) async {
   final user = SupabaseConfig.currentUser;
   if (user == null) return null;
 
-  final rows = await SupabaseConfig.client
-      .from('usuarios_empresa')
-      .select('empresa_id')
-      .limit(1);
-  if (rows.isEmpty) return null;
+  try {
+    final rows = await SupabaseConfig.client
+        .from('usuarios_empresa')
+        .select('empresa_id')
+        .limit(1);
+    if (rows.isEmpty) {
+      // El servidor es la fuente de verdad: este usuario NO tiene empresa.
+      // Limpia cualquier empresa_id viejo en prefs (p. ej. de una vinculación
+      // previa a un reset de la BD) para que la UI muestre la pantalla de
+      // vinculación y no salte a "conectado" con datos huérfanos.
+      final prefs = ref.read(sharedPreferencesProvider);
+      if (prefs.getString(_kEmpresaId) != null) {
+        await prefs.remove(_kEmpresaId);
+        await ref.read(syncMetadataProvider).resetAll();
+        ref.invalidate(empresaIdProvider);
+      }
+      return null;
+    }
 
-  final empresaId = rows.first['empresa_id'] as String;
-  await ref.read(sharedPreferencesProvider).setString(_kEmpresaId, empresaId);
-  await ref.read(databaseProvider).sellarEmpresaId(empresaId);
-  ref.invalidate(empresaIdProvider);
-  return empresaId;
+    final empresaId = rows.first['empresa_id'] as String;
+    final prefs = ref.read(sharedPreferencesProvider);
+    final empresaAnterior = prefs.getString(_kEmpresaId);
+
+    // Detecta cambio de empresa: resetea cursores para forzar pull completo.
+    if (empresaAnterior != null && empresaAnterior != empresaId) {
+      debugPrint(
+        '[cloud_providers] Cambio de empresa detectado '
+        '($empresaAnterior → $empresaId). Reseteando cursores de sync.',
+      );
+      await ref.read(syncMetadataProvider).resetAll();
+    }
+
+    await prefs.setString(_kEmpresaId, empresaId);
+    await ref.read(databaseProvider).sellarEmpresaId(empresaId);
+    ref.invalidate(empresaIdProvider);
+    return empresaId;
+  } catch (e) {
+    debugPrint('[cloud_providers] resolverEmpresaYsellar error: $e');
+    return null;
+  }
 }

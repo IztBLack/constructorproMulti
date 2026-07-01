@@ -180,6 +180,13 @@ class AppDatabase extends _$AppDatabase {
   /// Sella `empresa_id` en todas las filas locales que aún no lo tienen (creadas
   /// offline antes del login) y las marca `pending` para que el push las suba.
   /// Idempotente: solo toca filas con `empresa_id` vacío.
+  ///
+  /// El catálogo base (seed, `es_personalizado = 0`) NO se sube: se siembra en
+  /// el servidor al crear la empresa (RPC `crear_empresa`). Si selláramos y
+  /// subiéramos el seed local, cada tableta generaría UUIDs distintos →
+  /// duplicados masivos en Supabase. En cambio, los conceptos que el USUARIO
+  /// haya creado offline antes de vincular (`es_personalizado = 1`) SÍ se sellan
+  /// y suben. Los creados después de la vinculación sincronizan vía triggers.
   Future<void> sellarEmpresaId(String empresaId) async {
     const tablas = [
       'obras',
@@ -193,7 +200,6 @@ class AppDatabase extends _$AppDatabase {
       'partidas',
       'pagos',
       'movimientos',
-      'catalogo_conceptos',
       'archivos_cotizacion',
     ];
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -205,6 +211,12 @@ class AppDatabase extends _$AppDatabase {
           [empresaId, now],
         );
       }
+      // catalogo_conceptos: solo los personalizados del usuario, nunca el seed.
+      await customStatement(
+        "UPDATE catalogo_conceptos SET empresa_id = ?, updated_at = ?, sync_status = 'pending' "
+        "WHERE (empresa_id = '' OR empresa_id IS NULL) AND es_personalizado = 1",
+        [empresaId, now],
+      );
     });
   }
 

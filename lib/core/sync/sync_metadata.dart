@@ -28,4 +28,30 @@ class SyncMetadata {
     await _prefs.remove(_kTs(table));
     await _prefs.remove(_kId(table));
   }
+
+  /// Reinicia los cursores de TODAS las tablas conocidas (se usa al cerrar
+  /// sesión o al detectar un cambio de empresa, para evitar mezcla de datos
+  /// entre dos cuentas/empresas distintas).
+  Future<void> resetAll() async {
+    // Las mismas tablas que SyncService.pushOrder; se duplica aquí para no
+    // crear una dependencia circular entre sync_metadata y sync_service.
+    const tablas = [
+      'puestos',
+      'colaboradores',
+      'obras',
+      'cotizaciones',
+      'secciones',
+      'partidas',
+      'pagos',
+      'obra_colaborador',
+      'asistencias',
+      'destajos',
+      'movimientos',
+      'catalogo_conceptos',
+      'archivos_cotizacion',
+    ];
+    for (final t in tablas) {
+      await reset(t);
+    }
+  }
 }

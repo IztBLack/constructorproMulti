@@ -30,9 +30,38 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
   bool _loading = false;
   String? _error;
 
+  /// Cuando es true, el formulario de login opera en modo "Crear cuenta".
+  bool _modoRegistro = false;
+
   // Estado explícito de la pantalla para manejar la vista de vinculación sin
   // depender únicamente de los providers reactivos.
   _PantallaEstado _estado = _PantallaEstado.login;
+
+  /// True mientras validamos contra el servidor una sesión ya restaurada.
+  bool _validando = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Si al abrir la pantalla ya hay una sesión restaurada, NO confíes en el
+    // empresa_id de prefs (puede estar viejo tras un reset). Valida contra el
+    // servidor para decidir si va a "conectado" o a la pantalla de vinculación.
+    if (SupabaseConfig.currentUser != null) {
+      _validando = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _validarSesion());
+    }
+  }
+
+  Future<void> _validarSesion() async {
+    final empresaId = await resolverEmpresaYsellar(ref);
+    if (!mounted) return;
+    setState(() {
+      _validando = false;
+      _estado = empresaId == null
+          ? _PantallaEstado.vinculacion
+          : _PantallaEstado.conectado;
+    });
+  }
 
   @override
   void dispose() {
@@ -42,6 +71,9 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
     super.dispose();
   }
 
+  // ---------------------------------------------------------------------------
+  // Acción: Iniciar sesión
+  // ---------------------------------------------------------------------------
   Future<void> _conectar() async {
     setState(() {
       _loading = true;
@@ -61,14 +93,60 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
         setState(() => _estado = _PantallaEstado.conectado);
       }
     } on AuthException catch (e) {
-      if (mounted) setState(() => _error = e.message);
+      if (mounted) setState(() => _error = _traducirError(e.message));
     } catch (e) {
-      if (mounted) setState(() => _error = 'No se pudo conectar: $e');
+      debugPrint('[CloudSyncScreen] _conectar error: $e');
+      if (mounted) setState(() => _error = 'No se pudo conectar. Revisa tu conexión e intenta de nuevo.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Acción: Crear cuenta (signUp)
+  // ---------------------------------------------------------------------------
+  Future<void> _registrar() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final resp = await SupabaseConfig.client.auth.signUp(
+        email: _email.text.trim(),
+        password: _password.text,
+      );
+
+      if (!mounted) return;
+
+      if (resp.session != null) {
+        // Sesión activa inmediatamente (confirmación de email desactivada en proyecto).
+        final empresaId = await resolverEmpresaYsellar(ref);
+        if (!mounted) return;
+        if (empresaId == null) {
+          setState(() => _estado = _PantallaEstado.vinculacion);
+        } else {
+          setState(() => _estado = _PantallaEstado.conectado);
+        }
+      } else {
+        // Supabase requiere confirmación por correo antes de dar sesión.
+        setState(() => _error =
+            'Revisa tu correo para confirmar tu cuenta y luego inicia sesión.');
+      }
+    } on AuthException catch (e) {
+      if (mounted) setState(() => _error = _traducirError(e.message));
+    } catch (e) {
+      debugPrint('[CloudSyncScreen] _registrar error: $e');
+      if (mounted) {
+        setState(() => _error = 'No se pudo crear la cuenta. Verifica los datos e intenta de nuevo.');
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Acción: Vincular con código
+  // ---------------------------------------------------------------------------
   Future<void> _vincular() async {
     final codigo = _codigoCtrl.text.trim();
     if (codigo.length != 6) {
@@ -107,7 +185,7 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
         // Invalida el provider para que la UI reactiva se actualice.
         ref.invalidate(empresaIdProvider);
 
-        // 3. Sube los datos offline.
+        // 3. Sube los datos offline. El guard en SyncService evita concurrencia.
         final syncOutcome =
             await ref.read(syncServiceProvider).syncAll();
 
@@ -118,19 +196,27 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
           _codigoCtrl.clear();
         });
 
+        // Feedback honesto según el resultado real del sync.
+        final mensaje = switch (syncOutcome) {
+          SyncOutcome.ok =>
+            '¡Vinculado! Datos sincronizados.',
+          SyncOutcome.sinRed =>
+            'Vinculado. Se subirán los datos al reconectar.',
+          _ =>
+            'Vinculado, pero no se pudieron subir los datos. '
+                'Usa "Sincronizar ahora" para reintentar.',
+        };
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(syncOutcome == SyncOutcome.ok
-                ? '¡Vinculado! Datos sincronizados correctamente.'
-                : '¡Vinculado! Subiendo datos...'),
-          ),
+          SnackBar(content: Text(mensaje)),
         );
       } else {
         final mensajeError = resultado['error'] as String? ??
             'Código inválido o expirado. Solicita uno nuevo al administrador.';
         setState(() => _error = mensajeError);
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[CloudSyncScreen] _vincular error: $e');
       if (mounted) {
         setState(() => _error = 'Error de conexión, intenta de nuevo.');
       }
@@ -139,17 +225,38 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Acción: Cerrar sesión (limpia empresa_id y cursores para evitar mezcla)
+  // ---------------------------------------------------------------------------
   Future<void> _cerrarSesion() async {
+    // Borra la empresa vinculada de prefs para que un login con otra cuenta
+    // no mezcle datos de dos empresas distintas.
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.remove('empresa_id');
+
+    // Reinicia todos los cursores de sync: el próximo pull tras el login
+    // traerá los datos completos de la empresa nueva.
+    final metadata = ref.read(syncMetadataProvider);
+    await metadata.resetAll();
+
+    // Invalida el provider reactivo de empresa.
+    ref.invalidate(empresaIdProvider);
+
     await SupabaseConfig.client.auth.signOut();
+
     if (mounted) {
       setState(() {
         _estado = _PantallaEstado.login;
         _error = null;
+        _modoRegistro = false;
         _codigoCtrl.clear();
       });
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Acción: Sincronizar manualmente
+  // ---------------------------------------------------------------------------
   Future<void> _sincronizar() async {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _loading = true);
@@ -159,6 +266,9 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
     messenger.showSnackBar(SnackBar(content: Text(_mensajeOutcome(outcome))));
   }
 
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
   String _mensajeOutcome(SyncOutcome o) {
     switch (o) {
       case SyncOutcome.ok:
@@ -174,38 +284,57 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
     }
   }
 
+  /// Traduce mensajes de error de Supabase Auth a español.
+  String _traducirError(String message) {
+    final m = message.toLowerCase();
+    if (m.contains('invalid login credentials') ||
+        m.contains('invalid email or password')) {
+      return 'Correo o contraseña incorrectos.';
+    }
+    if (m.contains('email not confirmed')) {
+      return 'Confirma tu correo antes de iniciar sesión.';
+    }
+    if (m.contains('user already registered') ||
+        m.contains('already been registered')) {
+      return 'Ya existe una cuenta con ese correo. Inicia sesión.';
+    }
+    if (m.contains('password should be at least')) {
+      return 'La contraseña debe tener al menos 6 caracteres.';
+    }
+    if (m.contains('unable to validate email address')) {
+      return 'El formato del correo no es válido.';
+    }
+    return message; // devuelve el original si no se reconoce
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
     final empresaId = ref.watch(empresaIdProvider);
 
-    // Sincroniza el estado local con los providers reactivos cuando Riverpod
-    // detecta un cambio de sesión externo (por ejemplo, expiración de token).
-    if (user == null && _estado != _PantallaEstado.login) {
-      // Programar fuera del build para no llamar setState dentro de build.
+    // Si Riverpod detecta que se cerró la sesión (expiración/logout externo),
+    // vuelve al login. La validación inicial y _conectar/_vincular se encargan
+    // del resto (no confiamos ciegamente en el empresa_id de prefs).
+    if (user == null && _estado != _PantallaEstado.login && !_validando) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) setState(() => _estado = _PantallaEstado.login);
-      });
-    } else if (user != null &&
-        empresaId != null &&
-        _estado == _PantallaEstado.login) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() => _estado = _PantallaEstado.conectado);
       });
     }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Nube y sincronización')),
-      body: switch (_estado) {
-        _PantallaEstado.login => _loginForm(),
-        _PantallaEstado.vinculacion => _vinculacionForm(user),
-        _PantallaEstado.conectado => _connectedView(user, empresaId),
-      },
+      body: _validando
+          ? const Center(child: CircularProgressIndicator())
+          : switch (_estado) {
+              _PantallaEstado.login => _loginForm(),
+              _PantallaEstado.vinculacion => _vinculacionForm(user),
+              _PantallaEstado.conectado => _connectedView(user, empresaId),
+            },
     );
   }
 
   // ---------------------------------------------------------------------------
-  // Vista 1: Login
+  // Vista 1: Login / Registro
   // ---------------------------------------------------------------------------
   Widget _loginForm() {
     return ListView(
@@ -216,6 +345,21 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
           'La app sigue funcionando sin conexión.',
         ),
         const SizedBox(height: 20),
+
+        // Toggle Iniciar sesión / Crear cuenta
+        SegmentedButton<bool>(
+          segments: const [
+            ButtonSegment(value: false, label: Text('Iniciar sesión')),
+            ButtonSegment(value: true, label: Text('Crear cuenta')),
+          ],
+          selected: {_modoRegistro},
+          onSelectionChanged: (s) => setState(() {
+            _modoRegistro = s.first;
+            _error = null;
+          }),
+        ),
+        const SizedBox(height: 20),
+
         TextField(
           controller: _email,
           keyboardType: TextInputType.emailAddress,
@@ -236,20 +380,23 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
         ),
         if (_error != null) ...[
           const SizedBox(height: 12),
-          Text(_error!,
-              style:
-                  TextStyle(color: Theme.of(context).colorScheme.error)),
+          Text(
+            _error!,
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          ),
         ],
         const SizedBox(height: 20),
         FilledButton.icon(
-          onPressed: _loading ? null : _conectar,
+          onPressed: _loading ? null : (_modoRegistro ? _registrar : _conectar),
           icon: _loading
               ? const SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2))
-              : const Icon(Icons.cloud_outlined),
-          label: Text(_loading ? 'Conectando…' : 'Conectar'),
+              : Icon(_modoRegistro ? Icons.person_add_outlined : Icons.cloud_outlined),
+          label: Text(_loading
+              ? (_modoRegistro ? 'Creando cuenta…' : 'Conectando…')
+              : (_modoRegistro ? 'Crear cuenta' : 'Conectar')),
         ),
       ],
     );

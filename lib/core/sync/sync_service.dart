@@ -1,5 +1,6 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../db/app_database.dart';
@@ -39,6 +40,12 @@ class SyncService {
   final SyncMetadata metadata;
   final SupabaseClient client;
 
+  /// Guard compartido: evita que dos llamadas concurrentes a [syncAll] (una
+  /// del [SyncController] automático y otra del botón manual) corran en
+  /// paralelo y generen race conditions. Como [syncServiceProvider] es un
+  /// Provider singleton, cualquier llamante usa esta misma instancia.
+  bool _enCurso = false;
+
   /// Orden topológico de push: padres antes que hijos (respeta las FK de
   /// `supabase/migrations/0002_schema.sql`).
   static const List<String> pushOrder = [
@@ -66,13 +73,19 @@ class SyncService {
 
   /// Punto de entrada. Disparado por: arranque, reconexión, post-escritura
   /// (con debounce) y pull-to-refresh.
+  ///
+  /// Si ya hay un sync en curso (p. ej. el automático del [SyncController]
+  /// solapado con el manual del usuario), retorna inmediatamente para no
+  /// correr dos syncs concurrentes sobre los mismos datos.
   Future<SyncOutcome> syncAll() async {
+    if (_enCurso) return SyncOutcome.ok; // otro sync ya está en camino
     if (!tieneSesion) return SyncOutcome.sinSesion;
     if (!await hayRed) return SyncOutcome.sinRed;
 
     final empresaId = await _empresaIdActual();
     if (empresaId == null) return SyncOutcome.sinEmpresa;
 
+    _enCurso = true;
     try {
       // 1) PUSH primero (padres→hijos) para no traer del server algo que aún
       //    no subimos y perder la edición local.
@@ -84,8 +97,11 @@ class SyncService {
         await _pullTabla(t);
       }
       return SyncOutcome.ok;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[SyncService] syncAll error: $e');
       return SyncOutcome.error;
+    } finally {
+      _enCurso = false;
     }
   }
 
