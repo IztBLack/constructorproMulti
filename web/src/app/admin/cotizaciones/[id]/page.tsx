@@ -1,9 +1,12 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { calcularTotales, getCotizacionConDetalle } from '@/lib/data/cotizaciones';
+import { listPagosByCotizacion, sumaPagos } from '@/lib/data/pagos';
 import { formatCurrency } from '@/lib/data/format';
+import { LinkButton } from '@/components/ui';
 import { CotizacionHeader } from '../cotizacion-header';
 import { SeccionesList } from '../secciones-list';
+import PagosSection from './pagos-section';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,12 +30,18 @@ export default async function CotizacionDetallePage({
 
   const totales = calcularTotales(cotizacion);
 
+  const { data: pagos } = await listPagosByCotizacion(id);
+  const totalPagado = sumaPagos(pagos ?? []);
+
   return (
     <div className="space-y-6">
-      <div>
+      <div className="flex items-center justify-between gap-4">
         <Link href="/admin/cotizaciones" className="text-sm text-neutral-500 hover:underline">
           ← Cotizaciones
         </Link>
+        <LinkButton href={`/admin/cotizaciones/${id}/pdf`} variant="secondary" size="sm">
+          Ver PDF
+        </LinkButton>
       </div>
 
       <CotizacionHeader cotizacion={cotizacion} />
@@ -51,26 +60,33 @@ export default async function CotizacionDetallePage({
         <dl className="space-y-1 text-sm">
           <div className="flex justify-between">
             <dt className="text-neutral-600">Subtotal</dt>
-            <dd className="font-medium text-neutral-900">{formatCurrency(totales.subtotal)}</dd>
+            <dd className="tabular-nums font-medium text-neutral-900">{formatCurrency(totales.subtotal)}</dd>
           </div>
           {cotizacion.descuento > 0 && (
             <div className="flex justify-between">
               <dt className="text-neutral-600">Descuento ({cotizacion.descuento}%)</dt>
-              <dd className="font-medium text-red-600">-{formatCurrency(totales.descuentoMonto)}</dd>
+              <dd className="tabular-nums font-medium text-red-600">-{formatCurrency(totales.descuentoMonto)}</dd>
             </div>
           )}
           {cotizacion.iva_enabled && (
             <div className="flex justify-between">
               <dt className="text-neutral-600">IVA (16%)</dt>
-              <dd className="font-medium text-neutral-900">{formatCurrency(totales.ivaMonto)}</dd>
+              <dd className="tabular-nums font-medium text-neutral-900">{formatCurrency(totales.ivaMonto)}</dd>
             </div>
           )}
           <div className="flex justify-between border-t border-neutral-200 pt-2 text-base">
             <dt className="font-semibold text-neutral-900">Total</dt>
-            <dd className="font-semibold text-neutral-900">{formatCurrency(totales.total)}</dd>
+            <dd className="tabular-nums font-semibold text-neutral-900">{formatCurrency(totales.total)}</dd>
           </div>
         </dl>
       </section>
+
+      <PagosSection
+        cotizacionId={cotizacion.id}
+        totalCotizacion={totales.total}
+        pagos={pagos ?? []}
+        totalPagado={totalPagado}
+      />
     </div>
   );
 }
