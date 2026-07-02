@@ -1,0 +1,164 @@
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { Badge, Card, CardTitle, EmptyState, LinkButton, PageHeader, TableContainer, TBody, Td, Th, THead, Tr } from '@/components/ui';
+import { getObra } from '@/lib/data/obras';
+import {
+  calcularNomina,
+  listAsistenciasObraRango,
+  listColaboradoresActivosObra,
+  listDestajosObraRango,
+  listPuestosLite,
+  navegarSemana,
+  semanaDe,
+} from '@/lib/data/nomina';
+import { formatCurrency, formatDate } from '@/lib/data/format';
+
+export const dynamic = 'force-dynamic';
+
+export default async function NominaObraPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ inicio?: string }>;
+}) {
+  const { id } = await params;
+  const { inicio } = await searchParams;
+
+  const { data: obra, error: obraError } = await getObra(id);
+  if (obraError) {
+    return (
+      <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+        No se pudo cargar la obra: {obraError}
+      </p>
+    );
+  }
+  if (!obra) notFound();
+
+  const ancla = inicio ? new Date(Number(inicio)) : new Date();
+  const { inicioMs, finMs } = semanaDe(ancla);
+  const semanaAnterior = navegarSemana(inicioMs, -1);
+  const semanaSiguiente = navegarSemana(inicioMs, 1);
+
+  const [
+    { data: colaboradores, error: colabError },
+    { data: asistencias, error: asisError },
+    { data: destajos, error: destError },
+    { data: puestos, error: puestosError },
+  ] = await Promise.all([
+    listColaboradoresActivosObra(id),
+    listAsistenciasObraRango(id, inicioMs, finMs),
+    listDestajosObraRango(id, inicioMs, finMs),
+    listPuestosLite(),
+  ]);
+
+  const error = colabError ?? asisError ?? destError ?? puestosError;
+
+  const summary = error
+    ? null
+    : calcularNomina({ colaboradores, asistencias, destajos, puestos });
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <Link href={`/admin/obras/${id}`} className="text-sm text-neutral-500 hover:underline">
+          ← {obra.nombre}
+        </Link>
+      </div>
+
+      <PageHeader
+        title="Nómina"
+        description={`Consulta de nómina semanal en ${obra.nombre}. La captura de asistencia y destajos se hace desde la app móvil.`}
+      />
+
+      <Card>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <CardTitle as="h2">Semana</CardTitle>
+          <div className="flex items-center gap-3">
+            <LinkButton
+              variant="secondary"
+              size="sm"
+              href={`/admin/obras/${id}/nomina?inicio=${semanaAnterior.inicioMs}`}
+            >
+              ← Anterior
+            </LinkButton>
+            <span className="text-sm font-medium text-neutral-900">
+              {formatDate(inicioMs)} – {formatDate(finMs)}
+            </span>
+            <LinkButton
+              variant="secondary"
+              size="sm"
+              href={`/admin/obras/${id}/nomina?inicio=${semanaSiguiente.inicioMs}`}
+            >
+              Siguiente →
+            </LinkButton>
+          </div>
+        </div>
+      </Card>
+
+      {error && (
+        <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          No se pudo cargar la información: {error}
+        </p>
+      )}
+
+      {summary && (
+        <>
+          <Card>
+            <CardTitle>Total de nómina de la semana</CardTitle>
+            <p className="text-3xl font-semibold text-neutral-900">{formatCurrency(summary.totalNomina)}</p>
+            <div className="mt-3 flex gap-6 text-sm text-neutral-500">
+              <span>Por día: {formatCurrency(summary.totalDia)}</span>
+              <span>Por destajo: {formatCurrency(summary.totalDestajo)}</span>
+            </div>
+          </Card>
+
+          <section className="space-y-3">
+            <h2 className="text-sm font-medium text-neutral-700">Detalle por colaborador</h2>
+            {summary.items.length === 0 ? (
+              <EmptyState
+                title="Sin colaboradores activos asignados a esta obra."
+                description="Asigna colaboradores desde la sección Equipo."
+              />
+            ) : (
+              <TableContainer>
+                <THead>
+                  <Th>Colaborador</Th>
+                  <Th>Puesto</Th>
+                  <Th>Tipo de pago</Th>
+                  <Th className="text-right">Días / Destajos</Th>
+                  <Th className="text-right">Salario base</Th>
+                  <Th className="text-right">Total a pagar</Th>
+                </THead>
+                <TBody>
+                  {summary.items.map((item) => (
+                    <Tr key={item.colaborador.id}>
+                      <Td className="font-medium text-neutral-900">{item.colaborador.nombre}</Td>
+                      <Td>{item.puestoNombre}</Td>
+                      <Td>
+                        <Badge tone={item.colaborador.tipo_pago === 'DESTAJO' ? 'purple' : 'blue'}>
+                          {item.colaborador.tipo_pago === 'DESTAJO' ? 'Destajo' : 'Por día'}
+                        </Badge>
+                      </Td>
+                      <Td className="text-right">
+                        {item.colaborador.tipo_pago === 'DESTAJO'
+                          ? formatCurrency(item.totalDestajos)
+                          : item.totalDias.toFixed(2)}
+                      </Td>
+                      <Td className="text-right">
+                        {item.colaborador.tipo_pago === 'DESTAJO' ? '—' : formatCurrency(item.salarioBaseCalculado)}
+                      </Td>
+                      <Td className="text-right font-semibold text-neutral-900">
+                        {formatCurrency(item.totalPagar)}
+                      </Td>
+                    </Tr>
+                  ))}
+                </TBody>
+              </TableContainer>
+            )}
+          </section>
+        </>
+      )}
+    </div>
+  );
+}
