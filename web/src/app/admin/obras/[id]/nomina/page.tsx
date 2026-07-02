@@ -106,10 +106,10 @@ export default async function NominaObraPage({
         <>
           <Card>
             <CardTitle>Total de nómina de la semana</CardTitle>
-            <p className="text-3xl font-semibold text-neutral-900">{formatCurrency(summary.totalNomina)}</p>
+            <p className="tabular-nums text-3xl font-semibold text-neutral-900">{formatCurrency(summary.totalNomina)}</p>
             <div className="mt-3 flex gap-6 text-sm text-neutral-500">
-              <span>Por día: {formatCurrency(summary.totalDia)}</span>
-              <span>Por destajo: {formatCurrency(summary.totalDestajo)}</span>
+              <span className="tabular-nums">Por día: {formatCurrency(summary.totalDia)}</span>
+              <span className="tabular-nums">Por destajo: {formatCurrency(summary.totalDestajo)}</span>
             </div>
           </Card>
 
@@ -140,15 +140,15 @@ export default async function NominaObraPage({
                           {item.colaborador.tipo_pago === 'DESTAJO' ? 'Destajo' : 'Por día'}
                         </Badge>
                       </Td>
-                      <Td className="text-right">
+                      <Td className="text-right tabular-nums">
                         {item.colaborador.tipo_pago === 'DESTAJO'
                           ? formatCurrency(item.totalDestajos)
                           : item.totalDias.toFixed(2)}
                       </Td>
-                      <Td className="text-right">
+                      <Td className="text-right tabular-nums">
                         {item.colaborador.tipo_pago === 'DESTAJO' ? '—' : formatCurrency(item.salarioBaseCalculado)}
                       </Td>
-                      <Td className="text-right font-semibold text-neutral-900">
+                      <Td className="text-right tabular-nums font-semibold text-neutral-900">
                         {formatCurrency(item.totalPagar)}
                       </Td>
                     </Tr>

@@ -85,7 +85,7 @@ export default function MovimientosTabla({
                 <Td>{m.concepto || '—'}</Td>
                 <Td>{m.metodo_pago || '—'}</Td>
                 <Td>{m.referencia || '—'}</Td>
-                <Td className="text-right font-medium text-neutral-900">
+                <Td className="text-right font-medium tabular-nums text-neutral-900">
                   {m.tipo === 'SALIDA' ? '-' : ''}
                   {formatCurrency(m.monto)}
                 </Td>

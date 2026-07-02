@@ -1,8 +1,10 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { Puesto } from '@/lib/data/types';
+import { Button, Field, Input } from '@/components/ui';
 import { crearColaborador } from './actions';
 
 export default function NuevoColaboradorForm({ puestos }: { puestos: Puesto[] }) {
@@ -30,12 +32,9 @@ export default function NuevoColaboradorForm({ puestos }: { puestos: Puesto[] })
 
   if (!open) {
     return (
-      <button
-        onClick={() => setOpen(true)}
-        className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
-      >
-        Nuevo colaborador
-      </button>
+      <Button onClick={() => setOpen(true)}>
+        + Nuevo colaborador
+      </Button>
     );
   }
 
@@ -44,26 +43,29 @@ export default function NuevoColaboradorForm({ puestos }: { puestos: Puesto[] })
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-sm font-medium text-neutral-700">Nuevo colaborador</h2>
         <button
+          type="button"
           onClick={() => setOpen(false)}
-          className="text-sm text-neutral-400 hover:text-neutral-600"
+          className="cursor-pointer text-sm text-neutral-400 transition hover:text-neutral-600"
         >
           Cancelar
         </button>
       </div>
       <form ref={formRef} onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
-        <label className="block space-y-1 sm:col-span-2">
-          <span className="text-sm font-medium">Nombre *</span>
-          <input
-            name="nombre"
-            required
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
-          />
-        </label>
-        <label className="block space-y-1">
-          <span className="text-sm font-medium">Puesto</span>
+        <Field label="Nombre *" className="sm:col-span-2">
+          <Input name="nombre" required />
+        </Field>
+
+        <Field
+          label="Puesto"
+          hint={
+            puestos.length === 0
+              ? undefined
+              : undefined
+          }
+        >
           <select
             name="puesto_id"
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+            className="w-full cursor-pointer rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-900/10"
           >
             <option value="">Sin puesto</option>
             {puestos.map((p) => (
@@ -72,46 +74,47 @@ export default function NuevoColaboradorForm({ puestos }: { puestos: Puesto[] })
               </option>
             ))}
           </select>
-        </label>
-        <label className="block space-y-1">
-          <span className="text-sm font-medium">Tipo de pago</span>
+          {puestos.length === 0 && (
+            <span className="block text-xs text-neutral-400">
+              Aun no tienes puestos.{' '}
+              <Link href="/admin/puestos" className="underline hover:text-neutral-700">
+                Crealos en Puestos
+              </Link>{' '}
+              para asignar salarios.
+            </span>
+          )}
+        </Field>
+
+        <Field label="Tipo de pago">
           <select
             name="tipo_pago"
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+            className="w-full cursor-pointer rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-900/10"
           >
             <option value="DIA">Por día</option>
             <option value="DESTAJO">Por destajo</option>
           </select>
-        </label>
-        <label className="block space-y-1">
-          <span className="text-sm font-medium">Teléfono</span>
-          <input
-            name="telefono"
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
-          />
-        </label>
-        <label className="block space-y-1">
-          <span className="text-sm font-medium">Salario personalizado (MXN/día)</span>
-          <input
+        </Field>
+
+        <Field label="Teléfono">
+          <Input name="telefono" type="tel" />
+        </Field>
+
+        <Field label="Salario personalizado (MXN/día)">
+          <Input
             type="number"
             step="0.01"
             min="0"
             name="salario_personalizado"
             placeholder="Usar el del puesto"
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
           />
-        </label>
+        </Field>
 
         {error && <p className="text-sm text-red-600 sm:col-span-2">{error}</p>}
 
         <div className="sm:col-span-2">
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-          >
+          <Button type="submit" disabled={loading}>
             {loading ? 'Guardando…' : 'Guardar colaborador'}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

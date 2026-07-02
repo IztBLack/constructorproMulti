@@ -1,4 +1,5 @@
 import { listColaboradores, listPuestos } from '@/lib/data/equipo';
+import { PageHeader } from '@/components/ui';
 import NuevoColaboradorForm from './nuevo-colaborador-form';
 import TablaColaboradores from './tabla-colaboradores';
 
@@ -12,13 +13,11 @@ export default async function EquipoPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Equipo</h1>
-          <p className="text-sm text-neutral-500">Colaboradores y su esquema de pago.</p>
-        </div>
-        <NuevoColaboradorForm puestos={puestos} />
-      </header>
+      <PageHeader
+        title="Equipo"
+        description="Colaboradores y su esquema de pago."
+        actions={<NuevoColaboradorForm puestos={puestos} />}
+      />
 
       {error && (
         <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">

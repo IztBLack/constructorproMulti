@@ -17,6 +17,18 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+/** Mapa: rol BD → etiqueta en español para mostrar al usuario. */
+const ROL_LABEL: Record<string, string> = {
+  admin: 'Administrador',
+  owner: 'Propietario',
+  member: 'Miembro',
+  viewer: 'Lector',
+};
+
+function rolLabel(rol: string): string {
+  return ROL_LABEL[rol] ?? rol;
+}
+
 function BarraGasto({
   label,
   valor,
@@ -36,8 +48,8 @@ function BarraGasto({
       <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-neutral-100">
         <div className={`h-full rounded-full ${colorClass}`} style={{ width: `${frac}%` }} />
       </div>
-      <span className="w-12 shrink-0 text-right text-xs text-neutral-500">{pct}%</span>
-      <span className="w-28 shrink-0 text-right text-xs font-medium text-neutral-700">
+      <span className="w-12 shrink-0 text-right text-xs tabular-nums text-neutral-500">{pct}%</span>
+      <span className="w-28 shrink-0 text-right text-xs tabular-nums font-medium text-neutral-700">
         {formatCurrency(valor)}
       </span>
     </div>
@@ -85,6 +97,21 @@ export default async function AdminPage({
     .from('usuarios_empresa')
     .select('empresa_id, rol');
 
+  // Resolver nombres de empresa para no mostrar UUIDs crudos.
+  const empresaNames: Record<string, string> = {};
+  if (memberships && memberships.length > 0) {
+    const empresaIds = memberships.map((m) => m.empresa_id as string);
+    const { data: empresas } = await supabase
+      .from('empresas')
+      .select('id, nombre')
+      .in('id', empresaIds);
+    if (empresas) {
+      for (const e of empresas) {
+        empresaNames[e.id as string] = e.nombre as string;
+      }
+    }
+  }
+
   const [
     obrasCount,
     cotizacionesCount,
@@ -120,6 +147,10 @@ export default async function AdminPage({
   const flujo = resumenFlujo(movimientosPeriodoResult.data);
   const gasto = distribucionGasto(movimientosPeriodoResult.data);
 
+  const obrasCnt = obrasCount.count ?? 0;
+  const colaboradoresCnt = colaboradoresCount.count ?? 0;
+  const mostrarPrimerosPasos = obrasCnt === 0 && colaboradoresCnt === 0;
+
   return (
     <div className="space-y-6">
       <header>
@@ -127,16 +158,66 @@ export default async function AdminPage({
         <p className="text-sm text-neutral-500">{user.email}</p>
       </header>
 
+      {/* Primeros pasos: solo si la empresa está vacía */}
+      {mostrarPrimerosPasos && (
+        <Card>
+          <div className="mb-4">
+            <h2 className="text-base font-semibold text-neutral-900">Bienvenido a ConstructorPro</h2>
+            <p className="mt-1 text-sm text-neutral-500">
+              Completa estos tres pasos para comenzar a gestionar tus obras.
+            </p>
+          </div>
+          <ol className="space-y-3">
+            <li className="flex items-center justify-between gap-4 rounded-lg border border-neutral-200 p-3">
+              <div>
+                <span className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Paso 1</span>
+                <p className="text-sm font-medium text-neutral-900">Crea tus puestos</p>
+                <p className="text-xs text-neutral-500">Define los roles de trabajo que usará tu equipo.</p>
+              </div>
+              <LinkButton href="/admin/puestos" variant="secondary" size="sm">
+                Ir a puestos
+              </LinkButton>
+            </li>
+            <li className="flex items-center justify-between gap-4 rounded-lg border border-neutral-200 p-3">
+              <div>
+                <span className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Paso 2</span>
+                <p className="text-sm font-medium text-neutral-900">Da de alta tu equipo</p>
+                <p className="text-xs text-neutral-500">Agrega a los colaboradores que trabajarán contigo.</p>
+              </div>
+              <LinkButton href="/admin/equipo" variant="secondary" size="sm">
+                Ir a equipo
+              </LinkButton>
+            </li>
+            <li className="flex items-center justify-between gap-4 rounded-lg border border-neutral-200 p-3">
+              <div>
+                <span className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Paso 3</span>
+                <p className="text-sm font-medium text-neutral-900">Crea tu primera obra</p>
+                <p className="text-xs text-neutral-500">Registra el proyecto y empieza a hacer seguimiento.</p>
+              </div>
+              <LinkButton href="/admin/obras" variant="secondary" size="sm">
+                Ir a obras
+              </LinkButton>
+            </li>
+          </ol>
+        </Card>
+      )}
+
+      {/* Sección "Tu acceso" sin UUIDs crudos */}
       <section className="rounded-xl border border-neutral-200 bg-white p-5">
         <h2 className="mb-2 text-sm font-medium text-neutral-500">Tu acceso</h2>
         {memberships && memberships.length > 0 ? (
           <ul className="space-y-1 text-sm">
-            {memberships.map((m) => (
-              <li key={m.empresa_id} className="flex gap-2">
-                <span className="font-mono text-neutral-400">{m.empresa_id}</span>
-                <span className="rounded bg-neutral-100 px-2">{m.rol}</span>
-              </li>
-            ))}
+            {memberships.map((m) => {
+              const nombreEmpresa = empresaNames[m.empresa_id as string] ?? 'Empresa';
+              return (
+                <li key={m.empresa_id as string} className="flex items-center gap-2">
+                  <span className="font-medium text-neutral-900">{nombreEmpresa}</span>
+                  <span className="rounded bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
+                    {rolLabel(m.rol as string)}
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         ) : (
           <div className="flex items-center gap-3">
@@ -156,7 +237,7 @@ export default async function AdminPage({
             className="rounded-xl border border-neutral-200 bg-white p-6 transition hover:border-neutral-400"
           >
             <div className="text-sm font-medium text-neutral-500">{c.label}</div>
-            <div className="mt-2 text-3xl font-semibold text-neutral-900">
+            <div className="mt-2 text-3xl font-semibold tabular-nums text-neutral-900">
               {c.error ? '—' : c.count}
             </div>
             {c.error && <p className="mt-1 text-xs text-red-600">No se pudo consultar.</p>}
@@ -170,7 +251,7 @@ export default async function AdminPage({
             <CardTitle as="h2">Pipeline</CardTitle>
             <p className="text-xs text-neutral-400">Cotizaciones pendientes (borrador / enviada)</p>
           </div>
-          <p className="text-3xl font-semibold text-teal-700">
+          <p className="text-3xl font-semibold tabular-nums text-teal-700">
             {pipelineResult.error ? '—' : formatCurrency(pipelineResult.value)}
           </p>
         </div>
@@ -220,15 +301,15 @@ export default async function AdminPage({
           <div className="mt-3 grid grid-cols-3 gap-4 text-center">
             <div>
               <p className="text-xs text-neutral-500">Ingresos</p>
-              <p className="text-xl font-semibold text-green-700">{formatCurrency(flujo.totalEntradas)}</p>
+              <p className="text-xl font-semibold tabular-nums text-green-700">{formatCurrency(flujo.totalEntradas)}</p>
             </div>
             <div>
               <p className="text-xs text-neutral-500">Egresos</p>
-              <p className="text-xl font-semibold text-red-600">{formatCurrency(flujo.totalSalidas)}</p>
+              <p className="text-xl font-semibold tabular-nums text-red-600">{formatCurrency(flujo.totalSalidas)}</p>
             </div>
             <div>
               <p className="text-xs text-neutral-500">Saldo</p>
-              <p className={`text-xl font-semibold ${flujo.saldo >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+              <p className={`text-xl font-semibold tabular-nums ${flujo.saldo >= 0 ? 'text-green-700' : 'text-red-600'}`}>
                 {formatCurrency(flujo.saldo)}
               </p>
             </div>
@@ -291,8 +372,8 @@ export default async function AdminPage({
                       </Badge>
                     )}
                   </Td>
-                  <Td className="text-right">{equipoActivo}</Td>
-                  <Td className={`text-right font-semibold ${saldo >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                  <Td className="text-right tabular-nums">{equipoActivo}</Td>
+                  <Td className={`text-right tabular-nums font-semibold ${saldo >= 0 ? 'text-green-700' : 'text-red-600'}`}>
                     {formatCurrency(saldo)}
                   </Td>
                 </Tr>

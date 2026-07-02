@@ -18,7 +18,7 @@ const SIZE_CLASSES: Record<ButtonSize, string> = {
 };
 
 const BASE_CLASSES =
-  'inline-flex items-center justify-center gap-2 rounded-lg font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
+  'inline-flex items-center justify-center gap-2 rounded-lg font-medium outline-none transition cursor-pointer focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
 
 /** Construye las clases del botón; útil para reutilizar el look del botón en otros elementos (ej. Link). */
 export function buttonClassName(

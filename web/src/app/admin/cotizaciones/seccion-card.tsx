@@ -22,6 +22,7 @@ export function SeccionCard({
   const [agregandoPartida, setAgregandoPartida] = useState(false);
   const [editandoPartidaId, setEditandoPartidaId] = useState<string | null>(null);
   const [confirmandoBorrado, setConfirmandoBorrado] = useState(false);
+  const [confirmandoBorradoPartidaId, setConfirmandoBorradoPartidaId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -142,23 +143,50 @@ export function SeccionCard({
                   <Td className="text-neutral-700">{p.descripcion}</Td>
                   <Td className="text-right">{p.cantidad}</Td>
                   <Td>{p.unidad || '—'}</Td>
-                  <Td className="text-right">{formatCurrency(p.precio_unitario)}</Td>
-                  <Td className="text-right font-medium text-neutral-900">
+                  <Td className="text-right tabular-nums">{formatCurrency(p.precio_unitario)}</Td>
+                  <Td className="text-right font-medium tabular-nums text-neutral-900">
                     {formatCurrency(p.cantidad * p.precio_unitario)}
                   </Td>
                   <Td className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => setEditandoPartidaId(p.id)}>
-                        Editar
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        disabled={pending}
-                        onClick={() => handleEliminarPartida(p.id)}
-                      >
-                        Eliminar
-                      </Button>
+                    <div className="flex items-center justify-end gap-2">
+                      {confirmandoBorradoPartidaId === p.id ? (
+                        <>
+                          <span className="text-xs text-neutral-500">¿Eliminar partida?</span>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            disabled={pending}
+                            onClick={() => {
+                              setConfirmandoBorradoPartidaId(null);
+                              handleEliminarPartida(p.id);
+                            }}
+                          >
+                            Sí, eliminar
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={pending}
+                            onClick={() => setConfirmandoBorradoPartidaId(null)}
+                          >
+                            Cancelar
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button variant="ghost" size="sm" onClick={() => setEditandoPartidaId(p.id)}>
+                            Editar
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={pending}
+                            onClick={() => setConfirmandoBorradoPartidaId(p.id)}
+                          >
+                            Eliminar
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </Td>
                 </Tr>

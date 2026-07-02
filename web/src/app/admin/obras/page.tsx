@@ -1,4 +1,5 @@
 import { listObras } from '@/lib/data/obras';
+import { PageHeader } from '@/components/ui';
 import NuevaObraForm from './nueva-obra-form';
 import BuscadorObras from './buscador-obras';
 
@@ -9,13 +10,11 @@ export default async function ObrasPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Obras</h1>
-          <p className="text-sm text-neutral-500">Gestiona las obras activas e inactivas de tu empresa.</p>
-        </div>
-        <NuevaObraForm />
-      </header>
+      <PageHeader
+        title="Obras"
+        description="Gestiona las obras activas e inactivas de tu empresa."
+        actions={<NuevaObraForm />}
+      />
 
       {error && (
         <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
