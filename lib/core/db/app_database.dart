@@ -177,16 +177,19 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // ---------------- Sync nube ----------------
-  /// Sella `empresa_id` en todas las filas locales que aún no lo tienen (creadas
-  /// offline antes del login) y las marca `pending` para que el push las suba.
-  /// Idempotente: solo toca filas con `empresa_id` vacío.
+  /// Sella `empresa_id` en las filas locales que NO pertenecen a la empresa
+  /// actual (creadas offline sin empresa, o cacheadas de una empresa anterior
+  /// ya borrada) y las marca `pending` para que el push las suba a la empresa
+  /// vigente. Idempotente: las filas que ya son de `empresaId` no se tocan.
+  ///
+  /// Cubre el caso de reset de BD en la nube: los datos locales quedaban con el
+  /// `empresa_id` viejo → antes no se re-sellaban y no volvían a subir. Ahora sí.
   ///
   /// El catálogo base (seed, `es_personalizado = 0`) NO se sube: se siembra en
   /// el servidor al crear la empresa (RPC `crear_empresa`). Si selláramos y
   /// subiéramos el seed local, cada tableta generaría UUIDs distintos →
   /// duplicados masivos en Supabase. En cambio, los conceptos que el USUARIO
-  /// haya creado offline antes de vincular (`es_personalizado = 1`) SÍ se sellan
-  /// y suben. Los creados después de la vinculación sincronizan vía triggers.
+  /// haya creado (`es_personalizado = 1`) SÍ se sellan y suben.
   Future<void> sellarEmpresaId(String empresaId) async {
     const tablas = [
       'obras',
@@ -207,15 +210,15 @@ class AppDatabase extends _$AppDatabase {
       for (final t in tablas) {
         await customStatement(
           "UPDATE $t SET empresa_id = ?, updated_at = ?, sync_status = 'pending' "
-          "WHERE empresa_id = '' OR empresa_id IS NULL",
-          [empresaId, now],
+          "WHERE empresa_id IS NULL OR empresa_id != ?",
+          [empresaId, now, empresaId],
         );
       }
       // catalogo_conceptos: solo los personalizados del usuario, nunca el seed.
       await customStatement(
         "UPDATE catalogo_conceptos SET empresa_id = ?, updated_at = ?, sync_status = 'pending' "
-        "WHERE (empresa_id = '' OR empresa_id IS NULL) AND es_personalizado = 1",
-        [empresaId, now],
+        "WHERE (empresa_id IS NULL OR empresa_id != ?) AND es_personalizado = 1",
+        [empresaId, now, empresaId],
       );
     });
   }

@@ -54,3 +54,6 @@ app.*.map.json
 
 # Bitácora local (no publicar)
 docs/BITACORA.md
+
+# Respaldos binarios (no versionar, ~10MB+)
+*.zip
