@@ -1,5 +1,5 @@
 import { listObras } from '@/lib/data/obras';
-import { PageHeader } from '@/components/ui';
+import { PageHeader, LinkButton } from '@/components/ui';
 import NuevaObraForm from './nueva-obra-form';
 import BuscadorObras from './buscador-obras';
 
@@ -13,7 +13,14 @@ export default async function ObrasPage() {
       <PageHeader
         title="Obras"
         description="Gestiona las obras activas e inactivas de tu empresa."
-        actions={<NuevaObraForm />}
+        actions={
+          <div className="flex items-center gap-3">
+            <LinkButton href="/admin/obras/importar" variant="secondary">
+              Importar de Excel
+            </LinkButton>
+            <NuevaObraForm />
+          </div>
+        }
       />
 
       {error && (

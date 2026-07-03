@@ -78,7 +78,7 @@ export default async function ObraDetallePage({
           No se pudo cargar el presupuesto: {presupuestoError}
         </p>
       ) : (
-        <EstadoCuenta partidas={partidas} movimientos={movimientos ?? []} />
+        <EstadoCuenta obraId={id} partidas={partidas} movimientos={movimientos ?? []} />
       )}
 
       {/* 2. Presupuesto por partidas (editable) */}

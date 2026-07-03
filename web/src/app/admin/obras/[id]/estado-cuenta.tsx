@@ -1,14 +1,15 @@
-import { Card, CardTitle, THead, Th, TBody, Tr, Td } from '@/components/ui';
+import { Card, CardTitle, THead, Th, TBody, Tr, Td, LinkButton } from '@/components/ui';
 import { formatCurrency } from '@/lib/data/format';
 import type { Movimiento, PartidaPresupuesto } from '@/lib/data/types';
 import { costoTotal } from '@/lib/data/presupuesto-obra';
 
 interface Props {
+  obraId: string;
   partidas: PartidaPresupuesto[];
   movimientos: Movimiento[];
 }
 
-export default function EstadoCuenta({ partidas, movimientos }: Props) {
+export default function EstadoCuenta({ obraId, partidas, movimientos }: Props) {
   // ── Cálculos principales ────────────────────────────────────────────────
   const costo = costoTotal(partidas);
   const recibido = movimientos
@@ -40,9 +41,18 @@ export default function EstadoCuenta({ partidas, movimientos }: Props) {
     <div className="space-y-4">
       {/* ── Encabezado financiero ─────────────────────────────────────────── */}
       <Card>
-        <CardTitle as="h2" className="mb-4 text-base font-semibold text-neutral-800">
-          Estado de cuenta
-        </CardTitle>
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <CardTitle as="h2" className="text-base font-semibold text-neutral-800">
+            Estado de cuenta
+          </CardTitle>
+          <LinkButton
+            href={`/admin/obras/${obraId}/exportar`}
+            variant="secondary"
+            size="sm"
+          >
+            Exportar a Excel
+          </LinkButton>
+        </div>
 
         {/* Presupuesto por partidas en el encabezado */}
         {partidas.length > 0 && (
