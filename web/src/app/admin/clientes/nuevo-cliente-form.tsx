@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Field, Input } from '@/components/ui';
+import { Button, Field, Input, Modal } from '@/components/ui';
 import { crearClienteAction } from './actions';
 
 export default function NuevoClienteForm() {
@@ -11,6 +11,12 @@ export default function NuevoClienteForm() {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  function handleClose() {
+    if (pending) return;
+    setOpen(false);
+    setError(null);
+  }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -29,40 +35,36 @@ export default function NuevoClienteForm() {
     });
   }
 
-  if (!open) {
-    return <Button onClick={() => setOpen(true)}>+ Nuevo cliente</Button>;
-  }
-
   return (
-    <div className="w-full rounded-xl border border-neutral-200 bg-white p-5 sm:w-[28rem]">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-sm font-medium text-neutral-700">Nuevo cliente</h2>
-        <button
-          onClick={() => setOpen(false)}
-          className="cursor-pointer text-sm text-neutral-400 hover:text-neutral-600"
-        >
-          Cancelar
-        </button>
-      </div>
-      <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
-        <Field label="Nombre *">
-          <Input name="nombre" required autoFocus disabled={pending} />
-        </Field>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Correo" hint="Para su acceso al portal">
-            <Input name="email" type="email" disabled={pending} />
-          </Field>
-          <Field label="Teléfono">
-            <Input name="telefono" type="tel" disabled={pending} />
-          </Field>
-        </div>
+    <>
+      <Button onClick={() => setOpen(true)}>+ Nuevo cliente</Button>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+      <Modal open={open} onClose={handleClose} title="Nuevo cliente" size="md">
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+          <Field label="Nombre *">
+            <Input name="nombre" required autoFocus disabled={pending} />
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Correo" hint="Para su acceso al portal">
+              <Input name="email" type="email" disabled={pending} />
+            </Field>
+            <Field label="Teléfono">
+              <Input name="telefono" type="tel" disabled={pending} />
+            </Field>
+          </div>
 
-        <Button type="submit" disabled={pending}>
-          {pending ? 'Guardando…' : 'Guardar cliente'}
-        </Button>
-      </form>
-    </div>
+          {error && <p className="text-sm text-red-600">{error}</p>}
+
+          <div className="flex items-center gap-3">
+            <Button type="submit" disabled={pending}>
+              {pending ? 'Guardando…' : 'Guardar cliente'}
+            </Button>
+            <Button type="button" variant="secondary" disabled={pending} onClick={handleClose}>
+              Cancelar
+            </Button>
+          </div>
+        </form>
+      </Modal>
+    </>
   );
 }

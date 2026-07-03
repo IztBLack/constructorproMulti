@@ -59,6 +59,9 @@ export default async function ColaboradorDetallePage({
             {colaborador.tipo_pago === 'DESTAJO' ? 'Por destajo' : 'Por día'}
           </p>
         </div>
+        {!puestosError && (
+          <EditarColaboradorForm colaborador={colaborador} puestos={puestos} />
+        )}
       </header>
 
       {puestosError && (
@@ -66,13 +69,6 @@ export default async function ColaboradorDetallePage({
           No se pudieron cargar los puestos: {puestosError}
         </p>
       )}
-
-      <section className="space-y-3">
-        <h2 className="text-sm font-medium text-neutral-700">Datos del colaborador</h2>
-        <div className="rounded-xl border border-neutral-200 bg-white p-5">
-          <EditarColaboradorForm colaborador={colaborador} puestos={puestos} />
-        </div>
-      </section>
 
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-neutral-700">Obras asignadas</h2>

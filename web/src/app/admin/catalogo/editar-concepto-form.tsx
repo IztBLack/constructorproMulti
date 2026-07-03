@@ -37,7 +37,7 @@ export default function EditarConceptoForm({
   return (
     <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
       <Field label="Descripción *" className="sm:col-span-2">
-        <Input name="descripcion" required defaultValue={concepto.descripcion} />
+        <Input name="descripcion" required defaultValue={concepto.descripcion} autoFocus />
       </Field>
 
       <Field label="Clave">
@@ -69,7 +69,7 @@ export default function EditarConceptoForm({
           {loading ? 'Guardando…' : 'Guardar cambios'}
         </Button>
         {onCancel && (
-          <Button type="button" variant="ghost" onClick={onCancel} disabled={loading}>
+          <Button type="button" variant="secondary" onClick={onCancel} disabled={loading}>
             Cancelar
           </Button>
         )}

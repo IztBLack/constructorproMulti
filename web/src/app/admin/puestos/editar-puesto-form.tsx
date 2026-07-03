@@ -37,7 +37,7 @@ export default function EditarPuestoForm({
   return (
     <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
       <Field label="Nombre *">
-        <Input name="nombre" required defaultValue={puesto.nombre} />
+        <Input name="nombre" required defaultValue={puesto.nombre} autoFocus />
       </Field>
 
       <Field label="Salario por día (MXN)">
@@ -57,7 +57,7 @@ export default function EditarPuestoForm({
           {loading ? 'Guardando…' : 'Guardar cambios'}
         </Button>
         {onCancel && (
-          <Button type="button" variant="ghost" onClick={onCancel} disabled={loading}>
+          <Button type="button" variant="secondary" onClick={onCancel} disabled={loading}>
             Cancelar
           </Button>
         )}

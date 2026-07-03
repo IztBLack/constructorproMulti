@@ -7,3 +7,5 @@ export type { BadgeTone } from './Badge';
 export { EmptyState } from './EmptyState';
 export { TableContainer, THead, Th, TBody, Tr, Td } from './Table';
 export { Field, Input } from './Field';
+export { Modal } from './Modal';
+export type { ModalSize } from './Modal';
