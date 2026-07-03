@@ -1,11 +1,13 @@
 'use client';
-// MOCK - sin lógica real. Los onClick son placeholders hasta conectar el backend.
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui';
+import { responderCotizacion } from './responder-actions';
 
 interface CotizacionAccionesProps {
   cotizacionId: string;
-  /** Si es true, muestra también los botones Aceptar / Rechazar */
+  /** Si es true, muestra tambien los botones Aceptar / Rechazar */
   mostrarRespuesta?: boolean;
 }
 
@@ -13,24 +15,37 @@ export function CotizacionAcciones({
   cotizacionId,
   mostrarRespuesta = false,
 }: CotizacionAccionesProps) {
-  function handleAceptar() {
-    // TODO (backend): llamar a la API para aceptar la cotización con id `cotizacionId`
-    alert(`[MOCK] Aceptar cotización ${cotizacionId} — pendiente de conectar backend.`);
-  }
+  const router = useRouter();
+  const [cargando, setCargando] = useState<'aceptar' | 'rechazar' | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleRechazar() {
-    // TODO (backend): llamar a la API para rechazar la cotización con id `cotizacionId`
-    alert(`[MOCK] Rechazar cotización ${cotizacionId} — pendiente de conectar backend.`);
+  async function handleRespuesta(aceptar: boolean) {
+    const accion = aceptar ? 'aceptar' : 'rechazar';
+    setCargando(accion);
+    setError(null);
+
+    const resultado = await responderCotizacion(cotizacionId, aceptar);
+
+    if (!resultado.ok) {
+      setError(resultado.error ?? 'Ocurrio un error inesperado.');
+      setCargando(null);
+      return;
+    }
+
+    setCargando(null);
+    router.refresh();
   }
 
   function handleImprimir() {
     window.print();
   }
 
+  const ocupado = cargando !== null;
+
   return (
-    <>
+    <div className="flex flex-col gap-3 w-full sm:flex-row sm:flex-wrap sm:items-center">
       {/* Descargar / imprimir */}
-      <Button variant="secondary" size="md" onClick={handleImprimir} className="gap-2">
+      <Button variant="secondary" size="md" onClick={handleImprimir} className="gap-2 cursor-pointer">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className="h-4 w-4"
@@ -52,36 +67,119 @@ export function CotizacionAcciones({
       {/* Aceptar / Rechazar — solo si estado es "Enviada" */}
       {mostrarRespuesta && (
         <>
-          <Button variant="primary" size="md" onClick={handleAceptar} className="gap-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-              aria-hidden="true"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-            Aceptar cotización
+          <Button
+            variant="primary"
+            size="md"
+            onClick={() => handleRespuesta(true)}
+            disabled={ocupado}
+            className="gap-2 cursor-pointer"
+            aria-busy={cargando === 'aceptar'}
+          >
+            {cargando === 'aceptar' ? (
+              <>
+                <svg
+                  className="h-4 w-4 animate-spin"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                Aceptando...
+              </>
+            ) : (
+              <>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  aria-hidden="true"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                Aceptar cotizacion
+              </>
+            )}
           </Button>
-          <Button variant="danger" size="md" onClick={handleRechazar} className="gap-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-              aria-hidden="true"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            Rechazar
+
+          <Button
+            variant="danger"
+            size="md"
+            onClick={() => handleRespuesta(false)}
+            disabled={ocupado}
+            className="gap-2 cursor-pointer"
+            aria-busy={cargando === 'rechazar'}
+          >
+            {cargando === 'rechazar' ? (
+              <>
+                <svg
+                  className="h-4 w-4 animate-spin"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                Rechazando...
+              </>
+            ) : (
+              <>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  aria-hidden="true"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Rechazar
+              </>
+            )}
           </Button>
+
+          {/* Mensaje de error */}
+          {error && (
+            <p
+              role="alert"
+              className="w-full text-sm text-red-600 font-medium sm:w-auto sm:self-center"
+            >
+              {error}
+            </p>
+          )}
         </>
       )}
-    </>
+    </div>
   );
 }

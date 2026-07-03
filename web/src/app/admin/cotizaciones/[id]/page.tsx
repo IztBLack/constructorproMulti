@@ -2,12 +2,14 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { calcularTotales, getCotizacionConDetalle } from '@/lib/data/cotizaciones';
 import { listPagosByCotizacion, sumaPagos } from '@/lib/data/pagos';
+import { listArchivosCotizacion } from '@/lib/data/archivos';
 import { listClientes } from '@/lib/data/clientes';
 import { formatCurrency } from '@/lib/data/format';
 import { LinkButton } from '@/components/ui';
 import { CotizacionHeader } from '../cotizacion-header';
 import { SeccionesList } from '../secciones-list';
 import PagosSection from './pagos-section';
+import ArchivosSection from './archivos-section';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,9 +33,10 @@ export default async function CotizacionDetallePage({
 
   const totales = calcularTotales(cotizacion);
 
-  const [{ data: pagos }, { data: clientes }] = await Promise.all([
+  const [{ data: pagos }, { data: clientes }, { data: archivos }] = await Promise.all([
     listPagosByCotizacion(id),
     listClientes(),
+    listArchivosCotizacion(id),
   ]);
   const totalPagado = sumaPagos(pagos ?? []);
 
@@ -91,6 +94,8 @@ export default async function CotizacionDetallePage({
         pagos={pagos ?? []}
         totalPagado={totalPagado}
       />
+
+      <ArchivosSection cotizacionId={cotizacion.id} archivos={archivos ?? []} />
     </div>
   );
 }

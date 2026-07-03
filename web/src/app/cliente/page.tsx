@@ -9,6 +9,7 @@ import {
   mapEstadoObra,
 } from '@/lib/data/portal-cliente';
 import type { EstadoObraPortal } from '@/lib/data/portal-cliente';
+import { VincularForm } from './vincular-form';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,11 +33,16 @@ export default async function ClienteResumenPage() {
   // Estado "sin vínculo": usuario logueado pero no ligado a un cliente
   if (!cliente) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <EmptyState
-          title="Tu cuenta aun no esta vinculada"
-          description="Pide a tu constructora el codigo de acceso para vincular tu cuenta al portal."
-        />
+      <div className="flex min-h-[60vh] items-center justify-center px-4">
+        <div className="w-full max-w-sm space-y-6 text-center">
+          <div className="space-y-2">
+            <h1 className="text-xl font-semibold text-neutral-900">Tu cuenta aun no esta vinculada</h1>
+            <p className="text-sm text-neutral-500">
+              Ingresa el codigo de acceso que te dio tu constructora.
+            </p>
+          </div>
+          <VincularForm />
+        </div>
       </div>
     );
   }
