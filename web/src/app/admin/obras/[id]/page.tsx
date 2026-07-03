@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Card, CardTitle } from '@/components/ui';
 import { calcularSaldo, getObra, listMovimientosByObra } from '@/lib/data/obras';
 import { listColaboradores, listColaboradoresDeObra } from '@/lib/data/equipo';
+import { listClientes } from '@/lib/data/clientes';
 import { formatCurrency } from '@/lib/data/format';
 import ObraHeader from './obra-header';
 import RegistrarMovimiento from './registrar-movimiento';
@@ -35,7 +36,8 @@ export default async function ObraDetallePage({
   const [
     { data: equipoAsignado, error: equipoError },
     { data: colaboradores, error: colaboradoresError },
-  ] = await Promise.all([listColaboradoresDeObra(id), listColaboradores()]);
+    { data: clientes },
+  ] = await Promise.all([listColaboradoresDeObra(id), listColaboradores(), listClientes()]);
 
   return (
     <div className="space-y-6">
@@ -45,7 +47,7 @@ export default async function ObraDetallePage({
         </Link>
       </div>
 
-      <ObraHeader obra={obra} />
+      <ObraHeader obra={obra} clientes={clientes} />
 
       <div className="flex flex-wrap items-center gap-3">
         <Link

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { calcularTotales, getCotizacionConDetalle } from '@/lib/data/cotizaciones';
 import { listPagosByCotizacion, sumaPagos } from '@/lib/data/pagos';
+import { listClientes } from '@/lib/data/clientes';
 import { formatCurrency } from '@/lib/data/format';
 import { LinkButton } from '@/components/ui';
 import { CotizacionHeader } from '../cotizacion-header';
@@ -30,7 +31,10 @@ export default async function CotizacionDetallePage({
 
   const totales = calcularTotales(cotizacion);
 
-  const { data: pagos } = await listPagosByCotizacion(id);
+  const [{ data: pagos }, { data: clientes }] = await Promise.all([
+    listPagosByCotizacion(id),
+    listClientes(),
+  ]);
   const totalPagado = sumaPagos(pagos ?? []);
 
   return (
@@ -44,7 +48,7 @@ export default async function CotizacionDetallePage({
         </LinkButton>
       </div>
 
-      <CotizacionHeader cotizacion={cotizacion} />
+      <CotizacionHeader cotizacion={cotizacion} clientes={clientes} />
 
       {cotizacion.notas && (
         <section className="rounded-xl border border-neutral-200 bg-white p-5">

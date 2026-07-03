@@ -28,9 +28,11 @@ function leerCotizacionDeFormData(formData: FormData) {
   const descuentoRaw = String(formData.get('descuento') ?? '0');
   const ubicacion = String(formData.get('ubicacion') ?? '').trim();
   const notas = String(formData.get('notas') ?? '').trim();
+  const clienteIdRaw = String(formData.get('cliente_id') ?? '').trim();
 
   return {
     cliente: String(formData.get('cliente') ?? '').trim(),
+    cliente_id: clienteIdRaw.length > 0 ? clienteIdRaw : null,
     nombre_proyecto: String(formData.get('nombre_proyecto') ?? '').trim(),
     ubicacion: ubicacion.length > 0 ? ubicacion : null,
     fecha: parseFecha(fechaRaw),

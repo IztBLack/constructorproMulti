@@ -1,11 +1,25 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
 import { ClienteNavLinks } from './nav-links';
-import { MOCK_CLIENTE } from './_mock';
+import { getClienteActual } from '@/lib/data/portal-cliente';
 
-// MOCK - en la fase backend, reemplazar MOCK_CLIENTE por la sesión real del usuario.
+export const dynamic = 'force-dynamic';
 
-export default function ClienteLayout({ children }: { children: React.ReactNode }) {
-  const cliente = MOCK_CLIENTE;
+export default async function ClienteLayout({ children }: { children: React.ReactNode }) {
+  // Guard de sesión: el portal exige haber iniciado sesión. (Respaldo del
+  // middleware para páginas dinámicas.)
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  const cliente = await getClienteActual();
+
+  // Si no hay vínculo, mostramos el layout igualmente pero sin nombre de cliente
+  const nombreCliente = cliente?.nombre ?? 'Cliente';
+  const inicial = nombreCliente.charAt(0).toUpperCase();
 
   return (
     <div className="min-h-screen flex flex-col bg-neutral-50">
@@ -32,9 +46,9 @@ export default function ClienteLayout({ children }: { children: React.ReactNode 
                 className="flex h-7 w-7 items-center justify-center rounded-full bg-neutral-200 text-xs font-semibold text-neutral-700 select-none"
                 aria-hidden="true"
               >
-                {cliente.nombre.charAt(0)}
+                {inicial}
               </span>
-              <span className="text-sm text-neutral-600">{cliente.nombre}</span>
+              <span className="text-sm text-neutral-600">{nombreCliente}</span>
             </div>
             <form action="/auth/signout" method="post">
               <button
@@ -63,7 +77,7 @@ export default function ClienteLayout({ children }: { children: React.ReactNode 
       <footer className="border-t border-neutral-200 bg-white mt-auto">
         <div className="mx-auto max-w-5xl px-4 py-4 sm:px-8">
           <p className="text-xs text-neutral-400 text-center">
-            Portal del cliente — {cliente.empresa_constructora}. Solo para uso autorizado.
+            Portal del cliente — ConstructorPro. Solo para uso autorizado.
           </p>
         </div>
       </footer>

@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Field, Input } from '@/components/ui';
-import type { Cotizacion, EstadoCotizacion } from '@/lib/data/types';
+import type { Cliente, Cotizacion, EstadoCotizacion } from '@/lib/data/types';
 import { crearCotizacionAction, actualizarCotizacionAction } from './actions';
 
 const ESTADOS: EstadoCotizacion[] = ['BORRADOR', 'ENVIADA', 'ACEPTADA', 'RECHAZADA', 'CONVERTIDA'];
@@ -16,6 +16,9 @@ const ESTADO_LABEL: Record<EstadoCotizacion, string> = {
   CONVERTIDA: 'Convertida',
 };
 
+const SELECT_CLASSES =
+  'w-full cursor-pointer rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-900/10 disabled:cursor-not-allowed disabled:opacity-50';
+
 function msToInputDate(ms: number): string {
   const d = new Date(ms);
   const y = d.getFullYear();
@@ -25,8 +28,8 @@ function msToInputDate(ms: number): string {
 }
 
 type Props =
-  | { mode: 'crear' }
-  | { mode: 'editar'; cotizacion: Cotizacion; onCancelar?: () => void };
+  | { mode: 'crear'; clientes: Cliente[] }
+  | { mode: 'editar'; cotizacion: Cotizacion; clientes: Cliente[]; onCancelar?: () => void };
 
 export function CotizacionForm(props: Props) {
   const router = useRouter();
@@ -35,6 +38,7 @@ export function CotizacionForm(props: Props) {
   const [fechaDefault] = useState(() => Date.now());
 
   const cotizacion = props.mode === 'editar' ? props.cotizacion : null;
+  const clientes = props.clientes;
 
   function handleSubmit(formData: FormData) {
     setError(null);
@@ -62,9 +66,26 @@ export function CotizacionForm(props: Props) {
   return (
     <form action={handleSubmit} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Cliente">
+        <Field label="Cliente del portal" hint="Opcional — vincula a un cliente registrado">
+          <select
+            name="cliente_id"
+            defaultValue={cotizacion?.cliente_id ?? ''}
+            disabled={pending}
+            className={SELECT_CLASSES}
+          >
+            <option value="">Sin cliente vinculado</option>
+            {clientes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre || c.email || c.id}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Cliente (texto libre)">
           <Input name="cliente" required defaultValue={cotizacion?.cliente ?? ''} disabled={pending} />
         </Field>
+
         <Field label="Nombre del proyecto">
           <Input
             name="nombre_proyecto"
@@ -90,7 +111,7 @@ export function CotizacionForm(props: Props) {
             name="estado"
             defaultValue={cotizacion?.estado ?? 'BORRADOR'}
             disabled={pending}
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-900/10"
+            className={SELECT_CLASSES}
           >
             {ESTADOS.map((e) => (
               <option key={e} value={e}>

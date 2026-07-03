@@ -3,18 +3,24 @@
 import { useState } from 'react';
 import { Badge, Button } from '@/components/ui';
 import { formatDate } from '@/lib/data/format';
-import type { Obra } from '@/lib/data/types';
+import type { Cliente, Obra } from '@/lib/data/types';
 import EditarObraForm from './editar-obra-form';
 import ObraAcciones from './obra-acciones';
 
-export default function ObraHeader({ obra }: { obra: Obra }) {
+export default function ObraHeader({
+  obra,
+  clientes,
+}: {
+  obra: Obra;
+  clientes: Cliente[];
+}) {
   const [editando, setEditando] = useState(false);
 
   if (editando) {
     return (
       <section className="rounded-xl border border-neutral-200 bg-white p-5">
         <h2 className="mb-4 text-sm font-medium text-neutral-500">Editar obra</h2>
-        <EditarObraForm obra={obra} onCancelar={() => setEditando(false)} />
+        <EditarObraForm obra={obra} clientes={clientes} onCancelar={() => setEditando(false)} />
       </section>
     );
   }
@@ -32,6 +38,9 @@ export default function ObraHeader({ obra }: { obra: Obra }) {
           {obra.cliente || 'Sin cliente'} · {obra.ubicacion || 'Sin ubicación'}
         </p>
         <p className="text-sm text-neutral-500">Inicio: {formatDate(obra.fecha_inicio)}</p>
+        {typeof obra.avance === 'number' && (
+          <p className="text-sm text-neutral-500">Avance: {obra.avance}%</p>
+        )}
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <Button variant="secondary" size="sm" onClick={() => setEditando(true)}>

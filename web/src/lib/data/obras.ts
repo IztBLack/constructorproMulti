@@ -30,8 +30,10 @@ export async function getObra(id: string): Promise<{ data: Obra | null; error: s
 export interface ObraInput {
   nombre: string;
   cliente: string;
+  cliente_id: string | null;
   ubicacion: string;
   fechaInicio: number;
+  avance: number;
 }
 
 export async function actualizarObra(
@@ -46,8 +48,10 @@ export async function actualizarObra(
     .update({
       nombre: input.nombre,
       cliente: input.cliente,
+      cliente_id: input.cliente_id,
       ubicacion: input.ubicacion,
       fecha_inicio: input.fechaInicio,
+      avance: input.avance,
       updated_at: now,
     })
     .eq('id', id);

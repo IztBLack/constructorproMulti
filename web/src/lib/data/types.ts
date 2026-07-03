@@ -11,9 +11,11 @@ export interface Obra {
   empresa_id: string;
   nombre: string;
   cliente: string | null;
+  cliente_id: string | null;
   ubicacion: string | null;
   fecha_inicio: number | null;
   activa: boolean;
+  avance: number;
   cotizacion_origen_id: string | null;
   pdf_config_json: unknown | null;
   created_at: number;
@@ -26,6 +28,7 @@ export interface Cotizacion {
   id: string;
   empresa_id: string;
   cliente: string;
+  cliente_id: string | null;
   nombre_proyecto: string;
   ubicacion: string | null;
   fecha: number;
@@ -171,6 +174,18 @@ export interface ObraResumen {
 /// Asignación enriquecida con el nombre de la obra, para listas de detalle.
 export interface AsignacionObraColaborador extends ObraColaborador {
   obra_nombre: string;
+}
+
+export interface Cliente {
+  id: string;
+  empresa_id: string;
+  nombre: string;
+  email: string;
+  telefono: string;
+  user_id: string | null;
+  created_at: number;
+  updated_at: number;
+  deleted_at: number | null;
 }
 
 export interface CatalogoConcepto {

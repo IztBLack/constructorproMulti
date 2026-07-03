@@ -1,4 +1,3 @@
-// MOCK - reemplazar por queries reales en la fase de backend.
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -6,6 +5,7 @@ import {
   Card,
   CardHeader,
   CardTitle,
+  EmptyState,
   PageHeader,
   TableContainer,
   THead,
@@ -15,11 +15,19 @@ import {
   Td,
 } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/lib/data/format';
-import { MOCK_OBRAS, type EstadoObraCliente } from '../../_mock';
+import {
+  getObraCliente,
+  listCotizacionesCliente,
+  listPagosDeCotizacion,
+  mapEstadoObra,
+} from '@/lib/data/portal-cliente';
+import type { EstadoObraPortal, PagoPortal } from '@/lib/data/portal-cliente';
+
+export const dynamic = 'force-dynamic';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const ESTADO_TONE: Record<EstadoObraCliente, 'green' | 'amber' | 'neutral'> = {
+const ESTADO_TONE: Record<EstadoObraPortal, 'green' | 'amber' | 'neutral'> = {
   'En progreso': 'green',
   Pausada: 'amber',
   Completada: 'neutral',
@@ -33,12 +41,42 @@ export default async function ObraDetallePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const obra = MOCK_OBRAS.find((o) => o.id === id);
+
+  const obra = await getObraCliente(id);
   if (!obra) notFound();
 
-  const saldo = obra.presupuesto_total - obra.pagado;
-  const pagadoPct = Math.round((obra.pagado / obra.presupuesto_total) * 100);
-  const tone = ESTADO_TONE[obra.estado];
+  const estado = mapEstadoObra(obra.activa, obra.avance);
+  const tone = ESTADO_TONE[estado];
+
+  // Obtener cotizaciones del cliente para calcular el estado de cuenta
+  // La relacion obra→cotizacion puede venir por obra_id en cotizaciones (campo obra_id)
+  // o por coincidencia de nombre. Aqui buscamos cotizaciones que tengan obra_id == obra.id.
+  // Si la BD no tiene esa relacion directa, mostramos el resumen de todas las cotizaciones
+  // del cliente (nivel general) y los pagos de esas cotizaciones.
+  const todasCotizaciones = await listCotizacionesCliente();
+
+  // Intentar filtrar cotizaciones relacionadas con esta obra
+  // (cotizaciones con nombre_proyecto similar a obra.nombre, como aproximacion robusta)
+  const cotizacionesDeLaObra = todasCotizaciones;
+  // Nota: si la tabla cotizaciones tuviera columna obra_id poblada, se filtraria aqui.
+  // Por ahora mostramos todas las cotizaciones del cliente ya que el mapeo exacto
+  // obra→cotizacion depende de datos que RLS ya ha acotado al cliente.
+
+  // Recopilar pagos de todas las cotizaciones
+  const pagosPorCotizacion = await Promise.all(
+    cotizacionesDeLaObra.map(async ({ cotizacion }) => ({
+      cotizacionId: cotizacion.id,
+      cotizacionNombre: cotizacion.nombre_proyecto,
+      pagos: await listPagosDeCotizacion(cotizacion.id),
+    })),
+  );
+
+  const todosPagos: PagoPortal[] = pagosPorCotizacion.flatMap((pc) => pc.pagos);
+  const totalCotizaciones = cotizacionesDeLaObra.reduce((acc, d) => acc + d.totales.total, 0);
+  const totalPagado = todosPagos.reduce((acc, p) => acc + p.monto, 0);
+  const saldo = totalCotizaciones - totalPagado;
+  const pagadoPct =
+    totalCotizaciones > 0 ? Math.min(100, Math.round((totalPagado / totalCotizaciones) * 100)) : 0;
 
   return (
     <div className="space-y-8">
@@ -64,8 +102,8 @@ export default async function ObraDetallePage({
 
         <PageHeader
           title={obra.nombre}
-          description={obra.ubicacion}
-          actions={<Badge tone={tone}>{obra.estado}</Badge>}
+          description={obra.ubicacion ?? undefined}
+          actions={<Badge tone={tone}>{estado}</Badge>}
         />
         <p className="mt-2 text-sm text-neutral-500">
           Fecha de inicio: {formatDate(obra.fecha_inicio)}
@@ -79,23 +117,23 @@ export default async function ObraDetallePage({
             <CardTitle as="h2" id="avance-heading">
               Avance de obra
             </CardTitle>
-            <span className="text-xl font-bold text-neutral-900">{obra.avance_pct}%</span>
+            <span className="text-xl font-bold text-neutral-900">{obra.avance}%</span>
           </CardHeader>
           <div
             className="h-3 w-full overflow-hidden rounded-full bg-neutral-100"
             role="progressbar"
-            aria-valuenow={obra.avance_pct}
+            aria-valuenow={obra.avance}
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-label={`Avance de obra: ${obra.avance_pct}%`}
+            aria-label={`Avance de obra: ${obra.avance}%`}
           >
             <div
               className="h-full rounded-full bg-green-500 transition-all duration-700 motion-reduce:transition-none"
-              style={{ width: `${obra.avance_pct}%` }}
+              style={{ width: `${obra.avance}%` }}
             />
           </div>
           <p className="mt-2 text-xs text-neutral-400">
-            Avance reportado por la constructora. Actualizado periódicamente.
+            Avance reportado por la constructora. Actualizado periodicamente.
           </p>
         </Card>
       </section>
@@ -110,14 +148,14 @@ export default async function ObraDetallePage({
           <Card padding="md">
             <CardTitle as="h3">Presupuesto total</CardTitle>
             <p className="mt-2 text-2xl font-semibold text-neutral-900 tabular-nums">
-              {formatCurrency(obra.presupuesto_total)}
+              {formatCurrency(totalCotizaciones)}
             </p>
           </Card>
 
           <Card padding="md">
             <CardTitle as="h3">Total pagado</CardTitle>
             <p className="mt-2 text-2xl font-semibold text-green-700 tabular-nums">
-              {formatCurrency(obra.pagado)}
+              {formatCurrency(totalPagado)}
             </p>
             <p className="mt-1 text-xs text-neutral-400">{pagadoPct}% del presupuesto</p>
           </Card>
@@ -159,70 +197,81 @@ export default async function ObraDetallePage({
           Historial de pagos
         </h2>
 
-        {/* Tabla escritorio */}
-        <TableContainer className="hidden sm:block">
-          <THead>
-            <Th>Fecha</Th>
-            <Th>Concepto</Th>
-            <Th>Método</Th>
-            <Th>Referencia</Th>
-            <Th className="text-right">Monto</Th>
-          </THead>
-          <TBody>
-            {obra.pagos.map((pago) => (
-              <Tr key={pago.id}>
-                <Td>{formatDate(pago.fecha)}</Td>
-                <Td className="text-neutral-900 font-medium">{pago.concepto}</Td>
-                <Td>{pago.metodo}</Td>
-                <Td>{pago.referencia ?? <span className="text-neutral-400">—</span>}</Td>
-                <Td className="text-right tabular-nums font-semibold text-neutral-900">
-                  {formatCurrency(pago.monto)}
-                </Td>
-              </Tr>
-            ))}
-          </TBody>
-        </TableContainer>
+        {todosPagos.length === 0 ? (
+          <EmptyState
+            title="Sin pagos registrados"
+            description="Los pagos aparecen aqui una vez que tu constructora los registre."
+          />
+        ) : (
+          <>
+            {/* Tabla escritorio */}
+            <TableContainer className="hidden sm:block">
+              <THead>
+                <Th>Fecha</Th>
+                <Th>Concepto</Th>
+                <Th>Metodo</Th>
+                <Th>Referencia</Th>
+                <Th className="text-right">Monto</Th>
+              </THead>
+              <TBody>
+                {todosPagos.map((pago) => (
+                  <Tr key={pago.id}>
+                    <Td>{formatDate(pago.fecha)}</Td>
+                    <Td className="text-neutral-900 font-medium">{pago.concepto}</Td>
+                    <Td>{pago.metodo}</Td>
+                    <Td>
+                      {pago.referencia ?? <span className="text-neutral-400">—</span>}
+                    </Td>
+                    <Td className="text-right tabular-nums font-semibold text-neutral-900">
+                      {formatCurrency(pago.monto)}
+                    </Td>
+                  </Tr>
+                ))}
+              </TBody>
+            </TableContainer>
 
-        {/* Tarjetas móvil */}
-        <div className="space-y-3 sm:hidden">
-          {obra.pagos.map((pago) => (
-            <div
-              key={pago.id}
-              className="rounded-xl border border-neutral-200 bg-white p-4 space-y-2"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-neutral-900">{pago.concepto}</p>
-                  <p className="text-xs text-neutral-400">{formatDate(pago.fecha)}</p>
+            {/* Tarjetas movil */}
+            <div className="space-y-3 sm:hidden">
+              {todosPagos.map((pago) => (
+                <div
+                  key={pago.id}
+                  className="rounded-xl border border-neutral-200 bg-white p-4 space-y-2"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-neutral-900">{pago.concepto}</p>
+                      <p className="text-xs text-neutral-400">{formatDate(pago.fecha)}</p>
+                    </div>
+                    <p className="tabular-nums font-semibold text-neutral-900 shrink-0">
+                      {formatCurrency(pago.monto)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-neutral-500">
+                    <span>{pago.metodo}</span>
+                    {pago.referencia && (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span>{pago.referencia}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <p className="tabular-nums font-semibold text-neutral-900 shrink-0">
-                  {formatCurrency(pago.monto)}
-                </p>
-              </div>
-              <div className="flex items-center gap-3 text-xs text-neutral-500">
-                <span>{pago.metodo}</span>
-                {pago.referencia && (
-                  <>
-                    <span aria-hidden="true">·</span>
-                    <span>{pago.referencia}</span>
-                  </>
-                )}
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        {/* Total confirmación */}
-        <div className="mt-4 flex justify-end">
-          <div className="rounded-lg border border-neutral-200 bg-white px-5 py-3 text-sm">
-            <div className="flex items-center gap-6">
-              <span className="text-neutral-600">Total pagado</span>
-              <span className="tabular-nums font-semibold text-neutral-900">
-                {formatCurrency(obra.pagado)}
-              </span>
+            {/* Total confirmacion */}
+            <div className="mt-4 flex justify-end">
+              <div className="rounded-lg border border-neutral-200 bg-white px-5 py-3 text-sm">
+                <div className="flex items-center gap-6">
+                  <span className="text-neutral-600">Total pagado</span>
+                  <span className="tabular-nums font-semibold text-neutral-900">
+                    {formatCurrency(totalPagado)}
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
       </section>
     </div>
   );

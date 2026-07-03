@@ -99,6 +99,7 @@ export function calcularTotales(cotizacion: CotizacionConDetalle): TotalesCotiza
 
 export interface NuevaCotizacionInput {
   cliente: string;
+  cliente_id: string | null;
   nombre_proyecto: string;
   ubicacion: string | null;
   fecha: number;
@@ -121,6 +122,7 @@ export async function crearCotizacion(
     id,
     empresa_id: empresaId,
     cliente: input.cliente,
+    cliente_id: input.cliente_id,
     nombre_proyecto: input.nombre_proyecto,
     ubicacion: input.ubicacion ?? '',
     fecha: input.fecha,
@@ -150,6 +152,7 @@ export async function actualizarCotizacion(
     .from('cotizaciones')
     .update({
       cliente: input.cliente,
+      cliente_id: input.cliente_id,
       nombre_proyecto: input.nombre_proyecto,
       ubicacion: input.ubicacion ?? '',
       fecha: input.fecha,

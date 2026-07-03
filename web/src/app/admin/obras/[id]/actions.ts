@@ -22,8 +22,10 @@ export async function actualizarObraAction(
 ): Promise<ActionResult> {
   const nombre = String(formData.get('nombre') ?? '').trim();
   const cliente = String(formData.get('cliente') ?? '').trim();
+  const clienteIdRaw = String(formData.get('cliente_id') ?? '').trim();
   const ubicacion = String(formData.get('ubicacion') ?? '').trim();
   const fechaInicioStr = String(formData.get('fecha_inicio') ?? '').trim();
+  const avanceStr = String(formData.get('avance') ?? '0').trim();
 
   if (!nombre) {
     return { ok: false, error: 'El nombre de la obra es obligatorio.' };
@@ -34,7 +36,16 @@ export async function actualizarObraAction(
     return { ok: false, error: 'La fecha de inicio no es válida.' };
   }
 
-  const input: ObraInput = { nombre, cliente, ubicacion, fechaInicio };
+  const avance = Math.min(100, Math.max(0, Math.round(Number(avanceStr) || 0)));
+
+  const input: ObraInput = {
+    nombre,
+    cliente,
+    cliente_id: clienteIdRaw || null,
+    ubicacion,
+    fechaInicio,
+    avance,
+  };
 
   const result = await actualizarObra(id, input);
   if (result.error) {

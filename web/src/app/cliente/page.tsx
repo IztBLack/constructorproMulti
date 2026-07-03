@@ -1,19 +1,60 @@
-// MOCK - reemplazar por queries reales en la fase de backend.
 import Link from 'next/link';
-import { Card, CardTitle, LinkButton, Badge } from '@/components/ui';
+import { Card, CardTitle, LinkButton, Badge, EmptyState } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/lib/data/format';
-import { MOCK_CLIENTE, MOCK_OBRAS, MOCK_COTIZACIONES } from './_mock';
+import {
+  getClienteActual,
+  listObrasCliente,
+  listCotizacionesCliente,
+  getEstadoCuentaCliente,
+  mapEstadoObra,
+} from '@/lib/data/portal-cliente';
+import type { EstadoObraPortal } from '@/lib/data/portal-cliente';
 
-export default function ClienteResumenPage() {
-  const cliente = MOCK_CLIENTE;
+export const dynamic = 'force-dynamic';
 
-  // Totales globales
-  const totalPresupuestado = MOCK_OBRAS.reduce((sum, o) => sum + o.presupuesto_total, 0);
-  const totalPagado = MOCK_OBRAS.reduce((sum, o) => sum + o.pagado, 0);
-  const totalSaldo = totalPresupuestado - totalPagado;
+// ─── Subcomponente ────────────────────────────────────────────────────────────
+
+function ObraEstadoBadge({ estado }: { estado: EstadoObraPortal }) {
+  const map: Record<EstadoObraPortal, 'green' | 'amber' | 'neutral'> = {
+    'En progreso': 'green',
+    Pausada: 'amber',
+    Completada: 'neutral',
+  };
+  const tone = map[estado];
+  return <Badge tone={tone}>{estado}</Badge>;
+}
+
+// ─── Página ──────────────────────────────────────────────────────────────────
+
+export default async function ClienteResumenPage() {
+  const cliente = await getClienteActual();
+
+  // Estado "sin vínculo": usuario logueado pero no ligado a un cliente
+  if (!cliente) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <EmptyState
+          title="Tu cuenta aun no esta vinculada"
+          description="Pide a tu constructora el codigo de acceso para vincular tu cuenta al portal."
+        />
+      </div>
+    );
+  }
+
+  // Cargar datos en paralelo
+  const [obras, cotizacionesData, estadoCuenta] = await Promise.all([
+    listObrasCliente(),
+    listCotizacionesCliente(),
+    getEstadoCuentaCliente(),
+  ]);
+
+  const { totalPresupuestado, totalPagado, totalSaldo } = estadoCuenta;
+
+  // Cotizaciones con estado mapeado
+  const cotizaciones = cotizacionesData.map((d) => d.cotizacion);
 
   // Cotizaciones pendientes de respuesta
-  const cotizacionesPendientes = MOCK_COTIZACIONES.filter((c) => c.estado === 'Enviada');
+  const cotizacionesPendientes = cotizaciones.filter((c) => c.estado === 'Enviada');
 
   return (
     <div className="space-y-8">
@@ -22,7 +63,7 @@ export default function ClienteResumenPage() {
         <p className="text-sm text-neutral-500">Bienvenido de nuevo</p>
         <h1 className="text-2xl font-semibold text-neutral-900">{cliente.nombre}</h1>
         <p className="text-sm text-neutral-500">
-          Aquí puedes revisar el avance de tus obras, tus cotizaciones y tu estado de cuenta.
+          Aqui puedes revisar el avance de tus obras, tus cotizaciones y tu estado de cuenta.
         </p>
       </header>
 
@@ -64,66 +105,75 @@ export default function ClienteResumenPage() {
           </LinkButton>
         </div>
 
-        <div className="space-y-3">
-          {MOCK_OBRAS.map((obra) => {
-            const saldo = obra.presupuesto_total - obra.pagado;
-            return (
-              <Link
-                key={obra.id}
-                href={`/cliente/obras/${obra.id}`}
-                className="block rounded-xl border border-neutral-200 bg-white p-5 hover:border-neutral-300 hover:shadow-sm cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-sm font-semibold text-neutral-900 truncate">
-                        {obra.nombre}
-                      </h3>
-                      <ObraEstadoBadge estado={obra.estado} />
+        {obras.length === 0 ? (
+          <EmptyState
+            title="Sin obras registradas"
+            description="Aqui apareceran tus obras en cuanto tu constructora las registre."
+          />
+        ) : (
+          <div className="space-y-3">
+            {obras.map((obra) => {
+              const estado = mapEstadoObra(obra.activa, obra.avance);
+              return (
+                <Link
+                  key={obra.id}
+                  href={`/cliente/obras/${obra.id}`}
+                  className="block rounded-xl border border-neutral-200 bg-white p-5 hover:border-neutral-300 hover:shadow-sm cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-sm font-semibold text-neutral-900 truncate">
+                          {obra.nombre}
+                        </h3>
+                        <ObraEstadoBadge estado={estado} />
+                      </div>
+                      <p className="mt-0.5 text-xs text-neutral-400">{obra.ubicacion ?? '—'}</p>
                     </div>
-                    <p className="mt-0.5 text-xs text-neutral-400">{obra.ubicacion}</p>
+                    <div className="shrink-0">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 text-neutral-400 mt-1"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        aria-hidden="true"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
                   </div>
-                  <div className="shrink-0 text-right">
-                    <p className="text-xs text-neutral-500">Saldo</p>
-                    <p className="text-sm font-semibold text-amber-700 tabular-nums">
-                      {formatCurrency(saldo)}
-                    </p>
-                  </div>
-                </div>
 
-                {/* Barra de avance */}
-                <div className="mt-4 space-y-1">
-                  <div className="flex items-center justify-between text-xs text-neutral-500">
-                    <span>Avance de obra</span>
-                    <span className="font-medium text-neutral-900">{obra.avance_pct}%</span>
-                  </div>
-                  <div
-                    className="h-2 w-full overflow-hidden rounded-full bg-neutral-100"
-                    role="progressbar"
-                    aria-valuenow={obra.avance_pct}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label={`Avance de obra: ${obra.avance_pct}%`}
-                  >
+                  {/* Barra de avance */}
+                  <div className="mt-4 space-y-1">
+                    <div className="flex items-center justify-between text-xs text-neutral-500">
+                      <span>Avance de obra</span>
+                      <span className="font-medium text-neutral-900">{obra.avance}%</span>
+                    </div>
                     <div
-                      className="h-full rounded-full bg-green-500 transition-all duration-500 motion-reduce:transition-none"
-                      style={{ width: `${obra.avance_pct}%` }}
-                    />
+                      className="h-2 w-full overflow-hidden rounded-full bg-neutral-100"
+                      role="progressbar"
+                      aria-valuenow={obra.avance}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-label={`Avance de obra: ${obra.avance}%`}
+                    >
+                      <div
+                        className="h-full rounded-full bg-green-500 transition-all duration-500 motion-reduce:transition-none"
+                        style={{ width: `${obra.avance}%` }}
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <div className="mt-2 flex items-center justify-between text-xs text-neutral-400">
-                  <span>Inicio: {formatDate(obra.fecha_inicio)}</span>
-                  <span className="text-neutral-500">
-                    Pagado: <span className="tabular-nums font-medium text-neutral-700">{formatCurrency(obra.pagado)}</span>
-                    {' / '}
-                    <span className="tabular-nums">{formatCurrency(obra.presupuesto_total)}</span>
-                  </span>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+                  <div className="mt-2 flex items-center justify-between text-xs text-neutral-400">
+                    <span>Inicio: {formatDate(obra.fecha_inicio)}</span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* ── Cotizaciones pendientes ──────────────────────────────────────── */}
@@ -158,7 +208,6 @@ export default function ClienteResumenPage() {
                     </p>
                   </div>
                   <div className="shrink-0">
-                    {/* Flecha derecha */}
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       className="h-4 w-4 text-neutral-400"
@@ -181,7 +230,7 @@ export default function ClienteResumenPage() {
       {/* ── Accesos rápidos ──────────────────────────────────────────────── */}
       <section aria-labelledby="accesos-rapidos-heading">
         <h2 id="accesos-rapidos-heading" className="sr-only">
-          Accesos rápidos
+          Accesos rapidos
         </h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Link
@@ -208,7 +257,7 @@ export default function ClienteResumenPage() {
             <div>
               <p className="text-sm font-semibold text-neutral-900">Mis cotizaciones</p>
               <p className="text-xs text-neutral-500">
-                {MOCK_COTIZACIONES.length} cotizacion{MOCK_COTIZACIONES.length !== 1 ? 'es' : ''}
+                {cotizaciones.length} cotizacion{cotizaciones.length !== 1 ? 'es' : ''}
               </p>
             </div>
           </Link>
@@ -237,7 +286,7 @@ export default function ClienteResumenPage() {
             <div>
               <p className="text-sm font-semibold text-neutral-900">Mis obras</p>
               <p className="text-xs text-neutral-500">
-                {MOCK_OBRAS.length} obra{MOCK_OBRAS.length !== 1 ? 's' : ''} activa{MOCK_OBRAS.length !== 1 ? 's' : ''}
+                {obras.length} obra{obras.length !== 1 ? 's' : ''}
               </p>
             </div>
           </Link>
@@ -245,16 +294,4 @@ export default function ClienteResumenPage() {
       </section>
     </div>
   );
-}
-
-// ─── Subcomponente ────────────────────────────────────────────────────────────
-
-function ObraEstadoBadge({ estado }: { estado: string }) {
-  const map: Record<string, 'green' | 'amber' | 'neutral'> = {
-    'En progreso': 'green',
-    'Pausada': 'amber',
-    'Completada': 'neutral',
-  };
-  const tone = map[estado] ?? 'neutral';
-  return <Badge tone={tone}>{estado}</Badge>;
 }

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Badge, Button } from '@/components/ui';
 import type { BadgeTone } from '@/components/ui';
 import { formatDate } from '@/lib/data/format';
-import type { Cotizacion, EstadoCotizacion } from '@/lib/data/types';
+import type { Cliente, Cotizacion, EstadoCotizacion } from '@/lib/data/types';
 import { CotizacionForm } from './cotizacion-form';
 import { eliminarCotizacionAction } from './actions';
 
@@ -25,7 +25,13 @@ const ESTADO_TONE: Record<EstadoCotizacion, BadgeTone> = {
   CONVERTIDA: 'purple',
 };
 
-export function CotizacionHeader({ cotizacion }: { cotizacion: Cotizacion }) {
+export function CotizacionHeader({
+  cotizacion,
+  clientes,
+}: {
+  cotizacion: Cotizacion;
+  clientes: Cliente[];
+}) {
   const router = useRouter();
   const [editando, setEditando] = useState(false);
   const [confirmandoBorrado, setConfirmandoBorrado] = useState(false);
@@ -48,7 +54,12 @@ export function CotizacionHeader({ cotizacion }: { cotizacion: Cotizacion }) {
     return (
       <section className="rounded-xl border border-neutral-200 bg-white p-5">
         <h2 className="mb-4 text-sm font-medium text-neutral-500">Editar cotización</h2>
-        <CotizacionForm mode="editar" cotizacion={cotizacion} onCancelar={() => setEditando(false)} />
+        <CotizacionForm
+          mode="editar"
+          cotizacion={cotizacion}
+          clientes={clientes}
+          onCancelar={() => setEditando(false)}
+        />
       </section>
     );
   }

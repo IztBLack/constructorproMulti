@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Field, Input } from '@/components/ui';
-import type { Obra } from '@/lib/data/types';
+import type { Cliente, Obra } from '@/lib/data/types';
 import { actualizarObraAction } from './actions';
 
 function msToInputDate(ms: number | null): string {
@@ -14,11 +14,16 @@ function msToInputDate(ms: number | null): string {
   return `${y}-${m}-${day}`;
 }
 
+const SELECT_CLASSES =
+  'w-full cursor-pointer rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-900/10 disabled:cursor-not-allowed disabled:opacity-50';
+
 export default function EditarObraForm({
   obra,
+  clientes,
   onCancelar,
 }: {
   obra: Obra;
+  clientes: Cliente[];
   onCancelar: () => void;
 }) {
   const router = useRouter();
@@ -44,18 +49,50 @@ export default function EditarObraForm({
         <Field label="Nombre de la obra *" className="sm:col-span-2">
           <Input name="nombre" required defaultValue={obra.nombre} disabled={pending} />
         </Field>
-        <Field label="Cliente" hint="Opcional">
+
+        <Field label="Cliente vinculado" hint="Opcional — selecciona un cliente del portal">
+          <select
+            name="cliente_id"
+            defaultValue={obra.cliente_id ?? ''}
+            disabled={pending}
+            className={SELECT_CLASSES}
+          >
+            <option value="">Sin cliente</option>
+            {clientes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre || c.email || c.id}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Nombre de cliente (texto libre)" hint="Opcional">
           <Input name="cliente" defaultValue={obra.cliente ?? ''} disabled={pending} />
         </Field>
+
         <Field label="Ubicación" hint="Opcional">
           <Input name="ubicacion" defaultValue={obra.ubicacion ?? ''} disabled={pending} />
         </Field>
+
         <Field label="Fecha de inicio">
           <Input
             type="date"
             name="fecha_inicio"
             defaultValue={msToInputDate(obra.fecha_inicio)}
             disabled={pending}
+          />
+        </Field>
+
+        <Field label="Avance (%)" hint="0 a 100">
+          <Input
+            type="number"
+            name="avance"
+            min={0}
+            max={100}
+            step={1}
+            defaultValue={obra.avance ?? 0}
+            disabled={pending}
+            className="tabular-nums"
           />
         </Field>
       </div>

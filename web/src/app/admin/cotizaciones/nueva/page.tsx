@@ -1,8 +1,13 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui';
+import { listClientes } from '@/lib/data/clientes';
 import { CotizacionForm } from '../cotizacion-form';
 
-export default function NuevaCotizacionPage() {
+export const dynamic = 'force-dynamic';
+
+export default async function NuevaCotizacionPage() {
+  const { data: clientes } = await listClientes();
+
   return (
     <div className="space-y-6">
       <div>
@@ -19,7 +24,7 @@ export default function NuevaCotizacionPage() {
       </header>
 
       <Card>
-        <CotizacionForm mode="crear" />
+        <CotizacionForm mode="crear" clientes={clientes} />
       </Card>
     </div>
   );
