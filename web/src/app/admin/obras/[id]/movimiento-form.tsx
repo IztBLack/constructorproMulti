@@ -6,8 +6,19 @@ import { Button, Field, Input } from '@/components/ui';
 import type { Movimiento, TipoMovimiento } from '@/lib/data/types';
 import { actualizarMovimientoAction, crearMovimientoAction } from './actions';
 
-const CATEGORIAS_ENTRADA = ['anticipo', 'pago', 'otros'];
-const CATEGORIAS_SALIDA = ['material', 'nómina', 'renta', 'otros'];
+const CONCEPTOS_FRECUENTES = [
+  'Anticipo construcción',
+  'Anticipo alberca',
+  'Materiales',
+  'Planos',
+  'Comisión',
+  'Fontanero',
+  'Eléctrico',
+  'Acero',
+  'Casetones',
+  'Demolición',
+];
+
 const METODOS_PAGO = ['EFECTIVO', 'TRANSFERENCIA', 'CHEQUE', 'OTRO'];
 
 function toDateInputValue(ms: number): string {
@@ -42,8 +53,6 @@ export default function MovimientoForm({ obraId, mode, movimiento, onDone, onCan
   const [error, setError] = useState<string | null>(null);
   const [fechaDefault] = useState(() => toDateInputValue(movimiento?.fecha ?? Date.now()));
 
-  const categorias = tipo === 'ENTRADA' ? CATEGORIAS_ENTRADA : CATEGORIAS_SALIDA;
-
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
@@ -73,7 +82,7 @@ export default function MovimientoForm({ obraId, mode, movimiento, onDone, onCan
           name="tipo"
           value={tipo}
           onChange={(e) => setTipo(e.target.value as TipoMovimiento)}
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 outline-none focus:border-neutral-900"
+          className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 cursor-pointer"
         >
           <option value="SALIDA">Salida</option>
           <option value="ENTRADA">Entrada</option>
@@ -84,25 +93,43 @@ export default function MovimientoForm({ obraId, mode, movimiento, onDone, onCan
         <Input type="date" name="fecha" required defaultValue={fechaDefault} />
       </Field>
 
-      <Field label="Categoría" hint="Elige una sugerida o escribe la tuya.">
+      <Field label="Concepto / Categoría *" hint="Elige una sugerida o escribe la tuya.">
         <input
-          name="categoria"
-          list="categorias-movimiento"
-          defaultValue={movimiento?.categoria ?? ''}
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 outline-none focus:border-neutral-900"
+          name="concepto"
+          list="conceptos-frecuentes"
+          required
+          defaultValue={movimiento?.concepto ?? ''}
+          placeholder="Ej. Anticipo construcción"
+          className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-neutral-900"
         />
-        <datalist id="categorias-movimiento">
-          {categorias.map((c) => (
+        <datalist id="conceptos-frecuentes">
+          {CONCEPTOS_FRECUENTES.map((c) => (
             <option key={c} value={c} />
           ))}
         </datalist>
       </Field>
 
-      <Field label="Método de pago">
+      <Field label="Categoría" hint="Clasificación interna opcional.">
+        <Input
+          name="categoria"
+          defaultValue={movimiento?.categoria ?? ''}
+          placeholder="Ej. materiales"
+        />
+      </Field>
+
+      <Field label="Nombre" hint="A quién se paga o de quién se recibe.">
+        <Input
+          name="nombre"
+          defaultValue={movimiento?.nombre ?? ''}
+          placeholder="Ej. Juan García"
+        />
+      </Field>
+
+      <Field label="Canal de pago">
         <select
           name="metodo_pago"
           defaultValue={movimiento?.metodo_pago ?? 'EFECTIVO'}
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 outline-none focus:border-neutral-900"
+          className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 cursor-pointer"
         >
           {METODOS_PAGO.map((m) => (
             <option key={m} value={m}>
@@ -110,10 +137,6 @@ export default function MovimientoForm({ obraId, mode, movimiento, onDone, onCan
             </option>
           ))}
         </select>
-      </Field>
-
-      <Field label="Concepto *" className="sm:col-span-2">
-        <Input name="concepto" required defaultValue={movimiento?.concepto ?? ''} placeholder="Ej. Compra de cemento" />
       </Field>
 
       <Field label="Monto (MXN) *">
@@ -128,7 +151,7 @@ export default function MovimientoForm({ obraId, mode, movimiento, onDone, onCan
         />
       </Field>
 
-      <Field label="Referencia" hint="Opcional. Folio, cheque, etc.">
+      <Field label="Observaciones" hint="Opcional. Folio, cheque, nota.">
         <Input name="referencia" defaultValue={movimiento?.referencia ?? ''} />
       </Field>
 

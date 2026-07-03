@@ -141,11 +141,26 @@ export interface Movimiento {
   monto: number;
   metodo_pago: string | null;
   referencia: string | null;
+  nombre: string | null;
   cotizacion_id: string | null;
   partida_id: string | null;
   created_at: number;
   updated_at: number;
   server_updated_at: number | null;
+  deleted_at: number | null;
+}
+
+export interface PartidaPresupuesto {
+  id: string;
+  obra_id: string;
+  empresa_id: string;
+  concepto: string;
+  unidad: string;
+  cantidad: number;
+  precio_unitario: number;
+  orden: number;
+  created_at: number;
+  updated_at: number;
   deleted_at: number | null;
 }
 

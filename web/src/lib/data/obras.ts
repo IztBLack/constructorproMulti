@@ -107,6 +107,7 @@ export interface MovimientoInput {
   monto: number;
   metodoPago: string;
   referencia: string;
+  nombre: string;
 }
 
 export async function crearMovimiento(
@@ -127,6 +128,7 @@ export async function crearMovimiento(
     monto: input.monto,
     metodo_pago: input.metodoPago,
     referencia: input.referencia,
+    nombre: input.nombre,
     cotizacion_id: null,
     partida_id: null,
     created_at: now,
@@ -154,6 +156,7 @@ export async function actualizarMovimiento(
       monto: input.monto,
       metodo_pago: input.metodoPago,
       referencia: input.referencia,
+      nombre: input.nombre,
       updated_at: now,
     })
     .eq('id', id);

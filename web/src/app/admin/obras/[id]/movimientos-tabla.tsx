@@ -37,7 +37,7 @@ export default function MovimientosTabla({
     return (
       <EmptyState
         title="Aún no hay movimientos registrados en esta obra."
-        description="Usa el botón “Registrar movimiento” para capturar la primera entrada o salida."
+        description="Usa el botón &quot;Registrar movimiento&quot; para capturar la primera entrada o salida."
       />
     );
   }
@@ -51,12 +51,12 @@ export default function MovimientosTabla({
       <TableContainer>
         <THead>
           <Th>Fecha</Th>
-          <Th>Tipo</Th>
-          <Th>Categoría</Th>
           <Th>Concepto</Th>
-          <Th>Método</Th>
-          <Th>Referencia</Th>
-          <Th className="text-right">Monto</Th>
+          <Th>Nombre</Th>
+          <Th>Canal</Th>
+          <Th>Tipo</Th>
+          <Th>Observaciones</Th>
+          <Th className="text-right">Cantidad</Th>
           <Th className="text-right">Acciones</Th>
         </THead>
         <TBody>
@@ -75,18 +75,22 @@ export default function MovimientosTabla({
               </tr>
             ) : (
               <Tr key={m.id}>
-                <Td>{formatDate(m.fecha)}</Td>
+                <Td className="whitespace-nowrap">{formatDate(m.fecha)}</Td>
+                <Td className="max-w-[180px] truncate">{m.concepto || '—'}</Td>
+                <Td>{m.nombre || '—'}</Td>
+                <Td>{m.metodo_pago || '—'}</Td>
                 <Td>
                   <Badge tone={m.tipo === 'ENTRADA' ? 'green' : 'red'}>
                     {m.tipo === 'ENTRADA' ? 'Entrada' : 'Salida'}
                   </Badge>
                 </Td>
-                <Td>{m.categoria || '—'}</Td>
-                <Td>{m.concepto || '—'}</Td>
-                <Td>{m.metodo_pago || '—'}</Td>
-                <Td>{m.referencia || '—'}</Td>
-                <Td className="text-right font-medium tabular-nums text-neutral-900">
-                  {m.tipo === 'SALIDA' ? '-' : ''}
+                <Td className="max-w-[160px] truncate text-neutral-400">{m.referencia || '—'}</Td>
+                <Td
+                  className={`text-right font-semibold tabular-nums ${
+                    m.tipo === 'ENTRADA' ? 'text-green-700' : 'text-red-600'
+                  }`}
+                >
+                  {m.tipo === 'SALIDA' ? '-' : '+'}
                   {formatCurrency(m.monto)}
                 </Td>
                 <Td className="text-right">
