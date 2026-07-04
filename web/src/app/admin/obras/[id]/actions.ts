@@ -15,6 +15,7 @@ import {
   eliminarPartidaPresupuesto,
 } from '@/lib/data/presupuesto-obra';
 import type { TipoMovimiento } from '@/lib/data/types';
+import { fechaInputAMs } from '@/lib/data/tz';
 
 export interface ActionResult {
   ok: boolean;
@@ -36,7 +37,7 @@ export async function actualizarObraAction(
     return { ok: false, error: 'El nombre de la obra es obligatorio.' };
   }
 
-  const fechaInicio = fechaInicioStr ? new Date(fechaInicioStr).getTime() : Date.now();
+  const fechaInicio = fechaInicioStr ? fechaInputAMs(fechaInicioStr) : Date.now();
   if (!Number.isFinite(fechaInicio)) {
     return { ok: false, error: 'La fecha de inicio no es válida.' };
   }
@@ -91,7 +92,7 @@ function parseMovimientoFormData(
     return { error: 'El monto debe ser un número mayor a cero.' };
   }
 
-  const fecha = fechaStr ? new Date(fechaStr).getTime() : Date.now();
+  const fecha = fechaStr ? fechaInputAMs(fechaStr) : Date.now();
   if (!Number.isFinite(fecha)) {
     return { error: 'La fecha no es válida.' };
   }

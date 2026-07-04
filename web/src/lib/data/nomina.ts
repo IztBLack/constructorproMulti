@@ -10,41 +10,34 @@
 
 import { createClient } from '@/lib/supabase/server';
 import type { Asistencia, Colaborador, Destajo, Puesto } from './types';
-
-/** Inicio de la semana (lunes 00:00:00.000) que contiene `fecha`. */
-export function getStartOfWeek(fecha: Date): Date {
-  const d = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
-  const isoWeekday = d.getDay() === 0 ? 7 : d.getDay(); // lunes=1 … domingo=7
-  d.setDate(d.getDate() - (isoWeekday - 1));
-  return d;
-}
-
-/** Fin de semana (domingo 23:59:59.999) a partir del inicio de semana. */
-export function getEndOfWeek(startOfWeek: Date): Date {
-  const start = new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate());
-  const end = new Date(start);
-  end.setDate(end.getDate() + 6);
-  end.setHours(23, 59, 59, 999);
-  return end;
-}
+import { partesTz, medianocheMx, sumarDiasCalendario, DIA_MS } from './tz';
 
 export interface SemanaRango {
   inicioMs: number;
   finMs: number;
 }
 
-/** Calcula el rango lunes→domingo (epoch ms) a partir de cualquier fecha ancla. */
+/**
+ * Rango lunes 00:00:00.000 → domingo 23:59:59.999 (epoch ms) de la semana que
+ * contiene el instante `ancla`, calculado en zona **México** (no en la zona del
+ * servidor). Así coincide con las fechas de asistencia que guarda el móvil.
+ */
 export function semanaDe(ancla: Date): SemanaRango {
-  const inicio = getStartOfWeek(ancla);
-  const fin = getEndOfWeek(inicio);
-  return { inicioMs: inicio.getTime(), finMs: fin.getTime() };
+  const p = partesTz(ancla.getTime());
+  // Retrocede al lunes en calendario (weekday: 1=lunes … 7=domingo).
+  const lunes = sumarDiasCalendario(p.year, p.month, p.day, -(p.weekday - 1));
+  const inicioMs = medianocheMx(lunes.y, lunes.m0, lunes.d);
+  const domingo = sumarDiasCalendario(lunes.y, lunes.m0, lunes.d, 6);
+  const finMs = medianocheMx(domingo.y, domingo.m0, domingo.d) + DIA_MS - 1;
+  return { inicioMs, finMs };
 }
 
 /** Desplaza la semana `dir` semanas (±1) a partir del inicio de semana actual. */
 export function navegarSemana(inicioActualMs: number, dir: number): SemanaRango {
-  const inicio = new Date(inicioActualMs);
-  inicio.setDate(inicio.getDate() + dir * 7);
-  return semanaDe(inicio);
+  const p = partesTz(inicioActualMs);
+  const destino = sumarDiasCalendario(p.year, p.month, p.day, dir * 7);
+  // Ancla al mediodía de México de ese día para caer sin ambigüedad en la semana.
+  return semanaDe(new Date(medianocheMx(destino.y, destino.m0, destino.d) + 12 * 3600 * 1000));
 }
 
 export interface NominaItem {

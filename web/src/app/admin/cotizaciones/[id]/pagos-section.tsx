@@ -19,18 +19,13 @@ import {
   Tr,
 } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/lib/data/format';
+import { msAFechaInput } from '@/lib/data/tz';
 import type { Pago } from '@/lib/data/pagos';
 import { actualizarPagoAction, crearPagoAction, eliminarPagoAction } from './pagos-actions';
 
 const METODOS_PAGO = ['EFECTIVO', 'TRANSFERENCIA', 'CHEQUE', 'TARJETA', 'OTRO'];
 
-function toDateInputValue(ms: number): string {
-  const d = new Date(ms);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-}
+const toDateInputValue = msAFechaInput; // 'YYYY-MM-DD' en zona México
 
 // ─── Formulario de pago (crear / editar) ───────────────────────────────────
 

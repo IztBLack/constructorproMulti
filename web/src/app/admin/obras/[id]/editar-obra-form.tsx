@@ -4,14 +4,11 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Field, Input } from '@/components/ui';
 import type { Cliente, Obra } from '@/lib/data/types';
+import { msAFechaInput } from '@/lib/data/tz';
 import { actualizarObraAction } from './actions';
 
 function msToInputDate(ms: number | null): string {
-  const d = new Date(ms ?? Date.now());
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  return msAFechaInput(ms ?? Date.now());
 }
 
 const SELECT_CLASSES =

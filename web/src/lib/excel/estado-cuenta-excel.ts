@@ -7,6 +7,7 @@
 
 import ExcelJS from 'exceljs';
 import type { Movimiento, PartidaPresupuesto, Obra } from '@/lib/data/types';
+import { medianocheMx } from '@/lib/data/tz';
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -65,24 +66,26 @@ function toStr(val: ExcelJS.CellValue): string {
   return String(val).trim();
 }
 
-/** Convierte valor de celda de fecha a epoch ms. Acepta seriales, Date y strings. */
+/**
+ * Convierte valor de celda de fecha a epoch ms, normalizado a **medianoche de
+ * México** de esa fecha de calendario (para que coincida con la convención del
+ * resto de la app y se muestre en el día correcto). Acepta seriales, Date y strings.
+ */
 function toDateMs(val: ExcelJS.CellValue): number | undefined {
+  let base: number | undefined;
   if (val === null || val === undefined) return undefined;
-  if (val instanceof Date) return val.getTime();
-  if (typeof val === 'number') {
-    if (val > 25569 && val < 73049) {
-      // rango plausible: 1970-2100
-      return excelSerialToMs(val);
-    }
-    // podría ser epoch ms directamente
-    if (val > 1000000000000) return val;
-    return undefined;
-  }
-  if (typeof val === 'string') {
+  if (val instanceof Date) base = val.getTime();
+  else if (typeof val === 'number') {
+    if (val > 25569 && val < 73049) base = excelSerialToMs(val); // serial 1970-2100
+    else if (val > 1000000000000) base = val; // ya es epoch ms
+  } else if (typeof val === 'string') {
     const d = new Date(val);
-    if (!isNaN(d.getTime())) return d.getTime();
+    if (!isNaN(d.getTime())) base = d.getTime();
   }
-  return undefined;
+  if (base === undefined) return undefined;
+  // Re-ancla a medianoche de México usando la fecha de calendario (UTC) del valor.
+  const u = new Date(base);
+  return medianocheMx(u.getUTCFullYear(), u.getUTCMonth(), u.getUTCDate());
 }
 
 /** Normaliza TIPO de movimiento: acepta variantes en español y mayúsculas/minúsculas. */

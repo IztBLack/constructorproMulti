@@ -8,6 +8,7 @@ import {
   type ActualizarPagoInput,
   type NuevoPagoInput,
 } from '@/lib/data/pagos';
+import { fechaInputAMs } from '@/lib/data/tz';
 
 export interface ActionResult {
   ok: boolean;
@@ -39,7 +40,7 @@ function parsePagoFormData(
     return { error: 'El monto debe ser un número mayor a cero.' };
   }
 
-  const fecha = fechaStr ? new Date(fechaStr).getTime() : Date.now();
+  const fecha = fechaStr ? fechaInputAMs(fechaStr) : Date.now();
   if (!Number.isFinite(fecha)) {
     return { error: 'La fecha no es válida.' };
   }

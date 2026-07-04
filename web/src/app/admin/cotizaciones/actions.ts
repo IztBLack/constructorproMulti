@@ -13,14 +13,14 @@ import {
   eliminarSeccion,
 } from '@/lib/data/cotizaciones';
 import type { EstadoCotizacion } from '@/lib/data/types';
+import { fechaInputAMs } from '@/lib/data/tz';
 
 export interface ActionResult {
   error: string | null;
 }
 
 function parseFecha(value: string): number {
-  const ms = new Date(value).getTime();
-  return Number.isNaN(ms) ? Date.now() : ms;
+  return fechaInputAMs(value);
 }
 
 function leerCotizacionDeFormData(formData: FormData) {

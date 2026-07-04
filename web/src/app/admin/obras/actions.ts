@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getEmpresaUsuario } from '@/lib/data/empresa';
+import { fechaInputAMs } from '@/lib/data/tz';
 
 export interface ActionResult {
   ok: boolean;
@@ -27,7 +28,7 @@ export async function crearObra(formData: FormData): Promise<ActionResult> {
   }
 
   const now = Date.now();
-  const fechaInicio = fechaInicioStr ? new Date(fechaInicioStr).getTime() : now;
+  const fechaInicio = fechaInicioStr ? fechaInputAMs(fechaInicioStr) : now;
 
   const supabase = await createClient();
   const { error } = await supabase.from('obras').insert({

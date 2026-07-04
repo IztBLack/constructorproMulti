@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Field, Input } from '@/components/ui';
 import type { Cliente, Cotizacion, EstadoCotizacion } from '@/lib/data/types';
+import { msAFechaInput } from '@/lib/data/tz';
 import { crearCotizacionAction, actualizarCotizacionAction } from './actions';
 
 const ESTADOS: EstadoCotizacion[] = ['BORRADOR', 'ENVIADA', 'ACEPTADA', 'RECHAZADA', 'CONVERTIDA'];
@@ -20,11 +21,7 @@ const SELECT_CLASSES =
   'w-full cursor-pointer rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-900/10 disabled:cursor-not-allowed disabled:opacity-50';
 
 function msToInputDate(ms: number): string {
-  const d = new Date(ms);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  return msAFechaInput(ms);
 }
 
 type Props =

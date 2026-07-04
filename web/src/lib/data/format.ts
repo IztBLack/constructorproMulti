@@ -5,13 +5,17 @@ const currencyFormatter = new Intl.NumberFormat('es-MX', {
   currency: 'MXN',
 });
 
+// Zona fija México: en producción el server corre en UTC; sin `timeZone` las
+// fechas se mostrarían en UTC y podrían verse un día corridas.
 const dateFormatter = new Intl.DateTimeFormat('es-MX', {
+  timeZone: 'America/Mexico_City',
   year: 'numeric',
   month: 'short',
   day: 'numeric',
 });
 
 const dateTimeFormatter = new Intl.DateTimeFormat('es-MX', {
+  timeZone: 'America/Mexico_City',
   year: 'numeric',
   month: 'short',
   day: 'numeric',

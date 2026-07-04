@@ -4,6 +4,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import type { Movimiento, Obra } from './types';
+import { medianocheMx } from './tz';
 
 export interface PeriodoMensual {
   /** 1-12 */
@@ -33,11 +34,11 @@ export function nombreMes(mes: number): string {
   return MESES[mes] ?? '';
 }
 
-/** Construye el periodo mensual [inicio, fin) en epoch ms para mes/año dados. */
+/** Construye el periodo mensual [inicio, fin) en epoch ms (zona México) para mes/año dados. */
 export function periodoMensual(anio: number, mes: number): PeriodoMensual {
-  const inicio = new Date(anio, mes - 1, 1);
-  const fin = new Date(anio, mes, 1);
-  return { mes, anio, inicioMs: inicio.getTime(), finMs: fin.getTime() };
+  const inicioMs = medianocheMx(anio, mes - 1, 1);
+  const finMs = medianocheMx(mes === 12 ? anio + 1 : anio, mes === 12 ? 0 : mes, 1);
+  return { mes, anio, inicioMs, finMs };
 }
 
 /** Construye el periodo anual [inicio, fin) en epoch ms para el año dado. */
@@ -48,9 +49,7 @@ export interface PeriodoAnual {
 }
 
 export function periodoAnual(anio: number): PeriodoAnual {
-  const inicio = new Date(anio, 0, 1);
-  const fin = new Date(anio + 1, 0, 1);
-  return { anio, inicioMs: inicio.getTime(), finMs: fin.getTime() };
+  return { anio, inicioMs: medianocheMx(anio, 0, 1), finMs: medianocheMx(anio + 1, 0, 1) };
 }
 
 /** Desplaza un periodo mensual `dir` meses (±1). */

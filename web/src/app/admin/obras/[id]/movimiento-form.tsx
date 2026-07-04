@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Field, Input } from '@/components/ui';
 import type { Movimiento, TipoMovimiento } from '@/lib/data/types';
+import { msAFechaInput } from '@/lib/data/tz';
 import { actualizarMovimientoAction, crearMovimientoAction } from './actions';
 
 const CONCEPTOS_FRECUENTES = [
@@ -21,13 +22,7 @@ const CONCEPTOS_FRECUENTES = [
 
 const METODOS_PAGO = ['EFECTIVO', 'TRANSFERENCIA', 'CHEQUE', 'OTRO'];
 
-function toDateInputValue(ms: number): string {
-  const d = new Date(ms);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-}
+const toDateInputValue = msAFechaInput; // 'YYYY-MM-DD' en zona México
 
 type MovimientoFormProps =
   | {

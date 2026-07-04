@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Card, CardTitle, EmptyState, LinkButton, PageHeader } from '@/components/ui';
 import { getObra } from '@/lib/data/obras';
 import { listColaboradoresActivosObra, listAsistenciasObraRango, navegarSemana, semanaDe } from '@/lib/data/nomina';
+import { partesTz, medianocheMx, sumarDiasCalendario } from '@/lib/data/tz';
 import { formatDate } from '@/lib/data/format';
 import CuadriculaAsistencia, { type DiaSemana } from './cuadricula-asistencia';
 
@@ -43,31 +44,29 @@ export default async function AsistenciaObraPage({
 
   const error = colabError ?? asisError;
 
-  // Los 7 días de la semana (lunes→domingo). `ms` = medianoche local de cada
-  // día y es la clave canónica para leer/escribir asistencias (igual que el
-  // móvil, que normaliza la fecha al inicio del día en hora local).
-  const inicioSemana = new Date(inicioMs);
-  const diasDate = Array.from({ length: 7 }, (_, i) => {
-    return new Date(inicioSemana.getFullYear(), inicioSemana.getMonth(), inicioSemana.getDate() + i);
-  });
-  const dias: DiaSemana[] = diasDate.map((d, i) => ({
-    ms: d.getTime(),
+  // Los 7 días de la semana (lunes→domingo). `ms` = medianoche de México de
+  // cada día (clave canónica para leer/escribir asistencias, igual que el móvil
+  // que normaliza al inicio del día en hora de México). Independiente de la zona
+  // del servidor.
+  const pLunes = partesTz(inicioMs);
+  const diasCal = Array.from({ length: 7 }, (_, i) =>
+    sumarDiasCalendario(pLunes.year, pLunes.month, pLunes.day, i),
+  );
+  const dias: DiaSemana[] = diasCal.map((c, i) => ({
+    ms: medianocheMx(c.y, c.m0, c.d),
     abbr: DIA_ABBR[i],
-    dia: d.getDate(),
-    mes: d.getMonth() + 1,
+    dia: c.d,
+    mes: c.m0 + 1,
   }));
 
   // Asistencias existentes → fracción por celda. Se asocia cada registro al día
-  // de la semana por fecha de calendario (robusto si el ms guardado no es
-  // exactamente medianoche), pero la clave usa el `ms` canónico del día.
+  // por su fecha de calendario en México (robusto si el ms guardado no es
+  // exactamente medianoche), con la clave = `ms` canónico del día.
   const fraccionesIniciales: Record<string, number> = {};
   for (const a of asistencias) {
-    const ad = new Date(a.fecha);
-    const idx = diasDate.findIndex(
-      (d) =>
-        d.getFullYear() === ad.getFullYear() &&
-        d.getMonth() === ad.getMonth() &&
-        d.getDate() === ad.getDate(),
+    const pa = partesTz(a.fecha);
+    const idx = diasCal.findIndex(
+      (c) => c.y === pa.year && c.m0 === pa.month && c.d === pa.day,
     );
     if (idx >= 0) {
       const key = `${a.colaborador_id}|${dias[idx].ms}`;
