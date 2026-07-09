@@ -3,6 +3,9 @@
 
 export type EstadoCotizacion = 'BORRADOR' | 'ENVIADA' | 'ACEPTADA' | 'RECHAZADA' | 'CONVERTIDA';
 export type TipoPago = 'DIA' | 'DESTAJO';
+/// Esquema con el que el usuario captura el sueldo base del colaborador.
+/// El salario diario se deriva de aquí (ver `lib/data/salario.ts`).
+export type PeriodoPago = 'SEMANAL' | 'QUINCENAL' | 'MENSUAL';
 export type TipoMovimiento = 'ENTRADA' | 'SALIDA';
 export type Rol = 'admin' | 'oficina' | 'cliente' | string;
 
@@ -93,7 +96,15 @@ export interface Colaborador {
   contacto_telefono: string | null;
   contacto_parentesco: string | null;
   activo: boolean;
+  /// Salario diario (MXN/día) que consume la nómina. **Derivado**: se recalcula
+  /// desde `salario_periodo` + `periodo_pago` + `dias_semana`; no se edita a mano.
   salario_personalizado: number | null;
+  /// Esquema de pago del sueldo base capturado por el usuario.
+  periodo_pago: PeriodoPago;
+  /// Monto del sueldo tal cual lo captura el usuario, para el periodo elegido.
+  salario_periodo: number | null;
+  /// Días trabajados por semana (5, 6 o 7) usados como divisor a diario.
+  dias_semana: number;
   created_at: number;
   updated_at: number;
   server_updated_at: number | null;

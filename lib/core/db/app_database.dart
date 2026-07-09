@@ -36,7 +36,7 @@ class AppDatabase extends _$AppDatabase {
   static const _uuid = Uuid();
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -109,6 +109,18 @@ class AppDatabase extends _$AppDatabase {
           // la app, para que el sync propague también las EDICIONES (no solo
           // altas/borrados).
           if (from < 3) {
+            await _instalarTriggersSync();
+          }
+          // v3 → v4: sueldo por periodo en colaboradores (espeja la web). El
+          // diario (salario_personalizado) pasa a DERIVARSE de estos campos.
+          // Columnas con default → addColumn sin backfill; las filas previas
+          // quedan MENSUAL / 6 días / salario_periodo NULL y conservan su
+          // salario_personalizado hasta que se reediten.
+          if (from < 4) {
+            await m.addColumn(colaboradores, colaboradores.periodoPago);
+            await m.addColumn(colaboradores, colaboradores.salarioPeriodo);
+            await m.addColumn(colaboradores, colaboradores.diasSemana);
+            // Recrea los triggers para que incluyan las columnas nuevas.
             await _instalarTriggersSync();
           }
         },

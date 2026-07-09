@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
+import '../../domain/logic/salario_periodo.dart';
 import '../../data/providers.dart';
 import '../common/async_action_button.dart';
 import '../common/confirm_dialog.dart';
@@ -306,8 +307,8 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
 
   Future<void> _showDialog(Colaborador? colaborador, List<Puesto> puestos) async {
     final nombreCtrl = TextEditingController(text: colaborador?.nombre ?? '');
-    final salarioCtrl = TextEditingController(
-        text: colaborador?.salarioPersonalizado?.toString() ?? '');
+    final montoCtrl = TextEditingController(
+        text: colaborador?.salarioPeriodo?.toString() ?? '');
     final telCtrl = TextEditingController(text: colaborador?.telefono ?? '');
     final emNombreCtrl = TextEditingController(text: colaborador?.contactoNombre ?? '');
     final emTelCtrl = TextEditingController(text: colaborador?.contactoTelefono ?? '');
@@ -315,6 +316,8 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
     String? puestoId = colaborador?.puestoId ??
         (puestos.isNotEmpty ? puestos.first.id : null);
     String tipoPago = colaborador?.tipoPago ?? 'DIA';
+    PeriodoPago periodo = periodoPagoFromCode(colaborador?.periodoPago);
+    int diasSemana = colaborador?.diasSemana ?? 6;
     bool activo = colaborador?.activo ?? true;
     final formKey = GlobalKey<FormState>();
 
@@ -357,14 +360,55 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
                     onChanged: (v) => setLocal(() => tipoPago = v ?? 'DIA'),
                   ),
                   const SizedBox(height: 8),
-                  TextFormField(
-                    controller: salarioCtrl,
+                  DropdownButtonFormField<PeriodoPago>(
+                    initialValue: periodo,
+                    decoration: const InputDecoration(labelText: 'Esquema de pago'),
+                    items: PeriodoPago.values
+                        .map((p) =>
+                            DropdownMenuItem(value: p, child: Text(p.label)))
+                        .toList(),
+                    onChanged: (v) =>
+                        setLocal(() => periodo = v ?? PeriodoPago.mensual),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<int>(
+                    initialValue: diasSemana,
                     decoration: const InputDecoration(
-                      labelText: 'Salario personalizado (opcional)',
+                        labelText: 'Días de trabajo por semana'),
+                    items: diasSemanaOpciones
+                        .map((d) =>
+                            DropdownMenuItem(value: d, child: Text('$d días')))
+                        .toList(),
+                    onChanged: (v) => setLocal(() => diasSemana = v ?? 6),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: montoCtrl,
+                    decoration: InputDecoration(
+                      labelText: '${periodo.sueldoLabel} (opcional)',
                       helperText: 'Si se deja vacío, usa el del puesto',
                     ),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    onChanged: (_) => setLocal(() {}),
                   ),
+                  const SizedBox(height: 8),
+                  Builder(builder: (_) {
+                    final diario = salarioDiarioDesdePeriodo(
+                        double.tryParse(montoCtrl.text.trim()),
+                        periodo,
+                        diasSemana);
+                    return Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        diario != null
+                            ? 'Salario diario (calculado): ${Fmt.money(diario)} / día'
+                            : 'Salario diario (calculado): —',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 8),
                   TextFormField(
                     controller: telCtrl,
                     decoration: const InputDecoration(labelText: 'Teléfono'),
@@ -404,15 +448,22 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
             AsyncActionButton(
               onPressed: () async {
                 if (!formKey.currentState!.validate()) return;
-                final salarioText = salarioCtrl.text.trim();
-                final salario = salarioText.isEmpty ? null : double.tryParse(salarioText);
+                final montoText = montoCtrl.text.trim();
+                final montoPeriodo =
+                    montoText.isEmpty ? null : double.tryParse(montoText);
+                // El diario NO se captura: se deriva del sueldo del periodo.
+                final salarioDiario = salarioDiarioDesdePeriodo(
+                    montoPeriodo, periodo, diasSemana);
                 await ref.read(colaboradorRepositoryProvider).upsert(
                       ColaboradoresCompanion(
                         id: Value(colaborador?.id ?? _uuid.v4()),
                         nombre: Value(nombreCtrl.text.trim()),
                         puestoId: Value(puestoId!),
                         tipoPago: Value(tipoPago),
-                        salarioPersonalizado: Value(salario),
+                        salarioPersonalizado: Value(salarioDiario),
+                        periodoPago: Value(periodo.code),
+                        salarioPeriodo: Value(montoPeriodo),
+                        diasSemana: Value(diasSemana),
                         telefono: Value(telCtrl.text.trim()),
                         contactoNombre: Value(emNombreCtrl.text.trim()),
                         contactoTelefono: Value(emTelCtrl.text.trim()),

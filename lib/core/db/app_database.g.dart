@@ -1596,6 +1596,41 @@ class $ColaboradoresTable extends Colaboradores
         type: DriftSqlType.double,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _periodoPagoMeta = const VerificationMeta(
+    'periodoPago',
+  );
+  @override
+  late final GeneratedColumn<String> periodoPago = GeneratedColumn<String>(
+    'periodo_pago',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('MENSUAL'),
+  );
+  static const VerificationMeta _salarioPeriodoMeta = const VerificationMeta(
+    'salarioPeriodo',
+  );
+  @override
+  late final GeneratedColumn<double> salarioPeriodo = GeneratedColumn<double>(
+    'salario_periodo',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _diasSemanaMeta = const VerificationMeta(
+    'diasSemana',
+  );
+  @override
+  late final GeneratedColumn<int> diasSemana = GeneratedColumn<int>(
+    'dias_semana',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(6),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     empresaId,
@@ -1614,6 +1649,9 @@ class $ColaboradoresTable extends Colaboradores
     contactoParentesco,
     activo,
     salarioPersonalizado,
+    periodoPago,
+    salarioPeriodo,
+    diasSemana,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1743,6 +1781,30 @@ class $ColaboradoresTable extends Colaboradores
         ),
       );
     }
+    if (data.containsKey('periodo_pago')) {
+      context.handle(
+        _periodoPagoMeta,
+        periodoPago.isAcceptableOrUnknown(
+          data['periodo_pago']!,
+          _periodoPagoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('salario_periodo')) {
+      context.handle(
+        _salarioPeriodoMeta,
+        salarioPeriodo.isAcceptableOrUnknown(
+          data['salario_periodo']!,
+          _salarioPeriodoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('dias_semana')) {
+      context.handle(
+        _diasSemanaMeta,
+        diasSemana.isAcceptableOrUnknown(data['dias_semana']!, _diasSemanaMeta),
+      );
+    }
     return context;
   }
 
@@ -1816,6 +1878,18 @@ class $ColaboradoresTable extends Colaboradores
         DriftSqlType.double,
         data['${effectivePrefix}salario_personalizado'],
       ),
+      periodoPago: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}periodo_pago'],
+      )!,
+      salarioPeriodo: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}salario_periodo'],
+      ),
+      diasSemana: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}dias_semana'],
+      )!,
     );
   }
 
@@ -1852,7 +1926,20 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
   final String contactoTelefono;
   final String contactoParentesco;
   final bool activo;
+
+  /// Salario diario (MXN/día) que consume la nómina. **Derivado** del sueldo por
+  /// periodo: se recalcula desde [salarioPeriodo] + [periodoPago] + [diasSemana];
+  /// no se edita a mano. Nullable → usa el salario del puesto.
   final double? salarioPersonalizado;
+
+  /// Esquema de captura del sueldo base: "SEMANAL" | "QUINCENAL" | "MENSUAL".
+  final String periodoPago;
+
+  /// Monto del sueldo tal cual lo captura el usuario, para el periodo elegido.
+  final double? salarioPeriodo;
+
+  /// Días trabajados por semana (5, 6 o 7) usados como divisor a diario.
+  final int diasSemana;
   const Colaborador({
     required this.empresaId,
     required this.createdAt,
@@ -1870,6 +1957,9 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
     required this.contactoParentesco,
     required this.activo,
     this.salarioPersonalizado,
+    required this.periodoPago,
+    this.salarioPeriodo,
+    required this.diasSemana,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1896,6 +1986,11 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
     if (!nullToAbsent || salarioPersonalizado != null) {
       map['salario_personalizado'] = Variable<double>(salarioPersonalizado);
     }
+    map['periodo_pago'] = Variable<String>(periodoPago);
+    if (!nullToAbsent || salarioPeriodo != null) {
+      map['salario_periodo'] = Variable<double>(salarioPeriodo);
+    }
+    map['dias_semana'] = Variable<int>(diasSemana);
     return map;
   }
 
@@ -1923,6 +2018,11 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
       salarioPersonalizado: salarioPersonalizado == null && nullToAbsent
           ? const Value.absent()
           : Value(salarioPersonalizado),
+      periodoPago: Value(periodoPago),
+      salarioPeriodo: salarioPeriodo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(salarioPeriodo),
+      diasSemana: Value(diasSemana),
     );
   }
 
@@ -1952,6 +2052,9 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
       salarioPersonalizado: serializer.fromJson<double?>(
         json['salarioPersonalizado'],
       ),
+      periodoPago: serializer.fromJson<String>(json['periodoPago']),
+      salarioPeriodo: serializer.fromJson<double?>(json['salarioPeriodo']),
+      diasSemana: serializer.fromJson<int>(json['diasSemana']),
     );
   }
   @override
@@ -1974,6 +2077,9 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
       'contactoParentesco': serializer.toJson<String>(contactoParentesco),
       'activo': serializer.toJson<bool>(activo),
       'salarioPersonalizado': serializer.toJson<double?>(salarioPersonalizado),
+      'periodoPago': serializer.toJson<String>(periodoPago),
+      'salarioPeriodo': serializer.toJson<double?>(salarioPeriodo),
+      'diasSemana': serializer.toJson<int>(diasSemana),
     };
   }
 
@@ -1994,6 +2100,9 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
     String? contactoParentesco,
     bool? activo,
     Value<double?> salarioPersonalizado = const Value.absent(),
+    String? periodoPago,
+    Value<double?> salarioPeriodo = const Value.absent(),
+    int? diasSemana,
   }) => Colaborador(
     empresaId: empresaId ?? this.empresaId,
     createdAt: createdAt ?? this.createdAt,
@@ -2015,6 +2124,11 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
     salarioPersonalizado: salarioPersonalizado.present
         ? salarioPersonalizado.value
         : this.salarioPersonalizado,
+    periodoPago: periodoPago ?? this.periodoPago,
+    salarioPeriodo: salarioPeriodo.present
+        ? salarioPeriodo.value
+        : this.salarioPeriodo,
+    diasSemana: diasSemana ?? this.diasSemana,
   );
   Colaborador copyWithCompanion(ColaboradoresCompanion data) {
     return Colaborador(
@@ -2046,6 +2160,15 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
       salarioPersonalizado: data.salarioPersonalizado.present
           ? data.salarioPersonalizado.value
           : this.salarioPersonalizado,
+      periodoPago: data.periodoPago.present
+          ? data.periodoPago.value
+          : this.periodoPago,
+      salarioPeriodo: data.salarioPeriodo.present
+          ? data.salarioPeriodo.value
+          : this.salarioPeriodo,
+      diasSemana: data.diasSemana.present
+          ? data.diasSemana.value
+          : this.diasSemana,
     );
   }
 
@@ -2067,7 +2190,10 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
           ..write('contactoTelefono: $contactoTelefono, ')
           ..write('contactoParentesco: $contactoParentesco, ')
           ..write('activo: $activo, ')
-          ..write('salarioPersonalizado: $salarioPersonalizado')
+          ..write('salarioPersonalizado: $salarioPersonalizado, ')
+          ..write('periodoPago: $periodoPago, ')
+          ..write('salarioPeriodo: $salarioPeriodo, ')
+          ..write('diasSemana: $diasSemana')
           ..write(')'))
         .toString();
   }
@@ -2090,6 +2216,9 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
     contactoParentesco,
     activo,
     salarioPersonalizado,
+    periodoPago,
+    salarioPeriodo,
+    diasSemana,
   );
   @override
   bool operator ==(Object other) =>
@@ -2110,7 +2239,10 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
           other.contactoTelefono == this.contactoTelefono &&
           other.contactoParentesco == this.contactoParentesco &&
           other.activo == this.activo &&
-          other.salarioPersonalizado == this.salarioPersonalizado);
+          other.salarioPersonalizado == this.salarioPersonalizado &&
+          other.periodoPago == this.periodoPago &&
+          other.salarioPeriodo == this.salarioPeriodo &&
+          other.diasSemana == this.diasSemana);
 }
 
 class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
@@ -2130,6 +2262,9 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
   final Value<String> contactoParentesco;
   final Value<bool> activo;
   final Value<double?> salarioPersonalizado;
+  final Value<String> periodoPago;
+  final Value<double?> salarioPeriodo;
+  final Value<int> diasSemana;
   final Value<int> rowid;
   const ColaboradoresCompanion({
     this.empresaId = const Value.absent(),
@@ -2148,6 +2283,9 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
     this.contactoParentesco = const Value.absent(),
     this.activo = const Value.absent(),
     this.salarioPersonalizado = const Value.absent(),
+    this.periodoPago = const Value.absent(),
+    this.salarioPeriodo = const Value.absent(),
+    this.diasSemana = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ColaboradoresCompanion.insert({
@@ -2167,6 +2305,9 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
     this.contactoParentesco = const Value.absent(),
     this.activo = const Value.absent(),
     this.salarioPersonalizado = const Value.absent(),
+    this.periodoPago = const Value.absent(),
+    this.salarioPeriodo = const Value.absent(),
+    this.diasSemana = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        nombre = Value(nombre),
@@ -2189,6 +2330,9 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
     Expression<String>? contactoParentesco,
     Expression<bool>? activo,
     Expression<double>? salarioPersonalizado,
+    Expression<String>? periodoPago,
+    Expression<double>? salarioPeriodo,
+    Expression<int>? diasSemana,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2209,6 +2353,9 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
       if (activo != null) 'activo': activo,
       if (salarioPersonalizado != null)
         'salario_personalizado': salarioPersonalizado,
+      if (periodoPago != null) 'periodo_pago': periodoPago,
+      if (salarioPeriodo != null) 'salario_periodo': salarioPeriodo,
+      if (diasSemana != null) 'dias_semana': diasSemana,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2230,6 +2377,9 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
     Value<String>? contactoParentesco,
     Value<bool>? activo,
     Value<double?>? salarioPersonalizado,
+    Value<String>? periodoPago,
+    Value<double?>? salarioPeriodo,
+    Value<int>? diasSemana,
     Value<int>? rowid,
   }) {
     return ColaboradoresCompanion(
@@ -2249,6 +2399,9 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
       contactoParentesco: contactoParentesco ?? this.contactoParentesco,
       activo: activo ?? this.activo,
       salarioPersonalizado: salarioPersonalizado ?? this.salarioPersonalizado,
+      periodoPago: periodoPago ?? this.periodoPago,
+      salarioPeriodo: salarioPeriodo ?? this.salarioPeriodo,
+      diasSemana: diasSemana ?? this.diasSemana,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2306,6 +2459,15 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
         salarioPersonalizado.value,
       );
     }
+    if (periodoPago.present) {
+      map['periodo_pago'] = Variable<String>(periodoPago.value);
+    }
+    if (salarioPeriodo.present) {
+      map['salario_periodo'] = Variable<double>(salarioPeriodo.value);
+    }
+    if (diasSemana.present) {
+      map['dias_semana'] = Variable<int>(diasSemana.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2331,6 +2493,9 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
           ..write('contactoParentesco: $contactoParentesco, ')
           ..write('activo: $activo, ')
           ..write('salarioPersonalizado: $salarioPersonalizado, ')
+          ..write('periodoPago: $periodoPago, ')
+          ..write('salarioPeriodo: $salarioPeriodo, ')
+          ..write('diasSemana: $diasSemana, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -10859,6 +11024,9 @@ typedef $$ColaboradoresTableCreateCompanionBuilder =
       Value<String> contactoParentesco,
       Value<bool> activo,
       Value<double?> salarioPersonalizado,
+      Value<String> periodoPago,
+      Value<double?> salarioPeriodo,
+      Value<int> diasSemana,
       Value<int> rowid,
     });
 typedef $$ColaboradoresTableUpdateCompanionBuilder =
@@ -10879,6 +11047,9 @@ typedef $$ColaboradoresTableUpdateCompanionBuilder =
       Value<String> contactoParentesco,
       Value<bool> activo,
       Value<double?> salarioPersonalizado,
+      Value<String> periodoPago,
+      Value<double?> salarioPeriodo,
+      Value<int> diasSemana,
       Value<int> rowid,
     });
 
@@ -10968,6 +11139,21 @@ class $$ColaboradoresTableFilterComposer
 
   ColumnFilters<double> get salarioPersonalizado => $composableBuilder(
     column: $table.salarioPersonalizado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get periodoPago => $composableBuilder(
+    column: $table.periodoPago,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get salarioPeriodo => $composableBuilder(
+    column: $table.salarioPeriodo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get diasSemana => $composableBuilder(
+    column: $table.diasSemana,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -11060,6 +11246,21 @@ class $$ColaboradoresTableOrderingComposer
     column: $table.salarioPersonalizado,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get periodoPago => $composableBuilder(
+    column: $table.periodoPago,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get salarioPeriodo => $composableBuilder(
+    column: $table.salarioPeriodo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get diasSemana => $composableBuilder(
+    column: $table.diasSemana,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ColaboradoresTableAnnotationComposer
@@ -11130,6 +11331,21 @@ class $$ColaboradoresTableAnnotationComposer
     column: $table.salarioPersonalizado,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get periodoPago => $composableBuilder(
+    column: $table.periodoPago,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get salarioPeriodo => $composableBuilder(
+    column: $table.salarioPeriodo,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get diasSemana => $composableBuilder(
+    column: $table.diasSemana,
+    builder: (column) => column,
+  );
 }
 
 class $$ColaboradoresTableTableManager
@@ -11179,6 +11395,9 @@ class $$ColaboradoresTableTableManager
                 Value<String> contactoParentesco = const Value.absent(),
                 Value<bool> activo = const Value.absent(),
                 Value<double?> salarioPersonalizado = const Value.absent(),
+                Value<String> periodoPago = const Value.absent(),
+                Value<double?> salarioPeriodo = const Value.absent(),
+                Value<int> diasSemana = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ColaboradoresCompanion(
                 empresaId: empresaId,
@@ -11197,6 +11416,9 @@ class $$ColaboradoresTableTableManager
                 contactoParentesco: contactoParentesco,
                 activo: activo,
                 salarioPersonalizado: salarioPersonalizado,
+                periodoPago: periodoPago,
+                salarioPeriodo: salarioPeriodo,
+                diasSemana: diasSemana,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -11217,6 +11439,9 @@ class $$ColaboradoresTableTableManager
                 Value<String> contactoParentesco = const Value.absent(),
                 Value<bool> activo = const Value.absent(),
                 Value<double?> salarioPersonalizado = const Value.absent(),
+                Value<String> periodoPago = const Value.absent(),
+                Value<double?> salarioPeriodo = const Value.absent(),
+                Value<int> diasSemana = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ColaboradoresCompanion.insert(
                 empresaId: empresaId,
@@ -11235,6 +11460,9 @@ class $$ColaboradoresTableTableManager
                 contactoParentesco: contactoParentesco,
                 activo: activo,
                 salarioPersonalizado: salarioPersonalizado,
+                periodoPago: periodoPago,
+                salarioPeriodo: salarioPeriodo,
+                diasSemana: diasSemana,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

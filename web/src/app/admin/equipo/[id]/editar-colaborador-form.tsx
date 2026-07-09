@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button, Field, Input, Modal } from '@/components/ui';
 import type { Colaborador, Puesto } from '@/lib/data/types';
 import { actualizarColaborador } from '../actions';
+import SueldoFields from '../sueldo-fields';
 
 export default function EditarColaboradorForm({
   colaborador,
@@ -85,16 +86,11 @@ export default function EditarColaboradorForm({
             <Input name="telefono" defaultValue={colaborador.telefono ?? ''} />
           </Field>
 
-          <Field label="Salario personalizado (MXN/día)" hint="Vacío para usar el del puesto.">
-            <Input
-              type="number"
-              step="0.01"
-              min="0"
-              name="salario_personalizado"
-              defaultValue={colaborador.salario_personalizado ?? ''}
-              placeholder="Usar el del puesto"
-            />
-          </Field>
+          <SueldoFields
+            defaultPeriodo={colaborador.periodo_pago}
+            defaultDiasSemana={colaborador.dias_semana}
+            defaultMonto={colaborador.salario_periodo}
+          />
 
           <div className="sm:col-span-2 border-t border-neutral-100 pt-4">
             <p className="mb-3 text-sm font-medium text-neutral-700">Contacto de emergencia</p>

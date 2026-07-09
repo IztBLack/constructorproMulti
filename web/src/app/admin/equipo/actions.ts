@@ -3,11 +3,43 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getEmpresaUsuario } from '@/lib/data/empresa';
-import type { TipoPago } from '@/lib/data/types';
+import type { PeriodoPago, TipoPago } from '@/lib/data/types';
+import { esPeriodoPago, salarioDiarioDesdePeriodo } from '@/lib/data/salario';
 
 export interface ActionResult {
   ok: boolean;
   error?: string;
+}
+
+/// Lee el sueldo por periodo del formulario y deriva el salario diario que
+/// consume la nómina (`salario_personalizado`). El diario NO viene del form:
+/// siempre se recalcula aquí a partir del periodo, el monto y los días/semana.
+function derivarSueldo(formData: FormData): {
+  periodoPago: PeriodoPago;
+  salarioPeriodo: number | null;
+  diasSemana: number;
+  salarioDiario: number | null;
+} {
+  const periodoRaw = String(formData.get('periodo_pago') ?? 'MENSUAL').trim();
+  const periodoPago: PeriodoPago = esPeriodoPago(periodoRaw) ? periodoRaw : 'MENSUAL';
+
+  const diasSemanaNum = Number(String(formData.get('dias_semana') ?? '6').trim());
+  const diasSemana = [5, 6, 7].includes(diasSemanaNum) ? diasSemanaNum : 6;
+
+  const montoStr = String(formData.get('salario_periodo') ?? '').trim();
+  const salarioPeriodo = montoStr ? Number(montoStr) : null;
+  const montoValido = salarioPeriodo != null && Number.isFinite(salarioPeriodo) && salarioPeriodo > 0;
+
+  return {
+    periodoPago,
+    salarioPeriodo: montoValido ? salarioPeriodo : null,
+    diasSemana,
+    salarioDiario: salarioDiarioDesdePeriodo(
+      montoValido ? salarioPeriodo : null,
+      periodoPago,
+      diasSemana,
+    ),
+  };
 }
 
 export async function crearColaborador(formData: FormData): Promise<ActionResult> {
@@ -15,7 +47,7 @@ export async function crearColaborador(formData: FormData): Promise<ActionResult
   const puestoId = String(formData.get('puesto_id') ?? '').trim();
   const tipoPago = String(formData.get('tipo_pago') ?? 'DIA').trim() as TipoPago;
   const telefono = String(formData.get('telefono') ?? '').trim();
-  const salarioPersonalizadoStr = String(formData.get('salario_personalizado') ?? '').trim();
+  const { periodoPago, salarioPeriodo, diasSemana, salarioDiario } = derivarSueldo(formData);
 
   if (!nombre) {
     return { ok: false, error: 'El nombre del colaborador es obligatorio.' };
@@ -29,7 +61,6 @@ export async function crearColaborador(formData: FormData): Promise<ActionResult
   }
 
   const now = Date.now();
-  const salarioPersonalizado = salarioPersonalizadoStr ? Number(salarioPersonalizadoStr) : null;
 
   const supabase = await createClient();
   const { error } = await supabase.from('colaboradores').insert({
@@ -43,7 +74,10 @@ export async function crearColaborador(formData: FormData): Promise<ActionResult
     contacto_telefono: '',
     contacto_parentesco: '',
     activo: true,
-    salario_personalizado: salarioPersonalizado,
+    salario_personalizado: salarioDiario,
+    periodo_pago: periodoPago,
+    salario_periodo: salarioPeriodo,
+    dias_semana: diasSemana,
     created_at: now,
     updated_at: now,
   });
@@ -81,14 +115,13 @@ export async function actualizarColaborador(id: string, formData: FormData): Pro
   const contactoNombre = String(formData.get('contacto_nombre') ?? '').trim();
   const contactoTelefono = String(formData.get('contacto_telefono') ?? '').trim();
   const contactoParentesco = String(formData.get('contacto_parentesco') ?? '').trim();
-  const salarioPersonalizadoStr = String(formData.get('salario_personalizado') ?? '').trim();
+  const { periodoPago, salarioPeriodo, diasSemana, salarioDiario } = derivarSueldo(formData);
 
   if (!nombre) {
     return { ok: false, error: 'El nombre del colaborador es obligatorio.' };
   }
 
   const now = Date.now();
-  const salarioPersonalizado = salarioPersonalizadoStr ? Number(salarioPersonalizadoStr) : null;
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -101,7 +134,10 @@ export async function actualizarColaborador(id: string, formData: FormData): Pro
       contacto_nombre: contactoNombre,
       contacto_telefono: contactoTelefono,
       contacto_parentesco: contactoParentesco,
-      salario_personalizado: salarioPersonalizado,
+      salario_personalizado: salarioDiario,
+      periodo_pago: periodoPago,
+      salario_periodo: salarioPeriodo,
+      dias_semana: diasSemana,
       updated_at: now,
     })
     .eq('id', id);

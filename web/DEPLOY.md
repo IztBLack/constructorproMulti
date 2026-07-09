@@ -62,10 +62,39 @@ Esto es necesario para que el login/registro y los correos funcionen con el domi
 
 - [ ] Variables de entorno configuradas en Vercel (incluida `TZ`).
 - [ ] Site URL + Redirect URLs en Supabase apuntando a producción.
-- [ ] Migraciones SQL 0001–0007 aplicadas en el proyecto Supabase (ya lo están en `vmkkkrlctakzzqebtyci`).
+- [ ] Migraciones SQL 0001–0009 aplicadas en el proyecto Supabase (ya lo están en `vmkkkrlctakzzqebtyci`).
 - [ ] Crear el primer usuario admin: registrarse en `/login` → onboarding crea la empresa.
 - [ ] Probar el flujo completo: admin crea obra/cotización → cliente se vincula con código → ve solo lo suyo.
 - [ ] (Opcional) Dominio propio configurado.
+
+---
+
+## 4bis. Migraciones (`supabase/migrations/`)
+
+Este proyecto **no tiene el CLI de Supabase vinculado** (`supabase link`) — el
+historial de migraciones no se trackea vía CLI. Cada archivo nuevo en
+`supabase/migrations/` se aplica a mano, por cualquiera de estas dos vías:
+
+**A) SQL Editor (sin nada que instalar, recomendado si no traes token a la mano):**
+1. [supabase.com/dashboard/project/vmkkkrlctakzzqebtyci/sql/new](https://supabase.com/dashboard/project/vmkkkrlctakzzqebtyci/sql/new)
+2. Pega el contenido del archivo `NNNN_*.sql` completo → **Run**.
+
+**B) Management API (para automatizar / correr desde una sesión sin navegador):**
+Requiere un **Personal Access Token** de Supabase (`sbp_...`, se genera en
+[dashboard/account/tokens](https://supabase.com/dashboard/account/tokens) — **no
+confundir** con las API keys del proyecto `sb_publishable_...`/`sb_secret_...`,
+esas no sirven para esto). Guardado como `SUPABASE_ACCESS_TOKEN` en
+`web/.env.local` (gitignored, no se commitea).
+
+```bash
+curl -X POST "https://api.supabase.com/v1/projects/vmkkkrlctakzzqebtyci/database/query" \
+  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  --data "$(node -e "console.log(JSON.stringify({query: require('fs').readFileSync('supabase/migrations/NNNN_archivo.sql','utf8')}))")"
+```
+
+Respuesta `[]` = éxito (DDL no devuelve filas). Verificar con una consulta a
+`information_schema.columns`/`.tables` si hace falta confirmar.
 
 ---
 

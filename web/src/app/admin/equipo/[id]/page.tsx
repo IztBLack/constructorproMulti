@@ -7,6 +7,8 @@ import {
   listObrasDisponibles,
   listPuestos,
 } from '@/lib/data/equipo';
+import { formatCurrency } from '@/lib/data/format';
+import { PERIODO_PAGO_LABEL, SUELDO_PERIODO_LABEL } from '@/lib/data/salario';
 import EditarColaboradorForm from './editar-colaborador-form';
 import AsignacionesObra from './asignaciones-obra';
 
@@ -69,6 +71,38 @@ export default async function ColaboradorDetallePage({
           No se pudieron cargar los puestos: {puestosError}
         </p>
       )}
+
+      {(() => {
+        const puestoDefault =
+          puestos.find((p) => p.id === colaborador.puesto_id)?.salario_dia_default ?? null;
+        const salarioDiario = colaborador.salario_personalizado ?? puestoDefault;
+        return (
+          <section className="grid gap-4 rounded-xl border border-neutral-100 bg-neutral-50/60 p-4 sm:grid-cols-3">
+            <div>
+              <p className="text-xs text-neutral-500">Esquema de pago</p>
+              <p className="text-sm font-medium text-neutral-800">
+                {PERIODO_PAGO_LABEL[colaborador.periodo_pago]} · {colaborador.dias_semana} días/sem
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-neutral-500">
+                {SUELDO_PERIODO_LABEL[colaborador.periodo_pago]}
+              </p>
+              <p className="text-sm font-medium tabular-nums text-neutral-800">
+                {colaborador.salario_periodo != null
+                  ? formatCurrency(colaborador.salario_periodo)
+                  : 'Usa el del puesto'}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-neutral-500">Salario diario (calculado)</p>
+              <p className="text-sm font-medium tabular-nums text-neutral-800">
+                {salarioDiario != null ? `${formatCurrency(salarioDiario)} / día` : '—'}
+              </p>
+            </div>
+          </section>
+        );
+      })()}
 
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-neutral-700">Obras asignadas</h2>

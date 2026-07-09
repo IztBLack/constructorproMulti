@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import type { Puesto } from '@/lib/data/types';
 import { Button, Field, Input, Modal } from '@/components/ui';
 import { crearColaborador } from './actions';
+import SueldoFields from './sueldo-fields';
 
 export default function NuevoColaboradorForm({ puestos }: { puestos: Puesto[] }) {
   const router = useRouter();
@@ -83,15 +84,7 @@ export default function NuevoColaboradorForm({ puestos }: { puestos: Puesto[] })
             <Input name="telefono" type="tel" />
           </Field>
 
-          <Field label="Salario personalizado (MXN/día)">
-            <Input
-              type="number"
-              step="0.01"
-              min="0"
-              name="salario_personalizado"
-              placeholder="Usar el del puesto"
-            />
-          </Field>
+          <SueldoFields />
 
           {error && <p className="text-sm text-red-600 sm:col-span-2">{error}</p>}
 

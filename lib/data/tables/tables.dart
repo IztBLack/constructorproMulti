@@ -64,7 +64,21 @@ class Colaboradores extends Table with SyncCols {
   TextColumn get contactoTelefono => text().withDefault(const Constant(''))();
   TextColumn get contactoParentesco => text().withDefault(const Constant(''))();
   BoolColumn get activo => boolean().withDefault(const Constant(true))();
+
+  /// Salario diario (MXN/día) que consume la nómina. **Derivado** del sueldo por
+  /// periodo: se recalcula desde [salarioPeriodo] + [periodoPago] + [diasSemana];
+  /// no se edita a mano. Nullable → usa el salario del puesto.
   RealColumn get salarioPersonalizado => real().nullable()();
+
+  /// Esquema de captura del sueldo base: "SEMANAL" | "QUINCENAL" | "MENSUAL".
+  TextColumn get periodoPago =>
+      text().withDefault(const Constant('MENSUAL'))();
+
+  /// Monto del sueldo tal cual lo captura el usuario, para el periodo elegido.
+  RealColumn get salarioPeriodo => real().nullable()();
+
+  /// Días trabajados por semana (5, 6 o 7) usados como divisor a diario.
+  IntColumn get diasSemana => integer().withDefault(const Constant(6))();
 
   @override
   Set<Column> get primaryKey => {id};
