@@ -67,7 +67,7 @@ jobs:
         run: |
           IPA=build/ios/iphoneos/ConstructorPro.ipa
           SIZE=$(stat -f%z "$IPA")
-          FULLVER=$(grep '^version:' pubspec.yaml | sed -E 's/version:[[:space:]]*//')
+          FULLVER=$(grep '^version:' pubspec.yaml | sed -E 's/version:[[:space:]]*//' | tr -d '\r')
           echo "size=$SIZE"            >> "$GITHUB_OUTPUT"
           echo "fullver=$FULLVER"      >> "$GITHUB_OUTPUT"
           echo "buildver=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
