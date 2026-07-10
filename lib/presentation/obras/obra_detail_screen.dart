@@ -9,11 +9,13 @@ import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
 import '../../core/pdf/pdf_config.dart';
 import '../../data/providers.dart';
+import '../../domain/logic/estado_cuenta_calculator.dart';
 import '../../domain/logic/flujo_calculator.dart';
 import '../../domain/logic/nomina_calculator.dart';
 import '../../domain/mappers.dart';
 import '../../pdf/pdf_service.dart';
 import '../pdf_pre_dialog.dart';
+import 'importar_movimientos_screen.dart';
 
 class ObraDetailScreen extends ConsumerStatefulWidget {
   final Obra obra;
@@ -54,6 +56,22 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
             icon: const Icon(Icons.picture_as_pdf),
             tooltip: 'Exportar PDF (Nómina/Caja)',
             onPressed: _exportarPdf,
+          ),
+          PopupMenuButton<String>(
+            tooltip: 'Más acciones',
+            onSelected: (v) {
+              if (v == 'importar') _importarMovimientos();
+            },
+            itemBuilder: (ctx) => const [
+              PopupMenuItem(
+                value: 'importar',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.upload_file),
+                  title: Text('Importar movimientos'),
+                ),
+              ),
+            ],
           ),
         ],
         bottom: TabBar(
@@ -102,6 +120,16 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
       Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => ObraDetailScreen(obra: sel)));
     }
+  }
+
+  Future<void> _importarMovimientos() async {
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => ImportarMovimientosScreen(obra: widget.obra),
+      ),
+    );
+    // La caja es stream-backed (movimientosPorObraProvider /
+    // partidasPresupuestoPorObraProvider): se refresca sola tras el insert.
   }
 
   Future<void> _exportarPdf() async {
@@ -834,6 +862,9 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
   // ============ CAJA ============
   Widget _cajaTab() {
     final movsAsync = ref.watch(movimientosPorObraProvider(_obraId));
+    final partidas =
+        ref.watch(partidasPresupuestoPorObraProvider(_obraId)).asData?.value ??
+            const [];
     return Scaffold(
       body: movsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -841,7 +872,10 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
         data: (movs) {
           final resumen = const FlujoCalculator()
               .resumen(movs.map(movimientoToDomain).toList());
-          return Column(
+          final estado = const EstadoCuentaCalculator()
+              .calcular(movimientos: movs, partidas: partidas);
+          return ListView(
+            padding: const EdgeInsets.only(bottom: 96),
             children: [
               Padding(
                 padding: const EdgeInsets.all(12),
@@ -855,34 +889,55 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                   ],
                 ),
               ),
+              if (partidas.isNotEmpty) _presupuestoCard(estado),
+              if (estado.porPersona.isNotEmpty)
+                _resumenCard(
+                  titulo: 'Pagado por persona',
+                  entradas: estado.porPersona,
+                  total: estado.totalSalidas,
+                  color: Colors.red,
+                ),
+              if (estado.porTipo.isNotEmpty)
+                _resumenCard(
+                  titulo: 'Recibido por tipo',
+                  entradas: estado.porTipo,
+                  total: estado.recibido,
+                  color: Colors.green,
+                ),
               const Divider(height: 1),
-              Expanded(
-                child: movs.isEmpty
-                    ? const Center(child: Text('Sin movimientos.'))
-                    : ListView.separated(
-                        itemCount: movs.length,
-                        separatorBuilder: (_, _) => const Divider(height: 1),
-                        itemBuilder: (context, i) {
-                          final m = movs[i];
-                          final entrada = m.tipo == 'ENTRADA';
-                          return ListTile(
-                            leading: Icon(
-                              entrada ? Icons.south_west : Icons.north_east,
+              if (movs.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(32),
+                  child: Center(child: Text('Sin movimientos.')),
+                )
+              else
+                ...movs.map((m) {
+                  final entrada = m.tipo == 'ENTRADA';
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ListTile(
+                        leading: Icon(
+                          entrada ? Icons.south_west : Icons.north_east,
+                          color: entrada ? Colors.green : Colors.red,
+                        ),
+                        title: Text(m.concepto),
+                        subtitle: Text(
+                          '${Fmt.date(m.fecha)} · ${m.metodoPago}'
+                          '${m.nombre.trim().isEmpty ? '' : ' · ${m.nombre}'}',
+                        ),
+                        trailing: Text(
+                          '${entrada ? '+' : '-'}${Fmt.money(m.monto)}',
+                          style: TextStyle(
                               color: entrada ? Colors.green : Colors.red,
-                            ),
-                            title: Text(m.concepto),
-                            subtitle: Text('${Fmt.date(m.fecha)} · ${m.metodoPago}'),
-                            trailing: Text(
-                              '${entrada ? '+' : '-'}${Fmt.money(m.monto)}',
-                              style: TextStyle(
-                                  color: entrada ? Colors.green : Colors.red,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                            onLongPress: () => _eliminarMov(m),
-                          );
-                        },
+                              fontWeight: FontWeight.bold),
+                        ),
+                        onLongPress: () => _eliminarMov(m),
                       ),
-              ),
+                      const Divider(height: 1),
+                    ],
+                  );
+                }),
             ],
           );
         },
@@ -912,9 +967,36 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
 
   Future<void> _movDialog(String tipo) async {
     final conceptoCtrl = TextEditingController();
+    final conceptoFocus = FocusNode();
+    final nombreCtrl = TextEditingController();
+    final nombreFocus = FocusNode();
     final montoCtrl = TextEditingController();
     String metodo = 'Transferencia';
     final formKey = GlobalKey<FormState>();
+
+    // Sugerencias de autocompletado: valores DISTINTOS ya usados en esta obra.
+    final movs =
+        ref.read(movimientosPorObraProvider(_obraId)).asData?.value ?? const [];
+    const sentinelas = {
+      'INGRESO_LIBRE',
+      'GASTO_LIBRE',
+      'NOMINA',
+      'MATERIAL',
+    };
+    final nombresExistentes = <String>{
+      for (final m in movs)
+        if (m.nombre.trim().isNotEmpty) m.nombre.trim(),
+    }.toList()
+      ..sort();
+    final categoriasExistentes = <String>{
+      for (final m in movs)
+        if (m.categoria.trim().isNotEmpty &&
+            !sentinelas.contains(m.categoria.trim()))
+          m.categoria.trim(),
+      for (final m in movs)
+        if (m.concepto.trim().isNotEmpty) m.concepto.trim(),
+    }.toList()
+      ..sort();
 
     // Para SALIDA: cargar partidas de la cotización de la obra (ligar gasto).
     Cotizacion? cot;
@@ -937,11 +1019,21 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
             key: formKey,
             child: SingleChildScrollView(
               child: Column(mainAxisSize: MainAxisSize.min, children: [
-                TextFormField(
+                _autocompleteField(
+                  label: 'Concepto / Categoría',
                   controller: conceptoCtrl,
-                  decoration: const InputDecoration(labelText: 'Concepto'),
+                  focusNode: conceptoFocus,
+                  opciones: categoriasExistentes,
                   validator: (v) =>
                       (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+                ),
+                _autocompleteField(
+                  label: tipo == 'ENTRADA'
+                      ? 'De quién (opcional)'
+                      : 'Beneficiario (opcional)',
+                  controller: nombreCtrl,
+                  focusNode: nombreFocus,
+                  opciones: nombresExistentes,
                 ),
                 TextFormField(
                   controller: montoCtrl,
@@ -993,14 +1085,23 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                 final partida = partidaId == null
                     ? null
                     : partidasObra.firstWhereOrNull((p) => p.id == partidaId);
+                // Canoniza a la etiqueta existente (case/acento-insensible) para
+                // que las cubetas de "Recibido por tipo" / "Pagado por persona"
+                // no se fragmenten; permite texto nuevo libre.
+                final concepto =
+                    _canonizar(conceptoCtrl.text, categoriasExistentes);
+                final nombre = _canonizar(nombreCtrl.text, nombresExistentes);
                 await ref.read(movimientoRepositoryProvider).add(
                       obraId: _obraId,
                       fecha: DateTime.now().millisecondsSinceEpoch,
                       tipo: tipo,
-                      categoria: tipo == 'ENTRADA' ? 'INGRESO_LIBRE' : 'GASTO_LIBRE',
-                      concepto: conceptoCtrl.text.trim(),
+                      // categoria = concepto: la caja agrupa entradas por
+                      // categoria (igual que el import de estado de cuenta).
+                      categoria: concepto,
+                      concepto: concepto,
                       monto: double.parse(montoCtrl.text.trim()),
                       metodoPago: metodo,
+                      nombre: nombre,
                       cotizacionId: partida != null ? cot?.id : null,
                       seccionId: partida?.seccionId,
                       partidaId: partida?.id,
@@ -1015,10 +1116,154 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     );
   }
 
+  /// Campo de texto con autocompletado sobre [opciones] (valores existentes de
+  /// la obra). Matching case/acento-insensible; se permite texto libre nuevo.
+  Widget _autocompleteField({
+    required String label,
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required List<String> opciones,
+    String? Function(String?)? validator,
+  }) {
+    return Autocomplete<String>(
+      // Usa NUESTRO controller/focus: así el valor tecleado es legible al
+      // guardar sin sincronizar controllers internos.
+      textEditingController: controller,
+      focusNode: focusNode,
+      optionsBuilder: (TextEditingValue value) {
+        final q = _normAccent(value.text);
+        if (q.isEmpty) return const Iterable<String>.empty();
+        return opciones.where((o) => _normAccent(o).contains(q));
+      },
+      fieldViewBuilder: (context, textCtrl, textFocus, onSubmit) {
+        return TextFormField(
+          controller: textCtrl,
+          focusNode: textFocus,
+          decoration: InputDecoration(labelText: label),
+          validator: validator,
+        );
+      },
+    );
+  }
+
+  /// Normaliza para comparar: minúsculas, sin acentos, espacios colapsados.
+  String _normAccent(String s) {
+    var t = s.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+    const acentos = {
+      'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u', 'ü': 'u', 'ñ': 'n',
+    };
+    acentos.forEach((k, v) => t = t.replaceAll(k, v));
+    return t;
+  }
+
+  /// Si [typed] coincide (case/acento-insensible) con una opción existente,
+  /// devuelve la etiqueta canónica existente; si no, el texto recortado.
+  String _canonizar(String typed, List<String> existentes) {
+    final t = typed.trim();
+    if (t.isEmpty) return '';
+    final norm = _normAccent(t);
+    for (final e in existentes) {
+      if (_normAccent(e) == norm) return e;
+    }
+    return t;
+  }
+
   Future<void> _eliminarMov(Movimiento m) async {
     final ok = await _confirm(
         '¿Eliminar el movimiento de ${Fmt.money(m.monto)}?', 'Eliminar');
     if (ok) await ref.read(movimientoRepositoryProvider).delete(m.id);
+  }
+
+  // ============ ESTADO DE CUENTA (Caja) ============
+  Widget _presupuestoCard(EstadoCuentaSummary e) {
+    final costo = e.costoTotal;
+    final progreso = costo > 0 ? (e.recibido / costo).clamp(0.0, 1.0) : 0.0;
+    final cs = Theme.of(context).colorScheme;
+    return Card(
+      margin: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Presupuesto de obra',
+                style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _kpi('Costo total', costo, cs.onSurface),
+                _kpi('Recibido', e.recibido, Colors.green),
+                _kpi('Pendiente', e.pendiente,
+                    e.pendiente > 0 ? Colors.red : Colors.green),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: progreso.toDouble(),
+                minHeight: 8,
+                backgroundColor: cs.surfaceContainerHighest,
+                valueColor: const AlwaysStoppedAnimation(Colors.green),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              e.pendiente > 0
+                  ? '${(progreso * 100).toStringAsFixed(0)}% cobrado · por cobrar ${Fmt.money(e.pendiente)}'
+                  : 'Al corriente',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _resumenCard({
+    required String titulo,
+    required List<MapEntry<String, double>> entradas,
+    required double total,
+    required Color color,
+  }) {
+    return Card(
+      margin: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(titulo, style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 4),
+            ...entradas.map((e) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 3),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                          child: Text(e.key,
+                              maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      Text(Fmt.money(e.value),
+                          style: TextStyle(
+                              color: color, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                )),
+            const Divider(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Total',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(Fmt.money(total),
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // ============ Helpers UI ============

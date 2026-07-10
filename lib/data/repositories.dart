@@ -18,8 +18,9 @@ class ObraRepository {
       db.into(db.obras).insertOnConflictUpdate(obra);
 
   /// Baja lógica (tombstone) EN CASCADA: la obra + sus movimientos, asistencias,
-  /// destajos y relaciones de equipo (obra_colaborador). Así no quedan filas
-  /// huérfanas ocultas ni el sync las resucita. Nunca borrado físico.
+  /// destajos, relaciones de equipo (obra_colaborador) y partidas de
+  /// presupuesto (obra_presupuesto). Así no quedan filas huérfanas ocultas ni
+  /// el sync las resucita. Nunca borrado físico.
   /// No toca la cotización de origen (vive por su cuenta).
   Future<void> delete(String id) async {
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -41,6 +42,11 @@ class ObraRepository {
               syncStatus: const Value('pending')));
       await (db.update(db.obraColaborador)..where((t) => t.obraId.equals(id)))
           .write(ObraColaboradorCompanion(
+              deletedAt: Value(now),
+              updatedAt: Value(now),
+              syncStatus: const Value('pending')));
+      await (db.update(db.obraPresupuesto)..where((t) => t.obraId.equals(id)))
+          .write(ObraPresupuestoCompanion(
               deletedAt: Value(now),
               updatedAt: Value(now),
               syncStatus: const Value('pending')));

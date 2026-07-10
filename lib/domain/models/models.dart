@@ -68,7 +68,15 @@ class Movimiento {
   final TipoMovimiento tipo;
   final double monto;
 
-  const Movimiento({required this.tipo, required this.monto});
+  /// Beneficiario/pagador (a quién se le pagó / de quién se recibió).
+  /// '' si no se capturó (filas previas a la migración v5).
+  final String nombre;
+
+  const Movimiento({
+    required this.tipo,
+    required this.monto,
+    this.nombre = '',
+  });
 }
 
 class Partida {
@@ -76,6 +84,31 @@ class Partida {
   final double precioUnitario;
 
   const Partida({required this.cantidad, required this.precioUnitario});
+
+  double get total => cantidad * precioUnitario;
+}
+
+/// Partida del presupuesto de una obra (encabezado tipo "COSTO TOTAL" del
+/// Excel "estado de cuenta"). Espeja la tabla Drift `ObraPresupuesto`
+/// (`ObraPresupuestoRow`) y `public.obra_presupuesto` de Supabase.
+class PartidaPresupuesto {
+  final String id;
+  final String obraId;
+  final String concepto;
+  final String unidad;
+  final double cantidad;
+  final double precioUnitario;
+  final int orden;
+
+  const PartidaPresupuesto({
+    required this.id,
+    required this.obraId,
+    this.concepto = '',
+    this.unidad = '',
+    this.cantidad = 1,
+    this.precioUnitario = 0,
+    this.orden = 0,
+  });
 
   double get total => cantidad * precioUnitario;
 }

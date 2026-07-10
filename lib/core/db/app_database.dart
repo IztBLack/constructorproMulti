@@ -26,6 +26,7 @@ part 'app_database.g.dart';
   Movimientos,
   CatalogoConceptos,
   ArchivosCotizacion,
+  ObraPresupuesto,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -36,7 +37,7 @@ class AppDatabase extends _$AppDatabase {
   static const _uuid = Uuid();
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -121,6 +122,15 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(colaboradores, colaboradores.salarioPeriodo);
             await m.addColumn(colaboradores, colaboradores.diasSemana);
             // Recrea los triggers para que incluyan las columnas nuevas.
+            await _instalarTriggersSync();
+          }
+          // v4 → v5: importación de estado de cuenta (Excel/CSV). `nombre` en
+          // movimientos (beneficiario/pagador) + tabla obra_presupuesto
+          // (partidas del contrato, espeja Supabase 0008_control_pagos_obra).
+          if (from < 5) {
+            await m.addColumn(movimientos, movimientos.nombre);
+            await m.createTable(obraPresupuesto);
+            // Recrea los triggers para que incluyan la columna/tabla nuevas.
             await _instalarTriggersSync();
           }
         },
@@ -216,6 +226,7 @@ class AppDatabase extends _$AppDatabase {
       'pagos',
       'movimientos',
       'archivos_cotizacion',
+      'obra_presupuesto',
     ];
     final now = DateTime.now().millisecondsSinceEpoch;
     await transaction(() async {

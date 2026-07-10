@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../core/db/app_database.dart';
+import '../domain/import/import_models.dart' show ExcelMovimiento;
 
 const _uuid = Uuid();
 
@@ -145,6 +146,7 @@ class MovimientoRepository {
     required double monto,
     required String metodoPago,
     String referencia = '',
+    String nombre = '',
     String? nominaId,
     String? cotizacionId,
     String? seccionId,
@@ -160,16 +162,109 @@ class MovimientoRepository {
             monto: monto,
             metodoPago: metodoPago,
             referencia: Value(referencia),
+            nombre: Value(nombre),
             nominaId: Value(nominaId),
             cotizacionId: Value(cotizacionId),
             seccionId: Value(seccionId),
             partidaId: Value(partidaId),
           ));
 
+  /// Alta en lote de movimientos importados (Excel/CSV). `concepto` se
+  /// duplica desde `categoria` (mismo criterio que usa el resto de la app:
+  /// ver `Movimientos.categoria`/`.concepto`; el import de estado de cuenta
+  /// solo trae CONCEPTO→categoria, no una descripción separada). Pensado
+  /// para insertar solo las filas ya clasificadas como "Nuevo" por
+  /// `clasificarMovimientos` (dedup_movimientos.dart) — no re-chequea
+  /// duplicados aquí.
+  Future<void> insertBatch(
+    String obraId,
+    List<ExcelMovimiento> movimientos,
+  ) {
+    if (movimientos.isEmpty) return Future.value();
+    return db.batch((b) {
+      for (final m in movimientos) {
+        b.insert(
+          db.movimientos,
+          MovimientosCompanion.insert(
+            id: _uuid.v4(),
+            obraId: obraId,
+            fecha: m.fecha,
+            tipo: m.tipo,
+            categoria: m.categoria,
+            concepto: m.categoria,
+            monto: m.monto,
+            metodoPago: m.metodoPago,
+            referencia: Value(m.referencia),
+            nombre: Value(m.nombre),
+          ),
+        );
+      }
+    });
+  }
+
   Future<void> delete(String id) {
     final now = DateTime.now().millisecondsSinceEpoch;
     return (db.update(db.movimientos)..where((t) => t.id.equals(id))).write(
       MovimientosCompanion(
+        deletedAt: Value(now),
+        updatedAt: Value(now),
+        syncStatus: const Value('pending'),
+      ),
+    );
+  }
+}
+
+class ObraPresupuestoRepository {
+  final AppDatabase db;
+  ObraPresupuestoRepository(this.db);
+
+  Stream<List<ObraPresupuestoRow>> watchByObra(String obraId) =>
+      (db.select(db.obraPresupuesto)
+            ..where((t) => t.obraId.equals(obraId) & t.deletedAt.isNull())
+            ..orderBy([(t) => OrderingTerm(expression: t.orden)]))
+          .watch();
+
+  Future<List<ObraPresupuestoRow>> getByObra(String obraId) =>
+      (db.select(db.obraPresupuesto)
+            ..where((t) => t.obraId.equals(obraId) & t.deletedAt.isNull())
+            ..orderBy([(t) => OrderingTerm(expression: t.orden)]))
+          .get();
+
+  Future<void> upsert({
+    String? id,
+    required String obraId,
+    required String concepto,
+    String unidad = '',
+    double cantidad = 1,
+    double precioUnitario = 0,
+    int orden = 0,
+  }) =>
+      db.into(db.obraPresupuesto).insertOnConflictUpdate(
+            ObraPresupuestoCompanion.insert(
+              id: id ?? _uuid.v4(),
+              obraId: obraId,
+              concepto: Value(concepto),
+              unidad: Value(unidad),
+              cantidad: Value(cantidad),
+              precioUnitario: Value(precioUnitario),
+              orden: Value(orden),
+            ),
+          );
+
+  /// Alta/actualización en lote (import de estado de cuenta: reemplaza o
+  /// agrega partidas ya reconciliadas por `reconciliarPresupuesto`).
+  Future<void> upsertBatch(List<ObraPresupuestoCompanion> partidas) {
+    if (partidas.isEmpty) return Future.value();
+    return db.batch((b) {
+      b.insertAllOnConflictUpdate(db.obraPresupuesto, partidas);
+    });
+  }
+
+  Future<void> delete(String id) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return (db.update(db.obraPresupuesto)..where((t) => t.id.equals(id)))
+        .write(
+      ObraPresupuestoCompanion(
         deletedAt: Value(now),
         updatedAt: Value(now),
         syncStatus: const Value('pending'),

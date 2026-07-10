@@ -194,6 +194,28 @@ class Movimientos extends Table with SyncCols {
   TextColumn get seccionId => text().nullable()();
   TextColumn get partidaId => text().nullable()();
 
+  /// Beneficiario/pagador del movimiento (a quién se le pagó / de quién se
+  /// recibió). Espeja `movimientos.nombre` de Supabase (migración 0008).
+  TextColumn get nombre => text().withDefault(const Constant(''))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Presupuesto de obra por partidas (encabezado tipo "COSTO TOTAL" del Excel
+/// "estado de cuenta"). Espeja `public.obra_presupuesto` de Supabase
+/// (migración 0008_control_pagos_obra.sql). Ej.: Construcción 344 m² ×
+/// 14500 ; Barda 35 m² × 7000 ; Alberca 450000 ; Demolición 240000.
+@DataClassName('ObraPresupuestoRow')
+class ObraPresupuesto extends Table with SyncCols {
+  TextColumn get id => text()();
+  TextColumn get obraId => text()();
+  TextColumn get concepto => text().withDefault(const Constant(''))();
+  TextColumn get unidad => text().withDefault(const Constant(''))();
+  RealColumn get cantidad => real().withDefault(const Constant(1))();
+  RealColumn get precioUnitario => real().withDefault(const Constant(0))();
+  IntColumn get orden => integer().withDefault(const Constant(0))();
+
   @override
   Set<Column> get primaryKey => {id};
 }

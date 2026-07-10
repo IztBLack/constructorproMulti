@@ -1,3 +1,5 @@
+import 'package:drift/drift.dart';
+
 import '../core/db/app_database.dart';
 import 'models/models.dart' as dom;
 
@@ -37,7 +39,47 @@ dom.Movimiento movimientoToDomain(Movimiento r) => dom.Movimiento(
           ? dom.TipoMovimiento.entrada
           : dom.TipoMovimiento.salida,
       monto: r.monto,
+      nombre: r.nombre,
+    );
+
+/// Reverso de [movimientoToDomain]: companion PARCIAL (solo los campos que
+/// modela `dom.Movimiento`: tipo, monto, nombre) para actualizaciones. Los
+/// altas completas (obraId, fecha, categoria, metodoPago, etc.) se hacen vía
+/// `MovimientoRepository.add` / `insertBatch`, que trabajan directo con
+/// `ExcelMovimiento`/parámetros explícitos, no con este modelo reducido.
+MovimientosCompanion movimientoToCompanion(dom.Movimiento m) =>
+    MovimientosCompanion(
+      tipo: Value(
+          m.tipo == dom.TipoMovimiento.entrada ? 'ENTRADA' : 'SALIDA'),
+      monto: Value(m.monto),
+      nombre: Value(m.nombre),
     );
 
 dom.Partida partidaToDomain(Partida r) =>
     dom.Partida(cantidad: r.cantidad, precioUnitario: r.precioUnitario);
+
+dom.PartidaPresupuesto partidaPresupuestoToDomain(ObraPresupuestoRow r) =>
+    dom.PartidaPresupuesto(
+      id: r.id,
+      obraId: r.obraId,
+      concepto: r.concepto,
+      unidad: r.unidad,
+      cantidad: r.cantidad,
+      precioUnitario: r.precioUnitario,
+      orden: r.orden,
+    );
+
+/// Reverso de [partidaPresupuestoToDomain]: companion completo, apto para
+/// `insertOnConflictUpdate` (a diferencia de `dom.Movimiento`, el dominio de
+/// `PartidaPresupuesto` mapea 1:1 con la tabla, así que sí trae todo).
+ObraPresupuestoCompanion partidaPresupuestoToCompanion(
+        dom.PartidaPresupuesto p) =>
+    ObraPresupuestoCompanion(
+      id: Value(p.id),
+      obraId: Value(p.obraId),
+      concepto: Value(p.concepto),
+      unidad: Value(p.unidad),
+      cantidad: Value(p.cantidad),
+      precioUnitario: Value(p.precioUnitario),
+      orden: Value(p.orden),
+    );

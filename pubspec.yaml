@@ -42,8 +42,12 @@ dependencies:
   path_provider: ^2.1.6
   path: ^1.9.1
   intl: ^0.20.2
-  pdf: ^3.13.0
-  printing: ^5.15.0
+  # Pinned <3.13.0: esa versión sube xml a ^7.0.1, incompatible con excel
+  # ^4.0.6 (requiere xml <7.0.0). 3.12.0 no tiene cambios que rompan a
+  # pdf_service.dart / cotizacion_detail_screen.dart (ver CHANGELOG del pkg).
+  pdf: ^3.12.0
+  # Pinned <5.13.0: esa versión sube su dependencia interna a pdf ^3.13.0.
+  printing: ^5.12.0
   pdfx: ^2.9.2
   flutter_local_notifications: ^22.0.1
   share_plus: ^10.1.4
@@ -53,8 +57,13 @@ dependencies:
   flutter_timezone: ^5.1.0
   timezone: ^0.11.0
   file_picker: ^8.1.7
-  archive: ^4.0.9
+  # Pinned <4.0.0: excel ^4.0.6 depende de archive ^3.6.1 (API distinta a la
+  # serie 4.x: ZipDecoder.decodeBuffer / ArchiveFile.compress no existen ahí).
+  archive: ^3.6.1
   collection: ^1.19.1
+  # Importación de estado de cuenta (Excel/CSV) de una obra.
+  excel: ^4.0.6
+  csv: ^6.0.0
   # Sync nube (Fase 2): cliente Supabase + detección de conectividad.
   supabase_flutter: ^2.9.0
   connectivity_plus: ^6.1.0

@@ -7962,6 +7962,16 @@ class $MovimientosTable extends Movimientos
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _nombreMeta = const VerificationMeta('nombre');
+  @override
+  late final GeneratedColumn<String> nombre = GeneratedColumn<String>(
+    'nombre',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     empresaId,
@@ -7983,6 +7993,7 @@ class $MovimientosTable extends Movimientos
     cotizacionId,
     seccionId,
     partidaId,
+    nombre,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -8129,6 +8140,12 @@ class $MovimientosTable extends Movimientos
         partidaId.isAcceptableOrUnknown(data['partida_id']!, _partidaIdMeta),
       );
     }
+    if (data.containsKey('nombre')) {
+      context.handle(
+        _nombreMeta,
+        nombre.isAcceptableOrUnknown(data['nombre']!, _nombreMeta),
+      );
+    }
     return context;
   }
 
@@ -8214,6 +8231,10 @@ class $MovimientosTable extends Movimientos
         DriftSqlType.string,
         data['${effectivePrefix}partida_id'],
       ),
+      nombre: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}nombre'],
+      )!,
     );
   }
 
@@ -8254,6 +8275,10 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
   final String? cotizacionId;
   final String? seccionId;
   final String? partidaId;
+
+  /// Beneficiario/pagador del movimiento (a quién se le pagó / de quién se
+  /// recibió). Espeja `movimientos.nombre` de Supabase (migración 0008).
+  final String nombre;
   const Movimiento({
     required this.empresaId,
     required this.createdAt,
@@ -8274,6 +8299,7 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
     this.cotizacionId,
     this.seccionId,
     this.partidaId,
+    required this.nombre,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -8309,6 +8335,7 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
     if (!nullToAbsent || partidaId != null) {
       map['partida_id'] = Variable<String>(partidaId);
     }
+    map['nombre'] = Variable<String>(nombre);
     return map;
   }
 
@@ -8345,6 +8372,7 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
       partidaId: partidaId == null && nullToAbsent
           ? const Value.absent()
           : Value(partidaId),
+      nombre: Value(nombre),
     );
   }
 
@@ -8373,6 +8401,7 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
       cotizacionId: serializer.fromJson<String?>(json['cotizacionId']),
       seccionId: serializer.fromJson<String?>(json['seccionId']),
       partidaId: serializer.fromJson<String?>(json['partidaId']),
+      nombre: serializer.fromJson<String>(json['nombre']),
     );
   }
   @override
@@ -8398,6 +8427,7 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
       'cotizacionId': serializer.toJson<String?>(cotizacionId),
       'seccionId': serializer.toJson<String?>(seccionId),
       'partidaId': serializer.toJson<String?>(partidaId),
+      'nombre': serializer.toJson<String>(nombre),
     };
   }
 
@@ -8421,6 +8451,7 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
     Value<String?> cotizacionId = const Value.absent(),
     Value<String?> seccionId = const Value.absent(),
     Value<String?> partidaId = const Value.absent(),
+    String? nombre,
   }) => Movimiento(
     empresaId: empresaId ?? this.empresaId,
     createdAt: createdAt ?? this.createdAt,
@@ -8443,6 +8474,7 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
     cotizacionId: cotizacionId.present ? cotizacionId.value : this.cotizacionId,
     seccionId: seccionId.present ? seccionId.value : this.seccionId,
     partidaId: partidaId.present ? partidaId.value : this.partidaId,
+    nombre: nombre ?? this.nombre,
   );
   Movimiento copyWithCompanion(MovimientosCompanion data) {
     return Movimiento(
@@ -8475,6 +8507,7 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
           : this.cotizacionId,
       seccionId: data.seccionId.present ? data.seccionId.value : this.seccionId,
       partidaId: data.partidaId.present ? data.partidaId.value : this.partidaId,
+      nombre: data.nombre.present ? data.nombre.value : this.nombre,
     );
   }
 
@@ -8499,7 +8532,8 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
           ..write('nominaId: $nominaId, ')
           ..write('cotizacionId: $cotizacionId, ')
           ..write('seccionId: $seccionId, ')
-          ..write('partidaId: $partidaId')
+          ..write('partidaId: $partidaId, ')
+          ..write('nombre: $nombre')
           ..write(')'))
         .toString();
   }
@@ -8525,6 +8559,7 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
     cotizacionId,
     seccionId,
     partidaId,
+    nombre,
   );
   @override
   bool operator ==(Object other) =>
@@ -8548,7 +8583,8 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
           other.nominaId == this.nominaId &&
           other.cotizacionId == this.cotizacionId &&
           other.seccionId == this.seccionId &&
-          other.partidaId == this.partidaId);
+          other.partidaId == this.partidaId &&
+          other.nombre == this.nombre);
 }
 
 class MovimientosCompanion extends UpdateCompanion<Movimiento> {
@@ -8571,6 +8607,7 @@ class MovimientosCompanion extends UpdateCompanion<Movimiento> {
   final Value<String?> cotizacionId;
   final Value<String?> seccionId;
   final Value<String?> partidaId;
+  final Value<String> nombre;
   final Value<int> rowid;
   const MovimientosCompanion({
     this.empresaId = const Value.absent(),
@@ -8592,6 +8629,7 @@ class MovimientosCompanion extends UpdateCompanion<Movimiento> {
     this.cotizacionId = const Value.absent(),
     this.seccionId = const Value.absent(),
     this.partidaId = const Value.absent(),
+    this.nombre = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   MovimientosCompanion.insert({
@@ -8614,6 +8652,7 @@ class MovimientosCompanion extends UpdateCompanion<Movimiento> {
     this.cotizacionId = const Value.absent(),
     this.seccionId = const Value.absent(),
     this.partidaId = const Value.absent(),
+    this.nombre = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        obraId = Value(obraId),
@@ -8643,6 +8682,7 @@ class MovimientosCompanion extends UpdateCompanion<Movimiento> {
     Expression<String>? cotizacionId,
     Expression<String>? seccionId,
     Expression<String>? partidaId,
+    Expression<String>? nombre,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -8665,6 +8705,7 @@ class MovimientosCompanion extends UpdateCompanion<Movimiento> {
       if (cotizacionId != null) 'cotizacion_id': cotizacionId,
       if (seccionId != null) 'seccion_id': seccionId,
       if (partidaId != null) 'partida_id': partidaId,
+      if (nombre != null) 'nombre': nombre,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -8689,6 +8730,7 @@ class MovimientosCompanion extends UpdateCompanion<Movimiento> {
     Value<String?>? cotizacionId,
     Value<String?>? seccionId,
     Value<String?>? partidaId,
+    Value<String>? nombre,
     Value<int>? rowid,
   }) {
     return MovimientosCompanion(
@@ -8711,6 +8753,7 @@ class MovimientosCompanion extends UpdateCompanion<Movimiento> {
       cotizacionId: cotizacionId ?? this.cotizacionId,
       seccionId: seccionId ?? this.seccionId,
       partidaId: partidaId ?? this.partidaId,
+      nombre: nombre ?? this.nombre,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -8775,6 +8818,9 @@ class MovimientosCompanion extends UpdateCompanion<Movimiento> {
     if (partidaId.present) {
       map['partida_id'] = Variable<String>(partidaId.value);
     }
+    if (nombre.present) {
+      map['nombre'] = Variable<String>(nombre.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -8803,6 +8849,7 @@ class MovimientosCompanion extends UpdateCompanion<Movimiento> {
           ..write('cotizacionId: $cotizacionId, ')
           ..write('seccionId: $seccionId, ')
           ..write('partidaId: $partidaId, ')
+          ..write('nombre: $nombre, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -10315,6 +10362,762 @@ class ArchivosCotizacionCompanion extends UpdateCompanion<ArchivoCotizacion> {
   }
 }
 
+class $ObraPresupuestoTable extends ObraPresupuesto
+    with TableInfo<$ObraPresupuestoTable, ObraPresupuestoRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ObraPresupuestoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _empresaIdMeta = const VerificationMeta(
+    'empresaId',
+  );
+  @override
+  late final GeneratedColumn<String> empresaId = GeneratedColumn<String>(
+    'empresa_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _serverUpdatedAtMeta = const VerificationMeta(
+    'serverUpdatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> serverUpdatedAt = GeneratedColumn<int>(
+    'server_updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _obraIdMeta = const VerificationMeta('obraId');
+  @override
+  late final GeneratedColumn<String> obraId = GeneratedColumn<String>(
+    'obra_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _conceptoMeta = const VerificationMeta(
+    'concepto',
+  );
+  @override
+  late final GeneratedColumn<String> concepto = GeneratedColumn<String>(
+    'concepto',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _unidadMeta = const VerificationMeta('unidad');
+  @override
+  late final GeneratedColumn<String> unidad = GeneratedColumn<String>(
+    'unidad',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _cantidadMeta = const VerificationMeta(
+    'cantidad',
+  );
+  @override
+  late final GeneratedColumn<double> cantidad = GeneratedColumn<double>(
+    'cantidad',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _precioUnitarioMeta = const VerificationMeta(
+    'precioUnitario',
+  );
+  @override
+  late final GeneratedColumn<double> precioUnitario = GeneratedColumn<double>(
+    'precio_unitario',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _ordenMeta = const VerificationMeta('orden');
+  @override
+  late final GeneratedColumn<int> orden = GeneratedColumn<int>(
+    'orden',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    id,
+    obraId,
+    concepto,
+    unidad,
+    cantidad,
+    precioUnitario,
+    orden,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'obra_presupuesto';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ObraPresupuestoRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('empresa_id')) {
+      context.handle(
+        _empresaIdMeta,
+        empresaId.isAcceptableOrUnknown(data['empresa_id']!, _empresaIdMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('server_updated_at')) {
+      context.handle(
+        _serverUpdatedAtMeta,
+        serverUpdatedAt.isAcceptableOrUnknown(
+          data['server_updated_at']!,
+          _serverUpdatedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('obra_id')) {
+      context.handle(
+        _obraIdMeta,
+        obraId.isAcceptableOrUnknown(data['obra_id']!, _obraIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_obraIdMeta);
+    }
+    if (data.containsKey('concepto')) {
+      context.handle(
+        _conceptoMeta,
+        concepto.isAcceptableOrUnknown(data['concepto']!, _conceptoMeta),
+      );
+    }
+    if (data.containsKey('unidad')) {
+      context.handle(
+        _unidadMeta,
+        unidad.isAcceptableOrUnknown(data['unidad']!, _unidadMeta),
+      );
+    }
+    if (data.containsKey('cantidad')) {
+      context.handle(
+        _cantidadMeta,
+        cantidad.isAcceptableOrUnknown(data['cantidad']!, _cantidadMeta),
+      );
+    }
+    if (data.containsKey('precio_unitario')) {
+      context.handle(
+        _precioUnitarioMeta,
+        precioUnitario.isAcceptableOrUnknown(
+          data['precio_unitario']!,
+          _precioUnitarioMeta,
+        ),
+      );
+    }
+    if (data.containsKey('orden')) {
+      context.handle(
+        _ordenMeta,
+        orden.isAcceptableOrUnknown(data['orden']!, _ordenMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ObraPresupuestoRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ObraPresupuestoRow(
+      empresaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}empresa_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      serverUpdatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}server_updated_at'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      obraId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}obra_id'],
+      )!,
+      concepto: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}concepto'],
+      )!,
+      unidad: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}unidad'],
+      )!,
+      cantidad: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}cantidad'],
+      )!,
+      precioUnitario: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}precio_unitario'],
+      )!,
+      orden: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}orden'],
+      )!,
+    );
+  }
+
+  @override
+  $ObraPresupuestoTable createAlias(String alias) {
+    return $ObraPresupuestoTable(attachedDatabase, alias);
+  }
+}
+
+class ObraPresupuestoRow extends DataClass
+    implements Insertable<ObraPresupuestoRow> {
+  /// Llave multitenant + RLS. Vacío mientras no haya backend.
+  final String empresaId;
+
+  /// Alta (UTC ms). 0 en filas previas a la migración.
+  final int createdAt;
+
+  /// Última edición de cliente (UTC ms). Árbitro local de LWW + dirty flag.
+  final int updatedAt;
+
+  /// Lo pone Postgres; árbitro de LWW y cursor de pull. Null hasta sincronizar.
+  final int? serverUpdatedAt;
+
+  /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
+  final int? deletedAt;
+
+  /// 'pending' | 'synced' | 'error'.
+  final String syncStatus;
+  final String id;
+  final String obraId;
+  final String concepto;
+  final String unidad;
+  final double cantidad;
+  final double precioUnitario;
+  final int orden;
+  const ObraPresupuestoRow({
+    required this.empresaId,
+    required this.createdAt,
+    required this.updatedAt,
+    this.serverUpdatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.id,
+    required this.obraId,
+    required this.concepto,
+    required this.unidad,
+    required this.cantidad,
+    required this.precioUnitario,
+    required this.orden,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['empresa_id'] = Variable<String>(empresaId);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || serverUpdatedAt != null) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    map['id'] = Variable<String>(id);
+    map['obra_id'] = Variable<String>(obraId);
+    map['concepto'] = Variable<String>(concepto);
+    map['unidad'] = Variable<String>(unidad);
+    map['cantidad'] = Variable<double>(cantidad);
+    map['precio_unitario'] = Variable<double>(precioUnitario);
+    map['orden'] = Variable<int>(orden);
+    return map;
+  }
+
+  ObraPresupuestoCompanion toCompanion(bool nullToAbsent) {
+    return ObraPresupuestoCompanion(
+      empresaId: Value(empresaId),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      serverUpdatedAt: serverUpdatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverUpdatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      id: Value(id),
+      obraId: Value(obraId),
+      concepto: Value(concepto),
+      unidad: Value(unidad),
+      cantidad: Value(cantidad),
+      precioUnitario: Value(precioUnitario),
+      orden: Value(orden),
+    );
+  }
+
+  factory ObraPresupuestoRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ObraPresupuestoRow(
+      empresaId: serializer.fromJson<String>(json['empresaId']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      serverUpdatedAt: serializer.fromJson<int?>(json['serverUpdatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      id: serializer.fromJson<String>(json['id']),
+      obraId: serializer.fromJson<String>(json['obraId']),
+      concepto: serializer.fromJson<String>(json['concepto']),
+      unidad: serializer.fromJson<String>(json['unidad']),
+      cantidad: serializer.fromJson<double>(json['cantidad']),
+      precioUnitario: serializer.fromJson<double>(json['precioUnitario']),
+      orden: serializer.fromJson<int>(json['orden']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'empresaId': serializer.toJson<String>(empresaId),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'serverUpdatedAt': serializer.toJson<int?>(serverUpdatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'id': serializer.toJson<String>(id),
+      'obraId': serializer.toJson<String>(obraId),
+      'concepto': serializer.toJson<String>(concepto),
+      'unidad': serializer.toJson<String>(unidad),
+      'cantidad': serializer.toJson<double>(cantidad),
+      'precioUnitario': serializer.toJson<double>(precioUnitario),
+      'orden': serializer.toJson<int>(orden),
+    };
+  }
+
+  ObraPresupuestoRow copyWith({
+    String? empresaId,
+    int? createdAt,
+    int? updatedAt,
+    Value<int?> serverUpdatedAt = const Value.absent(),
+    Value<int?> deletedAt = const Value.absent(),
+    String? syncStatus,
+    String? id,
+    String? obraId,
+    String? concepto,
+    String? unidad,
+    double? cantidad,
+    double? precioUnitario,
+    int? orden,
+  }) => ObraPresupuestoRow(
+    empresaId: empresaId ?? this.empresaId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    serverUpdatedAt: serverUpdatedAt.present
+        ? serverUpdatedAt.value
+        : this.serverUpdatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    id: id ?? this.id,
+    obraId: obraId ?? this.obraId,
+    concepto: concepto ?? this.concepto,
+    unidad: unidad ?? this.unidad,
+    cantidad: cantidad ?? this.cantidad,
+    precioUnitario: precioUnitario ?? this.precioUnitario,
+    orden: orden ?? this.orden,
+  );
+  ObraPresupuestoRow copyWithCompanion(ObraPresupuestoCompanion data) {
+    return ObraPresupuestoRow(
+      empresaId: data.empresaId.present ? data.empresaId.value : this.empresaId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      serverUpdatedAt: data.serverUpdatedAt.present
+          ? data.serverUpdatedAt.value
+          : this.serverUpdatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      id: data.id.present ? data.id.value : this.id,
+      obraId: data.obraId.present ? data.obraId.value : this.obraId,
+      concepto: data.concepto.present ? data.concepto.value : this.concepto,
+      unidad: data.unidad.present ? data.unidad.value : this.unidad,
+      cantidad: data.cantidad.present ? data.cantidad.value : this.cantidad,
+      precioUnitario: data.precioUnitario.present
+          ? data.precioUnitario.value
+          : this.precioUnitario,
+      orden: data.orden.present ? data.orden.value : this.orden,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ObraPresupuestoRow(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('id: $id, ')
+          ..write('obraId: $obraId, ')
+          ..write('concepto: $concepto, ')
+          ..write('unidad: $unidad, ')
+          ..write('cantidad: $cantidad, ')
+          ..write('precioUnitario: $precioUnitario, ')
+          ..write('orden: $orden')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    id,
+    obraId,
+    concepto,
+    unidad,
+    cantidad,
+    precioUnitario,
+    orden,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ObraPresupuestoRow &&
+          other.empresaId == this.empresaId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.serverUpdatedAt == this.serverUpdatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.id == this.id &&
+          other.obraId == this.obraId &&
+          other.concepto == this.concepto &&
+          other.unidad == this.unidad &&
+          other.cantidad == this.cantidad &&
+          other.precioUnitario == this.precioUnitario &&
+          other.orden == this.orden);
+}
+
+class ObraPresupuestoCompanion extends UpdateCompanion<ObraPresupuestoRow> {
+  final Value<String> empresaId;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int?> serverUpdatedAt;
+  final Value<int?> deletedAt;
+  final Value<String> syncStatus;
+  final Value<String> id;
+  final Value<String> obraId;
+  final Value<String> concepto;
+  final Value<String> unidad;
+  final Value<double> cantidad;
+  final Value<double> precioUnitario;
+  final Value<int> orden;
+  final Value<int> rowid;
+  const ObraPresupuestoCompanion({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.id = const Value.absent(),
+    this.obraId = const Value.absent(),
+    this.concepto = const Value.absent(),
+    this.unidad = const Value.absent(),
+    this.cantidad = const Value.absent(),
+    this.precioUnitario = const Value.absent(),
+    this.orden = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ObraPresupuestoCompanion.insert({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String id,
+    required String obraId,
+    this.concepto = const Value.absent(),
+    this.unidad = const Value.absent(),
+    this.cantidad = const Value.absent(),
+    this.precioUnitario = const Value.absent(),
+    this.orden = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       obraId = Value(obraId);
+  static Insertable<ObraPresupuestoRow> custom({
+    Expression<String>? empresaId,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? serverUpdatedAt,
+    Expression<int>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? id,
+    Expression<String>? obraId,
+    Expression<String>? concepto,
+    Expression<String>? unidad,
+    Expression<double>? cantidad,
+    Expression<double>? precioUnitario,
+    Expression<int>? orden,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (empresaId != null) 'empresa_id': empresaId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (serverUpdatedAt != null) 'server_updated_at': serverUpdatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (id != null) 'id': id,
+      if (obraId != null) 'obra_id': obraId,
+      if (concepto != null) 'concepto': concepto,
+      if (unidad != null) 'unidad': unidad,
+      if (cantidad != null) 'cantidad': cantidad,
+      if (precioUnitario != null) 'precio_unitario': precioUnitario,
+      if (orden != null) 'orden': orden,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ObraPresupuestoCompanion copyWith({
+    Value<String>? empresaId,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int?>? serverUpdatedAt,
+    Value<int?>? deletedAt,
+    Value<String>? syncStatus,
+    Value<String>? id,
+    Value<String>? obraId,
+    Value<String>? concepto,
+    Value<String>? unidad,
+    Value<double>? cantidad,
+    Value<double>? precioUnitario,
+    Value<int>? orden,
+    Value<int>? rowid,
+  }) {
+    return ObraPresupuestoCompanion(
+      empresaId: empresaId ?? this.empresaId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      id: id ?? this.id,
+      obraId: obraId ?? this.obraId,
+      concepto: concepto ?? this.concepto,
+      unidad: unidad ?? this.unidad,
+      cantidad: cantidad ?? this.cantidad,
+      precioUnitario: precioUnitario ?? this.precioUnitario,
+      orden: orden ?? this.orden,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (empresaId.present) {
+      map['empresa_id'] = Variable<String>(empresaId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (serverUpdatedAt.present) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (obraId.present) {
+      map['obra_id'] = Variable<String>(obraId.value);
+    }
+    if (concepto.present) {
+      map['concepto'] = Variable<String>(concepto.value);
+    }
+    if (unidad.present) {
+      map['unidad'] = Variable<String>(unidad.value);
+    }
+    if (cantidad.present) {
+      map['cantidad'] = Variable<double>(cantidad.value);
+    }
+    if (precioUnitario.present) {
+      map['precio_unitario'] = Variable<double>(precioUnitario.value);
+    }
+    if (orden.present) {
+      map['orden'] = Variable<int>(orden.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ObraPresupuestoCompanion(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('id: $id, ')
+          ..write('obraId: $obraId, ')
+          ..write('concepto: $concepto, ')
+          ..write('unidad: $unidad, ')
+          ..write('cantidad: $cantidad, ')
+          ..write('precioUnitario: $precioUnitario, ')
+          ..write('orden: $orden, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -10335,6 +11138,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $CatalogoConceptosTable(this);
   late final $ArchivosCotizacionTable archivosCotizacion =
       $ArchivosCotizacionTable(this);
+  late final $ObraPresupuestoTable obraPresupuesto = $ObraPresupuestoTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -10353,6 +11159,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     movimientos,
     catalogoConceptos,
     archivosCotizacion,
+    obraPresupuesto,
   ];
 }
 
@@ -13959,6 +14766,7 @@ typedef $$MovimientosTableCreateCompanionBuilder =
       Value<String?> cotizacionId,
       Value<String?> seccionId,
       Value<String?> partidaId,
+      Value<String> nombre,
       Value<int> rowid,
     });
 typedef $$MovimientosTableUpdateCompanionBuilder =
@@ -13982,6 +14790,7 @@ typedef $$MovimientosTableUpdateCompanionBuilder =
       Value<String?> cotizacionId,
       Value<String?> seccionId,
       Value<String?> partidaId,
+      Value<String> nombre,
       Value<int> rowid,
     });
 
@@ -14086,6 +14895,11 @@ class $$MovimientosTableFilterComposer
 
   ColumnFilters<String> get partidaId => $composableBuilder(
     column: $table.partidaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nombre => $composableBuilder(
+    column: $table.nombre,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -14193,6 +15007,11 @@ class $$MovimientosTableOrderingComposer
     column: $table.partidaId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$MovimientosTableAnnotationComposer
@@ -14270,6 +15089,9 @@ class $$MovimientosTableAnnotationComposer
 
   GeneratedColumn<String> get partidaId =>
       $composableBuilder(column: $table.partidaId, builder: (column) => column);
+
+  GeneratedColumn<String> get nombre =>
+      $composableBuilder(column: $table.nombre, builder: (column) => column);
 }
 
 class $$MovimientosTableTableManager
@@ -14322,6 +15144,7 @@ class $$MovimientosTableTableManager
                 Value<String?> cotizacionId = const Value.absent(),
                 Value<String?> seccionId = const Value.absent(),
                 Value<String?> partidaId = const Value.absent(),
+                Value<String> nombre = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MovimientosCompanion(
                 empresaId: empresaId,
@@ -14343,6 +15166,7 @@ class $$MovimientosTableTableManager
                 cotizacionId: cotizacionId,
                 seccionId: seccionId,
                 partidaId: partidaId,
+                nombre: nombre,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -14366,6 +15190,7 @@ class $$MovimientosTableTableManager
                 Value<String?> cotizacionId = const Value.absent(),
                 Value<String?> seccionId = const Value.absent(),
                 Value<String?> partidaId = const Value.absent(),
+                Value<String> nombre = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MovimientosCompanion.insert(
                 empresaId: empresaId,
@@ -14387,6 +15212,7 @@ class $$MovimientosTableTableManager
                 cotizacionId: cotizacionId,
                 seccionId: seccionId,
                 partidaId: partidaId,
+                nombre: nombre,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -15143,6 +15969,374 @@ typedef $$ArchivosCotizacionTableProcessedTableManager =
       ArchivoCotizacion,
       PrefetchHooks Function()
     >;
+typedef $$ObraPresupuestoTableCreateCompanionBuilder =
+    ObraPresupuestoCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      required String id,
+      required String obraId,
+      Value<String> concepto,
+      Value<String> unidad,
+      Value<double> cantidad,
+      Value<double> precioUnitario,
+      Value<int> orden,
+      Value<int> rowid,
+    });
+typedef $$ObraPresupuestoTableUpdateCompanionBuilder =
+    ObraPresupuestoCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      Value<String> id,
+      Value<String> obraId,
+      Value<String> concepto,
+      Value<String> unidad,
+      Value<double> cantidad,
+      Value<double> precioUnitario,
+      Value<int> orden,
+      Value<int> rowid,
+    });
+
+class $$ObraPresupuestoTableFilterComposer
+    extends Composer<_$AppDatabase, $ObraPresupuestoTable> {
+  $$ObraPresupuestoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get obraId => $composableBuilder(
+    column: $table.obraId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get concepto => $composableBuilder(
+    column: $table.concepto,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get unidad => $composableBuilder(
+    column: $table.unidad,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get cantidad => $composableBuilder(
+    column: $table.cantidad,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get precioUnitario => $composableBuilder(
+    column: $table.precioUnitario,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ObraPresupuestoTableOrderingComposer
+    extends Composer<_$AppDatabase, $ObraPresupuestoTable> {
+  $$ObraPresupuestoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get obraId => $composableBuilder(
+    column: $table.obraId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get concepto => $composableBuilder(
+    column: $table.concepto,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get unidad => $composableBuilder(
+    column: $table.unidad,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get cantidad => $composableBuilder(
+    column: $table.cantidad,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get precioUnitario => $composableBuilder(
+    column: $table.precioUnitario,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ObraPresupuestoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ObraPresupuestoTable> {
+  $$ObraPresupuestoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get empresaId =>
+      $composableBuilder(column: $table.empresaId, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get obraId =>
+      $composableBuilder(column: $table.obraId, builder: (column) => column);
+
+  GeneratedColumn<String> get concepto =>
+      $composableBuilder(column: $table.concepto, builder: (column) => column);
+
+  GeneratedColumn<String> get unidad =>
+      $composableBuilder(column: $table.unidad, builder: (column) => column);
+
+  GeneratedColumn<double> get cantidad =>
+      $composableBuilder(column: $table.cantidad, builder: (column) => column);
+
+  GeneratedColumn<double> get precioUnitario => $composableBuilder(
+    column: $table.precioUnitario,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get orden =>
+      $composableBuilder(column: $table.orden, builder: (column) => column);
+}
+
+class $$ObraPresupuestoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ObraPresupuestoTable,
+          ObraPresupuestoRow,
+          $$ObraPresupuestoTableFilterComposer,
+          $$ObraPresupuestoTableOrderingComposer,
+          $$ObraPresupuestoTableAnnotationComposer,
+          $$ObraPresupuestoTableCreateCompanionBuilder,
+          $$ObraPresupuestoTableUpdateCompanionBuilder,
+          (
+            ObraPresupuestoRow,
+            BaseReferences<
+              _$AppDatabase,
+              $ObraPresupuestoTable,
+              ObraPresupuestoRow
+            >,
+          ),
+          ObraPresupuestoRow,
+          PrefetchHooks Function()
+        > {
+  $$ObraPresupuestoTableTableManager(
+    _$AppDatabase db,
+    $ObraPresupuestoTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ObraPresupuestoTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ObraPresupuestoTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ObraPresupuestoTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String> obraId = const Value.absent(),
+                Value<String> concepto = const Value.absent(),
+                Value<String> unidad = const Value.absent(),
+                Value<double> cantidad = const Value.absent(),
+                Value<double> precioUnitario = const Value.absent(),
+                Value<int> orden = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ObraPresupuestoCompanion(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                id: id,
+                obraId: obraId,
+                concepto: concepto,
+                unidad: unidad,
+                cantidad: cantidad,
+                precioUnitario: precioUnitario,
+                orden: orden,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                required String id,
+                required String obraId,
+                Value<String> concepto = const Value.absent(),
+                Value<String> unidad = const Value.absent(),
+                Value<double> cantidad = const Value.absent(),
+                Value<double> precioUnitario = const Value.absent(),
+                Value<int> orden = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ObraPresupuestoCompanion.insert(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                id: id,
+                obraId: obraId,
+                concepto: concepto,
+                unidad: unidad,
+                cantidad: cantidad,
+                precioUnitario: precioUnitario,
+                orden: orden,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ObraPresupuestoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ObraPresupuestoTable,
+      ObraPresupuestoRow,
+      $$ObraPresupuestoTableFilterComposer,
+      $$ObraPresupuestoTableOrderingComposer,
+      $$ObraPresupuestoTableAnnotationComposer,
+      $$ObraPresupuestoTableCreateCompanionBuilder,
+      $$ObraPresupuestoTableUpdateCompanionBuilder,
+      (
+        ObraPresupuestoRow,
+        BaseReferences<
+          _$AppDatabase,
+          $ObraPresupuestoTable,
+          ObraPresupuestoRow
+        >,
+      ),
+      ObraPresupuestoRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -15173,4 +16367,6 @@ class $AppDatabaseManager {
       $$CatalogoConceptosTableTableManager(_db, _db.catalogoConceptos);
   $$ArchivosCotizacionTableTableManager get archivosCotizacion =>
       $$ArchivosCotizacionTableTableManager(_db, _db.archivosCotizacion);
+  $$ObraPresupuestoTableTableManager get obraPresupuesto =>
+      $$ObraPresupuestoTableTableManager(_db, _db.obraPresupuesto);
 }

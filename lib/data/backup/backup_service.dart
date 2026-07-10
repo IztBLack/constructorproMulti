@@ -748,7 +748,14 @@ class BackupService {
       archive.addFile(ArchiveFile('files/$nombre', bytes.length, bytes));
     }
 
-    return ZipEncoder().encode(archive);
+    // archive ^3.6.1 (pin requerido por el paquete `excel`, ver pubspec.yaml)
+    // tipa ZipEncoder().encode() como `List<int>?` a diferencia de la serie
+    // 4.x; en la práctica solo es null si falla la codificación.
+    final bytes = ZipEncoder().encode(archive);
+    if (bytes == null) {
+      throw StateError('No se pudo generar el ZIP del respaldo.');
+    }
+    return bytes;
   }
 
   /// Restaura desde un respaldo ZIP (datos + binarios). Reemplaza TODO el

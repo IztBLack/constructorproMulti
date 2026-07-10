@@ -61,6 +61,9 @@ final destajoRepositoryProvider = Provider<DestajoRepository>(
 final movimientoRepositoryProvider = Provider<MovimientoRepository>(
     (ref) => MovimientoRepository(ref.watch(databaseProvider)));
 
+final obraPresupuestoRepositoryProvider = Provider<ObraPresupuestoRepository>(
+    (ref) => ObraPresupuestoRepository(ref.watch(databaseProvider)));
+
 // ---------------- Streams ----------------
 final obrasProvider = StreamProvider<List<Obra>>(
     (ref) => ref.watch(obraRepositoryProvider).watchAll());
@@ -90,6 +93,12 @@ final movimientosPorObraProvider =
 
 final movimientosTodosProvider = StreamProvider<List<Movimiento>>(
     (ref) => ref.watch(movimientoRepositoryProvider).watchAll());
+
+/// Partidas del presupuesto de una obra (para el import/reconciliación y la
+/// pantalla de estado de cuenta).
+final partidasPresupuestoPorObraProvider =
+    StreamProvider.family<List<ObraPresupuestoRow>, String>((ref, obraId) =>
+        ref.watch(obraPresupuestoRepositoryProvider).watchByObra(obraId));
 
 typedef RangoObra = ({String obraId, int start, int end});
 
