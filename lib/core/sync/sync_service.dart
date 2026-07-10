@@ -218,7 +218,7 @@ class SyncService {
           [serverUpd, empresaId, ...whereArgs],
         );
       } on PostgrestException catch (e) {
-        if (e.code == '23505' && name == 'asistencias') {
+        if (e.message.contains('uq_asist') && name == 'asistencias') {
           debugPrint('[SyncService] ⚠ PUSH $name: Conflicto uq_asist. Resolviendo...');
           // Colisión de constraint UNIQUE (colaborador_id, obra_id, fecha).
           // El servidor ya tiene un registro. Tomamos su ID y actualizamos el local.
