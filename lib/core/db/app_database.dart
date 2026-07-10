@@ -162,8 +162,15 @@ class AppDatabase extends _$AppDatabase {
   /// CAMBIAN sync_status). Idempotente (recrea los triggers).
   Future<void> _instalarTriggersSync() async {
     const nowExpr = "CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER)";
+    
+    final existingTables = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table'"
+    ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+
     for (final t in allTables) {
       final name = t.actualTableName;
+      if (!existingTables.contains(name)) continue;
+
       final pk = t.$primaryKey.map((c) => c.name).toList();
       if (pk.isEmpty) continue;
       final pkWhere = pk.map((c) => '$c = NEW.$c').join(' AND ');
