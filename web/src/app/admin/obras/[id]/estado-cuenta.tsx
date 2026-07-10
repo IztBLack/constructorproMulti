@@ -45,13 +45,22 @@ export default function EstadoCuenta({ obraId, partidas, movimientos }: Props) {
           <CardTitle as="h2" className="text-base font-semibold text-neutral-800">
             Estado de cuenta
           </CardTitle>
-          <LinkButton
-            href={`/admin/obras/${obraId}/exportar`}
-            variant="secondary"
-            size="sm"
-          >
-            Exportar a Excel
-          </LinkButton>
+          <div className="flex flex-wrap items-center gap-2">
+            <LinkButton
+              href={`/admin/obras/${obraId}/importar`}
+              variant="secondary"
+              size="sm"
+            >
+              Importar movimientos
+            </LinkButton>
+            <LinkButton
+              href={`/admin/obras/${obraId}/exportar`}
+              variant="secondary"
+              size="sm"
+            >
+              Exportar a Excel
+            </LinkButton>
+          </div>
         </div>
 
         {/* Presupuesto por partidas en el encabezado */}

@@ -634,3 +634,207 @@ export async function parsearExcelObra(buffer: ArrayBuffer): Promise<ParsedObraD
 
   return { obraNombre, partidas, movimientos, advertencias };
 }
+
+// ── Importar CSV ─────────────────────────────────────────────────────────────
+// Formato plano: una fila de encabezados (FECHA, CONCEPTO, CANTIDAD, NOMBRE,
+// CANAL, TIPO, OBSERVACIONES) seguida de filas de movimientos. A diferencia del
+// .xlsx, el CSV no trae bloque de partidas de presupuesto (por eso `partidas`
+// siempre viene vacío desde este parser).
+
+/** Parsea una línea CSV respetando comillas dobles (soporta el delimitador y comillas escapadas ""). */
+function parseCsvLine(line: string, delimiter: string): string[] {
+  const result: string[] = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (line[i + 1] === '"') {
+          cur += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        cur += c;
+      }
+    } else if (c === '"') {
+      inQuotes = true;
+    } else if (c === delimiter) {
+      result.push(cur);
+      cur = '';
+    } else {
+      cur += c;
+    }
+  }
+  result.push(cur);
+  return result;
+}
+
+/** Convierte texto de monto ("$1,234.50", "1234.50", etc.) a número. */
+function parseMontoCsv(raw: string): number | undefined {
+  const s = raw.trim().replace(/[$\s]/g, '').replace(/,/g, '');
+  if (!s) return undefined;
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+/**
+ * Convierte texto de fecha ("DD/MM/YYYY", "YYYY-MM-DD" u otro formato reconocido
+ * por `Date`) a epoch ms anclado a medianoche de México, igual que `toDateMs`.
+ */
+function parseFechaCsv(raw: string): number | undefined {
+  const s = raw.trim();
+  if (!s) return undefined;
+
+  // DD/MM/YYYY o DD-MM-YYYY (convención usada en México / la plantilla .xlsx)
+  let m = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (m) {
+    const d = parseInt(m[1], 10);
+    const mo = parseInt(m[2], 10);
+    const y = parseInt(m[3], 10);
+    if (mo >= 1 && mo <= 12 && d >= 1 && d <= 31) {
+      return medianocheMx(y, mo - 1, d);
+    }
+  }
+
+  // YYYY-MM-DD (ISO)
+  m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (m) {
+    const y = parseInt(m[1], 10);
+    const mo = parseInt(m[2], 10);
+    const d = parseInt(m[3], 10);
+    return medianocheMx(y, mo - 1, d);
+  }
+
+  // Fallback: dejar que Date lo intente (acepta "2024-01-05T00:00:00Z", etc.)
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    return medianocheMx(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  }
+
+  return undefined;
+}
+
+/**
+ * Parsea un CSV de movimientos (mismas columnas que el .xlsx: FECHA, CONCEPTO,
+ * CANTIDAD, NOMBRE, CANAL, TIPO, OBSERVACIONES). No produce partidas de
+ * presupuesto (el CSV es solo el libro de movimientos).
+ */
+export function parsearCsvObra(texto: string): ParsedObraData {
+  const advertencias: string[] = [];
+  const partidas: ExcelPartida[] = [];
+  const movimientos: ExcelMovimiento[] = [];
+
+  // Quitar BOM si el archivo lo trae (común en exportes de Excel).
+  const limpio = texto.replace(/^﻿/, '');
+  const lineas = limpio.split(/\r\n|\r|\n/).filter((l) => l.trim() !== '');
+
+  if (lineas.length === 0) {
+    return { obraNombre: '', partidas, movimientos, advertencias: ['El archivo CSV está vacío.'] };
+  }
+
+  // Detectar delimitador: coma o punto y coma (exportes de Excel en es-MX usan ;).
+  const primeraLinea = lineas[0];
+  const numComas = (primeraLinea.match(/,/g) ?? []).length;
+  const numPuntoYComa = (primeraLinea.match(/;/g) ?? []).length;
+  const delimiter = numPuntoYComa > numComas ? ';' : ',';
+
+  const filas = lineas.map((l) => parseCsvLine(l, delimiter));
+
+  // ── Encabezados ────────────────────────────────────────────────────────────
+  let colFecha = -1;
+  let colConcepto = -1;
+  let colCantidad = -1;
+  let colNombre = -1;
+  let colCanal = -1;
+  let colTipo = -1;
+  let colObs = -1;
+  let headerRowIdx = -1;
+
+  for (let r = 0; r < filas.length; r++) {
+    const fila = filas[r];
+    let hasFecha = false;
+    let hasConcepto = false;
+    fila.forEach((valor, i) => {
+      const v = valor.trim().toUpperCase();
+      if (v === 'FECHA') { hasFecha = true; colFecha = i; }
+      else if (v === 'CONCEPTO') { hasConcepto = true; colConcepto = i; }
+      else if (v === 'CANTIDAD') colCantidad = i;
+      else if (v === 'NOMBRE') colNombre = i;
+      else if (v === 'CANAL') colCanal = i;
+      else if (v === 'TIPO') colTipo = i;
+      else if (v === 'OBSERVACIONES' || v === 'OBS') colObs = i;
+    });
+    if (hasFecha && hasConcepto) {
+      headerRowIdx = r;
+      break;
+    }
+  }
+
+  if (headerRowIdx === -1) {
+    return {
+      obraNombre: '',
+      partidas,
+      movimientos,
+      advertencias: ['No se encontró la fila de encabezados (FECHA, CONCEPTO, ...) en el CSV.'],
+    };
+  }
+
+  // ── Filas de movimientos ─────────────────────────────────────────────────────
+  for (let r = headerRowIdx + 1; r < filas.length; r++) {
+    const fila = filas[r];
+    const rowNumber = r + 1; // 1-based, coincide con el número de línea del archivo
+
+    const fechaRaw = colFecha >= 0 ? (fila[colFecha] ?? '') : '';
+    const conceptoRaw = colConcepto >= 0 ? (fila[colConcepto] ?? '') : '';
+    const cantidadRaw = colCantidad >= 0 ? (fila[colCantidad] ?? '') : '';
+    const nombreRaw = colNombre >= 0 ? (fila[colNombre] ?? '') : '';
+    const canalRaw = colCanal >= 0 ? (fila[colCanal] ?? '') : '';
+    const tipoRaw = colTipo >= 0 ? (fila[colTipo] ?? '') : '';
+    const obsRaw = colObs >= 0 ? (fila[colObs] ?? '') : '';
+
+    const fechaMs = parseFechaCsv(fechaRaw);
+    const concepto = conceptoRaw.trim();
+    const monto = parseMontoCsv(cantidadRaw);
+    const tipoStr = tipoRaw.trim();
+
+    // Fila en blanco: ignorar silenciosamente.
+    if (!fechaMs && !concepto && !monto) continue;
+
+    if (!fechaMs) {
+      if (concepto || monto) {
+        advertencias.push(`Fila ${rowNumber}: se omitió (fecha inválida o ausente).`);
+      }
+      continue;
+    }
+
+    if (!monto || monto <= 0) {
+      advertencias.push(`Fila ${rowNumber}: se omitió (monto inválido o cero).`);
+      continue;
+    }
+
+    const tipo = normalizarTipo(tipoStr);
+    if (!tipo) {
+      advertencias.push(`Fila ${rowNumber}: TIPO "${tipoStr}" no reconocido, se omitió.`);
+      continue;
+    }
+
+    movimientos.push({
+      fecha: fechaMs,
+      categoria: concepto,
+      monto,
+      nombre: nombreRaw.trim(),
+      metodoPago: normalizarMetodoPago(canalRaw.trim()),
+      tipo,
+      referencia: obsRaw.trim(),
+    });
+  }
+
+  if (movimientos.length === 0 && advertencias.length === 0) {
+    advertencias.push('El CSV no contiene filas de movimientos después del encabezado.');
+  }
+
+  return { obraNombre: '', partidas, movimientos, advertencias };
+}
