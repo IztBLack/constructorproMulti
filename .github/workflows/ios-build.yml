@@ -67,9 +67,9 @@ jobs:
         run: |
           IPA=build/ios/iphoneos/ConstructorPro.ipa
           SIZE=$(stat -f%z "$IPA")
-          SHORTVER=$(grep '^version:' pubspec.yaml | sed -E 's/version:[[:space:]]*//' | cut -d'+' -f1)
+          FULLVER=$(grep '^version:' pubspec.yaml | sed -E 's/version:[[:space:]]*//')
           echo "size=$SIZE"            >> "$GITHUB_OUTPUT"
-          echo "shortver=$SHORTVER"    >> "$GITHUB_OUTPUT"
+          echo "fullver=$FULLVER"      >> "$GITHUB_OUTPUT"
           echo "buildver=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
           echo "date=$(date +%F)"      >> "$GITHUB_OUTPUT"
 
@@ -94,11 +94,11 @@ jobs:
                 "category": "productivity",
                 "downloadURL": "$DL",
                 "size": ${{ steps.meta.outputs.size }},
-                "version": "${{ steps.meta.outputs.shortver }}",
+                "version": "${{ steps.meta.outputs.fullver }}",
                 "versionDate": "${{ steps.meta.outputs.date }}",
                 "versions": [
                   {
-                    "version": "${{ steps.meta.outputs.shortver }}",
+                    "version": "${{ steps.meta.outputs.fullver }}",
                     "buildVersion": "${{ steps.meta.outputs.buildver }}",
                     "date": "${{ steps.meta.outputs.date }}",
                     "localizedDescription": "Build ${{ steps.meta.outputs.buildver }} — ${{ steps.meta.outputs.date }}",
