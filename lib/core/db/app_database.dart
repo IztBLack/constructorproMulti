@@ -118,9 +118,15 @@ class AppDatabase extends _$AppDatabase {
           // quedan MENSUAL / 6 días / salario_periodo NULL y conservan su
           // salario_personalizado hasta que se reediten.
           if (from < 4) {
-            await m.addColumn(colaboradores, colaboradores.periodoPago);
-            await m.addColumn(colaboradores, colaboradores.salarioPeriodo);
-            await m.addColumn(colaboradores, colaboradores.diasSemana);
+            final hasPeriodo = await m.database.customSelect(
+              "SELECT 1 FROM pragma_table_info('colaboradores') WHERE name='periodo_pago'"
+            ).get().then((rows) => rows.isNotEmpty);
+
+            if (!hasPeriodo) {
+              await m.addColumn(colaboradores, colaboradores.periodoPago);
+              await m.addColumn(colaboradores, colaboradores.salarioPeriodo);
+              await m.addColumn(colaboradores, colaboradores.diasSemana);
+            }
             // Recrea los triggers para que incluyan las columnas nuevas.
             await _instalarTriggersSync();
           }
@@ -128,8 +134,21 @@ class AppDatabase extends _$AppDatabase {
           // movimientos (beneficiario/pagador) + tabla obra_presupuesto
           // (partidas del contrato, espeja Supabase 0008_control_pagos_obra).
           if (from < 5) {
-            await m.addColumn(movimientos, movimientos.nombre);
-            await m.createTable(obraPresupuesto);
+            final hasNombre = await m.database.customSelect(
+              "SELECT 1 FROM pragma_table_info('movimientos') WHERE name='nombre'"
+            ).get().then((rows) => rows.isNotEmpty);
+            
+            if (!hasNombre) {
+              await m.addColumn(movimientos, movimientos.nombre);
+            }
+
+            final hasObraPresupuesto = await m.database.customSelect(
+              "SELECT 1 FROM sqlite_master WHERE type='table' AND name='obra_presupuesto'"
+            ).get().then((rows) => rows.isNotEmpty);
+
+            if (!hasObraPresupuesto) {
+              await m.createTable(obraPresupuesto);
+            }
             // Recrea los triggers para que incluyan la columna/tabla nuevas.
             await _instalarTriggersSync();
           }
