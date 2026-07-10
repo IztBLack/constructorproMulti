@@ -318,8 +318,9 @@ class BackupService {
       'movimientos',
     ).where((m) => obras.contains(m['obraId']?.toString())).toList();
     for (final m in movs) {
-      if (!cots.contains(m['cotizacionId']?.toString()))
+      if (!cots.contains(m['cotizacionId']?.toString())) {
         m['cotizacionId'] = null;
+      }
       if (!secs.contains(m['seccionId']?.toString())) m['seccionId'] = null;
       if (!parts.contains(m['partidaId']?.toString())) m['partidaId'] = null;
     }
