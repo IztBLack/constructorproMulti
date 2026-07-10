@@ -217,6 +217,51 @@ class SyncService {
           "WHERE $whereSql",
           [serverUpd, empresaId, ...whereArgs],
         );
+      } on PostgrestException catch (e) {
+        if (e.code == '23505' && name == 'asistencias') {
+          debugPrint('[SyncService] ⚠ PUSH $name: Conflicto uq_asist. Resolviendo...');
+          // Colisión de constraint UNIQUE (colaborador_id, obra_id, fecha).
+          // El servidor ya tiene un registro. Tomamos su ID y actualizamos el local.
+          final existing = await client
+              .from(name)
+              .select('id')
+              .eq('colaborador_id', data['colaborador_id'])
+              .eq('obra_id', data['obra_id'])
+              .eq('fecha', data['fecha'])
+              .maybeSingle();
+              
+          if (existing != null) {
+            final serverId = existing['id'] as String;
+            final oldId = data['id'] as String;
+            
+            // Actualizamos el ID local
+            await db.customStatement(
+              "UPDATE $name SET id = ? WHERE id = ?",
+              [serverId, oldId]
+            );
+            
+            // Reintentamos upsert con el ID del servidor (ahora hará update)
+            data['id'] = serverId;
+            final resp2 = await client
+                .from(name)
+                .upsert(data, onConflict: pk.join(','))
+                .select('server_updated_at')
+                .maybeSingle();
+                
+            final serverUpd = (resp2?['server_updated_at'] as num?)?.toInt();
+            await db.customStatement(
+              "UPDATE $name SET sync_status='synced', server_updated_at=?, empresa_id=? "
+              "WHERE id = ?",
+              [serverUpd, empresaId, serverId],
+            );
+            continue;
+          }
+        }
+        
+        final pkVals = pk.map((c) => '$c=${r.data[c]}').join(', ');
+        debugPrint('[SyncService] ✖ PUSH $name fallo en fila ($pkVals): $e');
+        debugPrint('[SyncService]   data enviada: $data');
+        rethrow;
       } catch (e) {
         final pkVals = pk.map((c) => '$c=${r.data[c]}').join(', ');
         debugPrint('[SyncService] ✖ PUSH $name fallo en fila ($pkVals): $e');
