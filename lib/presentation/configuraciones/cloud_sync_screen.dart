@@ -160,15 +160,21 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
     });
 
     try {
-      final response = await SupabaseConfig.client.rpc(
+      final dynamic response = await SupabaseConfig.client.rpc(
         'canjear_codigo_vinculacion',
         params: {'p_code': codigo},
       );
 
       if (!mounted) return;
 
-      final Map<String, dynamic> resultado =
-          Map<String, dynamic>.from(response as Map);
+      Map<String, dynamic> resultado;
+      if (response is List && response.isNotEmpty) {
+        resultado = Map<String, dynamic>.from(response.first as Map);
+      } else if (response is Map) {
+        resultado = Map<String, dynamic>.from(response);
+      } else {
+        throw Exception('Respuesta inesperada del servidor: $response');
+      }
 
       if (resultado['ok'] == true) {
         final empresaId = resultado['empresa_id'] as String;
@@ -215,10 +221,10 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
             'Código inválido o expirado. Solicita uno nuevo al administrador.';
         setState(() => _error = mensajeError);
       }
-    } catch (e) {
-      debugPrint('[CloudSyncScreen] _vincular error: $e');
+    } catch (e, st) {
+      debugPrint('[CloudSyncScreen] _vincular error: $e\n$st');
       if (mounted) {
-        setState(() => _error = 'Error de conexión, intenta de nuevo.');
+        setState(() => _error = 'Error local: $e');
       }
     } finally {
       if (mounted) setState(() => _loading = false);
