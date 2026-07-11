@@ -279,12 +279,65 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
   }
 
   // ---------------------------------------------------------------------------
+  // Acción: Forzar re-sync completo (reinicia cursores sin cerrar sesión)
+  // ---------------------------------------------------------------------------
+  Future<void> _forzarResyncCompleto() async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Forzar re-sync completo'),
+        content: const Text(
+          'Esto reinicia los cursores de sincronización y vuelve a traer '
+          'TODOS los datos del servidor desde cero. No cierra tu sesión ni '
+          'borra datos locales, pero puede tardar más de lo normal. '
+          '¿Deseas continuar?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Continuar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmar != true || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _loading = true);
+
+    final metadata = ref.read(syncMetadataProvider);
+    await metadata.resetAll();
+
+    final syncService = ref.read(syncServiceProvider);
+    final outcome = await syncService.syncAll();
+
+    if (!mounted) return;
+    setState(() => _loading = false);
+    messenger.showSnackBar(SnackBar(
+      content: Text(_mensajeOutcome(outcome, syncService.ultimoError)),
+      duration: outcome == SyncOutcome.error
+          ? const Duration(seconds: 8)
+          : const Duration(seconds: 4),
+    ));
+  }
+
+  // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
   String _mensajeOutcome(SyncOutcome o, [String? detalle]) {
     switch (o) {
       case SyncOutcome.ok:
         return 'Sincronizado.';
+      case SyncOutcome.parcial:
+        final base = 'Sincronizado con errores parciales.';
+        if (detalle != null && detalle.isNotEmpty) {
+          return '$base\n$detalle';
+        }
+        return base;
       case SyncOutcome.sinSesion:
         return 'Inicia sesión para sincronizar.';
       case SyncOutcome.sinRed:
@@ -516,6 +569,14 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
           title: const Text('Sincronizar ahora'),
           enabled: !_loading,
           onTap: _loading ? null : _sincronizar,
+        ),
+        ListTile(
+          leading: const Icon(Icons.restart_alt),
+          title: const Text('Forzar re-sync completo'),
+          subtitle: const Text(
+              'Reinicia los cursores y vuelve a traer todo del servidor'),
+          enabled: !_loading,
+          onTap: _loading ? null : _forzarResyncCompleto,
         ),
         ListTile(
           leading: const Icon(Icons.logout, color: Colors.red),

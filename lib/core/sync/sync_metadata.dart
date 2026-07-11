@@ -39,6 +39,7 @@ class SyncMetadata {
       'puestos',
       'colaboradores',
       'obras',
+      'obra_presupuesto',
       'cotizaciones',
       'secciones',
       'partidas',

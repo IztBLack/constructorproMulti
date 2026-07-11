@@ -8,7 +8,12 @@ import 'sync_metadata.dart';
 import 'supabase_config.dart';
 
 /// Resultado de un intento de sincronización.
-enum SyncOutcome { ok, sinSesion, sinRed, sinEmpresa, error }
+///
+/// [parcial]: el PULL corrió completo, pero una o más filas del PUSH
+/// fallaron (quedaron marcadas `sync_status='error'` localmente) y se
+/// reintentarán en el próximo ciclo. No oculta que la sincronización sí
+/// avanzó, a diferencia de [error] (fallo total, p. ej. el PULL).
+enum SyncOutcome { ok, sinSesion, sinRed, sinEmpresa, error, parcial }
 
 /// Motor de sincronización offline-first (Fase 2).
 ///
@@ -56,6 +61,7 @@ class SyncService {
     'puestos',
     'colaboradores',
     'obras',
+    'obra_presupuesto',
     'cotizaciones',
     'secciones',
     'partidas',
@@ -90,15 +96,37 @@ class SyncService {
     if (empresaId == null) return SyncOutcome.sinEmpresa;
 
     _enCurso = true;
+    var erroresPush = 0;
     try {
       // 1) PUSH primero (padres→hijos) para no traer del server algo que aún
       //    no subimos y perder la edición local.
-      for (final t in pushOrder) {
-        await _pushTabla(t, empresaId);
+      //
+      //    Se aísla en su propio try/catch que NO propaga: los fallos de fila
+      //    ya se manejan dentro de _pushTabla (se marcan sync_status='error'
+      //    y se continúa), pero si algo inesperado revienta a nivel tabla acá
+      //    lo registramos sin abortar el PULL, que debe correr siempre.
+      try {
+        for (final t in pushOrder) {
+          erroresPush += await _pushTabla(t, empresaId);
+        }
+      } catch (e, st) {
+        erroresPush++;
+        debugPrint('[SyncService] ══════ PUSH ERROR (no fatal, PULL continúa) ══════');
+        debugPrint('[SyncService] $e');
+        debugPrint('[SyncService] $st');
       }
-      // 2) PULL de cada tabla (orden indistinto: upsert idempotente).
+
+      // 2) PULL de cada tabla (orden indistinto: upsert idempotente). Corre
+      //    SIEMPRE, aunque el push haya tenido errores arriba.
       for (final t in pushOrder) {
         await _pullTabla(t);
+      }
+
+      if (erroresPush > 0) {
+        ultimoError = '$erroresPush fila(s) no se pudieron subir; '
+            'el resto sincronizó correctamente. Se reintentará en el '
+            'próximo ciclo.';
+        return SyncOutcome.parcial;
       }
       ultimoError = null;
       return SyncOutcome.ok;
@@ -154,7 +182,10 @@ class SyncService {
   }
 
   // ---------------- PUSH ----------------
-  Future<void> _pushTabla(String name, String empresaId) async {
+  /// Sube las filas `pending` de [name]. Devuelve la cantidad de filas que
+  /// fallaron (quedaron marcadas `sync_status='error'`); nunca lanza por un
+  /// fallo de fila individual para no abortar el resto del syncAll.
+  Future<int> _pushTabla(String name, String empresaId) async {
     final t = _info(name);
     final pk = _pk(t);
     final boolCols = _boolCols(t);
@@ -166,6 +197,8 @@ class SyncService {
     if (pendientes.isNotEmpty) {
       debugPrint('[SyncService] PUSH $name: ${pendientes.length} pendientes');
     }
+
+    var erroresFila = 0;
 
     for (final r in pendientes) {
       final data = Map<String, dynamic>.from(r.data);
@@ -261,14 +294,30 @@ class SyncService {
         final pkVals = pk.map((c) => '$c=${r.data[c]}').join(', ');
         debugPrint('[SyncService] ✖ PUSH $name fallo en fila ($pkVals): $e');
         debugPrint('[SyncService]   data enviada: $data');
-        rethrow;
+        final whereSqlErr = pk.map((c) => '$c = ?').join(' AND ');
+        final whereArgsErr = pk.map((c) => r.data[c]).toList();
+        await db.customStatement(
+          "UPDATE $name SET sync_status='error' WHERE $whereSqlErr",
+          whereArgsErr,
+        );
+        erroresFila++;
+        continue;
       } catch (e) {
         final pkVals = pk.map((c) => '$c=${r.data[c]}').join(', ');
         debugPrint('[SyncService] ✖ PUSH $name fallo en fila ($pkVals): $e');
         debugPrint('[SyncService]   data enviada: $data');
-        rethrow;
+        final whereSqlErr = pk.map((c) => '$c = ?').join(' AND ');
+        final whereArgsErr = pk.map((c) => r.data[c]).toList();
+        await db.customStatement(
+          "UPDATE $name SET sync_status='error' WHERE $whereSqlErr",
+          whereArgsErr,
+        );
+        erroresFila++;
+        continue;
       }
     }
+
+    return erroresFila;
   }
 
   // ---------------- PULL ----------------
@@ -305,7 +354,14 @@ class SyncService {
         final lr = locales.first.data;
         final pending = lr['sync_status'] == 'pending';
         final localUpd = (lr['updated_at'] as int?) ?? 0;
-        final serverUserUpd = (row['updated_at'] as num?)?.toInt() ?? 0;
+        // La web escribe a Supabase sin `updated_at` de cliente (solo el
+        // trigger sella `server_updated_at`). Si viene null, lo tratamos como
+        // "muy nuevo" (centinela = int máximo) para que gane el server salvo
+        // que el local pending tenga un timestamp genuino mayor a ese
+        // centinela, lo cual nunca ocurre: evita que un `updated_at` nulo del
+        // server haga perder silenciosamente cambios subidos desde la web.
+        final serverUserUpd =
+            (row['updated_at'] as num?)?.toInt() ?? 9223372036854775807;
         if (pending && localUpd > serverUserUpd) {
           continue; // gana el cambio local; se empujará en el próximo push
         }
