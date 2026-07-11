@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
+import '../../core/sync/cloud_providers.dart';
 import '../../domain/logic/salario_periodo.dart';
 import '../../data/providers.dart';
 import '../common/async_action_button.dart';
@@ -72,7 +73,11 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
           ),
         ),
       ),
-      body: colaboradoresAsync.when(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await ref.read(syncServiceProvider).syncAll();
+        },
+        child: colaboradoresAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => ErrorStateView(
           message: 'No se pudieron cargar los colaboradores.',
@@ -106,13 +111,19 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
               });
           }
           if (lista.isEmpty) {
-            return const EmptyStateView(
-              icon: Icons.groups_outlined,
-              title: 'No hay colaboradores.',
-              hint: 'Toca “Nuevo” para agregar uno.',
+            return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: const [
+                EmptyStateView(
+                  icon: Icons.groups_outlined,
+                  title: 'No hay colaboradores.',
+                  hint: 'Toca “Nuevo” para agregar uno.',
+                ),
+              ],
             );
           }
           return ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
             itemCount: lista.length,
             separatorBuilder: (_, _) => const Divider(height: 1),
             itemBuilder: (context, i) {
@@ -188,6 +199,7 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
             },
           );
         },
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/db/app_database.dart';
+import '../../core/sync/cloud_providers.dart';
 import '../../data/providers.dart';
 import '../common/async_action_button.dart';
 import '../common/confirm_dialog.dart';
@@ -38,54 +39,66 @@ class ObrasScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: obrasAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => ErrorStateView(
-          message: 'No se pudieron cargar las obras.',
-          onRetry: () => ref.invalidate(obrasProvider),
-        ),
-        data: (obras) {
-          if (obras.isEmpty) {
-            return const EmptyStateView(
-              icon: Icons.foundation,
-              title: 'No hay obras registradas.',
-              hint: 'Toca “Nueva obra” para agregar una.',
-            );
-          }
-          return ListView.separated(
-            itemCount: obras.length,
-            separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (context, i) {
-              final obra = obras[i];
-              return ListTile(
-                leading: CircleAvatar(
-                  child: Icon(obra.activa ? Icons.engineering : Icons.archive),
-                ),
-                title: Text(obra.nombre),
-                subtitle: Text(
-                  [obra.cliente, obra.ubicacion]
-                      .where((s) => s.isNotEmpty)
-                      .join(' · '),
-                ),
-                trailing: PopupMenuButton<String>(
-                  onSelected: (v) {
-                    if (v == 'editar') _showObraDialog(context, ref, obra);
-                    if (v == 'eliminar') _confirmDelete(context, ref, obra);
-                  },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'editar', child: Text('Editar')),
-                    PopupMenuItem(value: 'eliminar', child: Text('Eliminar')),
-                  ],
-                ),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ObraDetailScreen(obra: obra),
-                  ),
-                ),
-              );
-            },
-          );
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await ref.read(syncServiceProvider).syncAll();
         },
+        child: obrasAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => ErrorStateView(
+            message: 'No se pudieron cargar las obras.',
+            onRetry: () => ref.invalidate(obrasProvider),
+          ),
+          data: (obras) {
+            if (obras.isEmpty) {
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  EmptyStateView(
+                    icon: Icons.foundation,
+                    title: 'No hay obras registradas.',
+                    hint: 'Toca “Nueva obra” para agregar una.',
+                  ),
+                ],
+              );
+            }
+            return ListView.separated(
+              physics: const AlwaysScrollableScrollPhysics(),
+              itemCount: obras.length,
+              separatorBuilder: (_, _) => const Divider(height: 1),
+              itemBuilder: (context, i) {
+                final obra = obras[i];
+                return ListTile(
+                  leading: CircleAvatar(
+                    child:
+                        Icon(obra.activa ? Icons.engineering : Icons.archive),
+                  ),
+                  title: Text(obra.nombre),
+                  subtitle: Text(
+                    [obra.cliente, obra.ubicacion]
+                        .where((s) => s.isNotEmpty)
+                        .join(' · '),
+                  ),
+                  trailing: PopupMenuButton<String>(
+                    onSelected: (v) {
+                      if (v == 'editar') _showObraDialog(context, ref, obra);
+                      if (v == 'eliminar') _confirmDelete(context, ref, obra);
+                    },
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'editar', child: Text('Editar')),
+                      PopupMenuItem(value: 'eliminar', child: Text('Eliminar')),
+                    ],
+                  ),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ObraDetailScreen(obra: obra),
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showObraDialog(context, ref, null),

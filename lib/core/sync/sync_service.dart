@@ -372,9 +372,12 @@ class SyncService {
       final colList = [...cols, 'sync_status'].join(',');
       final placeholders = List.filled(cols.length + 1, '?').join(',');
       final vals = <Object?>[...cols.map((c) => row[c]), 'synced'];
-      await db.customStatement(
+      // customUpdate (en vez de customStatement) para que Drift notifique
+      // la tabla y los streams .watch() se re-emitan tras el pull.
+      await db.customUpdate(
         "INSERT OR REPLACE INTO $name ($colList) VALUES ($placeholders)",
-        vals,
+        variables: vals.map((v) => Variable(v)).toList(),
+        updates: {t},
       );
 
       if (pk.length == 1) lastId = row[pk.first]?.toString() ?? lastId;
