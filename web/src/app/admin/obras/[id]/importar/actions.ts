@@ -19,6 +19,7 @@ import {
   type ExcelPartida,
   type ExcelMovimiento,
 } from '@/lib/excel/estado-cuenta-excel';
+import { parsearPdfObra } from '@/lib/pdf/estado-cuenta-pdf';
 import type { PartidaPresupuesto } from '@/lib/data/types';
 
 // ── Normalización / claves de comparación ─────────────────────────────────────
@@ -160,8 +161,9 @@ export async function previsualizarImportacionObra(
   const nombreArchivo = file.name.toLowerCase();
   const esCsv = nombreArchivo.endsWith('.csv');
   const esXlsx = nombreArchivo.endsWith('.xlsx');
-  if (!esCsv && !esXlsx) {
-    return { ok: false, error: 'Solo se aceptan archivos .xlsx o .csv.' };
+  const esPdf = nombreArchivo.endsWith('.pdf');
+  if (!esCsv && !esXlsx && !esPdf) {
+    return { ok: false, error: 'Solo se aceptan archivos .xlsx, .csv o .pdf.' };
   }
 
   const MAX_BYTES = 10 * 1024 * 1024;
@@ -177,6 +179,9 @@ export async function previsualizarImportacionObra(
     if (esCsv) {
       const texto = await file.text();
       parsed = parsearCsvObra(texto);
+    } else if (esPdf) {
+      const arrayBuffer = await file.arrayBuffer();
+      parsed = await parsearPdfObra(arrayBuffer);
     } else {
       const arrayBuffer = await file.arrayBuffer();
       parsed = await parsearExcelObra(arrayBuffer);

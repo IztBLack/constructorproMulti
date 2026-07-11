@@ -89,7 +89,7 @@ function toDateMs(val: ExcelJS.CellValue): number | undefined {
 }
 
 /** Normaliza TIPO de movimiento: acepta variantes en español y mayúsculas/minúsculas. */
-function normalizarTipo(raw: string): 'ENTRADA' | 'SALIDA' | undefined {
+export function normalizarTipo(raw: string): 'ENTRADA' | 'SALIDA' | undefined {
   const s = raw.toUpperCase().trim();
   if (s === 'ENTRADA' || s === 'INGRESO' || s === 'DEPOSITO' || s === 'DEPÓSITO') return 'ENTRADA';
   if (s === 'SALIDA' || s === 'EGRESO' || s === 'GASTO' || s === 'PAGO') return 'SALIDA';
@@ -97,7 +97,7 @@ function normalizarTipo(raw: string): 'ENTRADA' | 'SALIDA' | undefined {
 }
 
 /** Normaliza metodo_pago. */
-function normalizarMetodoPago(raw: string): string {
+export function normalizarMetodoPago(raw: string): string {
   const s = raw.trim();
   if (!s) return '';
   const u = s.toUpperCase();
@@ -673,7 +673,7 @@ function parseCsvLine(line: string, delimiter: string): string[] {
 }
 
 /** Convierte texto de monto ("$1,234.50", "1234.50", etc.) a número. */
-function parseMontoCsv(raw: string): number | undefined {
+export function parseMontoCsv(raw: string): number | undefined {
   const s = raw.trim().replace(/[$\s]/g, '').replace(/,/g, '');
   if (!s) return undefined;
   const n = parseFloat(s);
@@ -722,6 +722,8 @@ function parseFechaCsv(raw: string): number | undefined {
  * CANTIDAD, NOMBRE, CANAL, TIPO, OBSERVACIONES). No produce partidas de
  * presupuesto (el CSV es solo el libro de movimientos).
  */
+export { parseFechaCsv };
+
 export function parsearCsvObra(texto: string): ParsedObraData {
   const advertencias: string[] = [];
   const partidas: ExcelPartida[] = [];

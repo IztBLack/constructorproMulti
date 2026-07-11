@@ -176,19 +176,19 @@ export default function ImportarObraForm({ obraId }: { obraId: string }) {
         </CardTitle>
         <form onSubmit={handlePrevisualizar} className="space-y-4">
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-neutral-700">Archivo (.xlsx o .csv)</span>
+            <span className="text-sm font-medium text-neutral-700">Archivo (.xlsx, .csv o .pdf)</span>
             <input
               ref={fileRef}
               type="file"
               name="archivo"
-              accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+              accept=".xlsx,.csv,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,application/pdf"
               required
               disabled={isPending}
               className="w-full cursor-pointer rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 outline-none transition file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-neutral-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-neutral-700 file:transition hover:file:bg-neutral-200 focus:border-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-900/10 disabled:cursor-not-allowed disabled:opacity-50"
             />
-            <span className="block text-xs text-neutral-400">
+            <span className="block text-xs text-neutral-500">
               Tamaño máximo: 10 MB. El estado de cuenta de la obra se usa para no duplicar
-              movimientos ya registrados.
+              movimientos ya registrados. Desde PDF solo se importan movimientos (no partidas).
             </span>
           </label>
 
