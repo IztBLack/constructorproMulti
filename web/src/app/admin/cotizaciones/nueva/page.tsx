@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Card } from '@/components/ui';
+import { Card, PageHeader } from '@/components/ui';
 import { listClientes } from '@/lib/data/clientes';
 import { CotizacionForm } from '../cotizacion-form';
 
@@ -10,18 +10,28 @@ export default async function NuevaCotizacionPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link href="/admin/cotizaciones" className="text-sm text-neutral-500 hover:underline">
-          ← Cotizaciones
-        </Link>
-      </div>
+      <Link
+        href="/admin/cotizaciones"
+        className="inline-flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-900 cursor-pointer transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 rounded"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+          aria-hidden="true"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Cotizaciones
+      </Link>
 
-      <header>
-        <h1 className="text-2xl font-semibold text-neutral-900">Nueva cotización</h1>
-        <p className="text-sm text-neutral-500">
-          Captura los datos generales. Podrás agregar secciones y partidas después de crearla.
-        </p>
-      </header>
+      <PageHeader
+        title="Nueva cotización"
+        description="Captura los datos generales. Podrás agregar secciones y partidas después de crearla."
+      />
 
       <Card>
         <CotizacionForm mode="crear" clientes={clientes} />

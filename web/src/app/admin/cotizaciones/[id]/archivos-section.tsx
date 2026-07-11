@@ -178,6 +178,7 @@ function FilaArchivo({
   const router = useRouter();
   const [descargando, setDescargando] = useState(false);
   const [eliminando, setEliminando] = useState(false);
+  const [confirmandoBorrado, setConfirmandoBorrado] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function onDescargar() {
@@ -193,13 +194,7 @@ function FilaArchivo({
   }
 
   async function onEliminar() {
-    if (
-      !confirm(
-        `¿Eliminar el archivo "${archivo.nombre}"? Esta acción no se puede deshacer.`,
-      )
-    ) {
-      return;
-    }
+    setConfirmandoBorrado(false);
     setEliminando(true);
     setError(null);
     const result = await eliminarArchivoAction(archivo.id, archivo.uri, cotizacionId);
@@ -225,24 +220,50 @@ function FilaArchivo({
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={onDescargar}
-          disabled={descargando || eliminando}
-        >
-          {descargando ? 'Cargando...' : 'Descargar'}
-        </Button>
-        <Button
-          type="button"
-          variant="danger"
-          size="sm"
-          onClick={onEliminar}
-          disabled={eliminando || descargando}
-        >
-          {eliminando ? 'Eliminando...' : 'Eliminar'}
-        </Button>
+        {confirmandoBorrado ? (
+          <>
+            <span className="text-xs text-neutral-500">¿Eliminar archivo?</span>
+            <Button
+              type="button"
+              variant="danger"
+              size="sm"
+              onClick={onEliminar}
+              disabled={eliminando}
+            >
+              {eliminando ? 'Eliminando…' : 'Sí, eliminar'}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setConfirmandoBorrado(false)}
+              disabled={eliminando}
+            >
+              Cancelar
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={onDescargar}
+              disabled={descargando || eliminando}
+            >
+              {descargando ? 'Cargando…' : 'Descargar'}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setConfirmandoBorrado(true)}
+              disabled={eliminando}
+            >
+              Eliminar
+            </Button>
+          </>
+        )}
       </div>
     </li>
   );
@@ -291,7 +312,7 @@ export default function ArchivosSection({ cotizacionId, archivos }: ArchivosSect
           {archivos.length === 0 ? (
             <EmptyState
               title="Sin archivos adjuntos"
-              description="Sube contratos, planos u otros documentos relacionados con esta cotizacion."
+              description="Sube contratos, planos u otros documentos relacionados con esta cotización."
             />
           ) : (
             <ul className="space-y-2">

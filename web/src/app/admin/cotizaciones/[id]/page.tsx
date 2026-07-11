@@ -43,8 +43,22 @@ export default async function CotizacionDetallePage({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
-        <Link href="/admin/cotizaciones" className="text-sm text-neutral-500 hover:underline">
-          ← Cotizaciones
+        <Link
+          href="/admin/cotizaciones"
+          className="inline-flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-900 cursor-pointer transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 rounded"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+            aria-hidden="true"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Cotizaciones
         </Link>
         <LinkButton href={`/admin/cotizaciones/${id}/pdf`} variant="secondary" size="sm">
           Ver PDF

@@ -27,8 +27,8 @@ export default async function CotizacionesPage() {
           description="Presupuestos que tu constructora ha compartido contigo."
         />
         <EmptyState
-          title="Tu cuenta aun no esta vinculada"
-          description="Pide a tu constructora el codigo de acceso para vincular tu cuenta al portal."
+          title="Tu cuenta aún no está vinculada"
+          description="Pide a tu constructora el código de acceso para vincular tu cuenta al portal."
         />
       </div>
     );
@@ -46,7 +46,7 @@ export default async function CotizacionesPage() {
       {cotizacionesData.length === 0 ? (
         <EmptyState
           title="Sin cotizaciones"
-          description="Aqui apareceran los presupuestos que tu constructora te comparta."
+          description="Aquí aparecerán los presupuestos que tu constructora te comparta."
         />
       ) : (
         <div className="space-y-3">

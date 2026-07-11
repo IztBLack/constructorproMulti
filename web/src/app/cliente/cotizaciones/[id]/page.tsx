@@ -90,7 +90,7 @@ export default async function CotizacionDetallePage({
         {cot.secciones.length === 0 ? (
           <EmptyState
             title="Sin partidas"
-            description="Esta cotizacion aun no tiene partidas registradas."
+            description="Esta cotización aún no tiene partidas registradas."
           />
         ) : (
           <div className="space-y-6">
@@ -176,7 +176,8 @@ export default async function CotizacionDetallePage({
               {cot.descuento > 0 && (
                 <div className="flex justify-between gap-4">
                   <span className="text-neutral-600">Descuento ({cot.descuento}%)</span>
-                  <span className="tabular-nums text-green-700">
+                  {/* Rojo para indicar resta, misma semántica que en el panel de administración */}
+                  <span className="tabular-nums text-red-600">
                     -{formatCurrency(descuentoMonto)}
                   </span>
                 </div>
@@ -210,7 +211,7 @@ export default async function CotizacionDetallePage({
             <THead>
               <Th>Fecha</Th>
               <Th>Concepto</Th>
-              <Th>Metodo</Th>
+              <Th>Método</Th>
               <Th>Referencia</Th>
               <Th className="text-right">Monto</Th>
             </THead>

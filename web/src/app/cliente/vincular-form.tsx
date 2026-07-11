@@ -18,7 +18,7 @@ export function VincularForm() {
     const codigoLimpio = codigo.trim();
 
     if (codigoLimpio.length !== 6) {
-      setError('El codigo debe tener exactamente 6 digitos.');
+      setError('El código debe tener exactamente 6 dígitos.');
       return;
     }
 
@@ -27,7 +27,7 @@ export function VincularForm() {
     setCargando(false);
 
     if (!resultado.ok) {
-      setError(resultado.error ?? 'Codigo invalido. Verifica e intenta de nuevo.');
+      setError(resultado.error ?? 'Código inválido. Verifica e intenta de nuevo.');
       return;
     }
 
@@ -45,7 +45,7 @@ export function VincularForm() {
           htmlFor="codigo-vinculacion"
           className="text-sm font-medium text-neutral-700 text-center"
         >
-          Codigo de acceso
+          Código de acceso
         </label>
         <input
           id="codigo-vinculacion"
@@ -56,7 +56,7 @@ export function VincularForm() {
           autoComplete="one-time-code"
           value={codigo}
           onChange={(e) => {
-            // Solo permitir digitos
+            // Solo permitir dígitos
             const soloDigitos = e.target.value.replace(/\D/g, '');
             setCodigo(soloDigitos);
             setError(null);

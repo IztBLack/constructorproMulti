@@ -12,9 +12,13 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   danger: 'bg-red-600 text-white hover:bg-red-700 disabled:hover:bg-red-600',
 };
 
+// `sm` mantiene su aspecto visual compacto (padding reducido) pero garantiza un
+// área táctil mínima de 44px de alto (min-h-11) para cumplir el criterio de
+// "tamaño de objetivo" de WCAG 2.5.8 — importante en nav/acciones de tabla en
+// móvil, donde `sm` se usa mucho.
 const SIZE_CLASSES: Record<ButtonSize, string> = {
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-sm',
+  sm: 'min-h-11 px-3 py-1.5 text-sm',
+  md: 'min-h-11 px-4 py-2 text-sm',
 };
 
 const BASE_CLASSES =

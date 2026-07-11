@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Input } from '@/components/ui';
+import { Button, EmptyState, Input } from '@/components/ui';
+import { formatCurrency } from '@/lib/data/format';
 import type { Partida, Seccion } from '@/lib/data/types';
 import { crearSeccionAction } from './actions';
 import { SeccionCard } from './seccion-card';
@@ -35,18 +36,33 @@ export function SeccionesList({
   }
 
   const siguienteOrden = secciones.length;
+  const totalPartidas = secciones.reduce((acc, s) => acc + s.partidas.length, 0);
+  const totalCorriente = secciones.reduce(
+    (acc, s) => acc + s.partidas.reduce((sum, p) => sum + p.cantidad * p.precio_unitario, 0),
+    0,
+  );
 
   return (
     <section className="space-y-4">
       {secciones.length === 0 && !agregando && (
-        <p className="rounded-xl border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-400">
-          Esta cotización no tiene secciones ni partidas todavía.
-        </p>
+        <EmptyState
+          title="Esta cotización no tiene secciones ni partidas todavía"
+          description="Agrega una sección para empezar a capturar partidas."
+        />
       )}
 
       {secciones.map((seccion) => (
         <SeccionCard key={seccion.id} seccion={seccion} cotizacionId={cotizacionId} />
       ))}
+
+      {totalPartidas > 0 && (
+        <div className="flex items-center justify-between rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+          <span className="text-sm font-medium text-neutral-600">Total corriente (sin descuento/IVA)</span>
+          <span className="text-sm font-semibold tabular-nums text-neutral-900">
+            {formatCurrency(totalCorriente)}
+          </span>
+        </div>
+      )}
 
       {agregando ? (
         <form

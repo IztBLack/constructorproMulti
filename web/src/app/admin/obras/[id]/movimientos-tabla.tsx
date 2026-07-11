@@ -42,11 +42,23 @@ export default function MovimientosTabla({
     );
   }
 
+  const totalEntradas = movimientos
+    .filter((m) => m.tipo === 'ENTRADA')
+    .reduce((acc, m) => acc + m.monto, 0);
+  const totalSalidas = movimientos
+    .filter((m) => m.tipo === 'SALIDA')
+    .reduce((acc, m) => acc + m.monto, 0);
+  const saldo = totalEntradas - totalSalidas;
+
   return (
     <div className="space-y-3">
       {error && (
         <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</p>
       )}
+
+      <p className="text-xs text-neutral-400">
+        {movimientos.length} {movimientos.length === 1 ? 'movimiento' : 'movimientos'}
+      </p>
 
       <TableContainer>
         <THead>
@@ -76,7 +88,9 @@ export default function MovimientosTabla({
             ) : (
               <Tr key={m.id}>
                 <Td className="whitespace-nowrap">{formatDate(m.fecha)}</Td>
-                <Td className="max-w-[180px] truncate">{m.concepto || '—'}</Td>
+                <Td className="max-w-[180px] truncate" title={m.concepto || undefined}>
+                  {m.concepto || '—'}
+                </Td>
                 <Td>{m.nombre || '—'}</Td>
                 <Td>{m.metodo_pago || '—'}</Td>
                 <Td>
@@ -84,7 +98,12 @@ export default function MovimientosTabla({
                     {m.tipo === 'ENTRADA' ? 'Entrada' : 'Salida'}
                   </Badge>
                 </Td>
-                <Td className="max-w-[160px] truncate text-neutral-400">{m.referencia || '—'}</Td>
+                <Td
+                  className="max-w-[160px] truncate text-neutral-400"
+                  title={m.referencia || undefined}
+                >
+                  {m.referencia || '—'}
+                </Td>
                 <Td
                   className={`text-right font-semibold tabular-nums ${
                     m.tipo === 'ENTRADA' ? 'text-green-700' : 'text-red-600'
@@ -118,6 +137,27 @@ export default function MovimientosTabla({
             ),
           )}
         </TBody>
+        <tfoot>
+          <tr className="border-t-2 border-neutral-300 bg-neutral-50">
+            <td colSpan={6} className="px-4 py-3 text-right text-sm font-semibold text-neutral-700">
+              Totales
+            </td>
+            <td className="px-4 py-3 text-right">
+              <div className="space-y-0.5 text-right">
+                <p className="text-xs tabular-nums text-green-700">+{formatCurrency(totalEntradas)}</p>
+                <p className="text-xs tabular-nums text-red-600">-{formatCurrency(totalSalidas)}</p>
+                <p
+                  className={`text-sm font-bold tabular-nums ${
+                    saldo >= 0 ? 'text-green-700' : 'text-red-600'
+                  }`}
+                >
+                  {formatCurrency(saldo)}
+                </p>
+              </div>
+            </td>
+            <td className="px-4 py-3" />
+          </tr>
+        </tfoot>
       </TableContainer>
     </div>
   );

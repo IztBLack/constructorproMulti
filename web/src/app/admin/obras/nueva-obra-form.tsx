@@ -5,12 +5,28 @@ import { useRouter } from 'next/navigation';
 import { Button, Field, Input, Modal } from '@/components/ui';
 import { crearObra } from './actions';
 
-export default function NuevaObraForm() {
+interface NuevaObraFormProps {
+  /** Si se provee (junto con onOpenChange), el modal se vuelve controlado por el
+   * padre y no se renderiza el botón disparador propio. Permite abrir el mismo
+   * modal desde otro punto de la página (ej. el estado vacío del buscador). */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export default function NuevaObraForm({ open: openProp, onOpenChange }: NuevaObraFormProps = {}) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
-  const [open, setOpen] = useState(false);
+  const [openState, setOpenState] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const controlado = openProp !== undefined;
+  const open = controlado ? openProp : openState;
+
+  function setOpen(value: boolean) {
+    if (controlado) onOpenChange?.(value);
+    else setOpenState(value);
+  }
 
   function handleClose() {
     if (loading) return;
@@ -36,7 +52,7 @@ export default function NuevaObraForm() {
 
   return (
     <>
-      <Button onClick={() => setOpen(true)}>+ Nueva obra</Button>
+      {!controlado && <Button onClick={() => setOpen(true)}>+ Nueva obra</Button>}
 
       <Modal open={open} onClose={handleClose} title="Nueva obra" size="md">
         <form ref={formRef} onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">

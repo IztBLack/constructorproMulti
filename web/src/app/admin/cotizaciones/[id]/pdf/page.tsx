@@ -125,7 +125,7 @@ export default async function CotizacionPdfPage({ params }: Props) {
             {cotizacion.ubicacion && (
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500 mb-0.5">
-                  Ubicacion
+                  Ubicación
                 </p>
                 <p className="text-sm text-[#0F172A]">{cotizacion.ubicacion}</p>
               </div>
@@ -136,7 +136,7 @@ export default async function CotizacionPdfPage({ params }: Props) {
           <div className="mb-6 space-y-6">
             {cotizacion.secciones.length === 0 && (
               <p className="text-sm text-neutral-500 italic">
-                Esta cotizacion no tiene partidas registradas.
+                Esta cotización no tiene partidas registradas.
               </p>
             )}
 
@@ -260,12 +260,12 @@ export default async function CotizacionPdfPage({ params }: Props) {
 
             <div className="border-t border-dashed border-neutral-200 pt-4">
               <p className="text-[10px] text-neutral-400 leading-relaxed">
-                Esta cotizacion tiene una vigencia de 30 dias naturales a partir de la fecha de emision.
-                Los precios estan expresados en pesos mexicanos (MXN).
+                Esta cotización tiene una vigencia de 30 días naturales a partir de la fecha de emisión.
+                Los precios están expresados en pesos mexicanos (MXN).
                 {cotizacion.iva_enabled
                   ? ' Los precios incluyen IVA (16%).'
                   : ' Los precios no incluyen IVA.'}
-                {` Para consultas o aclaraciones comuniquese con ${nombreEmpresa}.`}
+                {` Para consultas o aclaraciones comuníquese con ${nombreEmpresa}.`}
               </p>
             </div>
           </footer>

@@ -1,7 +1,20 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { Badge, Card, CardTitle, EmptyState, LinkButton, TableContainer, TBody, Td, Th, THead, Tr } from '@/components/ui';
+import {
+  Badge,
+  Card,
+  CardTitle,
+  EmptyState,
+  LinkButton,
+  PageHeader,
+  TableContainer,
+  TBody,
+  Td,
+  Th,
+  THead,
+  Tr,
+} from '@/components/ui';
 import { formatCurrency } from '@/lib/data/format';
 import {
   calcularPipeline,
@@ -153,10 +166,20 @@ export default async function AdminPage({
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-neutral-900">Panel de oficina</h1>
-        <p className="text-sm text-neutral-500">{user.email}</p>
-      </header>
+      <PageHeader
+        title="Panel de oficina"
+        eyebrow={user.email}
+        actions={
+          <>
+            <LinkButton href="/admin/obras" variant="secondary" size="sm">
+              + Nueva obra
+            </LinkButton>
+            <LinkButton href="/admin/cotizaciones/nueva" size="sm">
+              + Nueva cotización
+            </LinkButton>
+          </>
+        }
+      />
 
       {/* Primeros pasos: solo si la empresa está vacía */}
       {mostrarPrimerosPasos && (
@@ -202,135 +225,20 @@ export default async function AdminPage({
         </Card>
       )}
 
-      {/* Sección "Tu acceso" sin UUIDs crudos */}
-      <section className="rounded-xl border border-neutral-200 bg-white p-5">
-        <h2 className="mb-2 text-sm font-medium text-neutral-500">Tu acceso</h2>
-        {memberships && memberships.length > 0 ? (
-          <ul className="space-y-1 text-sm">
-            {memberships.map((m) => {
-              const nombreEmpresa = empresaNames[m.empresa_id as string] ?? 'Empresa';
-              return (
-                <li key={m.empresa_id as string} className="flex items-center gap-2">
-                  <span className="font-medium text-neutral-900">{nombreEmpresa}</span>
-                  <span className="rounded bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
-                    {rolLabel(m.rol as string)}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <div className="flex items-center gap-3">
-            <p className="text-sm text-neutral-500">Aún no tienes una empresa configurada.</p>
-            <LinkButton href="/onboarding" variant="secondary" size="sm">
-              Crear empresa
-            </LinkButton>
-          </div>
-        )}
-      </section>
-
+      {/* ── Primer pliegue: KPIs + saldo por obra ────────────────────────── */}
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {cards.map((c) => (
-          <Link
-            key={c.label}
-            href={c.href}
-            className="rounded-xl border border-neutral-200 bg-white p-6 transition hover:border-neutral-400"
-          >
-            <div className="text-sm font-medium text-neutral-500">{c.label}</div>
-            <div className="mt-2 text-3xl font-semibold tabular-nums text-neutral-900">
-              {c.error ? '—' : c.count}
-            </div>
-            {c.error && <p className="mt-1 text-xs text-red-600">No se pudo consultar.</p>}
+          <Link key={c.label} href={c.href} className="block">
+            <Card className="cursor-pointer transition hover:border-neutral-400">
+              <div className="text-sm font-medium text-neutral-500">{c.label}</div>
+              <div className="mt-2 text-3xl font-semibold tabular-nums text-neutral-900">
+                {c.error ? '—' : c.count}
+              </div>
+              {c.error && <p className="mt-1 text-xs text-red-600">No se pudo consultar.</p>}
+            </Card>
           </Link>
         ))}
       </section>
-
-      <Card>
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <CardTitle as="h2">Pipeline</CardTitle>
-            <p className="text-xs text-neutral-400">Cotizaciones pendientes (borrador / enviada)</p>
-          </div>
-          <p className="text-3xl font-semibold tabular-nums text-teal-700">
-            {pipelineResult.error ? '—' : formatCurrency(pipelineResult.value)}
-          </p>
-        </div>
-        {pipelineResult.error && (
-          <p className="mt-2 text-xs text-red-600">No se pudo calcular: {pipelineResult.error}</p>
-        )}
-      </Card>
-
-      <Card>
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <CardTitle as="h2">Periodo</CardTitle>
-          <div className="flex items-center gap-2">
-            <Link
-              href={`/admin?vista=mes&anio=${anioActual}&mes=${mesActual}`}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
-                !esAnual ? 'bg-neutral-900 text-white' : 'border border-neutral-300 text-neutral-700 hover:bg-neutral-100'
-              }`}
-            >
-              Mes
-            </Link>
-            <Link
-              href={`/admin?vista=anio&anio=${anioActual}`}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
-                esAnual ? 'bg-neutral-900 text-white' : 'border border-neutral-300 text-neutral-700 hover:bg-neutral-100'
-              }`}
-            >
-              Año
-            </Link>
-          </div>
-        </div>
-        <div className="mt-3 flex items-center justify-center gap-4">
-          <LinkButton variant="secondary" size="sm" href={hrefAnterior}>
-            ← Anterior
-          </LinkButton>
-          <span className="text-sm font-medium text-neutral-900">{periodoLabel}</span>
-          <LinkButton variant="secondary" size="sm" href={hrefSiguiente}>
-            Siguiente →
-          </LinkButton>
-        </div>
-      </Card>
-
-      <Card>
-        <CardTitle as="h2">Flujo de caja · {periodoLabel}</CardTitle>
-        {movimientosPeriodoResult.error ? (
-          <p className="mt-2 text-sm text-red-600">No se pudo cargar: {movimientosPeriodoResult.error}</p>
-        ) : (
-          <div className="mt-3 grid grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="text-xs text-neutral-500">Ingresos</p>
-              <p className="text-xl font-semibold tabular-nums text-green-700">{formatCurrency(flujo.totalEntradas)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-neutral-500">Egresos</p>
-              <p className="text-xl font-semibold tabular-nums text-red-600">{formatCurrency(flujo.totalSalidas)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-neutral-500">Saldo</p>
-              <p className={`text-xl font-semibold tabular-nums ${flujo.saldo >= 0 ? 'text-green-700' : 'text-red-600'}`}>
-                {formatCurrency(flujo.saldo)}
-              </p>
-            </div>
-          </div>
-        )}
-      </Card>
-
-      <Card>
-        <CardTitle as="h2">Distribución del gasto · {periodoLabel}</CardTitle>
-        {movimientosPeriodoResult.error ? (
-          <p className="mt-2 text-sm text-red-600">No se pudo cargar el gasto del periodo.</p>
-        ) : gasto.total === 0 ? (
-          <p className="mt-3 text-sm text-neutral-400">Sin salidas registradas en este periodo.</p>
-        ) : (
-          <div className="mt-3 space-y-1">
-            <BarraGasto label="Nómina" valor={gasto.nomina} total={gasto.total} colorClass="bg-indigo-500" />
-            <BarraGasto label="Material" valor={gasto.material} total={gasto.total} colorClass="bg-orange-500" />
-            <BarraGasto label="Otros" valor={gasto.otros} total={gasto.total} colorClass="bg-neutral-400" />
-          </div>
-        )}
-      </Card>
 
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-neutral-700">Saldo por obra</h2>
@@ -382,6 +290,128 @@ export default async function AdminPage({
           </TableContainer>
         )}
       </section>
+
+      {/* ── Finanzas del periodo: selector + flujo/gasto/pipeline en bento ── */}
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-medium text-neutral-700">Finanzas · {periodoLabel}</h2>
+            <p className="text-xs text-neutral-400">Flujo de caja, distribución del gasto y pipeline.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/admin?vista=mes&anio=${anioActual}&mes=${mesActual}`}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                  !esAnual ? 'bg-neutral-900 text-white' : 'border border-neutral-300 text-neutral-700 hover:bg-neutral-100'
+                }`}
+              >
+                Mes
+              </Link>
+              <Link
+                href={`/admin?vista=anio&anio=${anioActual}`}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                  esAnual ? 'bg-neutral-900 text-white' : 'border border-neutral-300 text-neutral-700 hover:bg-neutral-100'
+                }`}
+              >
+                Año
+              </Link>
+            </div>
+            <div className="flex items-center gap-2">
+              <LinkButton variant="secondary" size="sm" href={hrefAnterior}>
+                ← Anterior
+              </LinkButton>
+              <span className="text-sm font-medium text-neutral-900">{periodoLabel}</span>
+              <LinkButton variant="secondary" size="sm" href={hrefSiguiente}>
+                Siguiente →
+              </LinkButton>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card>
+            <CardTitle as="h3">Flujo de caja</CardTitle>
+            {movimientosPeriodoResult.error ? (
+              <p className="mt-2 text-sm text-red-600">No se pudo cargar: {movimientosPeriodoResult.error}</p>
+            ) : (
+              <div className="mt-3 grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <p className="text-xs text-neutral-500">Ingresos</p>
+                  <p className="text-xl font-semibold tabular-nums text-green-700">{formatCurrency(flujo.totalEntradas)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-neutral-500">Egresos</p>
+                  <p className="text-xl font-semibold tabular-nums text-red-600">{formatCurrency(flujo.totalSalidas)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-neutral-500">Saldo</p>
+                  <p className={`text-xl font-semibold tabular-nums ${flujo.saldo >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                    {formatCurrency(flujo.saldo)}
+                  </p>
+                </div>
+              </div>
+            )}
+          </Card>
+
+          <Card>
+            <CardTitle as="h3">Distribución del gasto</CardTitle>
+            {movimientosPeriodoResult.error ? (
+              <p className="mt-2 text-sm text-red-600">No se pudo cargar el gasto del periodo.</p>
+            ) : gasto.total === 0 ? (
+              <p className="mt-3 text-sm text-neutral-400">Sin salidas registradas en este periodo.</p>
+            ) : (
+              <div className="mt-3 space-y-1">
+                <BarraGasto label="Nómina" valor={gasto.nomina} total={gasto.total} colorClass="bg-indigo-500" />
+                <BarraGasto label="Material" valor={gasto.material} total={gasto.total} colorClass="bg-orange-500" />
+                <BarraGasto label="Otros" valor={gasto.otros} total={gasto.total} colorClass="bg-neutral-400" />
+              </div>
+            )}
+          </Card>
+
+          <Card className="lg:col-span-2">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <CardTitle as="h3">Pipeline</CardTitle>
+                <p className="text-xs text-neutral-400">Cotizaciones pendientes (borrador / enviada)</p>
+              </div>
+              <p className="text-3xl font-semibold tabular-nums text-teal-700">
+                {pipelineResult.error ? '—' : formatCurrency(pipelineResult.value)}
+              </p>
+            </div>
+            {pipelineResult.error && (
+              <p className="mt-2 text-xs text-red-600">No se pudo calcular: {pipelineResult.error}</p>
+            )}
+          </Card>
+        </div>
+      </section>
+
+      {/* ── Pie discreto: empresa(s) y rol del usuario ──────────────────── */}
+      <Card padding="sm" className="bg-neutral-50/60">
+        <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-400">Tu acceso</h2>
+        {memberships && memberships.length > 0 ? (
+          <ul className="space-y-1 text-sm">
+            {memberships.map((m) => {
+              const nombreEmpresa = empresaNames[m.empresa_id as string] ?? 'Empresa';
+              return (
+                <li key={m.empresa_id as string} className="flex items-center gap-2">
+                  <span className="font-medium text-neutral-900">{nombreEmpresa}</span>
+                  <span className="rounded bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
+                    {rolLabel(m.rol as string)}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <div className="flex items-center gap-3">
+            <p className="text-sm text-neutral-500">Aún no tienes una empresa configurada.</p>
+            <LinkButton href="/onboarding" variant="secondary" size="sm">
+              Crear empresa
+            </LinkButton>
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

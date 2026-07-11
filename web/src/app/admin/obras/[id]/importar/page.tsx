@@ -1,8 +1,8 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { PageHeader } from '@/components/ui';
 import { getObra } from '@/lib/data/obras';
 import ImportarObraForm from './importar-obra-form';
+import ObraTabs from '../_obra-tabs';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,11 +26,7 @@ export default async function ImportarMovimientosPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link href={`/admin/obras/${id}`} className="text-sm text-neutral-500 hover:underline">
-          ← {obra.nombre}
-        </Link>
-      </div>
+      <ObraTabs obraId={id} />
 
       <PageHeader
         title="Importar movimientos"

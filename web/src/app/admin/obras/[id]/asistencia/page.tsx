@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Card, CardTitle, EmptyState, LinkButton, PageHeader } from '@/components/ui';
 import { getObra } from '@/lib/data/obras';
@@ -6,6 +5,7 @@ import { listColaboradoresActivosObra, listAsistenciasObraRango, navegarSemana, 
 import { partesTz, medianocheMx, sumarDiasCalendario } from '@/lib/data/tz';
 import { formatDate } from '@/lib/data/format';
 import CuadriculaAsistencia, { type DiaSemana } from './cuadricula-asistencia';
+import ObraTabs from '../_obra-tabs';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,11 +76,7 @@ export default async function AsistenciaObraPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link href={`/admin/obras/${id}`} className="text-sm text-neutral-500 hover:underline">
-          ← {obra.nombre}
-        </Link>
-      </div>
+      <ObraTabs obraId={id} />
 
       <PageHeader
         title="Asistencia"

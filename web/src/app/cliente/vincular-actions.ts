@@ -20,7 +20,7 @@ export async function canjearCodigo(
   });
 
   if (error) {
-    return { ok: false, error: 'Ocurrio un error al verificar el codigo. Intenta de nuevo.' };
+    return { ok: false, error: 'Ocurrió un error al verificar el código. Intenta de nuevo.' };
   }
 
   const resultado = data as CanjeRPC;
@@ -28,7 +28,7 @@ export async function canjearCodigo(
   if (!resultado?.ok) {
     return {
       ok: false,
-      error: resultado?.error ?? 'El codigo no es valido o ya fue utilizado.',
+      error: resultado?.error ?? 'El código no es válido o ya fue utilizado.',
     };
   }
 

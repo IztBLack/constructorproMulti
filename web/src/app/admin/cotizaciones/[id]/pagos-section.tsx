@@ -155,10 +155,11 @@ function PagosTabla({
   const router = useRouter();
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [eliminandoId, setEliminandoId] = useState<string | null>(null);
+  const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function onEliminar(id: string) {
-    if (!confirm('¿Eliminar este pago? Esta acción no se puede deshacer.')) return;
+    setConfirmandoId(null);
     setEliminandoId(id);
     setError(null);
     const result = await eliminarPagoAction(id, cotizacionId);
@@ -225,23 +226,47 @@ function PagosTabla({
                 </Td>
                 <Td className="text-right">
                   <div className="flex items-center justify-end gap-2">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => setEditandoId(p.id)}
-                    >
-                      Editar
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="danger"
-                      size="sm"
-                      disabled={eliminandoId === p.id}
-                      onClick={() => onEliminar(p.id)}
-                    >
-                      {eliminandoId === p.id ? 'Eliminando…' : 'Eliminar'}
-                    </Button>
+                    {confirmandoId === p.id ? (
+                      <>
+                        <span className="text-xs text-neutral-500">¿Eliminar pago?</span>
+                        <Button
+                          type="button"
+                          variant="danger"
+                          size="sm"
+                          disabled={eliminandoId === p.id}
+                          onClick={() => onEliminar(p.id)}
+                        >
+                          {eliminandoId === p.id ? 'Eliminando…' : 'Sí, eliminar'}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setConfirmandoId(null)}
+                        >
+                          Cancelar
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setEditandoId(p.id)}
+                        >
+                          Editar
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setConfirmandoId(p.id)}
+                        >
+                          Eliminar
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </Td>
               </Tr>

@@ -36,9 +36,9 @@ export default async function ClienteResumenPage() {
       <div className="flex min-h-[60vh] items-center justify-center px-4">
         <div className="w-full max-w-sm space-y-6 text-center">
           <div className="space-y-2">
-            <h1 className="text-xl font-semibold text-neutral-900">Tu cuenta aun no esta vinculada</h1>
+            <h1 className="text-xl font-semibold text-neutral-900">Tu cuenta aún no está vinculada</h1>
             <p className="text-sm text-neutral-500">
-              Ingresa el codigo de acceso que te dio tu constructora.
+              Ingresa el código de acceso que te dio tu constructora.
             </p>
           </div>
           <VincularForm />
@@ -69,7 +69,7 @@ export default async function ClienteResumenPage() {
         <p className="text-sm text-neutral-500">Bienvenido de nuevo</p>
         <h1 className="text-2xl font-semibold text-neutral-900">{cliente.nombre}</h1>
         <p className="text-sm text-neutral-500">
-          Aqui puedes revisar el avance de tus obras, tus cotizaciones y tu estado de cuenta.
+          Aquí puedes revisar el avance de tus obras, tus cotizaciones y tu estado de cuenta.
         </p>
       </header>
 
@@ -114,7 +114,7 @@ export default async function ClienteResumenPage() {
         {obras.length === 0 ? (
           <EmptyState
             title="Sin obras registradas"
-            description="Aqui apareceran tus obras en cuanto tu constructora las registre."
+            description="Aquí aparecerán tus obras en cuanto tu constructora las registre."
           />
         ) : (
           <div className="space-y-3">
@@ -263,7 +263,7 @@ export default async function ClienteResumenPage() {
             <div>
               <p className="text-sm font-semibold text-neutral-900">Mis cotizaciones</p>
               <p className="text-xs text-neutral-500">
-                {cotizaciones.length} cotizacion{cotizaciones.length !== 1 ? 'es' : ''}
+                {cotizaciones.length} {cotizaciones.length === 1 ? 'cotización' : 'cotizaciones'}
               </p>
             </div>
           </Link>

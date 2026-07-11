@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Badge, EmptyState, PageHeader } from '@/components/ui';
-import { formatDate } from '@/lib/data/format';
+import { formatCurrency, formatDate } from '@/lib/data/format';
 import {
   getClienteActual,
   listObrasCliente,
@@ -32,8 +32,8 @@ export default async function ObrasPage() {
           description="Seguimiento de todas las obras vinculadas a tu cuenta."
         />
         <EmptyState
-          title="Tu cuenta aun no esta vinculada"
-          description="Pide a tu constructora el codigo de acceso para vincular tu cuenta al portal."
+          title="Tu cuenta aún no está vinculada"
+          description="Pide a tu constructora el código de acceso para vincular tu cuenta al portal."
         />
       </div>
     );
@@ -63,7 +63,7 @@ export default async function ObrasPage() {
       {obras.length === 0 ? (
         <EmptyState
           title="Sin obras registradas"
-          description="Aqui apareceran tus obras en cuanto tu constructora las registre."
+          description="Aquí aparecerán tus obras en cuanto tu constructora las registre."
         />
       ) : (
         <div className="space-y-4">
@@ -129,9 +129,16 @@ export default async function ObrasPage() {
       )}
 
       {/* ── Estado de cuenta global (por cotizaciones) ───────────────────── */}
+      {/* Nota: aún no existe una relación obra→cotización en los datos, por lo que
+          este resumen es a nivel cliente (todas sus cotizaciones), no por obra. */}
       {cotizacionesData.length > 0 && (
         <div className="mt-6 rounded-xl border border-neutral-200 bg-white p-5">
-          <h2 className="mb-4 text-sm font-semibold text-neutral-900">Estado de cuenta</h2>
+          <h2 className="mb-1 text-sm font-semibold text-neutral-900">
+            Estado de cuenta (todas tus cotizaciones)
+          </h2>
+          <p className="mb-4 text-xs text-neutral-400">
+            No están agrupadas por obra: muestra todas tus cotizaciones con esta constructora.
+          </p>
           <div className="space-y-3">
             {cotizacionesData.map(({ cotizacion, totales }) => (
               <Link
@@ -148,7 +155,7 @@ export default async function ObrasPage() {
                 <div className="shrink-0 text-right">
                   <p className="text-xs text-neutral-500">Total</p>
                   <p className="text-sm tabular-nums font-semibold text-neutral-900">
-                    {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(totales.total)}
+                    {formatCurrency(totales.total)}
                   </p>
                 </div>
               </Link>

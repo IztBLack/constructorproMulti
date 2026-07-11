@@ -21,7 +21,7 @@ export async function responderCotizacion(
   });
 
   if (error) {
-    return { ok: false, error: 'Ocurrio un error al procesar tu respuesta. Intenta de nuevo.' };
+    return { ok: false, error: 'Ocurrió un error al procesar tu respuesta. Intenta de nuevo.' };
   }
 
   const resultado = data as RespuestaRPC;

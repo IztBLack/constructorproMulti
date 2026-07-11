@@ -7,6 +7,48 @@ import { Button, Field, Input } from '@/components/ui';
 
 type Modo = 'login' | 'registro';
 
+type SupabaseBrowserClient = ReturnType<typeof createClient>;
+
+/**
+ * Resuelve a dónde mandar al usuario tras iniciar sesión, según su rol.
+ *
+ * Supuesto (documentado, no hay un campo "rol" único en el sistema):
+ * - Staff/administración de una empresa tiene una fila en `usuarios_empresa`
+ *   (user_id -> empresa_id, rol). Ver web/src/app/admin/page.tsx y
+ *   web/src/app/onboarding/page.tsx, que usan exactamente esta tabla.
+ * - Un cliente del portal tiene una fila en `clientes` con `user_id` apuntando
+ *   a su cuenta de auth (ver web/src/lib/data/portal-cliente.ts:getClienteActual,
+ *   que confía en RLS para devolver solo el registro del cliente autenticado).
+ * - Un usuario puede no tener ninguna de las dos todavía (recién registrado):
+ *   en ese caso lo mandamos a /admin, que sigue redirigiendo a /onboarding
+ *   (ver middleware.ts) — se preserva el flujo de onboarding existente.
+ *
+ * Si ambas consultas fallan (RLS/red), no bloqueamos el login: caemos a /admin
+ * (comportamiento previo).
+ */
+async function resolverDestino(supabase: SupabaseBrowserClient, userId: string): Promise<string> {
+  const { data: membresia } = await supabase
+    .from('usuarios_empresa')
+    .select('empresa_id')
+    .eq('user_id', userId)
+    .limit(1)
+    .maybeSingle();
+
+  if (membresia) return '/admin';
+
+  const { data: cliente } = await supabase
+    .from('clientes')
+    .select('id')
+    .eq('user_id', userId)
+    .is('deleted_at', null)
+    .limit(1)
+    .maybeSingle();
+
+  if (cliente) return '/cliente';
+
+  return '/admin';
+}
+
 const ERRORES: Record<string, string> = {
   'Invalid login credentials': 'Correo o contraseña incorrectos.',
   'Email not confirmed': 'Debes confirmar tu correo antes de iniciar sesión.',
@@ -53,13 +95,20 @@ export default function LoginPage() {
     }
 
     // Modo login normal.
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
     if (signInError) {
+      setLoading(false);
       setError(traducirError(signInError.message));
       return;
     }
-    router.push('/admin');
+
+    const userId = signInData.user?.id;
+    const destino = userId ? await resolverDestino(supabase, userId) : '/admin';
+    setLoading(false);
+    router.push(destino);
     router.refresh();
   }
 

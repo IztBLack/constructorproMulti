@@ -48,23 +48,19 @@ export default async function ObraDetallePage({
   const estado = mapEstadoObra(obra.activa, obra.avance);
   const tone = ESTADO_TONE[estado];
 
-  // Obtener cotizaciones del cliente para calcular el estado de cuenta
-  // La relacion obra→cotizacion puede venir por obra_id en cotizaciones (campo obra_id)
-  // o por coincidencia de nombre. Aqui buscamos cotizaciones que tengan obra_id == obra.id.
-  // Si la BD no tiene esa relacion directa, mostramos el resumen de todas las cotizaciones
-  // del cliente (nivel general) y los pagos de esas cotizaciones.
-  const todasCotizaciones = await listCotizacionesCliente();
+  // IMPORTANTE: la relación obra→cotización todavía no existe en los datos
+  // (la tabla `cotizaciones` no tiene una columna `obra_id` poblada que permita
+  // filtrar cuáles pertenecen a esta obra en particular). Por eso, en lugar de
+  // aparentar que este bloque es "el estado de cuenta de esta obra", lo mostramos
+  // rotulado explícitamente como el estado de cuenta GLOBAL del cliente (todas sus
+  // cotizaciones con la constructora), para no exhibir información incorrecta.
+  // Pendiente (fuera de alcance de este cambio): agregar `obra_id` a `cotizaciones`
+  // y filtrar aquí por `obra.id` cuando esa columna exista y esté poblada.
+  const todasLasCotizacionesDelCliente = await listCotizacionesCliente();
 
-  // Intentar filtrar cotizaciones relacionadas con esta obra
-  // (cotizaciones con nombre_proyecto similar a obra.nombre, como aproximacion robusta)
-  const cotizacionesDeLaObra = todasCotizaciones;
-  // Nota: si la tabla cotizaciones tuviera columna obra_id poblada, se filtraria aqui.
-  // Por ahora mostramos todas las cotizaciones del cliente ya que el mapeo exacto
-  // obra→cotizacion depende de datos que RLS ya ha acotado al cliente.
-
-  // Recopilar pagos de todas las cotizaciones
+  // Recopilar pagos de todas las cotizaciones del cliente (no solo de esta obra)
   const pagosPorCotizacion = await Promise.all(
-    cotizacionesDeLaObra.map(async ({ cotizacion }) => ({
+    todasLasCotizacionesDelCliente.map(async ({ cotizacion }) => ({
       cotizacionId: cotizacion.id,
       cotizacionNombre: cotizacion.nombre_proyecto,
       pagos: await listPagosDeCotizacion(cotizacion.id),
@@ -72,7 +68,7 @@ export default async function ObraDetallePage({
   );
 
   const todosPagos: PagoPortal[] = pagosPorCotizacion.flatMap((pc) => pc.pagos);
-  const totalCotizaciones = cotizacionesDeLaObra.reduce((acc, d) => acc + d.totales.total, 0);
+  const totalCotizaciones = todasLasCotizacionesDelCliente.reduce((acc, d) => acc + d.totales.total, 0);
   const totalPagado = todosPagos.reduce((acc, p) => acc + p.monto, 0);
   const saldo = totalCotizaciones - totalPagado;
   const pagadoPct =
@@ -133,16 +129,22 @@ export default async function ObraDetallePage({
             />
           </div>
           <p className="mt-2 text-xs text-neutral-400">
-            Avance reportado por la constructora. Actualizado periodicamente.
+            Avance reportado por la constructora. Actualizado periódicamente.
           </p>
         </Card>
       </section>
 
       {/* ── Estado de cuenta ─────────────────────────────────────────────── */}
+      {/* Nota: aún no existe una relación obra→cotización en los datos, así que este
+          bloque es el estado de cuenta global del cliente, no exclusivo de esta obra
+          (ver comentario en la carga de datos, arriba). */}
       <section aria-labelledby="estado-cuenta-heading">
-        <h2 id="estado-cuenta-heading" className="mb-4 text-base font-semibold text-neutral-900">
-          Estado de cuenta
+        <h2 id="estado-cuenta-heading" className="mb-1 text-base font-semibold text-neutral-900">
+          Estado de cuenta (todas tus cotizaciones)
         </h2>
+        <p className="mb-4 text-xs text-neutral-400">
+          Este resumen incluye todas tus cotizaciones con esta constructora, no solo las de esta obra.
+        </p>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Card padding="md">
@@ -192,15 +194,19 @@ export default async function ObraDetallePage({
       </section>
 
       {/* ── Historial de pagos ───────────────────────────────────────────── */}
+      {/* Mismo alcance que el bloque anterior: todos los pagos del cliente, no solo de esta obra. */}
       <section aria-labelledby="historial-pagos-heading">
-        <h2 id="historial-pagos-heading" className="mb-4 text-base font-semibold text-neutral-900">
-          Historial de pagos
+        <h2 id="historial-pagos-heading" className="mb-1 text-base font-semibold text-neutral-900">
+          Historial de pagos (todas tus cotizaciones)
         </h2>
+        <p className="mb-4 text-xs text-neutral-400">
+          Incluye los pagos de todas tus cotizaciones con esta constructora.
+        </p>
 
         {todosPagos.length === 0 ? (
           <EmptyState
             title="Sin pagos registrados"
-            description="Los pagos aparecen aqui una vez que tu constructora los registre."
+            description="Los pagos aparecen aquí una vez que tu constructora los registre."
           />
         ) : (
           <>
@@ -209,7 +215,7 @@ export default async function ObraDetallePage({
               <THead>
                 <Th>Fecha</Th>
                 <Th>Concepto</Th>
-                <Th>Metodo</Th>
+                <Th>Método</Th>
                 <Th>Referencia</Th>
                 <Th className="text-right">Monto</Th>
               </THead>

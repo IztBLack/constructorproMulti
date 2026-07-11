@@ -1,12 +1,10 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Badge, TableContainer, THead, Th, TBody, Tr, Td } from '@/components/ui';
 import type { Cliente } from '@/lib/data/types';
 
 export default function TablaClientes({ clientes }: { clientes: Cliente[] }) {
-  const router = useRouter();
-
   return (
     <TableContainer>
       <THead>
@@ -17,12 +15,12 @@ export default function TablaClientes({ clientes }: { clientes: Cliente[] }) {
       </THead>
       <TBody>
         {clientes.map((c) => (
-          <Tr
-            key={c.id}
-            onClick={() => router.push(`/admin/clientes/${c.id}`)}
-            className="cursor-pointer"
-          >
-            <Td className="font-medium text-neutral-900">{c.nombre}</Td>
+          <Tr key={c.id}>
+            <Td className="font-medium text-neutral-900">
+              <Link href={`/admin/clientes/${c.id}`} className="hover:underline">
+                {c.nombre}
+              </Link>
+            </Td>
             <Td className="text-neutral-600">{c.email || '—'}</Td>
             <Td className="text-neutral-600">{c.telefono || '—'}</Td>
             <Td>

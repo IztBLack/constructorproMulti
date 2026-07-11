@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getObra, listMovimientosByObra } from '@/lib/data/obras';
 import { listPresupuestoObra } from '@/lib/data/presupuesto-obra';
@@ -10,6 +9,7 @@ import MovimientosTabla from './movimientos-tabla';
 import EquipoObra from './equipo-obra';
 import EstadoCuenta from './estado-cuenta';
 import PresupuestoObra from './presupuesto-obra';
+import ObraTabs from './_obra-tabs';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,28 +47,9 @@ export default async function ObraDetallePage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link href="/admin/obras" className="text-sm text-neutral-500 hover:underline">
-          ← Obras
-        </Link>
-      </div>
+      <ObraTabs obraId={id} />
 
       <ObraHeader obra={obra} clientes={clientes} />
-
-      <div className="flex flex-wrap items-center gap-3">
-        <Link
-          href={`/admin/obras/${id}/asistencia`}
-          className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-100 cursor-pointer"
-        >
-          Asistencia
-        </Link>
-        <Link
-          href={`/admin/obras/${id}/nomina`}
-          className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-100 cursor-pointer"
-        >
-          Nómina
-        </Link>
-      </div>
 
       {/* ── Sección financiera ──────────────────────────────────────────── */}
 

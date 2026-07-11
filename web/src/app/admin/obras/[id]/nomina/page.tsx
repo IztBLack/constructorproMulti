@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Badge, Card, CardTitle, EmptyState, LinkButton, PageHeader, TableContainer, TBody, Td, Th, THead, Tr } from '@/components/ui';
 import { getObra } from '@/lib/data/obras';
@@ -12,6 +11,7 @@ import {
   semanaDe,
 } from '@/lib/data/nomina';
 import { formatCurrency, formatDate } from '@/lib/data/format';
+import ObraTabs from '../_obra-tabs';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,15 +60,11 @@ export default async function NominaObraPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link href={`/admin/obras/${id}`} className="text-sm text-neutral-500 hover:underline">
-          ← {obra.nombre}
-        </Link>
-      </div>
+      <ObraTabs obraId={id} />
 
       <PageHeader
         title="Nómina"
-        description={`Consulta de nómina semanal en ${obra.nombre}. La captura de asistencia y destajos se hace desde la app móvil.`}
+        description={`Consulta de nómina semanal en ${obra.nombre}. La asistencia se captura aquí, en la pestaña Asistencia; los destajos se capturan desde la app móvil.`}
       />
 
       <Card>

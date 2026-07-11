@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import type { Colaborador, Puesto } from '@/lib/data/types';
 import { Badge, Button, EmptyState, TableContainer, TBody, Td, Th, THead, Tr } from '@/components/ui';
 import { formatCurrency } from '@/lib/data/format';
@@ -63,12 +64,12 @@ export default function TablaColaboradores({
           const salario = c.salario_personalizado ?? salarioPuesto(c.puesto_id);
           const isLoading = loadingId === c.id;
           return (
-            <Tr
-              key={c.id}
-              className="cursor-pointer"
-              onClick={() => router.push(`/admin/equipo/${c.id}`)}
-            >
-              <Td className="font-medium text-neutral-900">{c.nombre}</Td>
+            <Tr key={c.id}>
+              <Td className="font-medium text-neutral-900">
+                <Link href={`/admin/equipo/${c.id}`} className="hover:underline">
+                  {c.nombre}
+                </Link>
+              </Td>
               <Td>{puestoNombre(c.puesto_id)}</Td>
               <Td>{TIPO_PAGO_LABEL[c.tipo_pago] ?? c.tipo_pago}</Td>
               <Td className="text-right tabular-nums">
@@ -80,10 +81,7 @@ export default function TablaColaboradores({
                   {c.activo ? 'Activo' : 'Inactivo'}
                 </Badge>
               </Td>
-              <Td
-                className="text-right"
-                onClick={(e) => e.stopPropagation()}
-              >
+              <Td className="text-right">
                 <Button
                   variant="secondary"
                   size="sm"

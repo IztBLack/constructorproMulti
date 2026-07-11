@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useOptimistic, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Input, TBody, TableContainer, Td, Th, THead, Tr } from '@/components/ui';
+import { Button, EmptyState, Input, TBody, TableContainer, Td, Th, THead, Tr } from '@/components/ui';
 import { formatCurrency } from '@/lib/data/format';
 import type { Partida, Seccion } from '@/lib/data/types';
 import { actualizarSeccionAction, eliminarPartidaAction, eliminarSeccionAction } from './actions';
@@ -25,6 +25,14 @@ export function SeccionCard({
   const [confirmandoBorradoPartidaId, setConfirmandoBorradoPartidaId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  // Partidas optimistas: al eliminar, la fila desaparece de inmediato sin esperar
+  // el viaje de red completo; si la acción falla, React revierte solo al terminar
+  // la transición (ver node_modules/next/dist/docs .../getting-started/mutating-data.md).
+  const [partidasOptimistas, quitarPartidaOptimista] = useOptimistic(
+    seccion.partidas,
+    (state, idEliminado: string) => state.filter((p) => p.id !== idEliminado),
+  );
 
   function handleRenombrar(formData: FormData) {
     setError(null);
@@ -54,6 +62,7 @@ export function SeccionCard({
   function handleEliminarPartida(partidaId: string) {
     setError(null);
     startTransition(async () => {
+      quitarPartidaOptimista(partidaId);
       const result = await eliminarPartidaAction(partidaId, cotizacionId);
       if (result.error) {
         setError(result.error);
@@ -63,7 +72,8 @@ export function SeccionCard({
     });
   }
 
-  const siguienteOrden = seccion.partidas.length;
+  const siguienteOrden = partidasOptimistas.length;
+  const subtotalSeccion = partidasOptimistas.reduce((acc, p) => acc + p.cantidad * p.precio_unitario, 0);
 
   return (
     <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
@@ -80,7 +90,12 @@ export function SeccionCard({
             </Button>
           </form>
         ) : (
-          <h3 className="text-sm font-semibold text-neutral-800">{seccion.nombre}</h3>
+          <div className="flex items-baseline gap-3">
+            <h3 className="text-sm font-semibold text-neutral-800">{seccion.nombre}</h3>
+            <span className="text-xs tabular-nums text-neutral-500">
+              Subtotal: {formatCurrency(subtotalSeccion)}
+            </span>
+          </div>
         )}
 
         {!renombrando && (
@@ -111,8 +126,13 @@ export function SeccionCard({
         <p className="border-b border-red-100 bg-red-50 px-4 py-2 text-xs text-red-700">{error}</p>
       )}
 
-      {seccion.partidas.length === 0 ? (
-        <p className="px-4 py-6 text-sm text-neutral-400">Sin partidas en esta sección.</p>
+      {partidasOptimistas.length === 0 ? (
+        <div className="px-4 py-2">
+          <EmptyState
+            title="Sin partidas en esta sección"
+            description="Agrega la primera partida con el botón de abajo."
+          />
+        </div>
       ) : (
         <TableContainer className="rounded-none border-0">
           <THead>
@@ -125,7 +145,7 @@ export function SeccionCard({
             <Th className="text-right">Acciones</Th>
           </THead>
           <TBody>
-            {seccion.partidas.map((p) =>
+            {partidasOptimistas.map((p) =>
               editandoPartidaId === p.id ? (
                 <tr key={p.id}>
                   <td colSpan={7} className="p-3">

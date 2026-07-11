@@ -37,6 +37,11 @@ export function CotizacionForm(props: Props) {
   const cotizacion = props.mode === 'editar' ? props.cotizacion : null;
   const clientes = props.clientes;
 
+  // Cliente unificado: si se elige un cliente del portal, se autocompleta el nombre
+  // (solo lectura); si no, el nombre se captura a mano en texto libre.
+  const [clienteId, setClienteId] = useState(cotizacion?.cliente_id ?? '');
+  const clienteVinculado = clientes.find((c) => c.id === clienteId) ?? null;
+
   function handleSubmit(formData: FormData) {
     setError(null);
     startTransition(async () => {
@@ -63,14 +68,18 @@ export function CotizacionForm(props: Props) {
   return (
     <form action={handleSubmit} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Cliente del portal" hint="Opcional — vincula a un cliente registrado">
+        <Field
+          label="Cliente"
+          hint="Elige un cliente registrado en el portal, o deja «Cliente sin vincular» para capturar el nombre a mano"
+        >
           <select
             name="cliente_id"
-            defaultValue={cotizacion?.cliente_id ?? ''}
+            value={clienteId}
+            onChange={(e) => setClienteId(e.target.value)}
             disabled={pending}
             className={SELECT_CLASSES}
           >
-            <option value="">Sin cliente vinculado</option>
+            <option value="">Cliente sin vincular (texto libre)</option>
             {clientes.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nombre || c.email || c.id}
@@ -79,9 +88,21 @@ export function CotizacionForm(props: Props) {
           </select>
         </Field>
 
-        <Field label="Cliente (texto libre)">
-          <Input name="cliente" required defaultValue={cotizacion?.cliente ?? ''} disabled={pending} />
-        </Field>
+        {clienteVinculado ? (
+          <Field label="Nombre del cliente" hint="Autocompletado del cliente vinculado al portal">
+            <Input
+              name="cliente"
+              value={clienteVinculado.nombre || clienteVinculado.email || ''}
+              readOnly
+              disabled={pending}
+              className="bg-neutral-50 text-neutral-500"
+            />
+          </Field>
+        ) : (
+          <Field label="Cliente (texto libre)" hint="Nombre del cliente para esta cotización">
+            <Input name="cliente" required defaultValue={cotizacion?.cliente ?? ''} disabled={pending} />
+          </Field>
+        )}
 
         <Field label="Nombre del proyecto">
           <Input
@@ -103,20 +124,22 @@ export function CotizacionForm(props: Props) {
             disabled={pending}
           />
         </Field>
-        <Field label="Estado">
-          <select
-            name="estado"
-            defaultValue={cotizacion?.estado ?? 'BORRADOR'}
-            disabled={pending}
-            className={SELECT_CLASSES}
-          >
-            {ESTADOS.map((e) => (
-              <option key={e} value={e}>
-                {ESTADO_LABEL[e]}
-              </option>
-            ))}
-          </select>
-        </Field>
+        {props.mode === 'editar' && (
+          <Field label="Estado">
+            <select
+              name="estado"
+              defaultValue={cotizacion?.estado ?? 'BORRADOR'}
+              disabled={pending}
+              className={SELECT_CLASSES}
+            >
+              {ESTADOS.map((e) => (
+                <option key={e} value={e}>
+                  {ESTADO_LABEL[e]}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
         <Field label="Descuento (%)" hint="0 a 100">
           <Input
             type="number"

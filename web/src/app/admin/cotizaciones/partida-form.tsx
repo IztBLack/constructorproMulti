@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Input } from '@/components/ui';
+import { formatCurrency } from '@/lib/data/format';
 import type { Partida } from '@/lib/data/types';
 import { actualizarPartidaAction, crearPartidaAction } from './actions';
 
@@ -16,6 +17,12 @@ export function PartidaForm(props: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const partida = props.mode === 'editar' ? props.partida : null;
+
+  // Importe calculado en vivo mientras se captura, estilo hoja de cálculo.
+  // Se guardan como texto (no number) para permitir campo vacío mientras el usuario teclea.
+  const [cantidadTexto, setCantidadTexto] = useState(String(partida?.cantidad ?? 1));
+  const [precioTexto, setPrecioTexto] = useState(String(partida?.precio_unitario ?? 0));
+  const importe = (Number.parseFloat(cantidadTexto) || 0) * (Number.parseFloat(precioTexto) || 0);
 
   function handleSubmit(formData: FormData) {
     setError(null);
@@ -66,7 +73,8 @@ export function PartidaForm(props: Props) {
           step="0.01"
           min={0}
           required
-          defaultValue={partida?.cantidad ?? 1}
+          value={cantidadTexto}
+          onChange={(e) => setCantidadTexto(e.target.value)}
           disabled={pending}
         />
         <Input
@@ -76,7 +84,8 @@ export function PartidaForm(props: Props) {
           step="0.01"
           min={0}
           required
-          defaultValue={partida?.precio_unitario ?? 0}
+          value={precioTexto}
+          onChange={(e) => setPrecioTexto(e.target.value)}
           disabled={pending}
         />
       </div>
@@ -86,6 +95,12 @@ export function PartidaForm(props: Props) {
         name="orden"
         value={props.mode === 'crear' ? props.siguienteOrden : partida!.orden}
       />
+
+      {/* Importe en vivo (cantidad × precio unitario), como en una hoja de cálculo */}
+      <div className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-sm">
+        <span className="text-neutral-500">Importe</span>
+        <span className="font-medium tabular-nums text-neutral-900">{formatCurrency(importe)}</span>
+      </div>
 
       {error && <p className="text-xs text-red-600">{error}</p>}
 
