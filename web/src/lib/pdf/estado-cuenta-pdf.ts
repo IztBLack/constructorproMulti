@@ -22,6 +22,12 @@
  */
 
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
+// pdfjs carga su worker con un import dinámico por string; el file-tracing de
+// Next lo poda del bundle serverless (en Vercel falla con "Cannot find module
+// pdf.worker.mjs"). Este import estático (solo exporta WorkerMessageHandler, sin
+// efectos secundarios en Node) obliga al tracer a incluir el archivo, de modo
+// que el import dinámico del "fake worker" lo encuentre en runtime.
+import 'pdfjs-dist/legacy/build/pdf.worker.mjs';
 import {
   type ParsedObraData,
   type ExcelMovimiento,
