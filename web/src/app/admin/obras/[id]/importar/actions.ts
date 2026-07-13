@@ -45,13 +45,19 @@ interface DatosClaveMovimiento {
   monto: number;
   categoria: string | null;
   tipo: string;
-  nombre: string | null;
 }
 
 /**
  * Clave de deduplicación de un movimiento: fecha (día) + monto + categoría +
- * tipo + nombre, normalizados. Dos movimientos con la misma clave se consideran
- * el mismo pago.
+ * tipo, normalizados. Dos movimientos con la misma clave se consideran el mismo
+ * pago.
+ *
+ * NO se incluye `nombre` (el pagador/beneficiario): ese campo es volátil entre
+ * archivos fuente — el mismo pago se importa a veces con nombre y a veces sin él
+ * (p. ej. xlsx vs pdf), o con el nombre escrito distinto. Incluirlo hacía que un
+ * re-import del mismo estado de cuenta NO detectara los duplicados y los
+ * reinsertara, inflando el "RECIBIDO". El nombre se conserva en la fila, pero no
+ * define la identidad del movimiento.
  */
 function claveMovimiento(m: DatosClaveMovimiento): string {
   return [
@@ -59,7 +65,6 @@ function claveMovimiento(m: DatosClaveMovimiento): string {
     montoKey(m.monto),
     normalizarTexto(m.categoria),
     normalizarTexto(m.tipo),
-    normalizarTexto(m.nombre),
   ].join('|');
 }
 
@@ -199,7 +204,7 @@ export async function previsualizarImportacionObra(
 
   const clavesExistentes = new Set(
     movimientosExistentes.map((m) =>
-      claveMovimiento({ fecha: m.fecha, monto: m.monto, categoria: m.categoria, tipo: m.tipo, nombre: m.nombre }),
+      claveMovimiento({ fecha: m.fecha, monto: m.monto, categoria: m.categoria, tipo: m.tipo }),
     ),
   );
 
