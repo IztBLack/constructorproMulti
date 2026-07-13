@@ -4,7 +4,7 @@ import { formatCurrency, formatDate } from '@/lib/data/format';
 import {
   getClienteActual,
   listObrasCliente,
-  listCotizacionesCliente,
+  getEstadoCuentaObra,
   mapEstadoObra,
 } from '@/lib/data/portal-cliente';
 import type { EstadoObraPortal } from '@/lib/data/portal-cliente';
@@ -39,19 +39,17 @@ export default async function ObrasPage() {
     );
   }
 
-  const [obras, cotizacionesData] = await Promise.all([
-    listObrasCliente(),
-    listCotizacionesCliente(),
-  ]);
+  const obras = await listObrasCliente();
 
-  // Calcular pagado y presupuesto por cotizacion para el estado de cuenta de cada obra
-  // La relacion obra → pagos es indirecta (obra → cotizacion → pagos), pero la
-  // tabla obras tiene avance directo. Mostramos avance de obra (campo obras.avance)
-  // y el estado financiero se muestra a nivel cotizacion en su propia seccion.
-  //
-  // Para las obras: calculamos totales globales de cotizaciones relacionadas
-  // identificando cotizaciones por nombre_proyecto similar a obra.nombre (aproximacion)
-  // o, si la BD tiene la relacion correcta, simplemente mostramos avance + info general.
+  // Estado de cuenta REAL por obra (COSTO TOTAL vs RECIBIDO). Se calcula en
+  // paralelo para cada obra; la RLS garantiza que solo se leen datos del cliente
+  // y nunca las SALIDA de caja.
+  const obrasConEstado = await Promise.all(
+    obras.map(async (obra) => ({
+      obra,
+      estadoCuenta: await getEstadoCuentaObra(obra.id),
+    })),
+  );
 
   return (
     <div className="space-y-6">
@@ -67,9 +65,11 @@ export default async function ObrasPage() {
         />
       ) : (
         <div className="space-y-4">
-          {obras.map((obra) => {
+          {obrasConEstado.map(({ obra, estadoCuenta }) => {
             const estado = mapEstadoObra(obra.activa, obra.avance);
             const tone = ESTADO_TONE[estado];
+            const tieneEstadoCuenta =
+              estadoCuenta.costoTotal > 0 || estadoCuenta.entradas.length > 0;
 
             return (
               <Link
@@ -122,45 +122,33 @@ export default async function ObrasPage() {
                     />
                   </div>
                 </div>
+
+                {/* Resumen financiero por obra */}
+                {tieneEstadoCuenta && (
+                  <div className="mt-4 grid grid-cols-3 gap-3 border-t border-neutral-100 pt-3 text-xs">
+                    <div>
+                      <p className="text-neutral-400">Costo total</p>
+                      <p className="mt-0.5 tabular-nums font-semibold text-neutral-900">
+                        {formatCurrency(estadoCuenta.costoTotal)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-neutral-400">Pagado</p>
+                      <p className="mt-0.5 tabular-nums font-semibold text-green-700">
+                        {formatCurrency(estadoCuenta.recibido)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-neutral-400">Pendiente</p>
+                      <p className="mt-0.5 tabular-nums font-semibold text-amber-700">
+                        {formatCurrency(estadoCuenta.pendiente)}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </Link>
             );
           })}
-        </div>
-      )}
-
-      {/* ── Estado de cuenta global (por cotizaciones) ───────────────────── */}
-      {/* Nota: aún no existe una relación obra→cotización en los datos, por lo que
-          este resumen es a nivel cliente (todas sus cotizaciones), no por obra. */}
-      {cotizacionesData.length > 0 && (
-        <div className="mt-6 rounded-xl border border-neutral-200 bg-white p-5">
-          <h2 className="mb-1 text-sm font-semibold text-neutral-900">
-            Estado de cuenta (todas tus cotizaciones)
-          </h2>
-          <p className="mb-4 text-xs text-neutral-400">
-            No están agrupadas por obra: muestra todas tus cotizaciones con esta constructora.
-          </p>
-          <div className="space-y-3">
-            {cotizacionesData.map(({ cotizacion, totales }) => (
-              <Link
-                key={cotizacion.id}
-                href={`/cliente/cotizaciones/${cotizacion.id}`}
-                className="flex items-center justify-between gap-4 rounded-lg border border-neutral-100 bg-neutral-50 px-4 py-3 hover:border-neutral-200 cursor-pointer transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-neutral-900 truncate">
-                    {cotizacion.nombre_proyecto}
-                  </p>
-                  <p className="text-xs text-neutral-400">{cotizacion.ubicacion ?? '—'}</p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className="text-xs text-neutral-500">Total</p>
-                  <p className="text-sm tabular-nums font-semibold text-neutral-900">
-                    {formatCurrency(totales.total)}
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
         </div>
       )}
     </div>
