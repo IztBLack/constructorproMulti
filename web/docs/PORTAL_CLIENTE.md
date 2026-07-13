@@ -151,12 +151,20 @@ Sus obras con avance y estado de cuenta.
 │   23/oct/2025  Anticipo             $100,000               │
 │   11/nov/2025  Materiales           $406,450               │
 │   …                                                         │
+│                                                             │
+│                       [ Descargar estado de cuenta (PDF) ] │
 └───────────────────────────────────────────────────────────┘
 ```
 
 - **Avance %** de la obra.
-- **Estado de cuenta:** presupuesto, total pagado y saldo pendiente.
-- **Historial de SUS pagos** (solo las entradas que él aportó).
+- **Estado de cuenta REAL de esa obra** (mismo modelo que `/admin`):
+  - **Costo total** = suma del presupuesto de la obra (`obra_presupuesto`).
+  - **Pagado / Recibido** = suma de sus **entradas** (`movimientos` con `tipo='ENTRADA'`).
+  - **Saldo pendiente** = costo − pagado, más una barra de **avance de pago**.
+- **Historial de SUS pagos** (solo las ENTRADAS; nunca las salidas de caja).
+- **Descargar el estado de cuenta en PDF** (se genera al vuelo, ruta
+  `/cliente/obras/[id]/estado-cuenta`: encabezado, presupuesto por partidas,
+  totales e historial de pagos).
 
 ---
 
@@ -180,6 +188,15 @@ se le paga, márgenes) permanece solo para ti y tu equipo.
 
 El aislamiento NO depende de ocultar cosas en la pantalla, sino de **RLS
 (Row-Level Security) en Postgres**: aunque alguien intentara consultar directo, la
-base de datos solo devuelve las obras/cotizaciones/pagos ligadas a ese cliente.
-Las tablas internas (movimientos, nómina, asistencia, presupuesto de obra) no
-tienen permiso de lectura para el rol `cliente`.
+base de datos solo devuelve lo ligado a ese cliente.
+
+El rol `cliente` tiene lectura, **scopeada a sus propias obras**, sobre:
+`obras`, `cotizaciones` (+ secciones/partidas/pagos), `obra_presupuesto`
+(el COSTO TOTAL de su obra) y `movimientos` **únicamente `tipo='ENTRADA'`** (sus
+pagos recibidos). El filtro `tipo='ENTRADA'` vive dentro de la política RLS
+(`migrations/0010_cliente_estado_cuenta.sql`), de modo que un movimiento de
+**SALIDA nunca es visible** para el cliente aunque intente consultarlo directo.
+
+Sin permiso de lectura para el rol `cliente`: `movimientos` de SALIDA, nómina,
+asistencia, destajos, colaboradores, catálogo, puestos y los datos de otros
+clientes u otras empresas.

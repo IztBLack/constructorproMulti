@@ -5,7 +5,7 @@ offline-first. La app móvil sigue siendo offline-first (Drift = fuente de verda
 Supabase es el punto de encuentro para sync y para la web `/admin` + `/cliente`.
 
 > **Estado:** proyecto Supabase **activo en producción** (`vmkkkrlctakzzqebtyci`),
-> migraciones `0001`–`0009` corridas. Este directorio ya no es "guion de creación"
+> migraciones `0001`–`0010` corridas. Este directorio ya no es "guion de creación"
 > puro: es el historial versionado del esquema. Detalle sesión a sesión en
 > `docs/BITACORA.md` (local, no se publica); guía de deploy en `web/DEPLOY.md`
 > (incluye cómo aplicar una migración nueva sin el CLI vinculado).
@@ -23,6 +23,7 @@ Supabase es el punto de encuentro para sync y para la web `/admin` + `/cliente`.
 | `migrations/0007_storage_y_cliente_responde.sql` | Bucket Storage `cotizaciones` (archivos adjuntos) + RPC `cliente_responder_cotizacion`. |
 | `migrations/0008_control_pagos_obra.sql` | `movimientos.nombre` + tabla `obra_presupuesto` (estado de cuenta de obra estilo Excel). |
 | `migrations/0009_sueldo_periodo_colaborador.sql` | `colaboradores.periodo_pago`/`salario_periodo`/`dias_semana` — sueldo capturado por periodo (semanal/quincenal/mensual); el salario diario que usa la nómina (`salario_personalizado`) pasa a derivarse de estos campos. |
+| `migrations/0010_cliente_estado_cuenta.sql` | RLS de solo-lectura para el rol `cliente` sobre `obra_presupuesto` (COSTO TOTAL) y `movimientos` **SOLO `tipo='ENTRADA'`** (RECIBIDO) de SUS obras — habilita el estado de cuenta REAL por obra en el portal. El filtro `tipo='ENTRADA'` vive en el `USING`: una SALIDA nunca es visible vía RLS. |
 
 ## Pasos para activarlo (ya activo; referencia si se recrea el proyecto)
 
@@ -53,3 +54,16 @@ cliente y le asigna obras (`obras.cliente_id`) y cotizaciones
 (`cotizaciones.cliente_id`); el cliente se vincula su cuenta vía código de 6
 dígitos (`0004`, rol `cliente`); RLS de solo-lectura en `0006` scopea todo por
 `clientes.user_id = auth.uid()`.
+
+**Estado de cuenta por obra (`0010`):** el estado de cuenta del cliente se calcula
+con el modelo REAL por obra (el mismo que `/admin`), no por cotización: **COSTO
+TOTAL** = Σ `obra_presupuesto`, **RECIBIDO** = Σ `movimientos` con `tipo='ENTRADA'`,
+**PENDIENTE** = costo − recibido. `0010` da al rol `cliente` lectura sobre esas dos
+tablas, restringida a sus obras y —en `movimientos`— **solo a las ENTRADAS**. Las
+SALIDAS (pagos internos a proveedores/personal) jamás se exponen.
+
+**Ruteo por rol:** un cliente también tiene fila en `usuarios_empresa` (con
+`rol='cliente'`, creada por `canjear_codigo_vinculacion`). Por eso el frontend
+enruta por **rol**, no por "¿tiene membresía?": cualquier rol ≠ `cliente` → `/admin`;
+solo `cliente` → `/cliente` (ver `web/src/app/login/page.tsx` y
+`web/src/lib/supabase/middleware.ts`).
