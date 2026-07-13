@@ -1,10 +1,15 @@
 /// Clasificador de duplicados para el import de movimientos.
 ///
 /// Llave de duplicado (contrato compartido con el web):
-/// `fecha(día) + monto + categoria + tipo + nombre`, todos normalizados
+/// `fecha(día) + monto + categoria + tipo`, todos normalizados
 /// (trim, colapsar espacios internos, comparación case-insensitive). Filas
 /// que matchean la llave contra un movimiento YA existente en la obra =
 /// "Duplicado"; el resto = "Nuevo".
+///
+/// `nombre` (pagador/beneficiario) NO forma parte de la llave: es volátil entre
+/// archivos fuente (el mismo pago se importa a veces con nombre y a veces sin él,
+/// o escrito distinto), y incluirlo hacía que un re-import del mismo estado de
+/// cuenta no detectara los duplicados y los reinsertara, inflando el RECIBIDO.
 ///
 /// Opera sobre el tipo de fila generado por Drift (`Movimiento`, de la tabla
 /// `Movimientos` en `core/db/app_database.dart`) para los EXISTENTES —así el
@@ -40,7 +45,6 @@ String _llave({
   required double monto,
   required String categoria,
   required String tipo,
-  required String nombre,
 }) {
   // El monto se redondea a centavos para evitar falsos "Nuevo" por ruido de
   // punto flotante (ej. 1000.0000000001 vs 1000.0).
@@ -50,7 +54,6 @@ String _llave({
     montoCentavos.toString(),
     claveNormalizada(categoria),
     claveNormalizada(tipo),
-    claveNormalizada(nombre),
   ].join('|');
 }
 
@@ -67,7 +70,6 @@ List<MovimientoClasificado> clasificarMovimientos({
             monto: m.monto,
             categoria: m.categoria,
             tipo: m.tipo,
-            nombre: m.nombre,
           ))
       .toSet();
 
@@ -77,7 +79,6 @@ List<MovimientoClasificado> clasificarMovimientos({
       monto: m.monto,
       categoria: m.categoria,
       tipo: m.tipo,
-      nombre: m.nombre,
     );
     final estado = llavesExistentes.contains(llave)
         ? EstadoImportMovimiento.duplicado

@@ -42,7 +42,7 @@ void main() {
 
   final diaUno = medianocheMx(2026, 1, 15);
 
-  test('fila idéntica (fecha+monto+categoria+tipo+nombre) se marca Duplicado', () async {
+  test('fila idéntica (fecha+monto+categoria+tipo) se marca Duplicado', () async {
     await _insertar(
       db,
       id: 'm1',
@@ -110,7 +110,7 @@ void main() {
     expect(resultado.first.estado, EstadoImportMovimiento.duplicado);
   });
 
-  test('difiere en monto, categoria, tipo o nombre → Nuevo', () async {
+  test('difiere en monto, categoria o tipo → Nuevo', () async {
     await _insertar(
       db,
       id: 'm1',
@@ -142,11 +142,40 @@ void main() {
       base(monto: 1000.01),
       base(categoria: 'Otro concepto'),
       base(tipo: 'SALIDA'),
-      base(nombre: 'Otra persona'),
     ];
 
     final resultado = clasificarMovimientos(existentes: existentes, parsed: variantes);
     expect(resultado.every((r) => r.estado == EstadoImportMovimiento.nuevo), isTrue);
+  });
+
+  test('difiere SOLO en nombre → Duplicado (nombre no define la identidad)', () async {
+    // Regresión: el mismo pago importado con distinto pagador (o sin él) NO debe
+    // reinsertarse. `nombre` es volátil entre archivos fuente (xlsx vs pdf).
+    await _insertar(
+      db,
+      id: 'm1',
+      fecha: diaUno,
+      monto: 1000,
+      categoria: 'Anticipo',
+      tipo: 'ENTRADA',
+      nombre: 'Juan Pérez',
+    );
+    final existentes = await db.select(db.movimientos).get();
+
+    final parsed = [
+      ExcelMovimiento(
+        fecha: diaUno,
+        categoria: 'Anticipo',
+        monto: 1000,
+        nombre: '', // mismo pago, sin nombre en este archivo
+        metodoPago: 'Efectivo',
+        tipo: 'ENTRADA',
+        referencia: '',
+      ),
+    ];
+
+    final resultado = clasificarMovimientos(existentes: existentes, parsed: parsed);
+    expect(resultado.first.estado, EstadoImportMovimiento.duplicado);
   });
 
   test('mismo día pero distinta hora/ancla de fecha sigue matcheando (compara por día MX)', () async {
