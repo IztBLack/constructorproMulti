@@ -10,31 +10,28 @@ type Modo = 'login' | 'registro';
 type SupabaseBrowserClient = ReturnType<typeof createClient>;
 
 /**
- * Resuelve a dónde mandar al usuario tras iniciar sesión, según su rol.
+ * Resuelve a dónde mandar al usuario tras iniciar sesión, según su ROL.
  *
- * Supuesto (documentado, no hay un campo "rol" único en el sistema):
- * - Staff/administración de una empresa tiene una fila en `usuarios_empresa`
- *   (user_id -> empresa_id, rol). Ver web/src/app/admin/page.tsx y
- *   web/src/app/onboarding/page.tsx, que usan exactamente esta tabla.
- * - Un cliente del portal tiene una fila en `clientes` con `user_id` apuntando
- *   a su cuenta de auth (ver web/src/lib/data/portal-cliente.ts:getClienteActual,
- *   que confía en RLS para devolver solo el registro del cliente autenticado).
- * - Un usuario puede no tener ninguna de las dos todavía (recién registrado):
- *   en ese caso lo mandamos a /admin, que sigue redirigiendo a /onboarding
- *   (ver middleware.ts) — se preserva el flujo de onboarding existente.
+ * OJO: un cliente del portal también tiene fila en `usuarios_empresa`, pero con
+ * `rol='cliente'` (la crea `canjear_codigo_vinculacion`). Por eso NO basta con
+ * "¿tiene membresía?" → hay que mirar el rol:
+ * - Cualquier rol de staff (admin/supervisor/colaborador/oficina, es decir
+ *   cualquier rol distinto de 'cliente') → panel de oficina (/admin).
+ * - Solo rol 'cliente' (o fila en `clientes`) → portal del cliente (/cliente).
+ * - Sin ninguna membresía (recién registrado) → /admin, que redirige a
+ *   /onboarding (ver middleware.ts) — se preserva ese flujo.
  *
- * Si ambas consultas fallan (RLS/red), no bloqueamos el login: caemos a /admin
- * (comportamiento previo).
+ * Si las consultas fallan (RLS/red), no bloqueamos el login: caemos a /admin.
  */
 async function resolverDestino(supabase: SupabaseBrowserClient, userId: string): Promise<string> {
-  const { data: membresia } = await supabase
+  const { data: membresias } = await supabase
     .from('usuarios_empresa')
-    .select('empresa_id')
-    .eq('user_id', userId)
-    .limit(1)
-    .maybeSingle();
+    .select('rol')
+    .eq('user_id', userId);
 
-  if (membresia) return '/admin';
+  const roles = (membresias ?? []).map((m) => m.rol as string);
+  const esStaff = roles.some((r) => r !== 'cliente');
+  if (esStaff) return '/admin';
 
   const { data: cliente } = await supabase
     .from('clientes')
@@ -44,7 +41,7 @@ async function resolverDestino(supabase: SupabaseBrowserClient, userId: string):
     .limit(1)
     .maybeSingle();
 
-  if (cliente) return '/cliente';
+  if (cliente || roles.includes('cliente')) return '/cliente';
 
   return '/admin';
 }

@@ -41,19 +41,33 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Si el usuario está autenticado y accede a /admin, verificar que tenga empresa.
+  // Si el usuario está autenticado y accede a /admin, verificar su rol.
   // Solo aplica a /admin (no a /onboarding para evitar loops).
   // Si hay error de red o RLS, dejamos pasar — no redirigimos.
+  //   · Sin membresía (recién registrado) → /onboarding.
+  //   · Solo rol 'cliente' → /cliente (no tiene acceso al panel de oficina).
+  //   · Cualquier rol de staff (≠ 'cliente') → se queda en /admin.
   if (user && path.startsWith('/admin')) {
-    const { count, error: empresaError } = await supabase
+    const { data: membresias, error: empresaError } = await supabase
       .from('usuarios_empresa')
-      .select('*', { count: 'exact', head: true })
+      .select('rol')
       .eq('user_id', user.id);
 
-    if (!empresaError && count === 0) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/onboarding';
-      return NextResponse.redirect(url);
+    if (!empresaError) {
+      const roles = (membresias ?? []).map((m) => m.rol as string);
+
+      if (roles.length === 0) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/onboarding';
+        return NextResponse.redirect(url);
+      }
+
+      const esStaff = roles.some((r) => r !== 'cliente');
+      if (!esStaff) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/cliente';
+        return NextResponse.redirect(url);
+      }
     }
   }
 
