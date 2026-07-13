@@ -309,8 +309,94 @@ export async function listPagosDeCotizacion(cotId: string): Promise<PagoPortal[]
   return data as PagoPortal[];
 }
 
-/// Dado un cliente, devuelve el estado de cuenta global:
-/// suma total de cotizaciones (aceptadas/convertidas) vs suma total de pagos.
+// ─── Estado de cuenta REAL por obra ──────────────────────────────────────────
+// Modelo (mismo que usa /admin): COSTO TOTAL = Σ obra_presupuesto,
+// RECIBIDO = Σ movimientos tipo='ENTRADA'. Las SALIDA (pagos internos) NUNCA se
+// exponen al cliente: la RLS de movimientos filtra tipo='ENTRADA' en el USING y
+// aquí además pedimos .eq('tipo','ENTRADA') como defensa en profundidad.
+
+export interface PartidaPresupuestoPortal {
+  id: string;
+  concepto: string;
+  unidad: string;
+  cantidad: number;
+  precio_unitario: number;
+  orden: number;
+}
+
+export interface EntradaPortal {
+  id: string;
+  fecha: number;
+  concepto: string | null;
+  categoria: string | null;
+  monto: number;
+  metodo_pago: string | null;
+  referencia: string | null;
+}
+
+export interface EstadoCuentaObra {
+  costoTotal: number;
+  recibido: number;
+  pendiente: number;
+  pagadoPct: number;
+  partidas: PartidaPresupuestoPortal[];
+  entradas: EntradaPortal[];
+}
+
+/// Partidas del presupuesto de una obra del cliente (RLS: solo sus obras).
+export async function listPresupuestoObraCliente(
+  obraId: string,
+): Promise<PartidaPresupuestoPortal[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('obra_presupuesto')
+    .select('id, concepto, unidad, cantidad, precio_unitario, orden')
+    .eq('obra_id', obraId)
+    .is('deleted_at', null)
+    .order('orden', { ascending: true });
+
+  if (error || !data) return [];
+
+  return data as PartidaPresupuestoPortal[];
+}
+
+/// ENTRADAS (pagos recibidos) de una obra del cliente, ordenadas por fecha desc.
+/// El .eq('tipo','ENTRADA') es redundante con la RLS a propósito: nunca SALIDA.
+export async function listEntradasObraCliente(obraId: string): Promise<EntradaPortal[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('movimientos')
+    .select('id, fecha, concepto, categoria, monto, metodo_pago, referencia')
+    .eq('obra_id', obraId)
+    .eq('tipo', 'ENTRADA')
+    .is('deleted_at', null)
+    .order('fecha', { ascending: false });
+
+  if (error || !data) return [];
+
+  return data as EntradaPortal[];
+}
+
+/// Estado de cuenta de UNA obra: COSTO TOTAL (presupuesto) vs RECIBIDO (ENTRADAS).
+export async function getEstadoCuentaObra(obraId: string): Promise<EstadoCuentaObra> {
+  const [partidas, entradas] = await Promise.all([
+    listPresupuestoObraCliente(obraId),
+    listEntradasObraCliente(obraId),
+  ]);
+
+  const costoTotal = partidas.reduce((acc, p) => acc + p.cantidad * p.precio_unitario, 0);
+  const recibido = entradas.reduce((acc, e) => acc + e.monto, 0);
+  const pendiente = costoTotal - recibido;
+  const pagadoPct =
+    costoTotal > 0 ? Math.min(100, Math.round((recibido / costoTotal) * 100)) : 0;
+
+  return { costoTotal, recibido, pendiente, pagadoPct, partidas, entradas };
+}
+
+/// Estado de cuenta global del cliente, sumando TODAS sus obras (modelo real por
+/// obra). RLS restringe ambas tablas a las obras del cliente autenticado.
 export async function getEstadoCuentaCliente(): Promise<{
   totalPresupuestado: number;
   totalPagado: number;
@@ -318,69 +404,29 @@ export async function getEstadoCuentaCliente(): Promise<{
 }> {
   const supabase = await createClient();
 
-  // Traer cotizaciones aceptadas con secciones+partidas para calcular total
-  const { data: cotsData } = await supabase
-    .from('cotizaciones')
-    .select('id, descuento, iva_enabled, estado')
-    .is('deleted_at', null)
-    .in('estado', ['ACEPTADA', 'CONVERTIDA', 'ENVIADA', 'BORRADOR']);
-
-  if (!cotsData || cotsData.length === 0) {
-    return { totalPresupuestado: 0, totalPagado: 0, totalSaldo: 0 };
-  }
-
-  const cotIds = cotsData.map((c) => c.id as string);
-
-  // Secciones
-  const { data: secsData } = await supabase
-    .from('secciones')
-    .select('id, cotizacion_id')
-    .in('cotizacion_id', cotIds)
+  const { data: presData } = await supabase
+    .from('obra_presupuesto')
+    .select('cantidad, precio_unitario')
     .is('deleted_at', null);
 
-  const seccionesRaw = (secsData ?? []) as { id: string; cotizacion_id: string }[];
-  const secIds = seccionesRaw.map((s) => s.id);
+  const totalPresupuestado = (presData ?? []).reduce(
+    (acc, p) => acc + (p.cantidad as number) * (p.precio_unitario as number),
+    0,
+  );
 
-  // Partidas
-  let partidasRaw: { seccion_id: string; cantidad: number; precio_unitario: number }[] = [];
-  if (secIds.length > 0) {
-    const { data: parsData } = await supabase
-      .from('partidas')
-      .select('seccion_id, cantidad, precio_unitario')
-      .in('seccion_id', secIds)
-      .is('deleted_at', null);
-
-    partidasRaw = (parsData ?? []) as { seccion_id: string; cantidad: number; precio_unitario: number }[];
-  }
-
-  // Calcular presupuesto total de cada cotización
-  let totalPresupuestado = 0;
-  for (const cot of cotsData) {
-    const misSecIds = seccionesRaw
-      .filter((s) => s.cotizacion_id === cot.id)
-      .map((s) => s.id);
-
-    const subtotal = partidasRaw
-      .filter((p) => misSecIds.includes(p.seccion_id))
-      .reduce((acc, p) => acc + p.cantidad * p.precio_unitario, 0);
-
-    const descuentoMonto = subtotal * ((cot.descuento ?? 0) / 100);
-    const base = subtotal - descuentoMonto;
-    const ivaMonto = cot.iva_enabled ? base * 0.16 : 0;
-    totalPresupuestado += base + ivaMonto;
-  }
-
-  // Pagos de todas las cotizaciones
-  const { data: pagosData } = await supabase
-    .from('pagos')
+  const { data: entData } = await supabase
+    .from('movimientos')
     .select('monto')
-    .in('cotizacion_id', cotIds)
+    .eq('tipo', 'ENTRADA')
     .is('deleted_at', null);
 
-  const totalPagado = (pagosData ?? []).reduce((acc, p) => acc + (p.monto as number), 0);
-  const totalSaldo = totalPresupuestado - totalPagado;
+  const totalPagado = (entData ?? []).reduce((acc, m) => acc + (m.monto as number), 0);
 
-  return { totalPresupuestado, totalPagado, totalSaldo };
+  return {
+    totalPresupuestado,
+    totalPagado,
+    totalSaldo: totalPresupuestado - totalPagado,
+  };
 }
 
 // ─── Re-exportar helpers de estado para las vistas ───────────────────────────
