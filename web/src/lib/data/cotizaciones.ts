@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { getEmpresaUsuario } from './empresa';
+import { buildSnapshot } from './cotizacion-diff';
 import type { Cotizacion, CotizacionConDetalle, EstadoCotizacion, Partida, Seccion } from './types';
 
 export async function listCotizaciones(): Promise<{
@@ -97,13 +98,15 @@ export function calcularTotales(cotizacion: CotizacionConDetalle): TotalesCotiza
 /// Convenciones (ver CLAUDE.md): id = crypto.randomUUID(), empresa_id obligatorio,
 /// created_at/updated_at = Date.now(), soft delete vía deleted_at, sin server_updated_at/sync_status.
 
+/// Datos de cabecera que el usuario edita. El `estado` NO se maneja aquí: una
+/// cotización nueva nace en BORRADOR y las transiciones van por acciones
+/// guiadas (`enviarCotizacion` / `cambiarEstadoCotizacion` / RPC del cliente).
 export interface NuevaCotizacionInput {
   cliente: string;
   cliente_id: string | null;
   nombre_proyecto: string;
   ubicacion: string | null;
   fecha: number;
-  estado: EstadoCotizacion;
   iva_enabled: boolean;
   descuento: number;
   notas: string | null;
@@ -126,7 +129,7 @@ export async function crearCotizacion(
     nombre_proyecto: input.nombre_proyecto,
     ubicacion: input.ubicacion ?? '',
     fecha: input.fecha,
-    estado: input.estado,
+    estado: 'BORRADOR',
     iva_enabled: input.iva_enabled,
     descuento: input.descuento,
     notas: input.notas ?? '',
@@ -156,7 +159,6 @@ export async function actualizarCotizacion(
       nombre_proyecto: input.nombre_proyecto,
       ubicacion: input.ubicacion ?? '',
       fecha: input.fecha,
-      estado: input.estado,
       iva_enabled: input.iva_enabled,
       descuento: input.descuento,
       notas: input.notas ?? '',
@@ -165,6 +167,108 @@ export async function actualizarCotizacion(
     .eq('id', id);
 
   if (error) return { error: error.message };
+  return { error: null };
+}
+
+/// Transiciones de estado permitidas desde el admin (además del envío y de la
+/// respuesta del cliente vía RPC). BORRADOR sale solo por `enviarCotizacion`;
+/// CONVERTIDA es terminal. El admin puede registrar manualmente una respuesta
+/// (override) del cliente recibida por fuera del portal.
+const TRANSICIONES_ADMIN: Record<EstadoCotizacion, EstadoCotizacion[]> = {
+  BORRADOR: [],
+  ENVIADA: ['BORRADOR', 'ACEPTADA', 'RECHAZADA'],
+  ACEPTADA: ['BORRADOR', 'RECHAZADA'],
+  RECHAZADA: ['BORRADOR', 'ENVIADA'],
+  CONVERTIDA: [],
+};
+
+/// Envía la cotización al cliente: BORRADOR → ENVIADA. Valida que tenga un
+/// cliente del portal vinculado (si no, no sería visible) y al menos una partida.
+export async function enviarCotizacion(id: string): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+
+  const { data: cot, error } = await supabase
+    .from('cotizaciones')
+    .select('estado, cliente_id')
+    .eq('id', id)
+    .is('deleted_at', null)
+    .maybeSingle();
+
+  if (error) return { error: error.message };
+  if (!cot) return { error: 'Cotización no encontrada.' };
+  if (cot.estado !== 'BORRADOR') {
+    return { error: 'Solo se puede enviar una cotización en borrador.' };
+  }
+  if (!cot.cliente_id) {
+    return {
+      error: 'Vincula un cliente del portal antes de enviar (Editar → Cliente).',
+    };
+  }
+
+  // Debe tener al menos una partida viva (secciones → partidas).
+  const { data: secs, error: secErr } = await supabase
+    .from('secciones')
+    .select('id')
+    .eq('cotizacion_id', id)
+    .is('deleted_at', null);
+  if (secErr) return { error: secErr.message };
+
+  const secIds = (secs ?? []).map((s) => s.id as string);
+  let tienePartidas = false;
+  if (secIds.length > 0) {
+    const { count, error: partErr } = await supabase
+      .from('partidas')
+      .select('id', { count: 'exact', head: true })
+      .in('seccion_id', secIds)
+      .is('deleted_at', null);
+    if (partErr) return { error: partErr.message };
+    tienePartidas = (count ?? 0) > 0;
+  }
+  if (!tienePartidas) {
+    return { error: 'Agrega al menos una partida antes de enviar.' };
+  }
+
+  const { error: updErr } = await supabase
+    .from('cotizaciones')
+    .update({ estado: 'ENVIADA', updated_at: Date.now() })
+    .eq('id', id);
+
+  if (updErr) return { error: updErr.message };
+  return { error: null };
+}
+
+/// Cambia el estado siguiendo `TRANSICIONES_ADMIN`. Al marcar ACEPTADA congela
+/// la foto (snapshot) igual que el RPC del cliente, para habilitar la
+/// re-aprobación de cambios posteriores.
+export async function cambiarEstadoCotizacion(
+  id: string,
+  nuevo: EstadoCotizacion,
+): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+
+  const { data: cot, error } = await supabase
+    .from('cotizaciones')
+    .select('estado')
+    .eq('id', id)
+    .is('deleted_at', null)
+    .maybeSingle();
+
+  if (error) return { error: error.message };
+  if (!cot) return { error: 'Cotización no encontrada.' };
+
+  const permitidas = TRANSICIONES_ADMIN[cot.estado as EstadoCotizacion] ?? [];
+  if (!permitidas.includes(nuevo)) {
+    return { error: `Cambio de estado no permitido (${cot.estado} → ${nuevo}).` };
+  }
+
+  const patch: Record<string, unknown> = { estado: nuevo, updated_at: Date.now() };
+  if (nuevo === 'ACEPTADA') {
+    const { data: detalle } = await getCotizacionConDetalle(id);
+    if (detalle) patch.aprobado_snapshot_json = JSON.stringify(buildSnapshot(detalle));
+  }
+
+  const { error: updErr } = await supabase.from('cotizaciones').update(patch).eq('id', id);
+  if (updErr) return { error: updErr.message };
   return { error: null };
 }
 

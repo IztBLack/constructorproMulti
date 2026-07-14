@@ -18,7 +18,9 @@ import {
   calcularTotales,
 } from '@/lib/data/portal-cliente';
 import type { EstadoCotizacionPortal } from '@/lib/data/portal-cliente';
+import { compararSnapshot, parseSnapshot } from '@/lib/data/cotizacion-diff';
 import { CotizacionAcciones } from './_acciones';
+import { AprobarCambios } from './_aprobar-cambios';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,6 +53,12 @@ export default async function CotizacionDetallePage({
   const totalPagado = pagos.reduce((acc, p) => acc + p.monto, 0);
   const saldoRestante = total - totalPagado;
 
+  // Re-aprobación: si la cotización está ACEPTADA y el contratista la editó
+  // después, mostramos el desglose de cambios y el botón para aprobarlos.
+  const snapshot = parseSnapshot(cot.snapshotJson);
+  const diff = snapshot && cot.estadoRaw === 'ACEPTADA' ? compararSnapshot(snapshot, cot) : null;
+  const hayCambiosPendientes = diff?.hayCambios ?? false;
+
   return (
     <div className="space-y-8">
       {/* ── Encabezado ──────────────────────────────────────────────────── */}
@@ -80,6 +88,99 @@ export default async function CotizacionDetallePage({
         />
         <p className="mt-2 text-sm text-neutral-500">Fecha: {formatDate(cot.fecha)}</p>
       </div>
+
+      {/* ── Cambios pendientes de aprobar (re-aprobación) ────────────────── */}
+      {hayCambiosPendientes && diff && (
+        <section
+          aria-labelledby="cambios-heading"
+          className="space-y-4 rounded-xl border border-amber-300 bg-amber-50 p-5"
+        >
+          <div>
+            <h2 id="cambios-heading" className="text-base font-semibold text-amber-900">
+              El contratista modificó esta cotización
+            </h2>
+            <p className="mt-1 text-sm text-amber-800">
+              Se hicieron cambios desde que la aprobaste. Revísalos y, si estás de acuerdo,
+              apruébalos.
+            </p>
+          </div>
+
+          <dl className="text-sm">
+            <div className="flex justify-between gap-4">
+              <dt className="text-amber-800">Total antes</dt>
+              <dd className="tabular-nums text-amber-900 line-through">
+                {formatCurrency(diff.totalAntes)}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="font-medium text-amber-900">Total ahora</dt>
+              <dd className="tabular-nums font-semibold text-amber-900">
+                {formatCurrency(diff.totalAhora)}
+              </dd>
+            </div>
+          </dl>
+
+          {diff.nuevas.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-amber-900">Partidas agregadas</h3>
+              <ul className="mt-1 space-y-1 text-sm text-amber-800">
+                {diff.nuevas.map((p, i) => (
+                  <li key={`n-${i}`}>
+                    <span className="text-amber-600">{p.seccion}:</span> {p.descripcion} — {p.cantidad}{' '}
+                    × {formatCurrency(p.precioUnitario)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {diff.eliminadas.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-amber-900">Partidas eliminadas</h3>
+              <ul className="mt-1 space-y-1 text-sm text-amber-800 line-through">
+                {diff.eliminadas.map((p, i) => (
+                  <li key={`e-${i}`}>
+                    <span className="text-amber-600">{p.seccion}:</span> {p.descripcion} — {p.cantidad}{' '}
+                    × {formatCurrency(p.precioUnitario)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {diff.modificadas.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-amber-900">Partidas modificadas</h3>
+              <ul className="mt-1 space-y-1 text-sm text-amber-800">
+                {diff.modificadas.map((p, i) => (
+                  <li key={`m-${i}`}>
+                    <span className="text-amber-600">{p.seccion}:</span> {p.descripcion}
+                    {p.cantidad && (
+                      <>
+                        {' '}· cantidad {p.cantidad.antes} →{' '}
+                        <strong>{p.cantidad.ahora}</strong>
+                      </>
+                    )}
+                    {p.precioUnitario && (
+                      <>
+                        {' '}· P. Unit. {formatCurrency(p.precioUnitario.antes)} →{' '}
+                        <strong>{formatCurrency(p.precioUnitario.ahora)}</strong>
+                      </>
+                    )}
+                    {p.descripcionAntes && <> · antes: “{p.descripcionAntes}”</>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {diff.cambioGlobal && (
+            <p className="text-sm text-amber-800">También cambió el descuento y/o el IVA.</p>
+          )}
+
+          <AprobarCambios cotizacionId={cot.id} />
+        </section>
+      )}
 
       {/* ── Partidas por seccion ─────────────────────────────────────────── */}
       <section aria-labelledby="partidas-heading">

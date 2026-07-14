@@ -3,19 +3,9 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Field, Input } from '@/components/ui';
-import type { Cliente, Cotizacion, EstadoCotizacion } from '@/lib/data/types';
+import type { Cliente, Cotizacion } from '@/lib/data/types';
 import { msAFechaInput } from '@/lib/data/tz';
 import { crearCotizacionAction, actualizarCotizacionAction } from './actions';
-
-const ESTADOS: EstadoCotizacion[] = ['BORRADOR', 'ENVIADA', 'ACEPTADA', 'RECHAZADA', 'CONVERTIDA'];
-
-const ESTADO_LABEL: Record<EstadoCotizacion, string> = {
-  BORRADOR: 'Borrador',
-  ENVIADA: 'Enviada',
-  ACEPTADA: 'Aceptada',
-  RECHAZADA: 'Rechazada',
-  CONVERTIDA: 'Convertida',
-};
 
 const SELECT_CLASSES =
   'w-full cursor-pointer rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-900/10 disabled:cursor-not-allowed disabled:opacity-50';
@@ -124,22 +114,6 @@ export function CotizacionForm(props: Props) {
             disabled={pending}
           />
         </Field>
-        {props.mode === 'editar' && (
-          <Field label="Estado">
-            <select
-              name="estado"
-              defaultValue={cotizacion?.estado ?? 'BORRADOR'}
-              disabled={pending}
-              className={SELECT_CLASSES}
-            >
-              {ESTADOS.map((e) => (
-                <option key={e} value={e}>
-                  {ESTADO_LABEL[e]}
-                </option>
-              ))}
-            </select>
-          </Field>
-        )}
         <Field label="Descuento (%)" hint="0 a 100">
           <Input
             type="number"
@@ -157,7 +131,7 @@ export function CotizacionForm(props: Props) {
         <input
           type="checkbox"
           name="iva_enabled"
-          defaultChecked={cotizacion?.iva_enabled ?? false}
+          defaultChecked={cotizacion?.iva_enabled ?? true}
           disabled={pending}
           className="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-900"
         />

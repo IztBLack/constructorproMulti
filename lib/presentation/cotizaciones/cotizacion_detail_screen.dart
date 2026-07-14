@@ -16,6 +16,7 @@ import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
 import '../../core/pdf/pdf_config.dart';
 import '../../data/providers.dart';
+import '../../data/repositories_cotizacion.dart';
 import '../../domain/clave_generator.dart';
 import '../../domain/logic/presupuesto_calculator.dart';
 import '../../domain/mappers.dart';
@@ -76,6 +77,8 @@ class _State extends ConsumerState<CotizacionDetailScreen>
                   await ref.read(cotizacionRepositoryProvider).upsert(
                       CotizacionesCompanion(
                           id: Value(_cotId), ivaEnabled: Value(_ivaEnabled)));
+                case 'enviar':
+                  await _enviar();
                 case 'estado':
                   await _cambiarEstado();
                 case 'duplicar':
@@ -89,6 +92,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
               }
             },
             itemBuilder: (_) => [
+              const PopupMenuItem(value: 'enviar', child: Text('Enviar al cliente')),
               CheckedPopupMenuItem(
                   value: 'iva', checked: _ivaEnabled, child: Text('Aplicar IVA ${ref.read(ivaPorcentajeProvider).toStringAsFixed(0)}%')),
               const PopupMenuItem(value: 'estado', child: Text('Cambiar estado')),
@@ -113,13 +117,33 @@ class _State extends ConsumerState<CotizacionDetailScreen>
     );
   }
 
+  Future<void> _enviar() async {
+    final err = await ref.read(cotizacionRepositoryProvider).enviar(_cotId);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(err ?? 'Cotización marcada como enviada.')));
+  }
+
   Future<void> _cambiarEstado() async {
-    const estados = ['BORRADOR', 'ENVIADA', 'ACEPTADA', 'RECHAZADA'];
+    final repo = ref.read(cotizacionRepositoryProvider);
+    final cot = await repo.getById(_cotId);
+    if (cot == null) return;
+    final opciones =
+        CotizacionRepository.transicionesPermitidas[cot.estado] ?? const [];
+    if (opciones.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+                'No hay cambios de estado disponibles desde ${cot.estado}.')));
+      }
+      return;
+    }
+    if (!mounted) return;
     final estado = await showDialog<String>(
       context: context,
       builder: (ctx) => SimpleDialog(
-        title: const Text('Estado de la cotización'),
-        children: estados
+        title: Text('Cambiar estado (actual: ${cot.estado})'),
+        children: opciones
             .map((e) => SimpleDialogOption(
                   onPressed: () => Navigator.pop(ctx, e),
                   child: Text(e),
@@ -128,7 +152,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
       ),
     );
     if (estado != null) {
-      await ref.read(cotizacionRepositoryProvider).cambiarEstado(_cotId, estado);
+      await repo.cambiarEstado(_cotId, estado);
       if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Estado: $estado')));

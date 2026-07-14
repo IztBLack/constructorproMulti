@@ -20,8 +20,12 @@ class CotizacionRepository {
   Future<void> upsert(CotizacionesCompanion c) =>
       db.into(db.cotizaciones).insertOnConflictUpdate(c);
 
-  /// Baja lógica en cascada: tombstone de cotización + sus secciones, partidas y
-  /// pagos. Nunca borrado físico (el sync resucitaría las filas).
+  Future<Cotizacion?> getById(String id) => (db.select(db.cotizaciones)
+        ..where((t) => t.id.equals(id) & t.deletedAt.isNull()))
+      .getSingleOrNull();
+
+  /// Baja lógica en cascada: tombstone de cotización + sus secciones, partidas,
+  /// pagos y archivos. Nunca borrado físico (el sync resucitaría las filas).
   Future<void> delete(String id) async {
     final now = DateTime.now().millisecondsSinceEpoch;
     await db.transaction(() async {
@@ -45,6 +49,12 @@ class CotizacionRepository {
               deletedAt: Value(now),
               updatedAt: Value(now),
               syncStatus: const Value('pending')));
+      await (db.update(db.archivosCotizacion)
+            ..where((t) => t.cotizacionId.equals(id)))
+          .write(ArchivosCotizacionCompanion(
+              deletedAt: Value(now),
+              updatedAt: Value(now),
+              syncStatus: const Value('pending')));
       await (db.update(db.cotizaciones)..where((t) => t.id.equals(id)))
           .write(CotizacionesCompanion(
               deletedAt: Value(now),
@@ -53,8 +63,9 @@ class CotizacionRepository {
     });
   }
 
-  /// Valor "pipeline": suma de cotizaciones PENDIENTES (BORRADOR / ENVIADA),
-  /// sumando cantidad×precio de cada partida (×1.16 si la cotización lleva IVA).
+  /// Valor "pipeline": suma de cotizaciones PENDIENTES (BORRADOR / ENVIADA).
+  /// Por cotización aplica el mismo contrato que [PresupuestoCalculator]:
+  /// base = subtotal − descuento%, total = base (+16% de IVA si lleva IVA).
   /// Espejo del totalPipeline del dashboard de Kotlin. Reactivo.
   Stream<double> watchPipeline() {
     final query = db.select(db.cotizaciones).join([
@@ -68,12 +79,14 @@ class CotizacionRepository {
           db.secciones.deletedAt.isNull() &
           db.partidas.deletedAt.isNull());
     return query.watch().map((rows) {
-      // subtotal por cotización + flag de IVA
+      // subtotal por cotización + flag de IVA + % de descuento
       final subtotal = <String, double>{};
       final iva = <String, bool>{};
+      final descuento = <String, double>{};
       for (final r in rows) {
         final cot = r.readTable(db.cotizaciones);
         iva[cot.id] = cot.ivaEnabled;
+        descuento[cot.id] = cot.descuento;
         final p = r.readTableOrNull(db.partidas);
         if (p != null) {
           subtotal[cot.id] =
@@ -84,7 +97,8 @@ class CotizacionRepository {
       }
       var total = 0.0;
       subtotal.forEach((id, sub) {
-        total += (iva[id] ?? false) ? sub * 1.16 : sub;
+        final base = sub - sub * ((descuento[id] ?? 0) / 100.0);
+        total += (iva[id] ?? false) ? base * 1.16 : base;
       });
       return total;
     });
@@ -110,6 +124,39 @@ class CotizacionRepository {
   Future<void> cambiarEstado(String cotId, String estado) =>
       (db.update(db.cotizaciones)..where((t) => t.id.equals(cotId)))
           .write(CotizacionesCompanion(estado: Value(estado)));
+
+  /// Estados destino válidos desde [estado] (fuera del envío). BORRADOR sale
+  /// solo con [enviar]; CONVERTIDA es terminal. Espeja las transiciones del web.
+  static const Map<String, List<String>> transicionesPermitidas = {
+    'BORRADOR': [],
+    'ENVIADA': ['BORRADOR', 'ACEPTADA', 'RECHAZADA'],
+    'ACEPTADA': ['BORRADOR', 'RECHAZADA'],
+    'RECHAZADA': ['BORRADOR', 'ENVIADA'],
+    'CONVERTIDA': [],
+  };
+
+  /// Envía la cotización (BORRADOR → ENVIADA). Valida que tenga ≥1 partida viva.
+  /// Devuelve un mensaje de error, o null si tuvo éxito. (La vinculación a un
+  /// cliente del portal se administra desde la web; el móvil solo marca estado.)
+  Future<String?> enviar(String cotId) async {
+    final cot = await (db.select(db.cotizaciones)
+          ..where((t) => t.id.equals(cotId) & t.deletedAt.isNull()))
+        .getSingleOrNull();
+    if (cot == null) return 'Cotización no encontrada.';
+    if (cot.estado != 'BORRADOR') {
+      return 'Solo se puede enviar una cotización en borrador.';
+    }
+    final row = await db.customSelect(
+      'SELECT COUNT(*) AS c FROM partidas p '
+      'JOIN secciones s ON s.id = p.seccion_id '
+      'WHERE s.cotizacion_id = ? AND p.deleted_at IS NULL AND s.deleted_at IS NULL',
+      variables: [Variable(cotId)],
+    ).getSingle();
+    final n = (row.data['c'] as int?) ?? 0;
+    if (n == 0) return 'Agrega al menos una partida antes de enviar.';
+    await cambiarEstado(cotId, 'ENVIADA');
+    return null;
+  }
 
   /// Liga la cotización a una obra existente (sin crear una nueva).
   Future<void> vincularAObra(String cotId, String obraId) =>

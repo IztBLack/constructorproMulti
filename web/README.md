@@ -10,12 +10,14 @@ API propia** (Supabase la expone). Dos zonas:
 ## Stack
 Next.js 16 (App Router) · React 19 · TypeScript · Tailwind · `@supabase/ssr`.
 
-## Estado — W0 (scaffold) ✅
+## Estado — en producción ✅
 - Cliente Supabase (browser + server) en `src/lib/supabase/`.
-- Auth por cookies + **middleware** que protege `/admin` y `/cliente` (sin sesión → `/login`).
-- `/login` (email+password), `/admin` y `/cliente` (esqueletos), `/auth/signout`.
-- **Pendiente W1+:** pantallas reales de obras/equipo/cotizaciones/reportes en `/admin`;
-  portal en `/cliente` (depende del modelo de acceso de cliente, ver SQL del móvil).
+- Auth por cookies + **middleware** que protege `/admin` y `/cliente` y **enruta por rol**
+  (sin sesión → `/login`; rol `cliente` → `/cliente`; el resto → `/admin`).
+- **`/admin`:** pantallas reales de obras, equipo/nómina, **cotizaciones** (CRUD completo:
+  secciones/partidas, pagos, archivos, documento imprimible) y reportes.
+- **`/cliente`:** portal de solo-lectura — sus cotizaciones (aceptar/rechazar vía RPC) y el
+  **estado de cuenta real por obra** (COSTO TOTAL vs. RECIBIDO), aislado por RLS.
 
 ## Configurar y correr
 1. Crear el proyecto Supabase y correr el SQL de `constructorpro_flutter/supabase/migrations/`.

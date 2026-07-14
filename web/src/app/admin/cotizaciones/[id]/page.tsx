@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { calcularTotales, getCotizacionConDetalle } from '@/lib/data/cotizaciones';
+import { hayCambiosSinAprobar } from '@/lib/data/cotizacion-diff';
 import { listPagosByCotizacion, sumaPagos } from '@/lib/data/pagos';
 import { listArchivosCotizacion } from '@/lib/data/archivos';
 import { listClientes } from '@/lib/data/clientes';
@@ -40,6 +41,12 @@ export default async function CotizacionDetallePage({
   ]);
   const totalPagado = sumaPagos(pagos ?? []);
 
+  // Aviso al admin: la cotización está aceptada pero hubo ediciones que el
+  // cliente aún no aprueba (compara la foto aprobada contra el estado actual).
+  const cambiosPendientes =
+    cotizacion.estado === 'ACEPTADA' &&
+    hayCambiosSinAprobar(cotizacion.aprobado_snapshot_json, cotizacion);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
@@ -65,7 +72,11 @@ export default async function CotizacionDetallePage({
         </LinkButton>
       </div>
 
-      <CotizacionHeader cotizacion={cotizacion} clientes={clientes} />
+      <CotizacionHeader
+        cotizacion={cotizacion}
+        clientes={clientes}
+        cambiosPendientes={cambiosPendientes}
+      />
 
       {cotizacion.notas && (
         <section className="rounded-xl border border-neutral-200 bg-white p-5">

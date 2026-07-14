@@ -40,6 +40,11 @@ export interface Cotizacion {
   descuento: number;
   notas: string | null;
   obra_id: string | null;
+  /// Foto (JSON) de la versión que el cliente aprobó por última vez. Null hasta
+  /// que se acepta. Sirve para detectar cambios posteriores (re-aprobación).
+  /// Ver `cotizacion-diff.ts` y migración 0011. La app móvil no maneja esta
+  /// columna (es autoritativa del servidor).
+  aprobado_snapshot_json: string | null;
   created_at: number;
   updated_at: number;
   server_updated_at: number | null;

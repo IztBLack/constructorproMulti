@@ -70,6 +70,11 @@ export interface CotizacionPortal {
 
 export interface CotizacionPortalConDetalle extends CotizacionPortal {
   secciones: SeccionPortal[];
+  /// Estado crudo de la BD (BORRADOR/ENVIADA/ACEPTADA/RECHAZADA/CONVERTIDA), sin
+  /// mapear. Se usa para saber si aplica la re-aprobación (solo ACEPTADA).
+  estadoRaw: string;
+  /// Foto (JSON) de la versión que el cliente aprobó, o null. Ver cotizacion-diff.
+  snapshotJson: string | null;
 }
 
 export interface TotalesCotizacionPortal {
@@ -90,7 +95,9 @@ function mapEstadoCotizacion(estado: string): EstadoCotizacionPortal {
     case 'RECHAZADA':
       return 'Rechazada';
     default:
-      // BORRADOR, ENVIADA y cualquier otro → "Enviada" (pendiente de respuesta)
+      // ENVIADA (y defensivamente cualquier otro) → "Enviada", pendiente de
+      // respuesta. Los BORRADOR se filtran antes de llegar al portal, así que
+      // nunca deberían mapearse aquí.
       return 'Enviada';
   }
 }
@@ -189,6 +196,9 @@ export async function listCotizacionesCliente(): Promise<{
     .from('cotizaciones')
     .select('id, nombre_proyecto, ubicacion, fecha, estado, iva_enabled, descuento, notas, cliente_id')
     .is('deleted_at', null)
+    // Un BORRADOR aún no se ha compartido con el cliente: nunca debe aparecer en
+    // el portal (evita que el cliente responda una cotización no enviada).
+    .neq('estado', 'BORRADOR')
     .order('fecha', { ascending: false });
 
   if (cotsError || !cotsData || cotsData.length === 0) return [];
@@ -229,6 +239,9 @@ export async function listCotizacionesCliente(): Promise<{
     const cotConDetalle: CotizacionPortalConDetalle = {
       ...cot,
       estado: mapEstadoCotizacion(cot.estado as string),
+      estadoRaw: cot.estado as string,
+      // La lista no trae el snapshot (solo el detalle hace el diff de cambios).
+      snapshotJson: null,
       secciones,
     };
 
@@ -247,9 +260,11 @@ export async function getCotizacionClienteConDetalle(
 
   const { data: cotData, error: cotError } = await supabase
     .from('cotizaciones')
-    .select('id, nombre_proyecto, ubicacion, fecha, estado, iva_enabled, descuento, notas, cliente_id')
+    .select('id, nombre_proyecto, ubicacion, fecha, estado, iva_enabled, descuento, notas, cliente_id, aprobado_snapshot_json')
     .eq('id', id)
     .is('deleted_at', null)
+    // Un BORRADOR no es visible en el portal (aún no se ha enviado al cliente).
+    .neq('estado', 'BORRADOR')
     .maybeSingle();
 
   if (cotError || !cotData) return null;
@@ -284,11 +299,13 @@ export async function getCotizacionClienteConDetalle(
     partidas: partidasRaw.filter((p) => p.seccion_id === s.id),
   }));
 
-  const raw = cotData as CotizacionPortal;
+  const raw = cotData as CotizacionPortal & { aprobado_snapshot_json: string | null };
 
   return {
     ...raw,
     estado: mapEstadoCotizacion(raw.estado as string),
+    estadoRaw: raw.estado as string,
+    snapshotJson: raw.aprobado_snapshot_json ?? null,
     secciones,
   };
 }

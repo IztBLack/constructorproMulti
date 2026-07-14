@@ -5,12 +5,14 @@ import {
   actualizarCotizacion,
   actualizarPartida,
   actualizarSeccion,
+  cambiarEstadoCotizacion,
   crearCotizacion,
   crearPartida,
   crearSeccion,
   eliminarCotizacion,
   eliminarPartida,
   eliminarSeccion,
+  enviarCotizacion,
 } from '@/lib/data/cotizaciones';
 import type { EstadoCotizacion } from '@/lib/data/types';
 import { fechaInputAMs } from '@/lib/data/tz';
@@ -36,7 +38,6 @@ function leerCotizacionDeFormData(formData: FormData) {
     nombre_proyecto: String(formData.get('nombre_proyecto') ?? '').trim(),
     ubicacion: ubicacion.length > 0 ? ubicacion : null,
     fecha: parseFecha(fechaRaw),
-    estado: String(formData.get('estado') ?? 'BORRADOR') as EstadoCotizacion,
     iva_enabled: formData.get('iva_enabled') === 'on',
     descuento: Number.parseFloat(descuentoRaw) || 0,
     notas: notas.length > 0 ? notas : null,
@@ -82,6 +83,27 @@ export async function eliminarCotizacionAction(id: string): Promise<ActionResult
   if (error) return { error };
 
   revalidatePath('/admin/cotizaciones');
+  return { error: null };
+}
+
+export async function enviarCotizacionAction(id: string): Promise<ActionResult> {
+  const { error } = await enviarCotizacion(id);
+  if (error) return { error };
+
+  revalidatePath('/admin/cotizaciones');
+  revalidatePath(`/admin/cotizaciones/${id}`);
+  return { error: null };
+}
+
+export async function cambiarEstadoCotizacionAction(
+  id: string,
+  nuevo: EstadoCotizacion,
+): Promise<ActionResult> {
+  const { error } = await cambiarEstadoCotizacion(id, nuevo);
+  if (error) return { error };
+
+  revalidatePath('/admin/cotizaciones');
+  revalidatePath(`/admin/cotizaciones/${id}`);
   return { error: null };
 }
 
