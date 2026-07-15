@@ -171,6 +171,9 @@ export interface PartidaPresupuesto {
   obra_id: string;
   empresa_id: string;
   concepto: string;
+  /// Sección heredada de la cotización de origen (null/'' para presupuestos
+  /// capturados o importados sin secciones). Ver migración 0012.
+  seccion: string | null;
   unidad: string;
   cantidad: number;
   precio_unitario: number;

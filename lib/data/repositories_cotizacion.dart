@@ -202,18 +202,53 @@ class CotizacionRepository {
     return nuevaId;
   }
 
-  /// Crea una obra a partir de la cotización y la marca como CONVERTIDA.
+  /// Crea una obra a partir de la cotización, copia su presupuesto (partidas
+  /// agrupadas por sección → obra_presupuesto) y la marca como CONVERTIDA.
+  /// Idempotente: si la cotización ya se convirtió, devuelve la obra existente.
   Future<String> convertirEnObra(Cotizacion c) async {
+    if (c.obraId != null && c.obraId!.isNotEmpty) return c.obraId!;
     final obraId = _uuid.v4();
+    final now = DateTime.now().millisecondsSinceEpoch;
     await db.transaction(() async {
       await db.into(db.obras).insert(ObrasCompanion.insert(
             id: obraId,
             nombre: c.nombreProyecto,
             cliente: Value(c.cliente),
             ubicacion: Value(c.ubicacion),
-            fechaInicio: DateTime.now().millisecondsSinceEpoch,
+            fechaInicio: now,
             cotizacionOrigenId: Value(c.id),
           ));
+      // Copia el presupuesto de la cotización conservando las secciones: cada
+      // partida se vuelve un renglón de obra_presupuesto con el nombre de su
+      // sección. La UI de la obra agrupa por sección y muestra sus totales.
+      final secs = await (db.select(db.secciones)
+            ..where((t) => t.cotizacionId.equals(c.id) & t.deletedAt.isNull())
+            ..orderBy([(t) => OrderingTerm(expression: t.orden)]))
+          .get();
+      var orden = 0;
+      for (final s in secs) {
+        final parts = await (db.select(db.partidas)
+              ..where((t) => t.seccionId.equals(s.id) & t.deletedAt.isNull())
+              ..orderBy([(t) => OrderingTerm(expression: t.orden)]))
+            .get();
+        for (final p in parts) {
+          final concepto = p.clave.isNotEmpty
+              ? '${p.clave} ${p.descripcion}'
+              : p.descripcion;
+          await db.into(db.obraPresupuesto).insert(
+                ObraPresupuestoCompanion.insert(
+                  id: _uuid.v4(),
+                  obraId: obraId,
+                  concepto: Value(concepto),
+                  seccion: Value(s.nombre),
+                  unidad: Value(p.unidad),
+                  cantidad: Value(p.cantidad),
+                  precioUnitario: Value(p.precioUnitario),
+                  orden: Value(orden++),
+                ),
+              );
+        }
+      }
       await (db.update(db.cotizaciones)..where((t) => t.id.equals(c.id)))
           .write(CotizacionesCompanion(
               estado: const Value('CONVERTIDA'), obraId: Value(obraId)));

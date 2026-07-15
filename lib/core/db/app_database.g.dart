@@ -10468,6 +10468,18 @@ class $ObraPresupuestoTable extends ObraPresupuesto
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _seccionMeta = const VerificationMeta(
+    'seccion',
+  );
+  @override
+  late final GeneratedColumn<String> seccion = GeneratedColumn<String>(
+    'seccion',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _unidadMeta = const VerificationMeta('unidad');
   @override
   late final GeneratedColumn<String> unidad = GeneratedColumn<String>(
@@ -10523,6 +10535,7 @@ class $ObraPresupuestoTable extends ObraPresupuesto
     id,
     obraId,
     concepto,
+    seccion,
     unidad,
     cantidad,
     precioUnitario,
@@ -10598,6 +10611,12 @@ class $ObraPresupuestoTable extends ObraPresupuesto
         concepto.isAcceptableOrUnknown(data['concepto']!, _conceptoMeta),
       );
     }
+    if (data.containsKey('seccion')) {
+      context.handle(
+        _seccionMeta,
+        seccion.isAcceptableOrUnknown(data['seccion']!, _seccionMeta),
+      );
+    }
     if (data.containsKey('unidad')) {
       context.handle(
         _unidadMeta,
@@ -10670,6 +10689,10 @@ class $ObraPresupuestoTable extends ObraPresupuesto
         DriftSqlType.string,
         data['${effectivePrefix}concepto'],
       )!,
+      seccion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}seccion'],
+      )!,
       unidad: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}unidad'],
@@ -10717,6 +10740,10 @@ class ObraPresupuestoRow extends DataClass
   final String id;
   final String obraId;
   final String concepto;
+
+  /// Sección a la que pertenece la partida (heredada de la cotización de
+  /// origen). Vacío para presupuestos capturados/importados sin secciones.
+  final String seccion;
   final String unidad;
   final double cantidad;
   final double precioUnitario;
@@ -10731,6 +10758,7 @@ class ObraPresupuestoRow extends DataClass
     required this.id,
     required this.obraId,
     required this.concepto,
+    required this.seccion,
     required this.unidad,
     required this.cantidad,
     required this.precioUnitario,
@@ -10752,6 +10780,7 @@ class ObraPresupuestoRow extends DataClass
     map['id'] = Variable<String>(id);
     map['obra_id'] = Variable<String>(obraId);
     map['concepto'] = Variable<String>(concepto);
+    map['seccion'] = Variable<String>(seccion);
     map['unidad'] = Variable<String>(unidad);
     map['cantidad'] = Variable<double>(cantidad);
     map['precio_unitario'] = Variable<double>(precioUnitario);
@@ -10774,6 +10803,7 @@ class ObraPresupuestoRow extends DataClass
       id: Value(id),
       obraId: Value(obraId),
       concepto: Value(concepto),
+      seccion: Value(seccion),
       unidad: Value(unidad),
       cantidad: Value(cantidad),
       precioUnitario: Value(precioUnitario),
@@ -10796,6 +10826,7 @@ class ObraPresupuestoRow extends DataClass
       id: serializer.fromJson<String>(json['id']),
       obraId: serializer.fromJson<String>(json['obraId']),
       concepto: serializer.fromJson<String>(json['concepto']),
+      seccion: serializer.fromJson<String>(json['seccion']),
       unidad: serializer.fromJson<String>(json['unidad']),
       cantidad: serializer.fromJson<double>(json['cantidad']),
       precioUnitario: serializer.fromJson<double>(json['precioUnitario']),
@@ -10815,6 +10846,7 @@ class ObraPresupuestoRow extends DataClass
       'id': serializer.toJson<String>(id),
       'obraId': serializer.toJson<String>(obraId),
       'concepto': serializer.toJson<String>(concepto),
+      'seccion': serializer.toJson<String>(seccion),
       'unidad': serializer.toJson<String>(unidad),
       'cantidad': serializer.toJson<double>(cantidad),
       'precioUnitario': serializer.toJson<double>(precioUnitario),
@@ -10832,6 +10864,7 @@ class ObraPresupuestoRow extends DataClass
     String? id,
     String? obraId,
     String? concepto,
+    String? seccion,
     String? unidad,
     double? cantidad,
     double? precioUnitario,
@@ -10848,6 +10881,7 @@ class ObraPresupuestoRow extends DataClass
     id: id ?? this.id,
     obraId: obraId ?? this.obraId,
     concepto: concepto ?? this.concepto,
+    seccion: seccion ?? this.seccion,
     unidad: unidad ?? this.unidad,
     cantidad: cantidad ?? this.cantidad,
     precioUnitario: precioUnitario ?? this.precioUnitario,
@@ -10868,6 +10902,7 @@ class ObraPresupuestoRow extends DataClass
       id: data.id.present ? data.id.value : this.id,
       obraId: data.obraId.present ? data.obraId.value : this.obraId,
       concepto: data.concepto.present ? data.concepto.value : this.concepto,
+      seccion: data.seccion.present ? data.seccion.value : this.seccion,
       unidad: data.unidad.present ? data.unidad.value : this.unidad,
       cantidad: data.cantidad.present ? data.cantidad.value : this.cantidad,
       precioUnitario: data.precioUnitario.present
@@ -10889,6 +10924,7 @@ class ObraPresupuestoRow extends DataClass
           ..write('id: $id, ')
           ..write('obraId: $obraId, ')
           ..write('concepto: $concepto, ')
+          ..write('seccion: $seccion, ')
           ..write('unidad: $unidad, ')
           ..write('cantidad: $cantidad, ')
           ..write('precioUnitario: $precioUnitario, ')
@@ -10908,6 +10944,7 @@ class ObraPresupuestoRow extends DataClass
     id,
     obraId,
     concepto,
+    seccion,
     unidad,
     cantidad,
     precioUnitario,
@@ -10926,6 +10963,7 @@ class ObraPresupuestoRow extends DataClass
           other.id == this.id &&
           other.obraId == this.obraId &&
           other.concepto == this.concepto &&
+          other.seccion == this.seccion &&
           other.unidad == this.unidad &&
           other.cantidad == this.cantidad &&
           other.precioUnitario == this.precioUnitario &&
@@ -10942,6 +10980,7 @@ class ObraPresupuestoCompanion extends UpdateCompanion<ObraPresupuestoRow> {
   final Value<String> id;
   final Value<String> obraId;
   final Value<String> concepto;
+  final Value<String> seccion;
   final Value<String> unidad;
   final Value<double> cantidad;
   final Value<double> precioUnitario;
@@ -10957,6 +10996,7 @@ class ObraPresupuestoCompanion extends UpdateCompanion<ObraPresupuestoRow> {
     this.id = const Value.absent(),
     this.obraId = const Value.absent(),
     this.concepto = const Value.absent(),
+    this.seccion = const Value.absent(),
     this.unidad = const Value.absent(),
     this.cantidad = const Value.absent(),
     this.precioUnitario = const Value.absent(),
@@ -10973,6 +11013,7 @@ class ObraPresupuestoCompanion extends UpdateCompanion<ObraPresupuestoRow> {
     required String id,
     required String obraId,
     this.concepto = const Value.absent(),
+    this.seccion = const Value.absent(),
     this.unidad = const Value.absent(),
     this.cantidad = const Value.absent(),
     this.precioUnitario = const Value.absent(),
@@ -10990,6 +11031,7 @@ class ObraPresupuestoCompanion extends UpdateCompanion<ObraPresupuestoRow> {
     Expression<String>? id,
     Expression<String>? obraId,
     Expression<String>? concepto,
+    Expression<String>? seccion,
     Expression<String>? unidad,
     Expression<double>? cantidad,
     Expression<double>? precioUnitario,
@@ -11006,6 +11048,7 @@ class ObraPresupuestoCompanion extends UpdateCompanion<ObraPresupuestoRow> {
       if (id != null) 'id': id,
       if (obraId != null) 'obra_id': obraId,
       if (concepto != null) 'concepto': concepto,
+      if (seccion != null) 'seccion': seccion,
       if (unidad != null) 'unidad': unidad,
       if (cantidad != null) 'cantidad': cantidad,
       if (precioUnitario != null) 'precio_unitario': precioUnitario,
@@ -11024,6 +11067,7 @@ class ObraPresupuestoCompanion extends UpdateCompanion<ObraPresupuestoRow> {
     Value<String>? id,
     Value<String>? obraId,
     Value<String>? concepto,
+    Value<String>? seccion,
     Value<String>? unidad,
     Value<double>? cantidad,
     Value<double>? precioUnitario,
@@ -11040,6 +11084,7 @@ class ObraPresupuestoCompanion extends UpdateCompanion<ObraPresupuestoRow> {
       id: id ?? this.id,
       obraId: obraId ?? this.obraId,
       concepto: concepto ?? this.concepto,
+      seccion: seccion ?? this.seccion,
       unidad: unidad ?? this.unidad,
       cantidad: cantidad ?? this.cantidad,
       precioUnitario: precioUnitario ?? this.precioUnitario,
@@ -11078,6 +11123,9 @@ class ObraPresupuestoCompanion extends UpdateCompanion<ObraPresupuestoRow> {
     if (concepto.present) {
       map['concepto'] = Variable<String>(concepto.value);
     }
+    if (seccion.present) {
+      map['seccion'] = Variable<String>(seccion.value);
+    }
     if (unidad.present) {
       map['unidad'] = Variable<String>(unidad.value);
     }
@@ -11108,6 +11156,7 @@ class ObraPresupuestoCompanion extends UpdateCompanion<ObraPresupuestoRow> {
           ..write('id: $id, ')
           ..write('obraId: $obraId, ')
           ..write('concepto: $concepto, ')
+          ..write('seccion: $seccion, ')
           ..write('unidad: $unidad, ')
           ..write('cantidad: $cantidad, ')
           ..write('precioUnitario: $precioUnitario, ')
@@ -15980,6 +16029,7 @@ typedef $$ObraPresupuestoTableCreateCompanionBuilder =
       required String id,
       required String obraId,
       Value<String> concepto,
+      Value<String> seccion,
       Value<String> unidad,
       Value<double> cantidad,
       Value<double> precioUnitario,
@@ -15997,6 +16047,7 @@ typedef $$ObraPresupuestoTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> obraId,
       Value<String> concepto,
+      Value<String> seccion,
       Value<String> unidad,
       Value<double> cantidad,
       Value<double> precioUnitario,
@@ -16055,6 +16106,11 @@ class $$ObraPresupuestoTableFilterComposer
 
   ColumnFilters<String> get concepto => $composableBuilder(
     column: $table.concepto,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get seccion => $composableBuilder(
+    column: $table.seccion,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -16133,6 +16189,11 @@ class $$ObraPresupuestoTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get seccion => $composableBuilder(
+    column: $table.seccion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get unidad => $composableBuilder(
     column: $table.unidad,
     builder: (column) => ColumnOrderings(column),
@@ -16193,6 +16254,9 @@ class $$ObraPresupuestoTableAnnotationComposer
 
   GeneratedColumn<String> get concepto =>
       $composableBuilder(column: $table.concepto, builder: (column) => column);
+
+  GeneratedColumn<String> get seccion =>
+      $composableBuilder(column: $table.seccion, builder: (column) => column);
 
   GeneratedColumn<String> get unidad =>
       $composableBuilder(column: $table.unidad, builder: (column) => column);
@@ -16255,6 +16319,7 @@ class $$ObraPresupuestoTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> obraId = const Value.absent(),
                 Value<String> concepto = const Value.absent(),
+                Value<String> seccion = const Value.absent(),
                 Value<String> unidad = const Value.absent(),
                 Value<double> cantidad = const Value.absent(),
                 Value<double> precioUnitario = const Value.absent(),
@@ -16270,6 +16335,7 @@ class $$ObraPresupuestoTableTableManager
                 id: id,
                 obraId: obraId,
                 concepto: concepto,
+                seccion: seccion,
                 unidad: unidad,
                 cantidad: cantidad,
                 precioUnitario: precioUnitario,
@@ -16287,6 +16353,7 @@ class $$ObraPresupuestoTableTableManager
                 required String id,
                 required String obraId,
                 Value<String> concepto = const Value.absent(),
+                Value<String> seccion = const Value.absent(),
                 Value<String> unidad = const Value.absent(),
                 Value<double> cantidad = const Value.absent(),
                 Value<double> precioUnitario = const Value.absent(),
@@ -16302,6 +16369,7 @@ class $$ObraPresupuestoTableTableManager
                 id: id,
                 obraId: obraId,
                 concepto: concepto,
+                seccion: seccion,
                 unidad: unidad,
                 cantidad: cantidad,
                 precioUnitario: precioUnitario,

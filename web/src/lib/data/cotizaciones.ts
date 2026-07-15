@@ -272,6 +272,82 @@ export async function cambiarEstadoCotizacion(
   return { error: null };
 }
 
+/// Convierte una cotización ACEPTADA en obra: crea la obra ligada, copia el
+/// presupuesto conservando las secciones (partidas → obra_presupuesto con su
+/// `seccion`) y marca la cotización como CONVERTIDA. Idempotente: si ya se
+/// convirtió, devuelve la obra existente. Requiere la migración 0012 (columna
+/// obra_presupuesto.seccion).
+export async function convertirCotizacionEnObra(
+  id: string,
+): Promise<{ obraId: string | null; error: string | null }> {
+  const supabase = await createClient();
+  const { empresaId } = await getEmpresaUsuario();
+
+  const { data: detalle, error } = await getCotizacionConDetalle(id);
+  if (error) return { obraId: null, error };
+  if (!detalle) return { obraId: null, error: 'Cotización no encontrada.' };
+
+  // Idempotente: ya convertida.
+  if (detalle.obra_id) return { obraId: detalle.obra_id, error: null };
+  if (detalle.estado !== 'ACEPTADA') {
+    return { obraId: null, error: 'Solo se puede convertir en obra una cotización aceptada.' };
+  }
+
+  const now = Date.now();
+  const obraId = crypto.randomUUID();
+
+  const { error: obraErr } = await supabase.from('obras').insert({
+    id: obraId,
+    empresa_id: empresaId,
+    nombre: detalle.nombre_proyecto,
+    cliente: detalle.cliente,
+    cliente_id: detalle.cliente_id,
+    ubicacion: detalle.ubicacion ?? '',
+    fecha_inicio: now,
+    activa: true,
+    avance: 0,
+    cotizacion_origen_id: id,
+    created_at: now,
+    updated_at: now,
+    deleted_at: null,
+  });
+  if (obraErr) return { obraId: null, error: obraErr.message };
+
+  // Copia el presupuesto conservando las secciones (orden global creciente).
+  const filas = detalle.secciones.flatMap((s) =>
+    s.partidas.map((p) => ({
+      id: crypto.randomUUID(),
+      empresa_id: empresaId,
+      obra_id: obraId,
+      seccion: s.nombre,
+      concepto: p.clave ? `${p.clave} ${p.descripcion}` : p.descripcion,
+      unidad: p.unidad ?? '',
+      cantidad: p.cantidad,
+      precio_unitario: p.precio_unitario,
+      orden: 0,
+      created_at: now,
+      updated_at: now,
+      deleted_at: null,
+    })),
+  );
+  filas.forEach((f, idx) => {
+    f.orden = idx;
+  });
+
+  if (filas.length > 0) {
+    const { error: presErr } = await supabase.from('obra_presupuesto').insert(filas);
+    if (presErr) return { obraId: null, error: presErr.message };
+  }
+
+  const { error: updErr } = await supabase
+    .from('cotizaciones')
+    .update({ estado: 'CONVERTIDA', obra_id: obraId, updated_at: now })
+    .eq('id', id);
+  if (updErr) return { obraId: null, error: updErr.message };
+
+  return { obraId, error: null };
+}
+
 export async function eliminarCotizacion(id: string): Promise<{ error: string | null }> {
   const supabase = await createClient();
   const now = Date.now();

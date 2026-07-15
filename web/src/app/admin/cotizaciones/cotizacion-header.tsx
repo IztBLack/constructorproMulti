@@ -9,6 +9,7 @@ import type { Cliente, Cotizacion, EstadoCotizacion } from '@/lib/data/types';
 import { CotizacionForm } from './cotizacion-form';
 import {
   cambiarEstadoCotizacionAction,
+  convertirCotizacionEnObraAction,
   eliminarCotizacionAction,
   enviarCotizacionAction,
 } from './actions';
@@ -86,6 +87,22 @@ export function CotizacionHeader({
     });
   }
 
+  function handleConvertir() {
+    setErrorEstado(null);
+    startTransitionEstado(async () => {
+      const result = await convertirCotizacionEnObraAction(cotizacion.id);
+      if (result.error) {
+        setErrorEstado(result.error);
+        return;
+      }
+      if (result.obraId) {
+        router.push(`/admin/obras/${result.obraId}`);
+        return;
+      }
+      router.refresh();
+    });
+  }
+
   return (
     <>
       <PageHeader
@@ -114,6 +131,11 @@ export function CotizacionHeader({
                   Revertir a borrador
                 </Button>
               </>
+            )}
+            {estado === 'ACEPTADA' && (
+              <Button variant="primary" size="sm" disabled={pendingEstado} onClick={handleConvertir}>
+                Convertir en obra
+              </Button>
             )}
             {(estado === 'ACEPTADA' || estado === 'RECHAZADA') && (
               <Button variant="secondary" size="sm" disabled={pendingEstado} onClick={() => handleTransicion('BORRADOR')}>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, CardHeader, CardTitle, Field, Input, THead, Th, TBody, Tr, Td } from '@/components/ui';
 import { formatCurrency } from '@/lib/data/format';
@@ -55,6 +55,21 @@ export default function PresupuestoObra({ obraId, partidas }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const total = partidas.reduce((acc, p) => acc + p.cantidad * p.precio_unitario, 0);
+
+  // Agrupa por sección conservando el orden de aparición. Las partidas sin
+  // sección (capturadas/importadas) caen en un grupo vacío; si NINGUNA tiene
+  // sección, se muestra la tabla plana como antes (sin encabezados de sección).
+  const grupos: { seccion: string; partidas: PartidaPresupuesto[] }[] = [];
+  for (const p of partidas) {
+    const sec = (p.seccion ?? '').trim();
+    let g = grupos.find((x) => x.seccion === sec);
+    if (!g) {
+      g = { seccion: sec, partidas: [] };
+      grupos.push(g);
+    }
+    g.partidas.push(p);
+  }
+  const tieneSecciones = grupos.some((g) => g.seccion !== '');
 
   function startEdit(p: PartidaPresupuesto) {
     setEditandoId(p.id);
@@ -173,52 +188,76 @@ export default function PresupuestoObra({ obraId, partidas }: Props) {
               <Th className="text-right">Acciones</Th>
             </THead>
             <TBody>
-              {partidas.map((p) =>
-                editandoId === p.id ? (
-                  <tr key={p.id} className="border-b border-neutral-100 bg-neutral-50">
-                    <td colSpan={6} className="px-4 py-4">
-                      <PartidaInlineForm
-                        form={form}
-                        onChange={setForm}
-                        loading={loading}
-                        onGuardar={() => onGuardarEdicion(p.id, p.orden)}
-                        onCancelar={cancelEdit}
-                      />
-                    </td>
-                  </tr>
-                ) : (
-                  <Tr key={p.id}>
-                    <Td className="font-medium text-neutral-900">{p.concepto || '—'}</Td>
-                    <Td>{p.unidad || '—'}</Td>
-                    <Td className="text-right tabular-nums">{p.cantidad}</Td>
-                    <Td className="text-right tabular-nums">{formatCurrency(p.precio_unitario)}</Td>
-                    <Td className="text-right font-semibold tabular-nums text-neutral-900">
-                      {formatCurrency(p.cantidad * p.precio_unitario)}
-                    </Td>
-                    <Td className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => startEdit(p)}
+              {grupos.map((g) => {
+                const subtotalSeccion = g.partidas.reduce(
+                  (acc, p) => acc + p.cantidad * p.precio_unitario,
+                  0,
+                );
+                return (
+                  <Fragment key={g.seccion || '__sin_seccion__'}>
+                    {tieneSecciones && (
+                      <tr className="border-b border-neutral-200 bg-neutral-100">
+                        <td
+                          colSpan={4}
+                          className="px-4 py-2 text-sm font-semibold text-neutral-800"
                         >
-                          Editar
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="danger"
-                          size="sm"
-                          disabled={eliminandoId === p.id}
-                          onClick={() => onEliminar(p.id)}
-                        >
-                          {eliminandoId === p.id ? 'Eliminando…' : 'Eliminar'}
-                        </Button>
-                      </div>
-                    </Td>
-                  </Tr>
-                ),
-              )}
+                          {g.seccion || 'Sin sección'}
+                        </td>
+                        <td className="px-4 py-2 text-right text-sm font-semibold tabular-nums text-neutral-800">
+                          {formatCurrency(subtotalSeccion)}
+                        </td>
+                        <td />
+                      </tr>
+                    )}
+                    {g.partidas.map((p) =>
+                      editandoId === p.id ? (
+                        <tr key={p.id} className="border-b border-neutral-100 bg-neutral-50">
+                          <td colSpan={6} className="px-4 py-4">
+                            <PartidaInlineForm
+                              form={form}
+                              onChange={setForm}
+                              loading={loading}
+                              onGuardar={() => onGuardarEdicion(p.id, p.orden)}
+                              onCancelar={cancelEdit}
+                            />
+                          </td>
+                        </tr>
+                      ) : (
+                        <Tr key={p.id}>
+                          <Td className="font-medium text-neutral-900">{p.concepto || '—'}</Td>
+                          <Td>{p.unidad || '—'}</Td>
+                          <Td className="text-right tabular-nums">{p.cantidad}</Td>
+                          <Td className="text-right tabular-nums">{formatCurrency(p.precio_unitario)}</Td>
+                          <Td className="text-right font-semibold tabular-nums text-neutral-900">
+                            {formatCurrency(p.cantidad * p.precio_unitario)}
+                          </Td>
+                          <Td className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => startEdit(p)}
+                              >
+                                Editar
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="danger"
+                                size="sm"
+                                disabled={eliminandoId === p.id}
+                                onClick={() => onEliminar(p.id)}
+                              >
+                                {eliminandoId === p.id ? 'Eliminando…' : 'Eliminar'}
+                              </Button>
+                            </div>
+                          </Td>
+                        </Tr>
+                      ),
+                    )}
+                  </Fragment>
+                );
+              })}
 
               {agregando && (
                 <tr className="border-b border-neutral-100 bg-neutral-50">

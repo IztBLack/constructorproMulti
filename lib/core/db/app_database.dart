@@ -37,7 +37,7 @@ class AppDatabase extends _$AppDatabase {
   static const _uuid = Uuid();
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -150,6 +150,20 @@ class AppDatabase extends _$AppDatabase {
               await m.createTable(obraPresupuesto);
             }
             // Recrea los triggers para que incluyan la columna/tabla nuevas.
+            await _instalarTriggersSync();
+          }
+          // v5 → v6 (Fase 3 puente): `seccion` en obra_presupuesto para que el
+          // presupuesto de obra conserve las secciones de la cotización de
+          // origen (espeja Supabase 0012). Aditivo con default → sin backfill.
+          if (from < 6) {
+            final hasSeccion = await m.database.customSelect(
+              "SELECT 1 FROM pragma_table_info('obra_presupuesto') WHERE name='seccion'"
+            ).get().then((rows) => rows.isNotEmpty);
+
+            if (!hasSeccion) {
+              await m.addColumn(obraPresupuesto, obraPresupuesto.seccion);
+            }
+            // Recrea los triggers para que incluyan la columna nueva.
             await _instalarTriggersSync();
           }
         },

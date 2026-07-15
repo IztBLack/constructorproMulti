@@ -6,6 +6,7 @@ import {
   actualizarPartida,
   actualizarSeccion,
   cambiarEstadoCotizacion,
+  convertirCotizacionEnObra,
   crearCotizacion,
   crearPartida,
   crearSeccion,
@@ -105,6 +106,18 @@ export async function cambiarEstadoCotizacionAction(
   revalidatePath('/admin/cotizaciones');
   revalidatePath(`/admin/cotizaciones/${id}`);
   return { error: null };
+}
+
+export async function convertirCotizacionEnObraAction(
+  id: string,
+): Promise<ActionResult & { obraId?: string }> {
+  const { obraId, error } = await convertirCotizacionEnObra(id);
+  if (error) return { error };
+
+  revalidatePath('/admin/cotizaciones');
+  revalidatePath(`/admin/cotizaciones/${id}`);
+  revalidatePath('/admin/obras');
+  return { error: null, obraId: obraId ?? undefined };
 }
 
 export async function crearSeccionAction(

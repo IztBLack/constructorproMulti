@@ -889,7 +889,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                   ],
                 ),
               ),
-              if (partidas.isNotEmpty) _presupuestoCard(estado),
+              if (partidas.isNotEmpty) _presupuestoCard(estado, partidas),
               if (estado.porPersona.isNotEmpty)
                 _resumenCard(
                   titulo: 'Pagado por persona',
@@ -1175,10 +1175,18 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
   }
 
   // ============ ESTADO DE CUENTA (Caja) ============
-  Widget _presupuestoCard(EstadoCuentaSummary e) {
+  Widget _presupuestoCard(
+      EstadoCuentaSummary e, List<ObraPresupuestoRow> partidas) {
     final costo = e.costoTotal;
     final progreso = costo > 0 ? (e.recibido / costo).clamp(0.0, 1.0) : 0.0;
     final cs = Theme.of(context).colorScheme;
+    // Totales por sección (solo si la obra vino de una cotización con secciones).
+    final porSeccion = <String, double>{};
+    for (final p in partidas) {
+      final sec = p.seccion.trim();
+      if (sec.isEmpty) continue;
+      porSeccion[sec] = (porSeccion[sec] ?? 0) + p.cantidad * p.precioUnitario;
+    }
     return Card(
       margin: const EdgeInsets.fromLTRB(12, 4, 12, 8),
       child: Padding(
@@ -1215,6 +1223,27 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                   : 'Al corriente',
               style: Theme.of(context).textTheme.bodySmall,
             ),
+            if (porSeccion.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              const Divider(height: 1),
+              const SizedBox(height: 8),
+              Text('Por sección',
+                  style: Theme.of(context).textTheme.labelMedium),
+              const SizedBox(height: 2),
+              ...porSeccion.entries.map((s) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                            child: Text(s.key,
+                                maxLines: 1, overflow: TextOverflow.ellipsis)),
+                        Text(Fmt.money(s.value),
+                            style: const TextStyle(fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  )),
+            ],
           ],
         ),
       ),

@@ -95,6 +95,7 @@ class PartidaPresupuesto {
   final String id;
   final String obraId;
   final String concepto;
+  final String seccion;
   final String unidad;
   final double cantidad;
   final double precioUnitario;
@@ -104,6 +105,7 @@ class PartidaPresupuesto {
     required this.id,
     required this.obraId,
     this.concepto = '',
+    this.seccion = '',
     this.unidad = '',
     this.cantidad = 1,
     this.precioUnitario = 0,

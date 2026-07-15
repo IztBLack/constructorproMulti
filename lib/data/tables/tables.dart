@@ -211,6 +211,9 @@ class ObraPresupuesto extends Table with SyncCols {
   TextColumn get id => text()();
   TextColumn get obraId => text()();
   TextColumn get concepto => text().withDefault(const Constant(''))();
+  /// Sección a la que pertenece la partida (heredada de la cotización de
+  /// origen). Vacío para presupuestos capturados/importados sin secciones.
+  TextColumn get seccion => text().withDefault(const Constant(''))();
   TextColumn get unidad => text().withDefault(const Constant(''))();
   RealColumn get cantidad => real().withDefault(const Constant(1))();
   RealColumn get precioUnitario => real().withDefault(const Constant(0))();
