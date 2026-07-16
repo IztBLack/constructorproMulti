@@ -36,3 +36,31 @@ export async function getEmpresaUsuario(): Promise<EmpresaUsuario> {
 
   return { empresaId: data.empresa_id as string, rol: data.rol as Rol };
 }
+
+/// Nombre de la empresa del usuario actual, para mostrar como marca en la UI
+/// (en vez de un literal "ConstructorPro"). No lanza: devuelve null si no hay
+/// sesión o empresa. Lectura acotada por RLS a las empresas del usuario.
+export async function getNombreEmpresa(): Promise<string | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: mem } = await supabase
+    .from('usuarios_empresa')
+    .select('empresa_id')
+    .eq('user_id', user.id)
+    .limit(1)
+    .maybeSingle();
+  if (!mem) return null;
+
+  const { data: emp } = await supabase
+    .from('empresas')
+    .select('nombre')
+    .eq('id', mem.empresa_id as string)
+    .maybeSingle();
+
+  const nombre = (emp?.nombre as string | undefined)?.trim();
+  return nombre && nombre.length > 0 ? nombre : null;
+}

@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { formatCurrency, formatDate } from '@/lib/data/format';
 import { getObraCliente, getEstadoCuentaObra } from '@/lib/data/portal-cliente';
+import { getNombreEmpresa } from '@/lib/data/empresa';
 import { PrintButton } from './print-button';
 
 export const dynamic = 'force-dynamic';
@@ -25,6 +26,7 @@ export default async function EstadoCuentaPdfPage({ params }: Props) {
   const { costoTotal, recibido, pendiente, pagadoPct, partidas, entradas } =
     await getEstadoCuentaObra(obra.id);
 
+  const marca = (await getNombreEmpresa()) ?? 'ConstructorPro';
   const folio = folioCorto(obra.id);
   const hoy = Date.now();
 
@@ -70,7 +72,7 @@ export default async function EstadoCuentaPdfPage({ params }: Props) {
                   Estado de cuenta
                 </p>
                 <h1 className="mt-1 text-2xl font-bold text-[#0F172A] leading-tight">
-                  ConstructorPro
+                  {marca}
                 </h1>
               </div>
 
@@ -241,7 +243,7 @@ export default async function EstadoCuentaPdfPage({ params }: Props) {
             <p className="text-[10px] text-neutral-400 leading-relaxed">
               Estado de cuenta de la obra al {formatDate(hoy)}. Los importes están expresados en
               pesos mexicanos (MXN). Este documento refleja el presupuesto contratado y los pagos
-              recibidos por ConstructorPro. Para cualquier aclaración comunícate con tu constructora.
+              recibidos por {marca}. Para cualquier aclaración comunícate con tu constructora.
             </p>
           </footer>
 

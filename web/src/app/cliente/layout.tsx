@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { ClienteNavLinks } from './nav-links';
 import { getClienteActual } from '@/lib/data/portal-cliente';
+import { getNombreEmpresa } from '@/lib/data/empresa';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +17,8 @@ export default async function ClienteLayout({ children }: { children: React.Reac
   if (!user) redirect('/login');
 
   const cliente = await getClienteActual();
+  // Marca = nombre de la constructora del cliente (no un literal fijo).
+  const marca = (await getNombreEmpresa()) ?? 'ConstructorPro';
 
   // Si no hay vínculo, mostramos el layout igualmente pero sin nombre de cliente
   const nombreCliente = cliente?.nombre ?? 'Cliente';
@@ -32,7 +35,7 @@ export default async function ClienteLayout({ children }: { children: React.Reac
               href="/cliente"
               className="text-base font-semibold text-neutral-900 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 rounded"
             >
-              ConstructorPro
+              {marca}
             </Link>
             {/* Navegación escritorio */}
             <ClienteNavLinks className="hidden sm:flex items-center gap-1" />
@@ -77,7 +80,7 @@ export default async function ClienteLayout({ children }: { children: React.Reac
       <footer className="border-t border-neutral-200 bg-white mt-auto">
         <div className="mx-auto max-w-5xl px-4 py-4 sm:px-8">
           <p className="text-xs text-neutral-400 text-center">
-            Portal del cliente — ConstructorPro. Solo para uso autorizado.
+            Portal del cliente — {marca}. Solo para uso autorizado.
           </p>
         </div>
       </footer>

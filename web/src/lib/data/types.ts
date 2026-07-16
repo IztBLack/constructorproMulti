@@ -7,7 +7,7 @@ export type TipoPago = 'DIA' | 'DESTAJO';
 /// El salario diario se deriva de aquí (ver `lib/data/salario.ts`).
 export type PeriodoPago = 'SEMANAL' | 'QUINCENAL' | 'MENSUAL';
 export type TipoMovimiento = 'ENTRADA' | 'SALIDA';
-export type Rol = 'admin' | 'oficina' | 'cliente' | string;
+export type Rol = 'admin' | 'supervisor' | 'colaborador' | 'cliente' | string;
 
 export interface Obra {
   id: string;

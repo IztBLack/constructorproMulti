@@ -16,6 +16,7 @@ import {
   Tr,
 } from '@/components/ui';
 import { formatCurrency } from '@/lib/data/format';
+import { nombreUsuario } from '@/lib/data/usuario';
 import {
   calcularPipeline,
   distribucionGasto,
@@ -29,18 +30,6 @@ import {
 } from '@/lib/data/dashboard';
 
 export const dynamic = 'force-dynamic';
-
-/** Mapa: rol BD → etiqueta en español para mostrar al usuario. */
-const ROL_LABEL: Record<string, string> = {
-  admin: 'Administrador',
-  owner: 'Propietario',
-  member: 'Miembro',
-  viewer: 'Lector',
-};
-
-function rolLabel(rol: string): string {
-  return ROL_LABEL[rol] ?? rol;
-}
 
 function BarraGasto({
   label,
@@ -66,6 +55,35 @@ function BarraGasto({
         {formatCurrency(valor)}
       </span>
     </div>
+  );
+}
+
+/** Tesela de KPI compacta para la fila superior. */
+function StatTile({
+  label,
+  valor,
+  href,
+  tone = 'neutral',
+  moneda = false,
+  error,
+}: {
+  label: string;
+  valor: number;
+  href: string;
+  tone?: 'neutral' | 'teal';
+  moneda?: boolean;
+  error?: boolean;
+}) {
+  const valorClass = tone === 'teal' ? 'text-teal-700' : 'text-neutral-900';
+  return (
+    <Link href={href} className="block">
+      <div className="h-full rounded-xl border border-neutral-200 bg-white px-4 py-3 transition hover:border-neutral-400">
+        <div className="text-xs font-medium text-neutral-500">{label}</div>
+        <div className={`mt-1.5 text-2xl font-semibold tabular-nums ${valorClass}`}>
+          {error ? '—' : moneda ? formatCurrency(valor) : valor}
+        </div>
+      </div>
+    </Link>
   );
 }
 
@@ -105,24 +123,21 @@ export default async function AdminPage({
     hrefSiguiente = `/admin?vista=mes&anio=${siguiente.anio}&mes=${siguiente.mes}`;
   }
 
-  // Empresa(s) y rol del usuario (RLS sólo deja ver las suyas).
-  const { data: memberships } = await supabase
+  // Nombre de la empresa del usuario (para saludo/branding dinámico).
+  const { data: membership } = await supabase
     .from('usuarios_empresa')
-    .select('empresa_id, rol');
-
-  // Resolver nombres de empresa para no mostrar UUIDs crudos.
-  const empresaNames: Record<string, string> = {};
-  if (memberships && memberships.length > 0) {
-    const empresaIds = memberships.map((m) => m.empresa_id as string);
-    const { data: empresas } = await supabase
+    .select('empresa_id')
+    .eq('user_id', user.id)
+    .limit(1)
+    .maybeSingle();
+  let nombreEmpresa = 'tu empresa';
+  if (membership?.empresa_id) {
+    const { data: emp } = await supabase
       .from('empresas')
-      .select('id, nombre')
-      .in('id', empresaIds);
-    if (empresas) {
-      for (const e of empresas) {
-        empresaNames[e.id as string] = e.nombre as string;
-      }
-    }
+      .select('nombre')
+      .eq('id', membership.empresa_id as string)
+      .maybeSingle();
+    if (emp?.nombre) nombreEmpresa = emp.nombre as string;
   }
 
   const [
@@ -141,22 +156,6 @@ export default async function AdminPage({
     listObrasConSaldo(),
   ]);
 
-  const cards = [
-    { label: 'Obras', count: obrasCount.count ?? 0, href: '/admin/obras', error: obrasCount.error },
-    {
-      label: 'Cotizaciones',
-      count: cotizacionesCount.count ?? 0,
-      href: '/admin/cotizaciones',
-      error: cotizacionesCount.error,
-    },
-    {
-      label: 'Colaboradores',
-      count: colaboradoresCount.count ?? 0,
-      href: '/admin/equipo',
-      error: colaboradoresCount.error,
-    },
-  ];
-
   const flujo = resumenFlujo(movimientosPeriodoResult.data);
   const gasto = distribucionGasto(movimientosPeriodoResult.data);
 
@@ -165,10 +164,10 @@ export default async function AdminPage({
   const mostrarPrimerosPasos = obrasCnt === 0 && colaboradoresCnt === 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
         title="Panel de oficina"
-        eyebrow={user.email}
+        eyebrow={nombreUsuario(user)}
         actions={
           <>
             <LinkButton href="/admin/obras" variant="secondary" size="sm">
@@ -185,61 +184,56 @@ export default async function AdminPage({
       {mostrarPrimerosPasos && (
         <Card>
           <div className="mb-4">
-            <h2 className="text-base font-semibold text-neutral-900">Bienvenido a ConstructorPro</h2>
+            <h2 className="text-base font-semibold text-neutral-900">Bienvenido a {nombreEmpresa}</h2>
             <p className="mt-1 text-sm text-neutral-500">
               Completa estos tres pasos para comenzar a gestionar tus obras.
             </p>
           </div>
-          <ol className="space-y-3">
-            <li className="flex items-center justify-between gap-4 rounded-lg border border-neutral-200 p-3">
-              <div>
-                <span className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Paso 1</span>
-                <p className="text-sm font-medium text-neutral-900">Crea tus puestos</p>
-                <p className="text-xs text-neutral-500">Define los roles de trabajo que usará tu equipo.</p>
-              </div>
-              <LinkButton href="/admin/puestos" variant="secondary" size="sm">
-                Ir a puestos
-              </LinkButton>
-            </li>
-            <li className="flex items-center justify-between gap-4 rounded-lg border border-neutral-200 p-3">
-              <div>
-                <span className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Paso 2</span>
-                <p className="text-sm font-medium text-neutral-900">Da de alta tu equipo</p>
-                <p className="text-xs text-neutral-500">Agrega a los colaboradores que trabajarán contigo.</p>
-              </div>
-              <LinkButton href="/admin/equipo" variant="secondary" size="sm">
-                Ir a equipo
-              </LinkButton>
-            </li>
-            <li className="flex items-center justify-between gap-4 rounded-lg border border-neutral-200 p-3">
-              <div>
-                <span className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Paso 3</span>
-                <p className="text-sm font-medium text-neutral-900">Crea tu primera obra</p>
-                <p className="text-xs text-neutral-500">Registra el proyecto y empieza a hacer seguimiento.</p>
-              </div>
-              <LinkButton href="/admin/obras" variant="secondary" size="sm">
-                Ir a obras
-              </LinkButton>
-            </li>
+          <ol className="grid gap-3 sm:grid-cols-3">
+            {[
+              { paso: '1', titulo: 'Crea tus puestos', desc: 'Define los roles de trabajo de tu equipo.', href: '/admin/puestos' },
+              { paso: '2', titulo: 'Da de alta tu equipo', desc: 'Agrega a los colaboradores.', href: '/admin/equipo' },
+              { paso: '3', titulo: 'Crea tu primera obra', desc: 'Registra el proyecto y da seguimiento.', href: '/admin/obras' },
+            ].map((p) => (
+              <li key={p.paso} className="rounded-lg border border-neutral-200 p-3">
+                <span className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Paso {p.paso}</span>
+                <p className="mt-0.5 text-sm font-medium text-neutral-900">{p.titulo}</p>
+                <p className="text-xs text-neutral-500">{p.desc}</p>
+                <LinkButton href={p.href} variant="secondary" size="sm" className="mt-2">
+                  Empezar
+                </LinkButton>
+              </li>
+            ))}
           </ol>
         </Card>
       )}
 
-      {/* ── Primer pliegue: KPIs + saldo por obra ────────────────────────── */}
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {cards.map((c) => (
-          <Link key={c.label} href={c.href} className="block">
-            <Card className="cursor-pointer transition hover:border-neutral-400">
-              <div className="text-sm font-medium text-neutral-500">{c.label}</div>
-              <div className="mt-2 text-3xl font-semibold tabular-nums text-neutral-900">
-                {c.error ? '—' : c.count}
-              </div>
-              {c.error && <p className="mt-1 text-xs text-red-600">No se pudo consultar.</p>}
-            </Card>
-          </Link>
-        ))}
+      {/* ── Fila de indicadores (KPIs + pipeline, compacto) ────────────────── */}
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatTile label="Obras" valor={obrasCnt} href="/admin/obras" error={!!obrasCount.error} />
+        <StatTile
+          label="Cotizaciones"
+          valor={cotizacionesCount.count ?? 0}
+          href="/admin/cotizaciones"
+          error={!!cotizacionesCount.error}
+        />
+        <StatTile
+          label="Colaboradores"
+          valor={colaboradoresCnt}
+          href="/admin/equipo"
+          error={!!colaboradoresCount.error}
+        />
+        <StatTile
+          label="Pipeline"
+          valor={pipelineResult.value}
+          href="/admin/cotizaciones"
+          tone="teal"
+          moneda
+          error={!!pipelineResult.error}
+        />
       </section>
 
+      {/* ── Saldo por obra (operativo) ─────────────────────────────────────── */}
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-neutral-700">Saldo por obra</h2>
         {obrasConSaldoResult.error ? (
@@ -291,45 +285,39 @@ export default async function AdminPage({
         )}
       </section>
 
-      {/* ── Finanzas del periodo: selector + flujo/gasto/pipeline en bento ── */}
+      {/* ── Finanzas del periodo: selector + flujo/gasto ───────────────────── */}
       <section className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 className="text-sm font-medium text-neutral-700">Finanzas · {periodoLabel}</h2>
-            <p className="text-xs text-neutral-400">Flujo de caja, distribución del gasto y pipeline.</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-sm font-medium text-neutral-700">Finanzas · {periodoLabel}</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1 rounded-lg border border-neutral-200 p-0.5">
               <Link
                 href={`/admin?vista=mes&anio=${anioActual}&mes=${mesActual}`}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-                  !esAnual ? 'bg-neutral-900 text-white' : 'border border-neutral-300 text-neutral-700 hover:bg-neutral-100'
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
+                  !esAnual ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-100'
                 }`}
               >
                 Mes
               </Link>
               <Link
                 href={`/admin?vista=anio&anio=${anioActual}`}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-                  esAnual ? 'bg-neutral-900 text-white' : 'border border-neutral-300 text-neutral-700 hover:bg-neutral-100'
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
+                  esAnual ? 'bg-neutral-900 text-white' : 'text-neutral-600 hover:bg-neutral-100'
                 }`}
               >
                 Año
               </Link>
             </div>
-            <div className="flex items-center gap-2">
-              <LinkButton variant="secondary" size="sm" href={hrefAnterior}>
-                ← Anterior
-              </LinkButton>
-              <span className="text-sm font-medium text-neutral-900">{periodoLabel}</span>
-              <LinkButton variant="secondary" size="sm" href={hrefSiguiente}>
-                Siguiente →
-              </LinkButton>
-            </div>
+            <LinkButton variant="secondary" size="sm" href={hrefAnterior}>
+              ←
+            </LinkButton>
+            <LinkButton variant="secondary" size="sm" href={hrefSiguiente}>
+              →
+            </LinkButton>
           </div>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-3 lg:grid-cols-2">
           <Card>
             <CardTitle as="h3">Flujo de caja</CardTitle>
             {movimientosPeriodoResult.error ? (
@@ -338,15 +326,15 @@ export default async function AdminPage({
               <div className="mt-3 grid grid-cols-3 gap-4 text-center">
                 <div>
                   <p className="text-xs text-neutral-500">Ingresos</p>
-                  <p className="text-xl font-semibold tabular-nums text-green-700">{formatCurrency(flujo.totalEntradas)}</p>
+                  <p className="text-lg font-semibold tabular-nums text-green-700">{formatCurrency(flujo.totalEntradas)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-neutral-500">Egresos</p>
-                  <p className="text-xl font-semibold tabular-nums text-red-600">{formatCurrency(flujo.totalSalidas)}</p>
+                  <p className="text-lg font-semibold tabular-nums text-red-600">{formatCurrency(flujo.totalSalidas)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-neutral-500">Saldo</p>
-                  <p className={`text-xl font-semibold tabular-nums ${flujo.saldo >= 0 ? 'text-green-700' : 'text-red-600'}`}>
+                  <p className={`text-lg font-semibold tabular-nums ${flujo.saldo >= 0 ? 'text-green-700' : 'text-red-600'}`}>
                     {formatCurrency(flujo.saldo)}
                   </p>
                 </div>
@@ -368,50 +356,8 @@ export default async function AdminPage({
               </div>
             )}
           </Card>
-
-          <Card className="lg:col-span-2">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <CardTitle as="h3">Pipeline</CardTitle>
-                <p className="text-xs text-neutral-400">Cotizaciones pendientes (borrador / enviada)</p>
-              </div>
-              <p className="text-3xl font-semibold tabular-nums text-teal-700">
-                {pipelineResult.error ? '—' : formatCurrency(pipelineResult.value)}
-              </p>
-            </div>
-            {pipelineResult.error && (
-              <p className="mt-2 text-xs text-red-600">No se pudo calcular: {pipelineResult.error}</p>
-            )}
-          </Card>
         </div>
       </section>
-
-      {/* ── Pie discreto: empresa(s) y rol del usuario ──────────────────── */}
-      <Card padding="sm" className="bg-neutral-50/60">
-        <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-neutral-400">Tu acceso</h2>
-        {memberships && memberships.length > 0 ? (
-          <ul className="space-y-1 text-sm">
-            {memberships.map((m) => {
-              const nombreEmpresa = empresaNames[m.empresa_id as string] ?? 'Empresa';
-              return (
-                <li key={m.empresa_id as string} className="flex items-center gap-2">
-                  <span className="font-medium text-neutral-900">{nombreEmpresa}</span>
-                  <span className="rounded bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
-                    {rolLabel(m.rol as string)}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <div className="flex items-center gap-3">
-            <p className="text-sm text-neutral-500">Aún no tienes una empresa configurada.</p>
-            <LinkButton href="/onboarding" variant="secondary" size="sm">
-              Crear empresa
-            </LinkButton>
-          </div>
-        )}
-      </Card>
     </div>
   );
 }
