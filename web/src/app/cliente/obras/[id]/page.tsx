@@ -135,29 +135,29 @@ export default async function ObraDetallePage({
           />
         ) : (
           <>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <Card padding="md">
-                <CardTitle as="h3">Costo total</CardTitle>
-                <p className="mt-2 text-2xl font-semibold text-neutral-900 tabular-nums">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border border-neutral-200 bg-white px-4 py-3">
+                <div className="text-xs font-medium text-neutral-500">Costo total</div>
+                <p className="mt-1.5 text-2xl font-semibold text-neutral-900 tabular-nums">
                   {formatCurrency(costoTotal)}
                 </p>
-              </Card>
+              </div>
 
-              <Card padding="md">
-                <CardTitle as="h3">Pagado</CardTitle>
-                <p className="mt-2 text-2xl font-semibold text-green-700 tabular-nums">
+              <div className="rounded-xl border border-neutral-200 bg-white px-4 py-3">
+                <div className="text-xs font-medium text-neutral-500">Pagado</div>
+                <p className="mt-1.5 text-2xl font-semibold text-green-700 tabular-nums">
                   {formatCurrency(recibido)}
                 </p>
-                <p className="mt-1 text-xs text-neutral-400">{pagadoPct}% del costo</p>
-              </Card>
+                <p className="mt-1 text-xs text-neutral-500">{pagadoPct}% del costo</p>
+              </div>
 
-              <Card padding="md" className="ring-2 ring-amber-400 ring-offset-1">
-                <CardTitle as="h3">Saldo pendiente</CardTitle>
-                <p className="mt-2 text-2xl font-semibold text-amber-700 tabular-nums">
+              <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
+                <div className="text-xs font-medium text-amber-800">Saldo pendiente</div>
+                <p className="mt-1.5 text-2xl font-semibold text-amber-700 tabular-nums">
                   {formatCurrency(pendiente)}
                 </p>
-                <p className="mt-1 text-xs text-neutral-400">{100 - pagadoPct}% restante</p>
-              </Card>
+                <p className="mt-1 text-xs text-amber-700/80">{100 - pagadoPct}% restante</p>
+              </div>
             </div>
 
             {/* Barra de avance de pago */}

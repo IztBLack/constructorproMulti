@@ -1,13 +1,13 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import type { Cotizacion, EstadoCotizacion } from '@/lib/data/types';
 import { formatDate } from '@/lib/data/format';
 import {
   Badge,
   EmptyState,
   LinkButton,
+  RowLink,
   TableContainer,
   THead,
   Th,
@@ -36,7 +36,6 @@ const ESTADO_TONE: Record<EstadoCotizacion, BadgeTone> = {
 };
 
 export default function FiltroEstadoCotizaciones({ cotizaciones }: { cotizaciones: Cotizacion[] }) {
-  const router = useRouter();
   const [estado, setEstado] = useState<EstadoCotizacion | 'TODOS'>('TODOS');
 
   const filtradas = useMemo(
@@ -51,8 +50,10 @@ export default function FiltroEstadoCotizaciones({ cotizaciones }: { cotizacione
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
         <button
+          type="button"
+          aria-pressed={estado === 'TODOS'}
           onClick={() => setEstado('TODOS')}
-          className={`cursor-pointer rounded-full px-3 py-1.5 text-sm font-medium ${
+          className={`inline-flex min-h-11 cursor-pointer items-center rounded-full px-4 text-sm font-medium ${
             estado === 'TODOS' ? 'bg-neutral-900 text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
           }`}
         >
@@ -61,8 +62,10 @@ export default function FiltroEstadoCotizaciones({ cotizaciones }: { cotizacione
         {ESTADOS.map((e) => (
           <button
             key={e}
+            type="button"
+            aria-pressed={estado === e}
             onClick={() => setEstado(e)}
-            className={`cursor-pointer rounded-full px-3 py-1.5 text-sm font-medium ${
+            className={`inline-flex min-h-11 cursor-pointer items-center rounded-full px-4 text-sm font-medium ${
               estado === e ? 'bg-neutral-900 text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
             }`}
           >
@@ -95,12 +98,13 @@ export default function FiltroEstadoCotizaciones({ cotizaciones }: { cotizacione
           </THead>
           <TBody>
             {filtradas.map((c) => (
-              <Tr
-                key={c.id}
-                onClick={() => router.push(`/admin/cotizaciones/${c.id}`)}
-                className="cursor-pointer"
-              >
-                <Td className="font-medium text-neutral-900">{c.cliente}</Td>
+              <Tr key={c.id} className="cursor-pointer">
+                <Td className="font-medium text-neutral-900">
+                  <RowLink href={`/admin/cotizaciones/${c.id}`}>
+                    Ver cotización {c.nombre_proyecto}
+                  </RowLink>
+                  {c.cliente}
+                </Td>
                 <Td>{c.nombre_proyecto}</Td>
                 <Td>{formatDate(c.fecha)}</Td>
                 <Td>

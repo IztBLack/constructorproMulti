@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Card, CardTitle, LinkButton, Badge, EmptyState } from '@/components/ui';
+import { LinkButton, Badge, EmptyState } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/lib/data/format';
 import {
   getClienteActual,
@@ -78,25 +78,25 @@ export default async function ClienteResumenPage() {
         <h2 id="resumen-financiero" className="sr-only">
           Resumen financiero
         </h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <Card padding="md">
-            <CardTitle as="h3">Total presupuestado</CardTitle>
-            <p className="mt-2 text-2xl font-semibold text-neutral-900 tabular-nums">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-neutral-200 bg-white px-4 py-3">
+            <div className="text-xs font-medium text-neutral-500">Total presupuestado</div>
+            <p className="mt-1.5 text-2xl font-semibold text-neutral-900 tabular-nums">
               {formatCurrency(totalPresupuestado)}
             </p>
-          </Card>
-          <Card padding="md">
-            <CardTitle as="h3">Total pagado</CardTitle>
-            <p className="mt-2 text-2xl font-semibold text-green-700 tabular-nums">
+          </div>
+          <div className="rounded-xl border border-neutral-200 bg-white px-4 py-3">
+            <div className="text-xs font-medium text-neutral-500">Total pagado</div>
+            <p className="mt-1.5 text-2xl font-semibold text-green-700 tabular-nums">
               {formatCurrency(totalPagado)}
             </p>
-          </Card>
-          <Card padding="md" className="ring-2 ring-amber-400 ring-offset-1">
-            <CardTitle as="h3">Saldo pendiente</CardTitle>
-            <p className="mt-2 text-2xl font-semibold text-amber-700 tabular-nums">
+          </div>
+          <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
+            <div className="text-xs font-medium text-amber-800">Saldo pendiente</div>
+            <p className="mt-1.5 text-2xl font-semibold text-amber-700 tabular-nums">
               {formatCurrency(totalSaldo)}
             </p>
-          </Card>
+          </div>
         </div>
       </section>
 
@@ -118,7 +118,7 @@ export default async function ClienteResumenPage() {
           />
         ) : (
           <div className="space-y-3">
-            {obras.map((obra) => {
+            {obras.slice(0, 3).map((obra) => {
               const estado = mapEstadoObra(obra.activa, obra.avance);
               return (
                 <Link
@@ -134,7 +134,7 @@ export default async function ClienteResumenPage() {
                         </h3>
                         <ObraEstadoBadge estado={estado} />
                       </div>
-                      <p className="mt-0.5 text-xs text-neutral-400">{obra.ubicacion ?? '—'}</p>
+                      <p className="mt-0.5 text-xs text-neutral-500">{obra.ubicacion ?? '—'}</p>
                     </div>
                     <div className="shrink-0">
                       <svg
@@ -172,7 +172,7 @@ export default async function ClienteResumenPage() {
                     </div>
                   </div>
 
-                  <div className="mt-2 flex items-center justify-between text-xs text-neutral-400">
+                  <div className="mt-2 flex items-center justify-between text-xs text-neutral-500">
                     <span>Inicio: {formatDate(obra.fecha_inicio)}</span>
                   </div>
                 </Link>
@@ -233,71 +233,6 @@ export default async function ClienteResumenPage() {
         </section>
       )}
 
-      {/* ── Accesos rápidos ──────────────────────────────────────────────── */}
-      <section aria-labelledby="accesos-rapidos-heading">
-        <h2 id="accesos-rapidos-heading" className="sr-only">
-          Accesos rapidos
-        </h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Link
-            href="/cliente/cotizaciones"
-            className="flex items-center gap-4 rounded-xl border border-neutral-200 bg-white p-5 hover:border-neutral-300 hover:shadow-sm cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-blue-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-neutral-900">Mis cotizaciones</p>
-              <p className="text-xs text-neutral-500">
-                {cotizaciones.length} {cotizaciones.length === 1 ? 'cotización' : 'cotizaciones'}
-              </p>
-            </div>
-          </Link>
-
-          <Link
-            href="/cliente/obras"
-            className="flex items-center gap-4 rounded-xl border border-neutral-200 bg-white p-5 hover:border-neutral-300 hover:shadow-sm cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-50">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-green-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                />
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-neutral-900">Mis obras</p>
-              <p className="text-xs text-neutral-500">
-                {obras.length} obra{obras.length !== 1 ? 's' : ''}
-              </p>
-            </div>
-          </Link>
-        </div>
-      </section>
     </div>
   );
 }

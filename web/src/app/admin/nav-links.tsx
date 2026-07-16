@@ -42,8 +42,8 @@ export function NavLinks({ className = '', itemClassName = '' }: NavLinksProps) 
             aria-current={active ? 'page' : undefined}
             className={
               active
-                ? `rounded-lg px-3 py-1.5 text-sm font-medium bg-neutral-100 text-neutral-900 ${itemClassName}`
-                : `rounded-lg px-3 py-1.5 text-sm font-medium text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 ${itemClassName}`
+                ? `inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium bg-neutral-100 text-neutral-900 ${itemClassName}`
+                : `inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 ${itemClassName}`
             }
           >
             {link.label}

@@ -35,8 +35,8 @@ export function ClienteNavLinks({ className = '', itemClassName = '' }: NavLinks
             aria-current={active ? 'page' : undefined}
             className={
               active
-                ? `rounded-lg px-3 py-1.5 text-sm font-medium bg-neutral-100 text-neutral-900 cursor-pointer transition-colors duration-150 ${itemClassName}`
-                : `rounded-lg px-3 py-1.5 text-sm font-medium text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 cursor-pointer transition-colors duration-150 ${itemClassName}`
+                ? `inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium bg-neutral-100 text-neutral-900 cursor-pointer transition-colors duration-150 ${itemClassName}`
+                : `inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900 cursor-pointer transition-colors duration-150 ${itemClassName}`
             }
           >
             {link.label}
