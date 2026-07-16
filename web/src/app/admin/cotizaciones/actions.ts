@@ -15,8 +15,29 @@ import {
   eliminarSeccion,
   enviarCotizacion,
 } from '@/lib/data/cotizaciones';
+import { buscarCatalogoConceptos } from '@/lib/data/catalogo';
 import type { EstadoCotizacion } from '@/lib/data/types';
 import { fechaInputAMs } from '@/lib/data/tz';
+
+export interface ConceptoCatalogo {
+  id: string;
+  clave: string;
+  descripcion: string;
+  unidad: string;
+  precio: number;
+}
+
+/// Autocompletado de partidas: busca conceptos del catálogo por clave/descripción.
+export async function buscarCatalogoAction(query: string): Promise<ConceptoCatalogo[]> {
+  const { data } = await buscarCatalogoConceptos(query);
+  return data.map((c) => ({
+    id: c.id,
+    clave: c.clave ?? '',
+    descripcion: c.descripcion,
+    unidad: c.unidad ?? '',
+    precio: c.precio_unitario_default,
+  }));
+}
 
 export interface ActionResult {
   error: string | null;

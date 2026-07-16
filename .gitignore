@@ -57,3 +57,6 @@ docs/BITACORA.md
 
 # Respaldos binarios (no versionar, ~10MB+)
 *.zip
+
+# Grafo de conocimiento (graphify) — artefacto generado
+graphify-out/
