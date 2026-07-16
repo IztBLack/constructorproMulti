@@ -137,12 +137,22 @@ export function calcularTotalSimple(cot: Pick<CotizacionPortal, 'descuento' | 'i
 // ─── Queries ─────────────────────────────────────────────────────────────────
 
 /// Devuelve el registro del cliente autenticado, o null si no tiene vínculo.
+/// Filtra EXPLÍCITO por `user_id = auth.uid()`: aunque RLS ya acota, un usuario
+/// STAFF tiene la política `clientes_staff` (ve todos los clientes de su
+/// empresa); sin este filtro, `.limit(1)` tomaría un cliente ajeno arbitrario.
+/// Con él, el portal siempre representa al cliente del propio usuario (o null).
 export async function getClienteActual(): Promise<ClientePortal | null> {
   const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
 
   const { data, error } = await supabase
     .from('clientes')
     .select('id, nombre, email, telefono, user_id')
+    .eq('user_id', user.id)
     .is('deleted_at', null)
     .limit(1)
     .maybeSingle();

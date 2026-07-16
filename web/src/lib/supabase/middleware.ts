@@ -41,13 +41,14 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Si el usuario está autenticado y accede a /admin, verificar su rol.
-  // Solo aplica a /admin (no a /onboarding para evitar loops).
-  // Si hay error de red o RLS, dejamos pasar — no redirigimos.
-  //   · Sin membresía (recién registrado) → /onboarding.
-  //   · Solo rol 'cliente' → /cliente (no tiene acceso al panel de oficina).
-  //   · Cualquier rol de staff (≠ 'cliente') → se queda en /admin.
-  if (user && path.startsWith('/admin')) {
+  // Ruteo por rol en las zonas protegidas. Si hay error de red o RLS, dejamos
+  // pasar — no redirigimos.
+  //   /admin:   sin membresía → /onboarding; solo 'cliente' → /cliente; staff → OK.
+  //   /cliente: staff (cualquier rol ≠ 'cliente') NO pertenece al portal del
+  //             cliente → /admin. Un staff en /cliente vería, vía la RLS de
+  //             staff, TODAS las obras/datos de la empresa (no solo los de un
+  //             cliente), así que se le saca del portal.
+  if (user && (path.startsWith('/admin') || path.startsWith('/cliente'))) {
     const { data: membresias, error: empresaError } = await supabase
       .from('usuarios_empresa')
       .select('rol')
@@ -55,17 +56,23 @@ export async function updateSession(request: NextRequest) {
 
     if (!empresaError) {
       const roles = (membresias ?? []).map((m) => m.rol as string);
-
-      if (roles.length === 0) {
-        const url = request.nextUrl.clone();
-        url.pathname = '/onboarding';
-        return NextResponse.redirect(url);
-      }
-
       const esStaff = roles.some((r) => r !== 'cliente');
-      if (!esStaff) {
+
+      if (path.startsWith('/admin')) {
+        if (roles.length === 0) {
+          const url = request.nextUrl.clone();
+          url.pathname = '/onboarding';
+          return NextResponse.redirect(url);
+        }
+        if (!esStaff) {
+          const url = request.nextUrl.clone();
+          url.pathname = '/cliente';
+          return NextResponse.redirect(url);
+        }
+      } else if (esStaff) {
+        // En /cliente y es staff → panel de oficina.
         const url = request.nextUrl.clone();
-        url.pathname = '/cliente';
+        url.pathname = '/admin';
         return NextResponse.redirect(url);
       }
     }
