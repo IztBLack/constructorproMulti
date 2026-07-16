@@ -35,19 +35,38 @@ export async function subirArchivoAction(
     return { ok: false, error: e instanceof Error ? e.message : 'Error de autenticación.' };
   }
 
+  // Validar formato UUID de cotizacionId (evita segmentos raros en la ruta de
+  // Storage) y verificar que la cotización pertenezca a la empresa del usuario.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!UUID_RE.test(cotizacionId)) {
+    return { ok: false, error: 'Cotización inválida.' };
+  }
+
+  const supabase = await createClient();
+
+  const { data: cot } = await supabase
+    .from('cotizaciones')
+    .select('id')
+    .eq('id', cotizacionId)
+    .eq('empresa_id', empresaId)
+    .is('deleted_at', null)
+    .maybeSingle();
+  if (!cot) {
+    return { ok: false, error: 'Cotización no encontrada.' };
+  }
+
   // Construir la ruta: {empresa_id}/{cotizacion_id}/{uuid}-{nombreArchivo}
   const uuid = crypto.randomUUID();
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
   const path = `${empresaId}/${cotizacionId}/${uuid}-${safeName}`;
-
-  const supabase = await createClient();
 
   const { error: uploadError } = await supabase.storage
     .from('cotizaciones')
     .upload(path, file, { contentType: file.type });
 
   if (uploadError) {
-    return { ok: false, error: `Error al subir el archivo: ${uploadError.message}` };
+    console.error('[subirArchivoAction] upload:', uploadError.message);
+    return { ok: false, error: 'No se pudo subir el archivo. Intenta de nuevo.' };
   }
 
   const now = Date.now();
@@ -72,7 +91,8 @@ export async function subirArchivoAction(
   if (dbError) {
     // Intentar limpiar el objeto ya subido para no dejar huérfanos
     await supabase.storage.from('cotizaciones').remove([path]);
-    return { ok: false, error: `Error al registrar el archivo: ${dbError.message}` };
+    console.error('[subirArchivoAction] db:', dbError.message);
+    return { ok: false, error: 'No se pudo registrar el archivo. Intenta de nuevo.' };
   }
 
   revalidatePath(`/admin/cotizaciones/${cotizacionId}`);
@@ -88,6 +108,16 @@ export async function eliminarArchivoAction(
   const supabase = await createClient();
   const now = Date.now();
 
+  // Deriva el uri REAL desde la fila (por id, acotado por RLS a la empresa), en
+  // vez de confiar en el `uri` que manda el cliente: así no se puede borrar del
+  // bucket un objeto distinto al referenciado por `id`.
+  const { data: fila } = await supabase
+    .from('archivos_cotizacion')
+    .select('uri')
+    .eq('id', id)
+    .maybeSingle();
+  const uriReal = (fila?.uri as string | undefined) ?? uri;
+
   const { error: dbError } = await supabase
     .from('archivos_cotizacion')
     .update({ deleted_at: now, updated_at: now })
@@ -95,11 +125,12 @@ export async function eliminarArchivoAction(
     .is('deleted_at', null);
 
   if (dbError) {
-    return { ok: false, error: `No se pudo eliminar el registro: ${dbError.message}` };
+    console.error('[eliminarArchivoAction] db:', dbError.message);
+    return { ok: false, error: 'No se pudo eliminar el registro. Intenta de nuevo.' };
   }
 
   // Borrar el objeto del bucket (error no crítico; el registro ya está soft-deleted)
-  await supabase.storage.from('cotizaciones').remove([uri]);
+  await supabase.storage.from('cotizaciones').remove([uriReal]);
 
   revalidatePath(`/admin/cotizaciones/${cotizacionId}`);
   return { ok: true };
@@ -116,6 +147,9 @@ export async function obtenerUrlDescargaAction(
     .from('cotizaciones')
     .createSignedUrl(uri, 60 * 60);
 
-  if (error) return { url: null, error: error.message };
+  if (error) {
+    console.error('[obtenerUrlDescargaAction] signedUrl:', error.message);
+    return { url: null, error: 'No se pudo generar el enlace de descarga.' };
+  }
   return { url: data.signedUrl };
 }

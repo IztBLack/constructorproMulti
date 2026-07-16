@@ -17,8 +17,8 @@ export function VincularForm() {
 
     const codigoLimpio = codigo.trim();
 
-    if (codigoLimpio.length !== 6) {
-      setError('El código debe tener exactamente 6 dígitos.');
+    if (codigoLimpio.length !== 8) {
+      setError('El código debe tener exactamente 8 dígitos.');
       return;
     }
 
@@ -52,7 +52,7 @@ export function VincularForm() {
           type="text"
           inputMode="numeric"
           pattern="[0-9]*"
-          maxLength={6}
+          maxLength={8}
           autoComplete="one-time-code"
           value={codigo}
           onChange={(e) => {
@@ -61,7 +61,7 @@ export function VincularForm() {
             setCodigo(soloDigitos);
             setError(null);
           }}
-          placeholder="000000"
+          placeholder="00000000"
           className="w-full rounded-xl border border-neutral-300 bg-white px-5 py-4 text-center text-3xl font-bold tracking-widest text-neutral-900 outline-none transition placeholder:text-neutral-300 focus:border-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-900/10 invalid:border-red-400 disabled:cursor-not-allowed disabled:opacity-50"
           disabled={cargando}
           aria-describedby={error ? 'vincular-error' : undefined}
@@ -78,7 +78,7 @@ export function VincularForm() {
         type="submit"
         variant="primary"
         size="md"
-        disabled={cargando || codigo.length !== 6}
+        disabled={cargando || codigo.length !== 8}
         className="w-full cursor-pointer"
         aria-busy={cargando}
       >

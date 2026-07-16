@@ -60,3 +60,6 @@ docs/BITACORA.md
 
 # Grafo de conocimiento (graphify) — artefacto generado
 graphify-out/
+
+# Respaldos locales con datos reales — NUNCA versionar
+tools/backup_temp*/

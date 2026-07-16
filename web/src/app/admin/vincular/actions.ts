@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { getEmpresaUsuario } from '@/lib/data/empresa';
+import { generarCodigoNumerico } from '@/lib/data/codigo';
 
 export interface GenerarCodigoResult {
   ok: boolean;
@@ -49,15 +50,16 @@ export async function generarCodigoVinculacion(): Promise<GenerarCodigoResult> {
     .is('used_at', null);
 
   if (invalidarError) {
-    return { ok: false, error: `No se pudieron invalidar códigos anteriores: ${invalidarError.message}` };
+    console.error('[generarCodigoVinculacion] invalidar:', invalidarError.message);
+    return { ok: false, error: 'No se pudieron invalidar códigos anteriores. Intenta de nuevo.' };
   }
 
   const expiresAt = now + 10 * 60 * 1000;
   const MAX_INTENTOS = 5;
 
   for (let intento = 1; intento <= MAX_INTENTOS; intento++) {
-    // Generar código aleatorio de 6 dígitos.
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    // Código aleatorio con CSPRNG (ver lib/data/codigo.ts).
+    const code = generarCodigoNumerico();
 
     const { error: insertError } = await supabase.from('codigos_vinculacion').insert({
       code,
@@ -80,7 +82,8 @@ export async function generarCodigoVinculacion(): Promise<GenerarCodigoResult> {
       insertError.message.toLowerCase().includes('unique');
 
     if (!esDuplicado || intento === MAX_INTENTOS) {
-      return { ok: false, error: `No se pudo crear el código: ${insertError.message}` };
+      console.error('[generarCodigoVinculacion] insert:', insertError.message);
+      return { ok: false, error: 'No se pudo crear el código. Intenta de nuevo.' };
     }
     // Si es duplicado y quedan intentos, continúa el ciclo.
   }

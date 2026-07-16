@@ -61,7 +61,8 @@ function leerCotizacionDeFormData(formData: FormData) {
     ubicacion: ubicacion.length > 0 ? ubicacion : null,
     fecha: parseFecha(fechaRaw),
     iva_enabled: formData.get('iva_enabled') === 'on',
-    descuento: Number.parseFloat(descuentoRaw) || 0,
+    // Descuento acotado a [0,100] (evita totales negativos/incoherentes).
+    descuento: Math.min(100, Math.max(0, Number.parseFloat(descuentoRaw) || 0)),
     notas: notas.length > 0 ? notas : null,
   };
 }
@@ -203,8 +204,9 @@ function leerPartidaDeFormData(formData: FormData) {
     clave: clave.length > 0 ? clave : null,
     descripcion: String(formData.get('descripcion') ?? '').trim(),
     unidad: unidad.length > 0 ? unidad : null,
-    cantidad: Number.parseFloat(cantidadRaw) || 0,
-    precio_unitario: Number.parseFloat(precioRaw) || 0,
+    // No permitir cantidades ni precios negativos.
+    cantidad: Math.max(0, Number.parseFloat(cantidadRaw) || 0),
+    precio_unitario: Math.max(0, Number.parseFloat(precioRaw) || 0),
     orden: Number.parseInt(ordenRaw, 10) || 0,
   };
 }

@@ -6,7 +6,9 @@ import Contador from '../../vincular/contador';
 import { generarCodigoAccesoClienteAction } from '../actions';
 
 function formatCodigo(code: string): string {
-  return `${code.slice(0, 3)}-${code.slice(3)}`;
+  // Parte a la mitad para leer/dictar mejor (p.ej. 8 dígitos → "1234-5678").
+  const mid = Math.ceil(code.length / 2);
+  return `${code.slice(0, mid)}-${code.slice(mid)}`;
 }
 
 export default function CodigoAcceso({
