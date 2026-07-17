@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button, Field, Input } from '@/components/ui';
+import { Turnstile, captchaConfigurado } from './turnstile';
 
 type Modo = 'login' | 'registro';
 
@@ -54,6 +55,9 @@ const ERRORES: Record<string, string> = {
 };
 
 function traducirError(msg: string): string {
+  if (msg.toLowerCase().includes('captcha')) {
+    return 'La verificación de seguridad falló. Recárgala e intenta de nuevo.';
+  }
   return ERRORES[msg] ?? msg;
 }
 
@@ -65,6 +69,14 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+
+  // Tras un intento fallido el token de Turnstile ya se consumió: se descarta y
+  // se recarga el widget para obtener uno nuevo.
+  function resetCaptcha() {
+    setCaptchaToken(null);
+    if (typeof window !== 'undefined') window.turnstile?.reset();
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -74,10 +86,15 @@ export default function LoginPage() {
     const supabase = createClient();
 
     if (modo === 'registro') {
-      const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { captchaToken: captchaToken ?? undefined },
+      });
       setLoading(false);
       if (signUpError) {
         setError(traducirError(signUpError.message));
+        resetCaptcha();
         return;
       }
       // Si Supabase devuelve sesión activa vamos directo a onboarding.
@@ -95,10 +112,12 @@ export default function LoginPage() {
     const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
+      options: { captchaToken: captchaToken ?? undefined },
     });
     if (signInError) {
       setLoading(false);
       setError(traducirError(signInError.message));
+      resetCaptcha();
       return;
     }
 
@@ -196,7 +215,13 @@ export default function LoginPage() {
             </p>
           )}
 
-          <Button type="submit" disabled={loading} className="w-full">
+          <Turnstile onToken={setCaptchaToken} />
+
+          <Button
+            type="submit"
+            disabled={loading || (captchaConfigurado && !captchaToken)}
+            className="w-full"
+          >
             {loading
               ? esRegistro
                 ? 'Creando cuenta…'
