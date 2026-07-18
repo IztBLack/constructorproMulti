@@ -62,7 +62,7 @@ Esto es necesario para que el login/registro y los correos funcionen con el domi
 
 - [ ] Variables de entorno configuradas en Vercel (incluida `TZ`).
 - [ ] Site URL + Redirect URLs en Supabase apuntando a producción.
-- [ ] Migraciones SQL 0001–0009 aplicadas en el proyecto Supabase (ya lo están en `vmkkkrlctakzzqebtyci`).
+- [ ] Migraciones SQL 0001–0010 aplicadas en el proyecto Supabase (ya lo están en `vmkkkrlctakzzqebtyci`).
 - [ ] Crear el primer usuario admin: registrarse en `/login` → onboarding crea la empresa.
 - [ ] Probar el flujo completo: admin crea obra/cotización → cliente se vincula con código → ve solo lo suyo.
 - [ ] (Opcional) Dominio propio configurado.
