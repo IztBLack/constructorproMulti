@@ -6,6 +6,8 @@ export { Badge } from './Badge';
 export type { BadgeTone } from './Badge';
 export { EmptyState } from './EmptyState';
 export { TableContainer, THead, Th, TBody, Tr, Td, RowLink } from './Table';
+export { DataTable } from './DataTable';
+export type { DataColumn } from './DataTable';
 export { Field, Input, Select, Textarea } from './Field';
 export { Modal } from './Modal';
 export type { ModalSize } from './Modal';

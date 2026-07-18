@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { Badge, Card, CardTitle, EmptyState, LinkButton, PageHeader, TableContainer, TBody, Td, Th, THead, Tr } from '@/components/ui';
+import { Badge, Card, CardTitle, DataTable, EmptyState, LinkButton, PageHeader, type DataColumn } from '@/components/ui';
 import { getObra } from '@/lib/data/obras';
 import {
   calcularNomina,
@@ -14,6 +14,54 @@ import { formatCurrency, formatDate } from '@/lib/data/format';
 import ObraTabs from '../_obra-tabs';
 
 export const dynamic = 'force-dynamic';
+
+type ItemNomina = NonNullable<ReturnType<typeof calcularNomina>>['items'][number];
+
+const COLUMNAS_NOMINA: DataColumn<ItemNomina>[] = [
+  { key: 'colaborador', header: 'Colaborador', primary: true, cell: (i) => i.colaborador.nombre },
+  { key: 'puesto', header: 'Puesto', cell: (i) => i.puestoNombre },
+  {
+    key: 'tipo',
+    header: 'Tipo de pago',
+    cell: (i) => (
+      <Badge tone={i.colaborador.tipo_pago === 'DESTAJO' ? 'purple' : 'blue'}>
+        {i.colaborador.tipo_pago === 'DESTAJO' ? 'Destajo' : 'Por día'}
+      </Badge>
+    ),
+  },
+  {
+    key: 'dias',
+    header: 'Días / Destajos',
+    align: 'right',
+    cell: (i) => (
+      <span className="tabular-nums">
+        {i.colaborador.tipo_pago === 'DESTAJO'
+          ? formatCurrency(i.totalDestajos)
+          : i.totalDias.toFixed(2)}
+      </span>
+    ),
+  },
+  {
+    key: 'base',
+    header: 'Salario base',
+    align: 'right',
+    cell: (i) => (
+      <span className="tabular-nums">
+        {i.colaborador.tipo_pago === 'DESTAJO' ? '—' : formatCurrency(i.salarioBaseCalculado)}
+      </span>
+    ),
+  },
+  {
+    key: 'total',
+    header: 'Total a pagar',
+    align: 'right',
+    cell: (i) => (
+      <span className="tabular-nums font-semibold text-neutral-900">
+        {formatCurrency(i.totalPagar)}
+      </span>
+    ),
+  },
+];
 
 export default async function NominaObraPage({
   params,
@@ -117,40 +165,11 @@ export default async function NominaObraPage({
                 description="Asigna colaboradores desde la sección Equipo."
               />
             ) : (
-              <TableContainer>
-                <THead>
-                  <Th>Colaborador</Th>
-                  <Th>Puesto</Th>
-                  <Th>Tipo de pago</Th>
-                  <Th className="text-right">Días / Destajos</Th>
-                  <Th className="text-right">Salario base</Th>
-                  <Th className="text-right">Total a pagar</Th>
-                </THead>
-                <TBody>
-                  {summary.items.map((item) => (
-                    <Tr key={item.colaborador.id}>
-                      <Td className="font-medium text-neutral-900">{item.colaborador.nombre}</Td>
-                      <Td>{item.puestoNombre}</Td>
-                      <Td>
-                        <Badge tone={item.colaborador.tipo_pago === 'DESTAJO' ? 'purple' : 'blue'}>
-                          {item.colaborador.tipo_pago === 'DESTAJO' ? 'Destajo' : 'Por día'}
-                        </Badge>
-                      </Td>
-                      <Td className="text-right tabular-nums">
-                        {item.colaborador.tipo_pago === 'DESTAJO'
-                          ? formatCurrency(item.totalDestajos)
-                          : item.totalDias.toFixed(2)}
-                      </Td>
-                      <Td className="text-right tabular-nums">
-                        {item.colaborador.tipo_pago === 'DESTAJO' ? '—' : formatCurrency(item.salarioBaseCalculado)}
-                      </Td>
-                      <Td className="text-right tabular-nums font-semibold text-neutral-900">
-                        {formatCurrency(item.totalPagar)}
-                      </Td>
-                    </Tr>
-                  ))}
-                </TBody>
-              </TableContainer>
+              <DataTable
+                columns={COLUMNAS_NOMINA}
+                rows={summary.items}
+                rowKey={(item) => item.colaborador.id}
+              />
             )}
           </section>
         </>

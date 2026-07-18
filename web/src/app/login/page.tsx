@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button, Field, Input } from '@/components/ui';
 import { Turnstile, captchaConfigurado } from './turnstile';
@@ -61,9 +61,14 @@ function traducirError(msg: string): string {
   return ERRORES[msg] ?? msg;
 }
 
-export default function LoginPage() {
+function LoginInner() {
   const router = useRouter();
-  const [modo, setModo] = useState<Modo>('login');
+  const searchParams = useSearchParams();
+  // El modo inicial respeta la intención del usuario: si llega desde un enlace
+  // "Crear cuenta" (?modo=registro), abre en registro; en cualquier otro caso,
+  // inicia en "iniciar sesión".
+  const modoInicial: Modo = searchParams.get('modo') === 'registro' ? 'registro' : 'login';
+  const [modo, setModo] = useState<Modo>(modoInicial);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -233,5 +238,18 @@ export default function LoginPage() {
         </form>
       </div>
     </main>
+  );
+}
+
+/**
+ * `useSearchParams` obliga a un límite de `<Suspense>` en rutas prerenderizadas
+ * (ver docs de Next: use-search-params). El fallback replica el fondo del login
+ * para evitar un salto visual mientras hidrata.
+ */
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-neutral-50" />}>
+      <LoginInner />
+    </Suspense>
   );
 }

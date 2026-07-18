@@ -1,20 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import type { Obra } from '@/lib/data/types';
 import { formatDate } from '@/lib/data/format';
-import {
-  Badge,
-  Button,
-  EmptyState,
-  TableContainer,
-  THead,
-  Th,
-  TBody,
-  Tr,
-  Td,
-} from '@/components/ui';
+import { Badge, Button, DataTable, EmptyState, type DataColumn } from '@/components/ui';
+
+const COLUMNAS: DataColumn<Obra>[] = [
+  { key: 'nombre', header: 'Nombre', primary: true, cell: (o) => o.nombre },
+  { key: 'cliente', header: 'Cliente', cell: (o) => o.cliente || '—' },
+  { key: 'ubicacion', header: 'Ubicación', cell: (o) => o.ubicacion || '—' },
+  { key: 'inicio', header: 'Inicio', cell: (o) => formatDate(o.fecha_inicio) },
+  {
+    key: 'estado',
+    header: 'Estado',
+    cell: (o) => (
+      <Badge tone={o.activa ? 'green' : 'neutral'}>{o.activa ? 'Activa' : 'Inactiva'}</Badge>
+    ),
+  },
+];
 
 export default function BuscadorObras({
   obras,
@@ -65,34 +68,13 @@ export default function BuscadorObras({
           }
         />
       ) : (
-        <TableContainer>
-          <THead>
-            <Th>Nombre</Th>
-            <Th>Cliente</Th>
-            <Th>Ubicación</Th>
-            <Th>Inicio</Th>
-            <Th>Estado</Th>
-          </THead>
-          <TBody>
-            {filtradas.map((o) => (
-              <Tr key={o.id}>
-                <Td className="font-medium text-neutral-900">
-                  <Link href={`/admin/obras/${o.id}`} className="hover:underline">
-                    {o.nombre}
-                  </Link>
-                </Td>
-                <Td>{o.cliente || '—'}</Td>
-                <Td>{o.ubicacion || '—'}</Td>
-                <Td>{formatDate(o.fecha_inicio)}</Td>
-                <Td>
-                  <Badge tone={o.activa ? 'green' : 'neutral'}>
-                    {o.activa ? 'Activa' : 'Inactiva'}
-                  </Badge>
-                </Td>
-              </Tr>
-            ))}
-          </TBody>
-        </TableContainer>
+        <DataTable
+          columns={COLUMNAS}
+          rows={filtradas}
+          rowKey={(o) => o.id}
+          href={(o) => `/admin/obras/${o.id}`}
+          rowLabel={(o) => `Ver obra ${o.nombre}`}
+        />
       )}
     </div>
   );

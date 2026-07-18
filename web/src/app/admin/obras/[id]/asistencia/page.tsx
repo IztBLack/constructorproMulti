@@ -125,17 +125,31 @@ export default async function AsistenciaObraPage({
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-medium text-neutral-700">Cuadrícula semanal</h2>
-            <p className="text-xs text-neutral-400">
+            <p className="hidden text-xs text-neutral-400 md:block">
               Clic para cambiar: · sin registro → ½ medio → ¾ → 1 completa
             </p>
           </div>
 
-          <CuadriculaAsistencia
-            obraId={id}
-            colaboradores={colaboradores}
-            dias={dias}
-            fraccionesIniciales={fraccionesIniciales}
-          />
+          {/* La cuadrícula es una matriz (colaboradores × días): no se comprime bien
+              a un teléfono. En pantallas chicas mostramos un aviso en lugar de una
+              tabla peleada; la captura de campo vive en la app móvil nativa. */}
+          <div className="rounded-xl border border-neutral-200 bg-white p-6 text-center md:hidden">
+            <p className="font-medium text-neutral-900">
+              El pase de lista se ve mejor en una pantalla más grande
+            </p>
+            <p className="mt-1 text-sm text-neutral-500">
+              Ábrelo desde una laptop, o captura la asistencia desde la app en tu celular.
+            </p>
+          </div>
+
+          <div className="hidden md:block">
+            <CuadriculaAsistencia
+              obraId={id}
+              colaboradores={colaboradores}
+              dias={dias}
+              fraccionesIniciales={fraccionesIniciales}
+            />
+          </div>
         </section>
       )}
     </div>

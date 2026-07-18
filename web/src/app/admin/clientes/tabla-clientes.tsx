@@ -1,38 +1,32 @@
 'use client';
 
-import Link from 'next/link';
-import { Badge, TableContainer, THead, Th, TBody, Tr, Td } from '@/components/ui';
+import { Badge, DataTable, type DataColumn } from '@/components/ui';
 import type { Cliente } from '@/lib/data/types';
+
+const COLUMNAS: DataColumn<Cliente>[] = [
+  { key: 'nombre', header: 'Nombre', primary: true, cell: (c) => c.nombre },
+  { key: 'email', header: 'Correo', cell: (c) => c.email || '—' },
+  { key: 'telefono', header: 'Teléfono', cell: (c) => c.telefono || '—' },
+  {
+    key: 'acceso',
+    header: 'Acceso al portal',
+    cell: (c) =>
+      c.user_id ? (
+        <Badge tone="green">Vinculado</Badge>
+      ) : (
+        <Badge tone="neutral">Sin acceso</Badge>
+      ),
+  },
+];
 
 export default function TablaClientes({ clientes }: { clientes: Cliente[] }) {
   return (
-    <TableContainer>
-      <THead>
-        <Th>Nombre</Th>
-        <Th>Correo</Th>
-        <Th>Teléfono</Th>
-        <Th>Acceso al portal</Th>
-      </THead>
-      <TBody>
-        {clientes.map((c) => (
-          <Tr key={c.id}>
-            <Td className="font-medium text-neutral-900">
-              <Link href={`/admin/clientes/${c.id}`} className="hover:underline">
-                {c.nombre}
-              </Link>
-            </Td>
-            <Td className="text-neutral-600">{c.email || '—'}</Td>
-            <Td className="text-neutral-600">{c.telefono || '—'}</Td>
-            <Td>
-              {c.user_id ? (
-                <Badge tone="green">Vinculado</Badge>
-              ) : (
-                <Badge tone="neutral">Sin acceso</Badge>
-              )}
-            </Td>
-          </Tr>
-        ))}
-      </TBody>
-    </TableContainer>
+    <DataTable
+      columns={COLUMNAS}
+      rows={clientes}
+      rowKey={(c) => c.id}
+      href={(c) => `/admin/clientes/${c.id}`}
+      rowLabel={(c) => `Ver cliente ${c.nombre}`}
+    />
   );
 }
