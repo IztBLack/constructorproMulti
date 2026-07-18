@@ -47,11 +47,15 @@ class AsistenciaRepository {
   }
 
   /// Registra/actualiza la fracción de un colaborador en un día (índice único).
+  /// [cuadrillaId] es opcional y solo ETIQUETA la fila (agrupa el pase de lista
+  /// para reportes); no afecta el cálculo de nómina. Se sella con la cuadrilla
+  /// vigente del colaborador al momento de capturar.
   Future<void> setFraccion({
     required String obraId,
     required String colaboradorId,
     required int fecha,
     required double fraccion,
+    String? cuadrillaId,
   }) async {
     final existing = await (db.select(db.asistencias)
           ..where((t) =>
@@ -61,7 +65,8 @@ class AsistenciaRepository {
         .getSingleOrNull();
     if (existing != null) {
       await (db.update(db.asistencias)..where((t) => t.id.equals(existing.id)))
-          .write(AsistenciasCompanion(fraccion: Value(fraccion)));
+          .write(AsistenciasCompanion(
+              fraccion: Value(fraccion), cuadrillaId: Value(cuadrillaId)));
     } else {
       await db.into(db.asistencias).insert(AsistenciasCompanion.insert(
             id: _uuid.v4(),
@@ -69,6 +74,7 @@ class AsistenciaRepository {
             obraId: obraId,
             fecha: fecha,
             fraccion: fraccion,
+            cuadrillaId: Value(cuadrillaId),
           ));
     }
   }
@@ -93,6 +99,7 @@ class DestajoRepository {
     required int fecha,
     required String concepto,
     required double monto,
+    String? cuadrillaId,
   }) =>
       db.into(db.destajos).insert(DestajosCompanion.insert(
             id: _uuid.v4(),
@@ -101,7 +108,37 @@ class DestajoRepository {
             fecha: fecha,
             concepto: concepto,
             monto: monto,
+            cuadrillaId: Value(cuadrillaId),
           ));
+
+  /// Registra una BOLSA de destajo de cuadrilla ya repartida: genera UNA fila de
+  /// `destajos` por miembro con su monto, todas etiquetadas con el mismo
+  /// [cuadrillaId] y [concepto]. La nómina las suma por colaborador sin cambios
+  /// (el destajo sigue siendo por fila; `cuadrilla_id` solo agrupa la bolsa).
+  /// El repartidor (UI) garantiza que la suma de montos = total de la bolsa.
+  Future<void> registrarBolsaCuadrilla({
+    required String obraId,
+    required String cuadrillaId,
+    required int fecha,
+    required String concepto,
+    required List<({String colaboradorId, double monto})> reparto,
+  }) =>
+      db.batch((b) {
+        for (final r in reparto) {
+          b.insert(
+            db.destajos,
+            DestajosCompanion.insert(
+              id: _uuid.v4(),
+              colaboradorId: r.colaboradorId,
+              obraId: obraId,
+              fecha: fecha,
+              concepto: concepto,
+              monto: r.monto,
+              cuadrillaId: Value(cuadrillaId),
+            ),
+          );
+        }
+      });
 
   Future<void> delete(String id) {
     final now = DateTime.now().millisecondsSinceEpoch;

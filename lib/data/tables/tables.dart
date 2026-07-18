@@ -102,6 +102,11 @@ class Asistencias extends Table with SyncCols {
   IntColumn get fecha => integer()();
   RealColumn get fraccion => real()(); // 0.0, 0.5, 0.75, 1.0
 
+  /// Cuadrilla bajo la que se capturó (opcional). El dato de asistencia sigue
+  /// siendo INDIVIDUAL; esto solo agrupa el pase de lista para reportes. Null
+  /// en filas previas a la migración v7 y cuando el colaborador no trae cuadrilla.
+  TextColumn get cuadrillaId => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 
@@ -118,6 +123,65 @@ class Destajos extends Table with SyncCols {
   IntColumn get fecha => integer()();
   TextColumn get concepto => text()();
   RealColumn get monto => real()();
+
+  /// Cuadrilla a la que se atribuye el destajo (opcional). Habilita a futuro la
+  /// "bolsa de cuadrilla" que el cabo reparte. El monto sigue siendo por fila
+  /// (individual); esto solo etiqueta el grupo. Null en filas previas a v7.
+  TextColumn get cuadrillaId => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Cuadrilla = equipo de colaboradores por especialidad, con un jefe (cabo).
+/// Es GLOBAL por empresa (identidad estable) y se asigna a obras vía
+/// [AsignacionCuadrillaObra], de modo que rota entre obras conservando historial.
+@DataClassName('Cuadrilla')
+class Cuadrillas extends Table with SyncCols {
+  TextColumn get id => text()();
+  TextColumn get nombre => text()();
+
+  /// Oficio de la cuadrilla: "ALBANILERIA" | "ACERO" | "CIMBRA" |
+  /// "INSTALACIONES" | "ACABADOS" | "MIXTA". Texto (no enum en BD) para no
+  /// romper el sync si se agregan especialidades nuevas.
+  TextColumn get especialidad =>
+      text().withDefault(const Constant('MIXTA'))();
+
+  /// El cabo/jefe de cuadrilla. Es un colaborador; debería existir también como
+  /// fila en [CuadrillaMiembro]. Nullable: una cuadrilla puede quedar sin jefe
+  /// asignado temporalmente.
+  TextColumn get jefeColaboradorId => text().nullable()();
+
+  BoolColumn get activa => boolean().withDefault(const Constant(true))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Membresía N:M colaborador ↔ cuadrilla CON HISTORIAL (clon de
+/// [ObraColaborador]). `fechaSalida` null = miembro vigente. Permite que un
+/// colaborador rote de cuadrilla entre proyectos sin perder el histórico.
+class CuadrillaMiembro extends Table with SyncCols {
+  TextColumn get cuadrillaId => text()();
+  TextColumn get colaboradorId => text()();
+  IntColumn get fechaIngreso => integer()();
+  IntColumn get fechaSalida => integer().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {cuadrillaId, colaboradorId};
+}
+
+/// Asignación temporal de una cuadrilla a una obra (la cuadrilla rota entre
+/// obras según la fase). `fechaFin` null = asignación vigente.
+class AsignacionCuadrillaObra extends Table with SyncCols {
+  TextColumn get id => text()();
+  TextColumn get cuadrillaId => text()();
+  TextColumn get obraId => text()();
+  IntColumn get fechaInicio => integer()();
+  IntColumn get fechaFin => integer().nullable()();
+
+  /// Frente/fase opcional dentro de la obra (ej. "cimbra", "acabados").
+  TextColumn get fase => text().withDefault(const Constant(''))();
 
   @override
   Set<Column> get primaryKey => {id};

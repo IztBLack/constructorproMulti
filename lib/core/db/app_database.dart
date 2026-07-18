@@ -19,6 +19,9 @@ part 'app_database.g.dart';
   ObraColaborador,
   Asistencias,
   Destajos,
+  Cuadrillas,
+  CuadrillaMiembro,
+  AsignacionCuadrillaObra,
   Cotizaciones,
   Secciones,
   Partidas,
@@ -37,7 +40,7 @@ class AppDatabase extends _$AppDatabase {
   static const _uuid = Uuid();
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -166,6 +169,43 @@ class AppDatabase extends _$AppDatabase {
             // Recrea los triggers para que incluyan la columna nueva.
             await _instalarTriggersSync();
           }
+          // v6 → v7: cuadrillas. Tablas nuevas (cuadrillas, cuadrilla_miembro,
+          // asignacion_cuadrilla_obra) + columna `cuadrilla_id` nullable en
+          // asistencias y destajos. Todo ADITIVO: createTable + addColumn con
+          // default/nullable → sin backfill; las filas previas quedan intactas.
+          if (from < 7) {
+            Future<bool> tablaExiste(String name) => m.database
+                .customSelect(
+                  "SELECT 1 FROM sqlite_master WHERE type='table' AND name='$name'",
+                )
+                .get()
+                .then((rows) => rows.isNotEmpty);
+            Future<bool> columnaExiste(String tabla, String col) => m.database
+                .customSelect(
+                  "SELECT 1 FROM pragma_table_info('$tabla') WHERE name='$col'",
+                )
+                .get()
+                .then((rows) => rows.isNotEmpty);
+
+            if (!await tablaExiste('cuadrillas')) {
+              await m.createTable(cuadrillas);
+            }
+            if (!await tablaExiste('cuadrilla_miembro')) {
+              await m.createTable(cuadrillaMiembro);
+            }
+            if (!await tablaExiste('asignacion_cuadrilla_obra')) {
+              await m.createTable(asignacionCuadrillaObra);
+            }
+            if (!await columnaExiste('asistencias', 'cuadrilla_id')) {
+              await m.addColumn(asistencias, asistencias.cuadrillaId);
+            }
+            if (!await columnaExiste('destajos', 'cuadrilla_id')) {
+              await m.addColumn(destajos, destajos.cuadrillaId);
+            }
+            // Recrea los triggers para cubrir las tablas/columnas nuevas
+            // (createTable NO instala el trigger mark_pending).
+            await _instalarTriggersSync();
+          }
         },
       );
 
@@ -260,6 +300,9 @@ class AppDatabase extends _$AppDatabase {
       'obra_colaborador',
       'asistencias',
       'destajos',
+      'cuadrillas',
+      'cuadrilla_miembro',
+      'asignacion_cuadrilla_obra',
       'cotizaciones',
       'secciones',
       'partidas',

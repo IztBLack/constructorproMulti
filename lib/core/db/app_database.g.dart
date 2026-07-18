@@ -3328,6 +3328,17 @@ class $AsistenciasTable extends Asistencias
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _cuadrillaIdMeta = const VerificationMeta(
+    'cuadrillaId',
+  );
+  @override
+  late final GeneratedColumn<String> cuadrillaId = GeneratedColumn<String>(
+    'cuadrilla_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     empresaId,
@@ -3341,6 +3352,7 @@ class $AsistenciasTable extends Asistencias
     obraId,
     fecha,
     fraccion,
+    cuadrillaId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3433,6 +3445,15 @@ class $AsistenciasTable extends Asistencias
     } else if (isInserting) {
       context.missing(_fraccionMeta);
     }
+    if (data.containsKey('cuadrilla_id')) {
+      context.handle(
+        _cuadrillaIdMeta,
+        cuadrillaId.isAcceptableOrUnknown(
+          data['cuadrilla_id']!,
+          _cuadrillaIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -3490,6 +3511,10 @@ class $AsistenciasTable extends Asistencias
         DriftSqlType.double,
         data['${effectivePrefix}fraccion'],
       )!,
+      cuadrillaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cuadrilla_id'],
+      ),
     );
   }
 
@@ -3522,6 +3547,11 @@ class Asistencia extends DataClass implements Insertable<Asistencia> {
   final String obraId;
   final int fecha;
   final double fraccion;
+
+  /// Cuadrilla bajo la que se capturó (opcional). El dato de asistencia sigue
+  /// siendo INDIVIDUAL; esto solo agrupa el pase de lista para reportes. Null
+  /// en filas previas a la migración v7 y cuando el colaborador no trae cuadrilla.
+  final String? cuadrillaId;
   const Asistencia({
     required this.empresaId,
     required this.createdAt,
@@ -3534,6 +3564,7 @@ class Asistencia extends DataClass implements Insertable<Asistencia> {
     required this.obraId,
     required this.fecha,
     required this.fraccion,
+    this.cuadrillaId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3553,6 +3584,9 @@ class Asistencia extends DataClass implements Insertable<Asistencia> {
     map['obra_id'] = Variable<String>(obraId);
     map['fecha'] = Variable<int>(fecha);
     map['fraccion'] = Variable<double>(fraccion);
+    if (!nullToAbsent || cuadrillaId != null) {
+      map['cuadrilla_id'] = Variable<String>(cuadrillaId);
+    }
     return map;
   }
 
@@ -3573,6 +3607,9 @@ class Asistencia extends DataClass implements Insertable<Asistencia> {
       obraId: Value(obraId),
       fecha: Value(fecha),
       fraccion: Value(fraccion),
+      cuadrillaId: cuadrillaId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cuadrillaId),
     );
   }
 
@@ -3593,6 +3630,7 @@ class Asistencia extends DataClass implements Insertable<Asistencia> {
       obraId: serializer.fromJson<String>(json['obraId']),
       fecha: serializer.fromJson<int>(json['fecha']),
       fraccion: serializer.fromJson<double>(json['fraccion']),
+      cuadrillaId: serializer.fromJson<String?>(json['cuadrillaId']),
     );
   }
   @override
@@ -3610,6 +3648,7 @@ class Asistencia extends DataClass implements Insertable<Asistencia> {
       'obraId': serializer.toJson<String>(obraId),
       'fecha': serializer.toJson<int>(fecha),
       'fraccion': serializer.toJson<double>(fraccion),
+      'cuadrillaId': serializer.toJson<String?>(cuadrillaId),
     };
   }
 
@@ -3625,6 +3664,7 @@ class Asistencia extends DataClass implements Insertable<Asistencia> {
     String? obraId,
     int? fecha,
     double? fraccion,
+    Value<String?> cuadrillaId = const Value.absent(),
   }) => Asistencia(
     empresaId: empresaId ?? this.empresaId,
     createdAt: createdAt ?? this.createdAt,
@@ -3639,6 +3679,7 @@ class Asistencia extends DataClass implements Insertable<Asistencia> {
     obraId: obraId ?? this.obraId,
     fecha: fecha ?? this.fecha,
     fraccion: fraccion ?? this.fraccion,
+    cuadrillaId: cuadrillaId.present ? cuadrillaId.value : this.cuadrillaId,
   );
   Asistencia copyWithCompanion(AsistenciasCompanion data) {
     return Asistencia(
@@ -3659,6 +3700,9 @@ class Asistencia extends DataClass implements Insertable<Asistencia> {
       obraId: data.obraId.present ? data.obraId.value : this.obraId,
       fecha: data.fecha.present ? data.fecha.value : this.fecha,
       fraccion: data.fraccion.present ? data.fraccion.value : this.fraccion,
+      cuadrillaId: data.cuadrillaId.present
+          ? data.cuadrillaId.value
+          : this.cuadrillaId,
     );
   }
 
@@ -3675,7 +3719,8 @@ class Asistencia extends DataClass implements Insertable<Asistencia> {
           ..write('colaboradorId: $colaboradorId, ')
           ..write('obraId: $obraId, ')
           ..write('fecha: $fecha, ')
-          ..write('fraccion: $fraccion')
+          ..write('fraccion: $fraccion, ')
+          ..write('cuadrillaId: $cuadrillaId')
           ..write(')'))
         .toString();
   }
@@ -3693,6 +3738,7 @@ class Asistencia extends DataClass implements Insertable<Asistencia> {
     obraId,
     fecha,
     fraccion,
+    cuadrillaId,
   );
   @override
   bool operator ==(Object other) =>
@@ -3708,7 +3754,8 @@ class Asistencia extends DataClass implements Insertable<Asistencia> {
           other.colaboradorId == this.colaboradorId &&
           other.obraId == this.obraId &&
           other.fecha == this.fecha &&
-          other.fraccion == this.fraccion);
+          other.fraccion == this.fraccion &&
+          other.cuadrillaId == this.cuadrillaId);
 }
 
 class AsistenciasCompanion extends UpdateCompanion<Asistencia> {
@@ -3723,6 +3770,7 @@ class AsistenciasCompanion extends UpdateCompanion<Asistencia> {
   final Value<String> obraId;
   final Value<int> fecha;
   final Value<double> fraccion;
+  final Value<String?> cuadrillaId;
   final Value<int> rowid;
   const AsistenciasCompanion({
     this.empresaId = const Value.absent(),
@@ -3736,6 +3784,7 @@ class AsistenciasCompanion extends UpdateCompanion<Asistencia> {
     this.obraId = const Value.absent(),
     this.fecha = const Value.absent(),
     this.fraccion = const Value.absent(),
+    this.cuadrillaId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   AsistenciasCompanion.insert({
@@ -3750,6 +3799,7 @@ class AsistenciasCompanion extends UpdateCompanion<Asistencia> {
     required String obraId,
     required int fecha,
     required double fraccion,
+    this.cuadrillaId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        colaboradorId = Value(colaboradorId),
@@ -3768,6 +3818,7 @@ class AsistenciasCompanion extends UpdateCompanion<Asistencia> {
     Expression<String>? obraId,
     Expression<int>? fecha,
     Expression<double>? fraccion,
+    Expression<String>? cuadrillaId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -3782,6 +3833,7 @@ class AsistenciasCompanion extends UpdateCompanion<Asistencia> {
       if (obraId != null) 'obra_id': obraId,
       if (fecha != null) 'fecha': fecha,
       if (fraccion != null) 'fraccion': fraccion,
+      if (cuadrillaId != null) 'cuadrilla_id': cuadrillaId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3798,6 +3850,7 @@ class AsistenciasCompanion extends UpdateCompanion<Asistencia> {
     Value<String>? obraId,
     Value<int>? fecha,
     Value<double>? fraccion,
+    Value<String?>? cuadrillaId,
     Value<int>? rowid,
   }) {
     return AsistenciasCompanion(
@@ -3812,6 +3865,7 @@ class AsistenciasCompanion extends UpdateCompanion<Asistencia> {
       obraId: obraId ?? this.obraId,
       fecha: fecha ?? this.fecha,
       fraccion: fraccion ?? this.fraccion,
+      cuadrillaId: cuadrillaId ?? this.cuadrillaId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3852,6 +3906,9 @@ class AsistenciasCompanion extends UpdateCompanion<Asistencia> {
     if (fraccion.present) {
       map['fraccion'] = Variable<double>(fraccion.value);
     }
+    if (cuadrillaId.present) {
+      map['cuadrilla_id'] = Variable<String>(cuadrillaId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3872,6 +3929,7 @@ class AsistenciasCompanion extends UpdateCompanion<Asistencia> {
           ..write('obraId: $obraId, ')
           ..write('fecha: $fecha, ')
           ..write('fraccion: $fraccion, ')
+          ..write('cuadrillaId: $cuadrillaId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4011,6 +4069,17 @@ class $DestajosTable extends Destajos with TableInfo<$DestajosTable, Destajo> {
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _cuadrillaIdMeta = const VerificationMeta(
+    'cuadrillaId',
+  );
+  @override
+  late final GeneratedColumn<String> cuadrillaId = GeneratedColumn<String>(
+    'cuadrilla_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     empresaId,
@@ -4025,6 +4094,7 @@ class $DestajosTable extends Destajos with TableInfo<$DestajosTable, Destajo> {
     fecha,
     concepto,
     monto,
+    cuadrillaId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4125,6 +4195,15 @@ class $DestajosTable extends Destajos with TableInfo<$DestajosTable, Destajo> {
     } else if (isInserting) {
       context.missing(_montoMeta);
     }
+    if (data.containsKey('cuadrilla_id')) {
+      context.handle(
+        _cuadrillaIdMeta,
+        cuadrillaId.isAcceptableOrUnknown(
+          data['cuadrilla_id']!,
+          _cuadrillaIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -4182,6 +4261,10 @@ class $DestajosTable extends Destajos with TableInfo<$DestajosTable, Destajo> {
         DriftSqlType.double,
         data['${effectivePrefix}monto'],
       )!,
+      cuadrillaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cuadrilla_id'],
+      ),
     );
   }
 
@@ -4215,6 +4298,11 @@ class Destajo extends DataClass implements Insertable<Destajo> {
   final int fecha;
   final String concepto;
   final double monto;
+
+  /// Cuadrilla a la que se atribuye el destajo (opcional). Habilita a futuro la
+  /// "bolsa de cuadrilla" que el cabo reparte. El monto sigue siendo por fila
+  /// (individual); esto solo etiqueta el grupo. Null en filas previas a v7.
+  final String? cuadrillaId;
   const Destajo({
     required this.empresaId,
     required this.createdAt,
@@ -4228,6 +4316,7 @@ class Destajo extends DataClass implements Insertable<Destajo> {
     required this.fecha,
     required this.concepto,
     required this.monto,
+    this.cuadrillaId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4248,6 +4337,9 @@ class Destajo extends DataClass implements Insertable<Destajo> {
     map['fecha'] = Variable<int>(fecha);
     map['concepto'] = Variable<String>(concepto);
     map['monto'] = Variable<double>(monto);
+    if (!nullToAbsent || cuadrillaId != null) {
+      map['cuadrilla_id'] = Variable<String>(cuadrillaId);
+    }
     return map;
   }
 
@@ -4269,6 +4361,9 @@ class Destajo extends DataClass implements Insertable<Destajo> {
       fecha: Value(fecha),
       concepto: Value(concepto),
       monto: Value(monto),
+      cuadrillaId: cuadrillaId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cuadrillaId),
     );
   }
 
@@ -4290,6 +4385,7 @@ class Destajo extends DataClass implements Insertable<Destajo> {
       fecha: serializer.fromJson<int>(json['fecha']),
       concepto: serializer.fromJson<String>(json['concepto']),
       monto: serializer.fromJson<double>(json['monto']),
+      cuadrillaId: serializer.fromJson<String?>(json['cuadrillaId']),
     );
   }
   @override
@@ -4308,6 +4404,7 @@ class Destajo extends DataClass implements Insertable<Destajo> {
       'fecha': serializer.toJson<int>(fecha),
       'concepto': serializer.toJson<String>(concepto),
       'monto': serializer.toJson<double>(monto),
+      'cuadrillaId': serializer.toJson<String?>(cuadrillaId),
     };
   }
 
@@ -4324,6 +4421,7 @@ class Destajo extends DataClass implements Insertable<Destajo> {
     int? fecha,
     String? concepto,
     double? monto,
+    Value<String?> cuadrillaId = const Value.absent(),
   }) => Destajo(
     empresaId: empresaId ?? this.empresaId,
     createdAt: createdAt ?? this.createdAt,
@@ -4339,6 +4437,7 @@ class Destajo extends DataClass implements Insertable<Destajo> {
     fecha: fecha ?? this.fecha,
     concepto: concepto ?? this.concepto,
     monto: monto ?? this.monto,
+    cuadrillaId: cuadrillaId.present ? cuadrillaId.value : this.cuadrillaId,
   );
   Destajo copyWithCompanion(DestajosCompanion data) {
     return Destajo(
@@ -4360,6 +4459,9 @@ class Destajo extends DataClass implements Insertable<Destajo> {
       fecha: data.fecha.present ? data.fecha.value : this.fecha,
       concepto: data.concepto.present ? data.concepto.value : this.concepto,
       monto: data.monto.present ? data.monto.value : this.monto,
+      cuadrillaId: data.cuadrillaId.present
+          ? data.cuadrillaId.value
+          : this.cuadrillaId,
     );
   }
 
@@ -4377,7 +4479,8 @@ class Destajo extends DataClass implements Insertable<Destajo> {
           ..write('obraId: $obraId, ')
           ..write('fecha: $fecha, ')
           ..write('concepto: $concepto, ')
-          ..write('monto: $monto')
+          ..write('monto: $monto, ')
+          ..write('cuadrillaId: $cuadrillaId')
           ..write(')'))
         .toString();
   }
@@ -4396,6 +4499,7 @@ class Destajo extends DataClass implements Insertable<Destajo> {
     fecha,
     concepto,
     monto,
+    cuadrillaId,
   );
   @override
   bool operator ==(Object other) =>
@@ -4412,7 +4516,8 @@ class Destajo extends DataClass implements Insertable<Destajo> {
           other.obraId == this.obraId &&
           other.fecha == this.fecha &&
           other.concepto == this.concepto &&
-          other.monto == this.monto);
+          other.monto == this.monto &&
+          other.cuadrillaId == this.cuadrillaId);
 }
 
 class DestajosCompanion extends UpdateCompanion<Destajo> {
@@ -4428,6 +4533,7 @@ class DestajosCompanion extends UpdateCompanion<Destajo> {
   final Value<int> fecha;
   final Value<String> concepto;
   final Value<double> monto;
+  final Value<String?> cuadrillaId;
   final Value<int> rowid;
   const DestajosCompanion({
     this.empresaId = const Value.absent(),
@@ -4442,6 +4548,7 @@ class DestajosCompanion extends UpdateCompanion<Destajo> {
     this.fecha = const Value.absent(),
     this.concepto = const Value.absent(),
     this.monto = const Value.absent(),
+    this.cuadrillaId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DestajosCompanion.insert({
@@ -4457,6 +4564,7 @@ class DestajosCompanion extends UpdateCompanion<Destajo> {
     required int fecha,
     required String concepto,
     required double monto,
+    this.cuadrillaId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        colaboradorId = Value(colaboradorId),
@@ -4477,6 +4585,7 @@ class DestajosCompanion extends UpdateCompanion<Destajo> {
     Expression<int>? fecha,
     Expression<String>? concepto,
     Expression<double>? monto,
+    Expression<String>? cuadrillaId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -4492,6 +4601,7 @@ class DestajosCompanion extends UpdateCompanion<Destajo> {
       if (fecha != null) 'fecha': fecha,
       if (concepto != null) 'concepto': concepto,
       if (monto != null) 'monto': monto,
+      if (cuadrillaId != null) 'cuadrilla_id': cuadrillaId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4509,6 +4619,7 @@ class DestajosCompanion extends UpdateCompanion<Destajo> {
     Value<int>? fecha,
     Value<String>? concepto,
     Value<double>? monto,
+    Value<String?>? cuadrillaId,
     Value<int>? rowid,
   }) {
     return DestajosCompanion(
@@ -4524,6 +4635,7 @@ class DestajosCompanion extends UpdateCompanion<Destajo> {
       fecha: fecha ?? this.fecha,
       concepto: concepto ?? this.concepto,
       monto: monto ?? this.monto,
+      cuadrillaId: cuadrillaId ?? this.cuadrillaId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4567,6 +4679,9 @@ class DestajosCompanion extends UpdateCompanion<Destajo> {
     if (monto.present) {
       map['monto'] = Variable<double>(monto.value);
     }
+    if (cuadrillaId.present) {
+      map['cuadrilla_id'] = Variable<String>(cuadrillaId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4588,6 +4703,2077 @@ class DestajosCompanion extends UpdateCompanion<Destajo> {
           ..write('fecha: $fecha, ')
           ..write('concepto: $concepto, ')
           ..write('monto: $monto, ')
+          ..write('cuadrillaId: $cuadrillaId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CuadrillasTable extends Cuadrillas
+    with TableInfo<$CuadrillasTable, Cuadrilla> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CuadrillasTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _empresaIdMeta = const VerificationMeta(
+    'empresaId',
+  );
+  @override
+  late final GeneratedColumn<String> empresaId = GeneratedColumn<String>(
+    'empresa_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _serverUpdatedAtMeta = const VerificationMeta(
+    'serverUpdatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> serverUpdatedAt = GeneratedColumn<int>(
+    'server_updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nombreMeta = const VerificationMeta('nombre');
+  @override
+  late final GeneratedColumn<String> nombre = GeneratedColumn<String>(
+    'nombre',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _especialidadMeta = const VerificationMeta(
+    'especialidad',
+  );
+  @override
+  late final GeneratedColumn<String> especialidad = GeneratedColumn<String>(
+    'especialidad',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('MIXTA'),
+  );
+  static const VerificationMeta _jefeColaboradorIdMeta = const VerificationMeta(
+    'jefeColaboradorId',
+  );
+  @override
+  late final GeneratedColumn<String> jefeColaboradorId =
+      GeneratedColumn<String>(
+        'jefe_colaborador_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _activaMeta = const VerificationMeta('activa');
+  @override
+  late final GeneratedColumn<bool> activa = GeneratedColumn<bool>(
+    'activa',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("activa" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    id,
+    nombre,
+    especialidad,
+    jefeColaboradorId,
+    activa,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cuadrillas';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Cuadrilla> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('empresa_id')) {
+      context.handle(
+        _empresaIdMeta,
+        empresaId.isAcceptableOrUnknown(data['empresa_id']!, _empresaIdMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('server_updated_at')) {
+      context.handle(
+        _serverUpdatedAtMeta,
+        serverUpdatedAt.isAcceptableOrUnknown(
+          data['server_updated_at']!,
+          _serverUpdatedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('nombre')) {
+      context.handle(
+        _nombreMeta,
+        nombre.isAcceptableOrUnknown(data['nombre']!, _nombreMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nombreMeta);
+    }
+    if (data.containsKey('especialidad')) {
+      context.handle(
+        _especialidadMeta,
+        especialidad.isAcceptableOrUnknown(
+          data['especialidad']!,
+          _especialidadMeta,
+        ),
+      );
+    }
+    if (data.containsKey('jefe_colaborador_id')) {
+      context.handle(
+        _jefeColaboradorIdMeta,
+        jefeColaboradorId.isAcceptableOrUnknown(
+          data['jefe_colaborador_id']!,
+          _jefeColaboradorIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('activa')) {
+      context.handle(
+        _activaMeta,
+        activa.isAcceptableOrUnknown(data['activa']!, _activaMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Cuadrilla map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Cuadrilla(
+      empresaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}empresa_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      serverUpdatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}server_updated_at'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      nombre: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}nombre'],
+      )!,
+      especialidad: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}especialidad'],
+      )!,
+      jefeColaboradorId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}jefe_colaborador_id'],
+      ),
+      activa: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}activa'],
+      )!,
+    );
+  }
+
+  @override
+  $CuadrillasTable createAlias(String alias) {
+    return $CuadrillasTable(attachedDatabase, alias);
+  }
+}
+
+class Cuadrilla extends DataClass implements Insertable<Cuadrilla> {
+  /// Llave multitenant + RLS. Vacío mientras no haya backend.
+  final String empresaId;
+
+  /// Alta (UTC ms). 0 en filas previas a la migración.
+  final int createdAt;
+
+  /// Última edición de cliente (UTC ms). Árbitro local de LWW + dirty flag.
+  final int updatedAt;
+
+  /// Lo pone Postgres; árbitro de LWW y cursor de pull. Null hasta sincronizar.
+  final int? serverUpdatedAt;
+
+  /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
+  final int? deletedAt;
+
+  /// 'pending' | 'synced' | 'error'.
+  final String syncStatus;
+  final String id;
+  final String nombre;
+
+  /// Oficio de la cuadrilla: "ALBANILERIA" | "ACERO" | "CIMBRA" |
+  /// "INSTALACIONES" | "ACABADOS" | "MIXTA". Texto (no enum en BD) para no
+  /// romper el sync si se agregan especialidades nuevas.
+  final String especialidad;
+
+  /// El cabo/jefe de cuadrilla. Es un colaborador; debería existir también como
+  /// fila en [CuadrillaMiembro]. Nullable: una cuadrilla puede quedar sin jefe
+  /// asignado temporalmente.
+  final String? jefeColaboradorId;
+  final bool activa;
+  const Cuadrilla({
+    required this.empresaId,
+    required this.createdAt,
+    required this.updatedAt,
+    this.serverUpdatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.id,
+    required this.nombre,
+    required this.especialidad,
+    this.jefeColaboradorId,
+    required this.activa,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['empresa_id'] = Variable<String>(empresaId);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || serverUpdatedAt != null) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    map['id'] = Variable<String>(id);
+    map['nombre'] = Variable<String>(nombre);
+    map['especialidad'] = Variable<String>(especialidad);
+    if (!nullToAbsent || jefeColaboradorId != null) {
+      map['jefe_colaborador_id'] = Variable<String>(jefeColaboradorId);
+    }
+    map['activa'] = Variable<bool>(activa);
+    return map;
+  }
+
+  CuadrillasCompanion toCompanion(bool nullToAbsent) {
+    return CuadrillasCompanion(
+      empresaId: Value(empresaId),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      serverUpdatedAt: serverUpdatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverUpdatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      id: Value(id),
+      nombre: Value(nombre),
+      especialidad: Value(especialidad),
+      jefeColaboradorId: jefeColaboradorId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(jefeColaboradorId),
+      activa: Value(activa),
+    );
+  }
+
+  factory Cuadrilla.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Cuadrilla(
+      empresaId: serializer.fromJson<String>(json['empresaId']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      serverUpdatedAt: serializer.fromJson<int?>(json['serverUpdatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      id: serializer.fromJson<String>(json['id']),
+      nombre: serializer.fromJson<String>(json['nombre']),
+      especialidad: serializer.fromJson<String>(json['especialidad']),
+      jefeColaboradorId: serializer.fromJson<String?>(
+        json['jefeColaboradorId'],
+      ),
+      activa: serializer.fromJson<bool>(json['activa']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'empresaId': serializer.toJson<String>(empresaId),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'serverUpdatedAt': serializer.toJson<int?>(serverUpdatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'id': serializer.toJson<String>(id),
+      'nombre': serializer.toJson<String>(nombre),
+      'especialidad': serializer.toJson<String>(especialidad),
+      'jefeColaboradorId': serializer.toJson<String?>(jefeColaboradorId),
+      'activa': serializer.toJson<bool>(activa),
+    };
+  }
+
+  Cuadrilla copyWith({
+    String? empresaId,
+    int? createdAt,
+    int? updatedAt,
+    Value<int?> serverUpdatedAt = const Value.absent(),
+    Value<int?> deletedAt = const Value.absent(),
+    String? syncStatus,
+    String? id,
+    String? nombre,
+    String? especialidad,
+    Value<String?> jefeColaboradorId = const Value.absent(),
+    bool? activa,
+  }) => Cuadrilla(
+    empresaId: empresaId ?? this.empresaId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    serverUpdatedAt: serverUpdatedAt.present
+        ? serverUpdatedAt.value
+        : this.serverUpdatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    id: id ?? this.id,
+    nombre: nombre ?? this.nombre,
+    especialidad: especialidad ?? this.especialidad,
+    jefeColaboradorId: jefeColaboradorId.present
+        ? jefeColaboradorId.value
+        : this.jefeColaboradorId,
+    activa: activa ?? this.activa,
+  );
+  Cuadrilla copyWithCompanion(CuadrillasCompanion data) {
+    return Cuadrilla(
+      empresaId: data.empresaId.present ? data.empresaId.value : this.empresaId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      serverUpdatedAt: data.serverUpdatedAt.present
+          ? data.serverUpdatedAt.value
+          : this.serverUpdatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      id: data.id.present ? data.id.value : this.id,
+      nombre: data.nombre.present ? data.nombre.value : this.nombre,
+      especialidad: data.especialidad.present
+          ? data.especialidad.value
+          : this.especialidad,
+      jefeColaboradorId: data.jefeColaboradorId.present
+          ? data.jefeColaboradorId.value
+          : this.jefeColaboradorId,
+      activa: data.activa.present ? data.activa.value : this.activa,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Cuadrilla(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('id: $id, ')
+          ..write('nombre: $nombre, ')
+          ..write('especialidad: $especialidad, ')
+          ..write('jefeColaboradorId: $jefeColaboradorId, ')
+          ..write('activa: $activa')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    id,
+    nombre,
+    especialidad,
+    jefeColaboradorId,
+    activa,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Cuadrilla &&
+          other.empresaId == this.empresaId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.serverUpdatedAt == this.serverUpdatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.id == this.id &&
+          other.nombre == this.nombre &&
+          other.especialidad == this.especialidad &&
+          other.jefeColaboradorId == this.jefeColaboradorId &&
+          other.activa == this.activa);
+}
+
+class CuadrillasCompanion extends UpdateCompanion<Cuadrilla> {
+  final Value<String> empresaId;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int?> serverUpdatedAt;
+  final Value<int?> deletedAt;
+  final Value<String> syncStatus;
+  final Value<String> id;
+  final Value<String> nombre;
+  final Value<String> especialidad;
+  final Value<String?> jefeColaboradorId;
+  final Value<bool> activa;
+  final Value<int> rowid;
+  const CuadrillasCompanion({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.id = const Value.absent(),
+    this.nombre = const Value.absent(),
+    this.especialidad = const Value.absent(),
+    this.jefeColaboradorId = const Value.absent(),
+    this.activa = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CuadrillasCompanion.insert({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String id,
+    required String nombre,
+    this.especialidad = const Value.absent(),
+    this.jefeColaboradorId = const Value.absent(),
+    this.activa = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       nombre = Value(nombre);
+  static Insertable<Cuadrilla> custom({
+    Expression<String>? empresaId,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? serverUpdatedAt,
+    Expression<int>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? id,
+    Expression<String>? nombre,
+    Expression<String>? especialidad,
+    Expression<String>? jefeColaboradorId,
+    Expression<bool>? activa,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (empresaId != null) 'empresa_id': empresaId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (serverUpdatedAt != null) 'server_updated_at': serverUpdatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (id != null) 'id': id,
+      if (nombre != null) 'nombre': nombre,
+      if (especialidad != null) 'especialidad': especialidad,
+      if (jefeColaboradorId != null) 'jefe_colaborador_id': jefeColaboradorId,
+      if (activa != null) 'activa': activa,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CuadrillasCompanion copyWith({
+    Value<String>? empresaId,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int?>? serverUpdatedAt,
+    Value<int?>? deletedAt,
+    Value<String>? syncStatus,
+    Value<String>? id,
+    Value<String>? nombre,
+    Value<String>? especialidad,
+    Value<String?>? jefeColaboradorId,
+    Value<bool>? activa,
+    Value<int>? rowid,
+  }) {
+    return CuadrillasCompanion(
+      empresaId: empresaId ?? this.empresaId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      id: id ?? this.id,
+      nombre: nombre ?? this.nombre,
+      especialidad: especialidad ?? this.especialidad,
+      jefeColaboradorId: jefeColaboradorId ?? this.jefeColaboradorId,
+      activa: activa ?? this.activa,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (empresaId.present) {
+      map['empresa_id'] = Variable<String>(empresaId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (serverUpdatedAt.present) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (nombre.present) {
+      map['nombre'] = Variable<String>(nombre.value);
+    }
+    if (especialidad.present) {
+      map['especialidad'] = Variable<String>(especialidad.value);
+    }
+    if (jefeColaboradorId.present) {
+      map['jefe_colaborador_id'] = Variable<String>(jefeColaboradorId.value);
+    }
+    if (activa.present) {
+      map['activa'] = Variable<bool>(activa.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CuadrillasCompanion(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('id: $id, ')
+          ..write('nombre: $nombre, ')
+          ..write('especialidad: $especialidad, ')
+          ..write('jefeColaboradorId: $jefeColaboradorId, ')
+          ..write('activa: $activa, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $CuadrillaMiembroTable extends CuadrillaMiembro
+    with TableInfo<$CuadrillaMiembroTable, CuadrillaMiembroData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CuadrillaMiembroTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _empresaIdMeta = const VerificationMeta(
+    'empresaId',
+  );
+  @override
+  late final GeneratedColumn<String> empresaId = GeneratedColumn<String>(
+    'empresa_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _serverUpdatedAtMeta = const VerificationMeta(
+    'serverUpdatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> serverUpdatedAt = GeneratedColumn<int>(
+    'server_updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _cuadrillaIdMeta = const VerificationMeta(
+    'cuadrillaId',
+  );
+  @override
+  late final GeneratedColumn<String> cuadrillaId = GeneratedColumn<String>(
+    'cuadrilla_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _colaboradorIdMeta = const VerificationMeta(
+    'colaboradorId',
+  );
+  @override
+  late final GeneratedColumn<String> colaboradorId = GeneratedColumn<String>(
+    'colaborador_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fechaIngresoMeta = const VerificationMeta(
+    'fechaIngreso',
+  );
+  @override
+  late final GeneratedColumn<int> fechaIngreso = GeneratedColumn<int>(
+    'fecha_ingreso',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fechaSalidaMeta = const VerificationMeta(
+    'fechaSalida',
+  );
+  @override
+  late final GeneratedColumn<int> fechaSalida = GeneratedColumn<int>(
+    'fecha_salida',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    cuadrillaId,
+    colaboradorId,
+    fechaIngreso,
+    fechaSalida,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cuadrilla_miembro';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CuadrillaMiembroData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('empresa_id')) {
+      context.handle(
+        _empresaIdMeta,
+        empresaId.isAcceptableOrUnknown(data['empresa_id']!, _empresaIdMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('server_updated_at')) {
+      context.handle(
+        _serverUpdatedAtMeta,
+        serverUpdatedAt.isAcceptableOrUnknown(
+          data['server_updated_at']!,
+          _serverUpdatedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('cuadrilla_id')) {
+      context.handle(
+        _cuadrillaIdMeta,
+        cuadrillaId.isAcceptableOrUnknown(
+          data['cuadrilla_id']!,
+          _cuadrillaIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_cuadrillaIdMeta);
+    }
+    if (data.containsKey('colaborador_id')) {
+      context.handle(
+        _colaboradorIdMeta,
+        colaboradorId.isAcceptableOrUnknown(
+          data['colaborador_id']!,
+          _colaboradorIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_colaboradorIdMeta);
+    }
+    if (data.containsKey('fecha_ingreso')) {
+      context.handle(
+        _fechaIngresoMeta,
+        fechaIngreso.isAcceptableOrUnknown(
+          data['fecha_ingreso']!,
+          _fechaIngresoMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaIngresoMeta);
+    }
+    if (data.containsKey('fecha_salida')) {
+      context.handle(
+        _fechaSalidaMeta,
+        fechaSalida.isAcceptableOrUnknown(
+          data['fecha_salida']!,
+          _fechaSalidaMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {cuadrillaId, colaboradorId};
+  @override
+  CuadrillaMiembroData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CuadrillaMiembroData(
+      empresaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}empresa_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      serverUpdatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}server_updated_at'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      cuadrillaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cuadrilla_id'],
+      )!,
+      colaboradorId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}colaborador_id'],
+      )!,
+      fechaIngreso: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}fecha_ingreso'],
+      )!,
+      fechaSalida: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}fecha_salida'],
+      ),
+    );
+  }
+
+  @override
+  $CuadrillaMiembroTable createAlias(String alias) {
+    return $CuadrillaMiembroTable(attachedDatabase, alias);
+  }
+}
+
+class CuadrillaMiembroData extends DataClass
+    implements Insertable<CuadrillaMiembroData> {
+  /// Llave multitenant + RLS. Vacío mientras no haya backend.
+  final String empresaId;
+
+  /// Alta (UTC ms). 0 en filas previas a la migración.
+  final int createdAt;
+
+  /// Última edición de cliente (UTC ms). Árbitro local de LWW + dirty flag.
+  final int updatedAt;
+
+  /// Lo pone Postgres; árbitro de LWW y cursor de pull. Null hasta sincronizar.
+  final int? serverUpdatedAt;
+
+  /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
+  final int? deletedAt;
+
+  /// 'pending' | 'synced' | 'error'.
+  final String syncStatus;
+  final String cuadrillaId;
+  final String colaboradorId;
+  final int fechaIngreso;
+  final int? fechaSalida;
+  const CuadrillaMiembroData({
+    required this.empresaId,
+    required this.createdAt,
+    required this.updatedAt,
+    this.serverUpdatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.cuadrillaId,
+    required this.colaboradorId,
+    required this.fechaIngreso,
+    this.fechaSalida,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['empresa_id'] = Variable<String>(empresaId);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || serverUpdatedAt != null) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    map['cuadrilla_id'] = Variable<String>(cuadrillaId);
+    map['colaborador_id'] = Variable<String>(colaboradorId);
+    map['fecha_ingreso'] = Variable<int>(fechaIngreso);
+    if (!nullToAbsent || fechaSalida != null) {
+      map['fecha_salida'] = Variable<int>(fechaSalida);
+    }
+    return map;
+  }
+
+  CuadrillaMiembroCompanion toCompanion(bool nullToAbsent) {
+    return CuadrillaMiembroCompanion(
+      empresaId: Value(empresaId),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      serverUpdatedAt: serverUpdatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverUpdatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      cuadrillaId: Value(cuadrillaId),
+      colaboradorId: Value(colaboradorId),
+      fechaIngreso: Value(fechaIngreso),
+      fechaSalida: fechaSalida == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fechaSalida),
+    );
+  }
+
+  factory CuadrillaMiembroData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CuadrillaMiembroData(
+      empresaId: serializer.fromJson<String>(json['empresaId']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      serverUpdatedAt: serializer.fromJson<int?>(json['serverUpdatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      cuadrillaId: serializer.fromJson<String>(json['cuadrillaId']),
+      colaboradorId: serializer.fromJson<String>(json['colaboradorId']),
+      fechaIngreso: serializer.fromJson<int>(json['fechaIngreso']),
+      fechaSalida: serializer.fromJson<int?>(json['fechaSalida']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'empresaId': serializer.toJson<String>(empresaId),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'serverUpdatedAt': serializer.toJson<int?>(serverUpdatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'cuadrillaId': serializer.toJson<String>(cuadrillaId),
+      'colaboradorId': serializer.toJson<String>(colaboradorId),
+      'fechaIngreso': serializer.toJson<int>(fechaIngreso),
+      'fechaSalida': serializer.toJson<int?>(fechaSalida),
+    };
+  }
+
+  CuadrillaMiembroData copyWith({
+    String? empresaId,
+    int? createdAt,
+    int? updatedAt,
+    Value<int?> serverUpdatedAt = const Value.absent(),
+    Value<int?> deletedAt = const Value.absent(),
+    String? syncStatus,
+    String? cuadrillaId,
+    String? colaboradorId,
+    int? fechaIngreso,
+    Value<int?> fechaSalida = const Value.absent(),
+  }) => CuadrillaMiembroData(
+    empresaId: empresaId ?? this.empresaId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    serverUpdatedAt: serverUpdatedAt.present
+        ? serverUpdatedAt.value
+        : this.serverUpdatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    cuadrillaId: cuadrillaId ?? this.cuadrillaId,
+    colaboradorId: colaboradorId ?? this.colaboradorId,
+    fechaIngreso: fechaIngreso ?? this.fechaIngreso,
+    fechaSalida: fechaSalida.present ? fechaSalida.value : this.fechaSalida,
+  );
+  CuadrillaMiembroData copyWithCompanion(CuadrillaMiembroCompanion data) {
+    return CuadrillaMiembroData(
+      empresaId: data.empresaId.present ? data.empresaId.value : this.empresaId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      serverUpdatedAt: data.serverUpdatedAt.present
+          ? data.serverUpdatedAt.value
+          : this.serverUpdatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      cuadrillaId: data.cuadrillaId.present
+          ? data.cuadrillaId.value
+          : this.cuadrillaId,
+      colaboradorId: data.colaboradorId.present
+          ? data.colaboradorId.value
+          : this.colaboradorId,
+      fechaIngreso: data.fechaIngreso.present
+          ? data.fechaIngreso.value
+          : this.fechaIngreso,
+      fechaSalida: data.fechaSalida.present
+          ? data.fechaSalida.value
+          : this.fechaSalida,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CuadrillaMiembroData(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('cuadrillaId: $cuadrillaId, ')
+          ..write('colaboradorId: $colaboradorId, ')
+          ..write('fechaIngreso: $fechaIngreso, ')
+          ..write('fechaSalida: $fechaSalida')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    cuadrillaId,
+    colaboradorId,
+    fechaIngreso,
+    fechaSalida,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CuadrillaMiembroData &&
+          other.empresaId == this.empresaId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.serverUpdatedAt == this.serverUpdatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.cuadrillaId == this.cuadrillaId &&
+          other.colaboradorId == this.colaboradorId &&
+          other.fechaIngreso == this.fechaIngreso &&
+          other.fechaSalida == this.fechaSalida);
+}
+
+class CuadrillaMiembroCompanion extends UpdateCompanion<CuadrillaMiembroData> {
+  final Value<String> empresaId;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int?> serverUpdatedAt;
+  final Value<int?> deletedAt;
+  final Value<String> syncStatus;
+  final Value<String> cuadrillaId;
+  final Value<String> colaboradorId;
+  final Value<int> fechaIngreso;
+  final Value<int?> fechaSalida;
+  final Value<int> rowid;
+  const CuadrillaMiembroCompanion({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.cuadrillaId = const Value.absent(),
+    this.colaboradorId = const Value.absent(),
+    this.fechaIngreso = const Value.absent(),
+    this.fechaSalida = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CuadrillaMiembroCompanion.insert({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String cuadrillaId,
+    required String colaboradorId,
+    required int fechaIngreso,
+    this.fechaSalida = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : cuadrillaId = Value(cuadrillaId),
+       colaboradorId = Value(colaboradorId),
+       fechaIngreso = Value(fechaIngreso);
+  static Insertable<CuadrillaMiembroData> custom({
+    Expression<String>? empresaId,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? serverUpdatedAt,
+    Expression<int>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? cuadrillaId,
+    Expression<String>? colaboradorId,
+    Expression<int>? fechaIngreso,
+    Expression<int>? fechaSalida,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (empresaId != null) 'empresa_id': empresaId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (serverUpdatedAt != null) 'server_updated_at': serverUpdatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (cuadrillaId != null) 'cuadrilla_id': cuadrillaId,
+      if (colaboradorId != null) 'colaborador_id': colaboradorId,
+      if (fechaIngreso != null) 'fecha_ingreso': fechaIngreso,
+      if (fechaSalida != null) 'fecha_salida': fechaSalida,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CuadrillaMiembroCompanion copyWith({
+    Value<String>? empresaId,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int?>? serverUpdatedAt,
+    Value<int?>? deletedAt,
+    Value<String>? syncStatus,
+    Value<String>? cuadrillaId,
+    Value<String>? colaboradorId,
+    Value<int>? fechaIngreso,
+    Value<int?>? fechaSalida,
+    Value<int>? rowid,
+  }) {
+    return CuadrillaMiembroCompanion(
+      empresaId: empresaId ?? this.empresaId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      cuadrillaId: cuadrillaId ?? this.cuadrillaId,
+      colaboradorId: colaboradorId ?? this.colaboradorId,
+      fechaIngreso: fechaIngreso ?? this.fechaIngreso,
+      fechaSalida: fechaSalida ?? this.fechaSalida,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (empresaId.present) {
+      map['empresa_id'] = Variable<String>(empresaId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (serverUpdatedAt.present) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (cuadrillaId.present) {
+      map['cuadrilla_id'] = Variable<String>(cuadrillaId.value);
+    }
+    if (colaboradorId.present) {
+      map['colaborador_id'] = Variable<String>(colaboradorId.value);
+    }
+    if (fechaIngreso.present) {
+      map['fecha_ingreso'] = Variable<int>(fechaIngreso.value);
+    }
+    if (fechaSalida.present) {
+      map['fecha_salida'] = Variable<int>(fechaSalida.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CuadrillaMiembroCompanion(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('cuadrillaId: $cuadrillaId, ')
+          ..write('colaboradorId: $colaboradorId, ')
+          ..write('fechaIngreso: $fechaIngreso, ')
+          ..write('fechaSalida: $fechaSalida, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AsignacionCuadrillaObraTable extends AsignacionCuadrillaObra
+    with TableInfo<$AsignacionCuadrillaObraTable, AsignacionCuadrillaObraData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AsignacionCuadrillaObraTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _empresaIdMeta = const VerificationMeta(
+    'empresaId',
+  );
+  @override
+  late final GeneratedColumn<String> empresaId = GeneratedColumn<String>(
+    'empresa_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _serverUpdatedAtMeta = const VerificationMeta(
+    'serverUpdatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> serverUpdatedAt = GeneratedColumn<int>(
+    'server_updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cuadrillaIdMeta = const VerificationMeta(
+    'cuadrillaId',
+  );
+  @override
+  late final GeneratedColumn<String> cuadrillaId = GeneratedColumn<String>(
+    'cuadrilla_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _obraIdMeta = const VerificationMeta('obraId');
+  @override
+  late final GeneratedColumn<String> obraId = GeneratedColumn<String>(
+    'obra_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fechaInicioMeta = const VerificationMeta(
+    'fechaInicio',
+  );
+  @override
+  late final GeneratedColumn<int> fechaInicio = GeneratedColumn<int>(
+    'fecha_inicio',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fechaFinMeta = const VerificationMeta(
+    'fechaFin',
+  );
+  @override
+  late final GeneratedColumn<int> fechaFin = GeneratedColumn<int>(
+    'fecha_fin',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _faseMeta = const VerificationMeta('fase');
+  @override
+  late final GeneratedColumn<String> fase = GeneratedColumn<String>(
+    'fase',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    id,
+    cuadrillaId,
+    obraId,
+    fechaInicio,
+    fechaFin,
+    fase,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'asignacion_cuadrilla_obra';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AsignacionCuadrillaObraData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('empresa_id')) {
+      context.handle(
+        _empresaIdMeta,
+        empresaId.isAcceptableOrUnknown(data['empresa_id']!, _empresaIdMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('server_updated_at')) {
+      context.handle(
+        _serverUpdatedAtMeta,
+        serverUpdatedAt.isAcceptableOrUnknown(
+          data['server_updated_at']!,
+          _serverUpdatedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('cuadrilla_id')) {
+      context.handle(
+        _cuadrillaIdMeta,
+        cuadrillaId.isAcceptableOrUnknown(
+          data['cuadrilla_id']!,
+          _cuadrillaIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_cuadrillaIdMeta);
+    }
+    if (data.containsKey('obra_id')) {
+      context.handle(
+        _obraIdMeta,
+        obraId.isAcceptableOrUnknown(data['obra_id']!, _obraIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_obraIdMeta);
+    }
+    if (data.containsKey('fecha_inicio')) {
+      context.handle(
+        _fechaInicioMeta,
+        fechaInicio.isAcceptableOrUnknown(
+          data['fecha_inicio']!,
+          _fechaInicioMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaInicioMeta);
+    }
+    if (data.containsKey('fecha_fin')) {
+      context.handle(
+        _fechaFinMeta,
+        fechaFin.isAcceptableOrUnknown(data['fecha_fin']!, _fechaFinMeta),
+      );
+    }
+    if (data.containsKey('fase')) {
+      context.handle(
+        _faseMeta,
+        fase.isAcceptableOrUnknown(data['fase']!, _faseMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AsignacionCuadrillaObraData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AsignacionCuadrillaObraData(
+      empresaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}empresa_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      serverUpdatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}server_updated_at'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      cuadrillaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cuadrilla_id'],
+      )!,
+      obraId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}obra_id'],
+      )!,
+      fechaInicio: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}fecha_inicio'],
+      )!,
+      fechaFin: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}fecha_fin'],
+      ),
+      fase: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fase'],
+      )!,
+    );
+  }
+
+  @override
+  $AsignacionCuadrillaObraTable createAlias(String alias) {
+    return $AsignacionCuadrillaObraTable(attachedDatabase, alias);
+  }
+}
+
+class AsignacionCuadrillaObraData extends DataClass
+    implements Insertable<AsignacionCuadrillaObraData> {
+  /// Llave multitenant + RLS. Vacío mientras no haya backend.
+  final String empresaId;
+
+  /// Alta (UTC ms). 0 en filas previas a la migración.
+  final int createdAt;
+
+  /// Última edición de cliente (UTC ms). Árbitro local de LWW + dirty flag.
+  final int updatedAt;
+
+  /// Lo pone Postgres; árbitro de LWW y cursor de pull. Null hasta sincronizar.
+  final int? serverUpdatedAt;
+
+  /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
+  final int? deletedAt;
+
+  /// 'pending' | 'synced' | 'error'.
+  final String syncStatus;
+  final String id;
+  final String cuadrillaId;
+  final String obraId;
+  final int fechaInicio;
+  final int? fechaFin;
+
+  /// Frente/fase opcional dentro de la obra (ej. "cimbra", "acabados").
+  final String fase;
+  const AsignacionCuadrillaObraData({
+    required this.empresaId,
+    required this.createdAt,
+    required this.updatedAt,
+    this.serverUpdatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.id,
+    required this.cuadrillaId,
+    required this.obraId,
+    required this.fechaInicio,
+    this.fechaFin,
+    required this.fase,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['empresa_id'] = Variable<String>(empresaId);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || serverUpdatedAt != null) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    map['id'] = Variable<String>(id);
+    map['cuadrilla_id'] = Variable<String>(cuadrillaId);
+    map['obra_id'] = Variable<String>(obraId);
+    map['fecha_inicio'] = Variable<int>(fechaInicio);
+    if (!nullToAbsent || fechaFin != null) {
+      map['fecha_fin'] = Variable<int>(fechaFin);
+    }
+    map['fase'] = Variable<String>(fase);
+    return map;
+  }
+
+  AsignacionCuadrillaObraCompanion toCompanion(bool nullToAbsent) {
+    return AsignacionCuadrillaObraCompanion(
+      empresaId: Value(empresaId),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      serverUpdatedAt: serverUpdatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverUpdatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      id: Value(id),
+      cuadrillaId: Value(cuadrillaId),
+      obraId: Value(obraId),
+      fechaInicio: Value(fechaInicio),
+      fechaFin: fechaFin == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fechaFin),
+      fase: Value(fase),
+    );
+  }
+
+  factory AsignacionCuadrillaObraData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AsignacionCuadrillaObraData(
+      empresaId: serializer.fromJson<String>(json['empresaId']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      serverUpdatedAt: serializer.fromJson<int?>(json['serverUpdatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      id: serializer.fromJson<String>(json['id']),
+      cuadrillaId: serializer.fromJson<String>(json['cuadrillaId']),
+      obraId: serializer.fromJson<String>(json['obraId']),
+      fechaInicio: serializer.fromJson<int>(json['fechaInicio']),
+      fechaFin: serializer.fromJson<int?>(json['fechaFin']),
+      fase: serializer.fromJson<String>(json['fase']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'empresaId': serializer.toJson<String>(empresaId),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'serverUpdatedAt': serializer.toJson<int?>(serverUpdatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'id': serializer.toJson<String>(id),
+      'cuadrillaId': serializer.toJson<String>(cuadrillaId),
+      'obraId': serializer.toJson<String>(obraId),
+      'fechaInicio': serializer.toJson<int>(fechaInicio),
+      'fechaFin': serializer.toJson<int?>(fechaFin),
+      'fase': serializer.toJson<String>(fase),
+    };
+  }
+
+  AsignacionCuadrillaObraData copyWith({
+    String? empresaId,
+    int? createdAt,
+    int? updatedAt,
+    Value<int?> serverUpdatedAt = const Value.absent(),
+    Value<int?> deletedAt = const Value.absent(),
+    String? syncStatus,
+    String? id,
+    String? cuadrillaId,
+    String? obraId,
+    int? fechaInicio,
+    Value<int?> fechaFin = const Value.absent(),
+    String? fase,
+  }) => AsignacionCuadrillaObraData(
+    empresaId: empresaId ?? this.empresaId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    serverUpdatedAt: serverUpdatedAt.present
+        ? serverUpdatedAt.value
+        : this.serverUpdatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    id: id ?? this.id,
+    cuadrillaId: cuadrillaId ?? this.cuadrillaId,
+    obraId: obraId ?? this.obraId,
+    fechaInicio: fechaInicio ?? this.fechaInicio,
+    fechaFin: fechaFin.present ? fechaFin.value : this.fechaFin,
+    fase: fase ?? this.fase,
+  );
+  AsignacionCuadrillaObraData copyWithCompanion(
+    AsignacionCuadrillaObraCompanion data,
+  ) {
+    return AsignacionCuadrillaObraData(
+      empresaId: data.empresaId.present ? data.empresaId.value : this.empresaId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      serverUpdatedAt: data.serverUpdatedAt.present
+          ? data.serverUpdatedAt.value
+          : this.serverUpdatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      id: data.id.present ? data.id.value : this.id,
+      cuadrillaId: data.cuadrillaId.present
+          ? data.cuadrillaId.value
+          : this.cuadrillaId,
+      obraId: data.obraId.present ? data.obraId.value : this.obraId,
+      fechaInicio: data.fechaInicio.present
+          ? data.fechaInicio.value
+          : this.fechaInicio,
+      fechaFin: data.fechaFin.present ? data.fechaFin.value : this.fechaFin,
+      fase: data.fase.present ? data.fase.value : this.fase,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AsignacionCuadrillaObraData(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('id: $id, ')
+          ..write('cuadrillaId: $cuadrillaId, ')
+          ..write('obraId: $obraId, ')
+          ..write('fechaInicio: $fechaInicio, ')
+          ..write('fechaFin: $fechaFin, ')
+          ..write('fase: $fase')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    id,
+    cuadrillaId,
+    obraId,
+    fechaInicio,
+    fechaFin,
+    fase,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AsignacionCuadrillaObraData &&
+          other.empresaId == this.empresaId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.serverUpdatedAt == this.serverUpdatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.id == this.id &&
+          other.cuadrillaId == this.cuadrillaId &&
+          other.obraId == this.obraId &&
+          other.fechaInicio == this.fechaInicio &&
+          other.fechaFin == this.fechaFin &&
+          other.fase == this.fase);
+}
+
+class AsignacionCuadrillaObraCompanion
+    extends UpdateCompanion<AsignacionCuadrillaObraData> {
+  final Value<String> empresaId;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int?> serverUpdatedAt;
+  final Value<int?> deletedAt;
+  final Value<String> syncStatus;
+  final Value<String> id;
+  final Value<String> cuadrillaId;
+  final Value<String> obraId;
+  final Value<int> fechaInicio;
+  final Value<int?> fechaFin;
+  final Value<String> fase;
+  final Value<int> rowid;
+  const AsignacionCuadrillaObraCompanion({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.id = const Value.absent(),
+    this.cuadrillaId = const Value.absent(),
+    this.obraId = const Value.absent(),
+    this.fechaInicio = const Value.absent(),
+    this.fechaFin = const Value.absent(),
+    this.fase = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AsignacionCuadrillaObraCompanion.insert({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String id,
+    required String cuadrillaId,
+    required String obraId,
+    required int fechaInicio,
+    this.fechaFin = const Value.absent(),
+    this.fase = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       cuadrillaId = Value(cuadrillaId),
+       obraId = Value(obraId),
+       fechaInicio = Value(fechaInicio);
+  static Insertable<AsignacionCuadrillaObraData> custom({
+    Expression<String>? empresaId,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? serverUpdatedAt,
+    Expression<int>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? id,
+    Expression<String>? cuadrillaId,
+    Expression<String>? obraId,
+    Expression<int>? fechaInicio,
+    Expression<int>? fechaFin,
+    Expression<String>? fase,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (empresaId != null) 'empresa_id': empresaId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (serverUpdatedAt != null) 'server_updated_at': serverUpdatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (id != null) 'id': id,
+      if (cuadrillaId != null) 'cuadrilla_id': cuadrillaId,
+      if (obraId != null) 'obra_id': obraId,
+      if (fechaInicio != null) 'fecha_inicio': fechaInicio,
+      if (fechaFin != null) 'fecha_fin': fechaFin,
+      if (fase != null) 'fase': fase,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AsignacionCuadrillaObraCompanion copyWith({
+    Value<String>? empresaId,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int?>? serverUpdatedAt,
+    Value<int?>? deletedAt,
+    Value<String>? syncStatus,
+    Value<String>? id,
+    Value<String>? cuadrillaId,
+    Value<String>? obraId,
+    Value<int>? fechaInicio,
+    Value<int?>? fechaFin,
+    Value<String>? fase,
+    Value<int>? rowid,
+  }) {
+    return AsignacionCuadrillaObraCompanion(
+      empresaId: empresaId ?? this.empresaId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      id: id ?? this.id,
+      cuadrillaId: cuadrillaId ?? this.cuadrillaId,
+      obraId: obraId ?? this.obraId,
+      fechaInicio: fechaInicio ?? this.fechaInicio,
+      fechaFin: fechaFin ?? this.fechaFin,
+      fase: fase ?? this.fase,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (empresaId.present) {
+      map['empresa_id'] = Variable<String>(empresaId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (serverUpdatedAt.present) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (cuadrillaId.present) {
+      map['cuadrilla_id'] = Variable<String>(cuadrillaId.value);
+    }
+    if (obraId.present) {
+      map['obra_id'] = Variable<String>(obraId.value);
+    }
+    if (fechaInicio.present) {
+      map['fecha_inicio'] = Variable<int>(fechaInicio.value);
+    }
+    if (fechaFin.present) {
+      map['fecha_fin'] = Variable<int>(fechaFin.value);
+    }
+    if (fase.present) {
+      map['fase'] = Variable<String>(fase.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AsignacionCuadrillaObraCompanion(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('id: $id, ')
+          ..write('cuadrillaId: $cuadrillaId, ')
+          ..write('obraId: $obraId, ')
+          ..write('fechaInicio: $fechaInicio, ')
+          ..write('fechaFin: $fechaFin, ')
+          ..write('fase: $fase, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -11178,6 +13364,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $AsistenciasTable asistencias = $AsistenciasTable(this);
   late final $DestajosTable destajos = $DestajosTable(this);
+  late final $CuadrillasTable cuadrillas = $CuadrillasTable(this);
+  late final $CuadrillaMiembroTable cuadrillaMiembro = $CuadrillaMiembroTable(
+    this,
+  );
+  late final $AsignacionCuadrillaObraTable asignacionCuadrillaObra =
+      $AsignacionCuadrillaObraTable(this);
   late final $CotizacionesTable cotizaciones = $CotizacionesTable(this);
   late final $SeccionesTable secciones = $SeccionesTable(this);
   late final $PartidasTable partidas = $PartidasTable(this);
@@ -11201,6 +13393,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     obraColaborador,
     asistencias,
     destajos,
+    cuadrillas,
+    cuadrillaMiembro,
+    asignacionCuadrillaObra,
     cotizaciones,
     secciones,
     partidas,
@@ -12695,6 +14890,7 @@ typedef $$AsistenciasTableCreateCompanionBuilder =
       required String obraId,
       required int fecha,
       required double fraccion,
+      Value<String?> cuadrillaId,
       Value<int> rowid,
     });
 typedef $$AsistenciasTableUpdateCompanionBuilder =
@@ -12710,6 +14906,7 @@ typedef $$AsistenciasTableUpdateCompanionBuilder =
       Value<String> obraId,
       Value<int> fecha,
       Value<double> fraccion,
+      Value<String?> cuadrillaId,
       Value<int> rowid,
     });
 
@@ -12774,6 +14971,11 @@ class $$AsistenciasTableFilterComposer
 
   ColumnFilters<double> get fraccion => $composableBuilder(
     column: $table.fraccion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cuadrillaId => $composableBuilder(
+    column: $table.cuadrillaId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -12841,6 +15043,11 @@ class $$AsistenciasTableOrderingComposer
     column: $table.fraccion,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get cuadrillaId => $composableBuilder(
+    column: $table.cuadrillaId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$AsistenciasTableAnnotationComposer
@@ -12890,6 +15097,11 @@ class $$AsistenciasTableAnnotationComposer
 
   GeneratedColumn<double> get fraccion =>
       $composableBuilder(column: $table.fraccion, builder: (column) => column);
+
+  GeneratedColumn<String> get cuadrillaId => $composableBuilder(
+    column: $table.cuadrillaId,
+    builder: (column) => column,
+  );
 }
 
 class $$AsistenciasTableTableManager
@@ -12934,6 +15146,7 @@ class $$AsistenciasTableTableManager
                 Value<String> obraId = const Value.absent(),
                 Value<int> fecha = const Value.absent(),
                 Value<double> fraccion = const Value.absent(),
+                Value<String?> cuadrillaId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AsistenciasCompanion(
                 empresaId: empresaId,
@@ -12947,6 +15160,7 @@ class $$AsistenciasTableTableManager
                 obraId: obraId,
                 fecha: fecha,
                 fraccion: fraccion,
+                cuadrillaId: cuadrillaId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -12962,6 +15176,7 @@ class $$AsistenciasTableTableManager
                 required String obraId,
                 required int fecha,
                 required double fraccion,
+                Value<String?> cuadrillaId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AsistenciasCompanion.insert(
                 empresaId: empresaId,
@@ -12975,6 +15190,7 @@ class $$AsistenciasTableTableManager
                 obraId: obraId,
                 fecha: fecha,
                 fraccion: fraccion,
+                cuadrillaId: cuadrillaId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -13016,6 +15232,7 @@ typedef $$DestajosTableCreateCompanionBuilder =
       required int fecha,
       required String concepto,
       required double monto,
+      Value<String?> cuadrillaId,
       Value<int> rowid,
     });
 typedef $$DestajosTableUpdateCompanionBuilder =
@@ -13032,6 +15249,7 @@ typedef $$DestajosTableUpdateCompanionBuilder =
       Value<int> fecha,
       Value<String> concepto,
       Value<double> monto,
+      Value<String?> cuadrillaId,
       Value<int> rowid,
     });
 
@@ -13101,6 +15319,11 @@ class $$DestajosTableFilterComposer
 
   ColumnFilters<double> get monto => $composableBuilder(
     column: $table.monto,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cuadrillaId => $composableBuilder(
+    column: $table.cuadrillaId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -13173,6 +15396,11 @@ class $$DestajosTableOrderingComposer
     column: $table.monto,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get cuadrillaId => $composableBuilder(
+    column: $table.cuadrillaId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DestajosTableAnnotationComposer
@@ -13225,6 +15453,11 @@ class $$DestajosTableAnnotationComposer
 
   GeneratedColumn<double> get monto =>
       $composableBuilder(column: $table.monto, builder: (column) => column);
+
+  GeneratedColumn<String> get cuadrillaId => $composableBuilder(
+    column: $table.cuadrillaId,
+    builder: (column) => column,
+  );
 }
 
 class $$DestajosTableTableManager
@@ -13267,6 +15500,7 @@ class $$DestajosTableTableManager
                 Value<int> fecha = const Value.absent(),
                 Value<String> concepto = const Value.absent(),
                 Value<double> monto = const Value.absent(),
+                Value<String?> cuadrillaId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DestajosCompanion(
                 empresaId: empresaId,
@@ -13281,6 +15515,7 @@ class $$DestajosTableTableManager
                 fecha: fecha,
                 concepto: concepto,
                 monto: monto,
+                cuadrillaId: cuadrillaId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -13297,6 +15532,7 @@ class $$DestajosTableTableManager
                 required int fecha,
                 required String concepto,
                 required double monto,
+                Value<String?> cuadrillaId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DestajosCompanion.insert(
                 empresaId: empresaId,
@@ -13311,6 +15547,7 @@ class $$DestajosTableTableManager
                 fecha: fecha,
                 concepto: concepto,
                 monto: monto,
+                cuadrillaId: cuadrillaId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -13333,6 +15570,1002 @@ typedef $$DestajosTableProcessedTableManager =
       $$DestajosTableUpdateCompanionBuilder,
       (Destajo, BaseReferences<_$AppDatabase, $DestajosTable, Destajo>),
       Destajo,
+      PrefetchHooks Function()
+    >;
+typedef $$CuadrillasTableCreateCompanionBuilder =
+    CuadrillasCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      required String id,
+      required String nombre,
+      Value<String> especialidad,
+      Value<String?> jefeColaboradorId,
+      Value<bool> activa,
+      Value<int> rowid,
+    });
+typedef $$CuadrillasTableUpdateCompanionBuilder =
+    CuadrillasCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      Value<String> id,
+      Value<String> nombre,
+      Value<String> especialidad,
+      Value<String?> jefeColaboradorId,
+      Value<bool> activa,
+      Value<int> rowid,
+    });
+
+class $$CuadrillasTableFilterComposer
+    extends Composer<_$AppDatabase, $CuadrillasTable> {
+  $$CuadrillasTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get especialidad => $composableBuilder(
+    column: $table.especialidad,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get jefeColaboradorId => $composableBuilder(
+    column: $table.jefeColaboradorId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get activa => $composableBuilder(
+    column: $table.activa,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CuadrillasTableOrderingComposer
+    extends Composer<_$AppDatabase, $CuadrillasTable> {
+  $$CuadrillasTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get especialidad => $composableBuilder(
+    column: $table.especialidad,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get jefeColaboradorId => $composableBuilder(
+    column: $table.jefeColaboradorId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get activa => $composableBuilder(
+    column: $table.activa,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CuadrillasTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CuadrillasTable> {
+  $$CuadrillasTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get empresaId =>
+      $composableBuilder(column: $table.empresaId, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get nombre =>
+      $composableBuilder(column: $table.nombre, builder: (column) => column);
+
+  GeneratedColumn<String> get especialidad => $composableBuilder(
+    column: $table.especialidad,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get jefeColaboradorId => $composableBuilder(
+    column: $table.jefeColaboradorId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get activa =>
+      $composableBuilder(column: $table.activa, builder: (column) => column);
+}
+
+class $$CuadrillasTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CuadrillasTable,
+          Cuadrilla,
+          $$CuadrillasTableFilterComposer,
+          $$CuadrillasTableOrderingComposer,
+          $$CuadrillasTableAnnotationComposer,
+          $$CuadrillasTableCreateCompanionBuilder,
+          $$CuadrillasTableUpdateCompanionBuilder,
+          (
+            Cuadrilla,
+            BaseReferences<_$AppDatabase, $CuadrillasTable, Cuadrilla>,
+          ),
+          Cuadrilla,
+          PrefetchHooks Function()
+        > {
+  $$CuadrillasTableTableManager(_$AppDatabase db, $CuadrillasTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CuadrillasTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CuadrillasTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CuadrillasTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String> nombre = const Value.absent(),
+                Value<String> especialidad = const Value.absent(),
+                Value<String?> jefeColaboradorId = const Value.absent(),
+                Value<bool> activa = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CuadrillasCompanion(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                id: id,
+                nombre: nombre,
+                especialidad: especialidad,
+                jefeColaboradorId: jefeColaboradorId,
+                activa: activa,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                required String id,
+                required String nombre,
+                Value<String> especialidad = const Value.absent(),
+                Value<String?> jefeColaboradorId = const Value.absent(),
+                Value<bool> activa = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CuadrillasCompanion.insert(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                id: id,
+                nombre: nombre,
+                especialidad: especialidad,
+                jefeColaboradorId: jefeColaboradorId,
+                activa: activa,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CuadrillasTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CuadrillasTable,
+      Cuadrilla,
+      $$CuadrillasTableFilterComposer,
+      $$CuadrillasTableOrderingComposer,
+      $$CuadrillasTableAnnotationComposer,
+      $$CuadrillasTableCreateCompanionBuilder,
+      $$CuadrillasTableUpdateCompanionBuilder,
+      (Cuadrilla, BaseReferences<_$AppDatabase, $CuadrillasTable, Cuadrilla>),
+      Cuadrilla,
+      PrefetchHooks Function()
+    >;
+typedef $$CuadrillaMiembroTableCreateCompanionBuilder =
+    CuadrillaMiembroCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      required String cuadrillaId,
+      required String colaboradorId,
+      required int fechaIngreso,
+      Value<int?> fechaSalida,
+      Value<int> rowid,
+    });
+typedef $$CuadrillaMiembroTableUpdateCompanionBuilder =
+    CuadrillaMiembroCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      Value<String> cuadrillaId,
+      Value<String> colaboradorId,
+      Value<int> fechaIngreso,
+      Value<int?> fechaSalida,
+      Value<int> rowid,
+    });
+
+class $$CuadrillaMiembroTableFilterComposer
+    extends Composer<_$AppDatabase, $CuadrillaMiembroTable> {
+  $$CuadrillaMiembroTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cuadrillaId => $composableBuilder(
+    column: $table.cuadrillaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get colaboradorId => $composableBuilder(
+    column: $table.colaboradorId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get fechaIngreso => $composableBuilder(
+    column: $table.fechaIngreso,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get fechaSalida => $composableBuilder(
+    column: $table.fechaSalida,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CuadrillaMiembroTableOrderingComposer
+    extends Composer<_$AppDatabase, $CuadrillaMiembroTable> {
+  $$CuadrillaMiembroTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cuadrillaId => $composableBuilder(
+    column: $table.cuadrillaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get colaboradorId => $composableBuilder(
+    column: $table.colaboradorId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get fechaIngreso => $composableBuilder(
+    column: $table.fechaIngreso,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get fechaSalida => $composableBuilder(
+    column: $table.fechaSalida,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CuadrillaMiembroTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CuadrillaMiembroTable> {
+  $$CuadrillaMiembroTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get empresaId =>
+      $composableBuilder(column: $table.empresaId, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get cuadrillaId => $composableBuilder(
+    column: $table.cuadrillaId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get colaboradorId => $composableBuilder(
+    column: $table.colaboradorId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get fechaIngreso => $composableBuilder(
+    column: $table.fechaIngreso,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get fechaSalida => $composableBuilder(
+    column: $table.fechaSalida,
+    builder: (column) => column,
+  );
+}
+
+class $$CuadrillaMiembroTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CuadrillaMiembroTable,
+          CuadrillaMiembroData,
+          $$CuadrillaMiembroTableFilterComposer,
+          $$CuadrillaMiembroTableOrderingComposer,
+          $$CuadrillaMiembroTableAnnotationComposer,
+          $$CuadrillaMiembroTableCreateCompanionBuilder,
+          $$CuadrillaMiembroTableUpdateCompanionBuilder,
+          (
+            CuadrillaMiembroData,
+            BaseReferences<
+              _$AppDatabase,
+              $CuadrillaMiembroTable,
+              CuadrillaMiembroData
+            >,
+          ),
+          CuadrillaMiembroData,
+          PrefetchHooks Function()
+        > {
+  $$CuadrillaMiembroTableTableManager(
+    _$AppDatabase db,
+    $CuadrillaMiembroTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CuadrillaMiembroTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CuadrillaMiembroTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CuadrillaMiembroTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String> cuadrillaId = const Value.absent(),
+                Value<String> colaboradorId = const Value.absent(),
+                Value<int> fechaIngreso = const Value.absent(),
+                Value<int?> fechaSalida = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CuadrillaMiembroCompanion(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                cuadrillaId: cuadrillaId,
+                colaboradorId: colaboradorId,
+                fechaIngreso: fechaIngreso,
+                fechaSalida: fechaSalida,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                required String cuadrillaId,
+                required String colaboradorId,
+                required int fechaIngreso,
+                Value<int?> fechaSalida = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CuadrillaMiembroCompanion.insert(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                cuadrillaId: cuadrillaId,
+                colaboradorId: colaboradorId,
+                fechaIngreso: fechaIngreso,
+                fechaSalida: fechaSalida,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CuadrillaMiembroTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CuadrillaMiembroTable,
+      CuadrillaMiembroData,
+      $$CuadrillaMiembroTableFilterComposer,
+      $$CuadrillaMiembroTableOrderingComposer,
+      $$CuadrillaMiembroTableAnnotationComposer,
+      $$CuadrillaMiembroTableCreateCompanionBuilder,
+      $$CuadrillaMiembroTableUpdateCompanionBuilder,
+      (
+        CuadrillaMiembroData,
+        BaseReferences<
+          _$AppDatabase,
+          $CuadrillaMiembroTable,
+          CuadrillaMiembroData
+        >,
+      ),
+      CuadrillaMiembroData,
+      PrefetchHooks Function()
+    >;
+typedef $$AsignacionCuadrillaObraTableCreateCompanionBuilder =
+    AsignacionCuadrillaObraCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      required String id,
+      required String cuadrillaId,
+      required String obraId,
+      required int fechaInicio,
+      Value<int?> fechaFin,
+      Value<String> fase,
+      Value<int> rowid,
+    });
+typedef $$AsignacionCuadrillaObraTableUpdateCompanionBuilder =
+    AsignacionCuadrillaObraCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      Value<String> id,
+      Value<String> cuadrillaId,
+      Value<String> obraId,
+      Value<int> fechaInicio,
+      Value<int?> fechaFin,
+      Value<String> fase,
+      Value<int> rowid,
+    });
+
+class $$AsignacionCuadrillaObraTableFilterComposer
+    extends Composer<_$AppDatabase, $AsignacionCuadrillaObraTable> {
+  $$AsignacionCuadrillaObraTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cuadrillaId => $composableBuilder(
+    column: $table.cuadrillaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get obraId => $composableBuilder(
+    column: $table.obraId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get fechaInicio => $composableBuilder(
+    column: $table.fechaInicio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get fechaFin => $composableBuilder(
+    column: $table.fechaFin,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fase => $composableBuilder(
+    column: $table.fase,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AsignacionCuadrillaObraTableOrderingComposer
+    extends Composer<_$AppDatabase, $AsignacionCuadrillaObraTable> {
+  $$AsignacionCuadrillaObraTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cuadrillaId => $composableBuilder(
+    column: $table.cuadrillaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get obraId => $composableBuilder(
+    column: $table.obraId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get fechaInicio => $composableBuilder(
+    column: $table.fechaInicio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get fechaFin => $composableBuilder(
+    column: $table.fechaFin,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fase => $composableBuilder(
+    column: $table.fase,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AsignacionCuadrillaObraTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AsignacionCuadrillaObraTable> {
+  $$AsignacionCuadrillaObraTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get empresaId =>
+      $composableBuilder(column: $table.empresaId, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get cuadrillaId => $composableBuilder(
+    column: $table.cuadrillaId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get obraId =>
+      $composableBuilder(column: $table.obraId, builder: (column) => column);
+
+  GeneratedColumn<int> get fechaInicio => $composableBuilder(
+    column: $table.fechaInicio,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get fechaFin =>
+      $composableBuilder(column: $table.fechaFin, builder: (column) => column);
+
+  GeneratedColumn<String> get fase =>
+      $composableBuilder(column: $table.fase, builder: (column) => column);
+}
+
+class $$AsignacionCuadrillaObraTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AsignacionCuadrillaObraTable,
+          AsignacionCuadrillaObraData,
+          $$AsignacionCuadrillaObraTableFilterComposer,
+          $$AsignacionCuadrillaObraTableOrderingComposer,
+          $$AsignacionCuadrillaObraTableAnnotationComposer,
+          $$AsignacionCuadrillaObraTableCreateCompanionBuilder,
+          $$AsignacionCuadrillaObraTableUpdateCompanionBuilder,
+          (
+            AsignacionCuadrillaObraData,
+            BaseReferences<
+              _$AppDatabase,
+              $AsignacionCuadrillaObraTable,
+              AsignacionCuadrillaObraData
+            >,
+          ),
+          AsignacionCuadrillaObraData,
+          PrefetchHooks Function()
+        > {
+  $$AsignacionCuadrillaObraTableTableManager(
+    _$AppDatabase db,
+    $AsignacionCuadrillaObraTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AsignacionCuadrillaObraTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$AsignacionCuadrillaObraTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$AsignacionCuadrillaObraTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String> cuadrillaId = const Value.absent(),
+                Value<String> obraId = const Value.absent(),
+                Value<int> fechaInicio = const Value.absent(),
+                Value<int?> fechaFin = const Value.absent(),
+                Value<String> fase = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AsignacionCuadrillaObraCompanion(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                id: id,
+                cuadrillaId: cuadrillaId,
+                obraId: obraId,
+                fechaInicio: fechaInicio,
+                fechaFin: fechaFin,
+                fase: fase,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                required String id,
+                required String cuadrillaId,
+                required String obraId,
+                required int fechaInicio,
+                Value<int?> fechaFin = const Value.absent(),
+                Value<String> fase = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AsignacionCuadrillaObraCompanion.insert(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                id: id,
+                cuadrillaId: cuadrillaId,
+                obraId: obraId,
+                fechaInicio: fechaInicio,
+                fechaFin: fechaFin,
+                fase: fase,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AsignacionCuadrillaObraTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AsignacionCuadrillaObraTable,
+      AsignacionCuadrillaObraData,
+      $$AsignacionCuadrillaObraTableFilterComposer,
+      $$AsignacionCuadrillaObraTableOrderingComposer,
+      $$AsignacionCuadrillaObraTableAnnotationComposer,
+      $$AsignacionCuadrillaObraTableCreateCompanionBuilder,
+      $$AsignacionCuadrillaObraTableUpdateCompanionBuilder,
+      (
+        AsignacionCuadrillaObraData,
+        BaseReferences<
+          _$AppDatabase,
+          $AsignacionCuadrillaObraTable,
+          AsignacionCuadrillaObraData
+        >,
+      ),
+      AsignacionCuadrillaObraData,
       PrefetchHooks Function()
     >;
 typedef $$CotizacionesTableCreateCompanionBuilder =
@@ -16421,6 +19654,15 @@ class $AppDatabaseManager {
       $$AsistenciasTableTableManager(_db, _db.asistencias);
   $$DestajosTableTableManager get destajos =>
       $$DestajosTableTableManager(_db, _db.destajos);
+  $$CuadrillasTableTableManager get cuadrillas =>
+      $$CuadrillasTableTableManager(_db, _db.cuadrillas);
+  $$CuadrillaMiembroTableTableManager get cuadrillaMiembro =>
+      $$CuadrillaMiembroTableTableManager(_db, _db.cuadrillaMiembro);
+  $$AsignacionCuadrillaObraTableTableManager get asignacionCuadrillaObra =>
+      $$AsignacionCuadrillaObraTableTableManager(
+        _db,
+        _db.asignacionCuadrillaObra,
+      );
   $$CotizacionesTableTableManager get cotizaciones =>
       $$CotizacionesTableTableManager(_db, _db.cotizaciones);
   $$SeccionesTableTableManager get secciones =>

@@ -12,6 +12,7 @@ import '../common/async_action_button.dart';
 import '../common/confirm_dialog.dart';
 import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
+import '../cuadrillas/cuadrillas_screen.dart';
 
 enum _Sort { nombreAsc, nombreDesc, puesto, obra }
 
@@ -41,6 +42,13 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
       appBar: AppBar(
         title: const Text('Colaboradores'),
         actions: [
+          IconButton(
+            tooltip: 'Cuadrillas',
+            icon: const Icon(Icons.groups),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => const CuadrillasScreen(),
+            )),
+          ),
           PopupMenuButton<_Sort>(
             icon: const Icon(Icons.sort),
             onSelected: (s) => setState(() => _sort = s),
