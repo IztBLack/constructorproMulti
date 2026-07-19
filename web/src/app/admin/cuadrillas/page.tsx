@@ -1,6 +1,7 @@
 import { listCuadrillas } from '@/lib/data/cuadrillas';
 import { PageHeader } from '@/components/ui';
 import TablaCuadrillas from './tabla-cuadrillas';
+import NuevaCuadrillaForm from './nueva-cuadrilla-form';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +13,7 @@ export default async function CuadrillasPage() {
       <PageHeader
         title="Cuadrillas"
         description="Equipos de colaboradores por especialidad, con su cabo y obras asignadas."
+        actions={<NuevaCuadrillaForm />}
       />
 
       {error && (

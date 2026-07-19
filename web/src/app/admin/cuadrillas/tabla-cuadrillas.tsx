@@ -1,21 +1,34 @@
-import type { CuadrillaResumen } from '@/lib/data/cuadrillas';
-import { Badge, EmptyState, TableContainer, TBody, Td, Th, THead, Tr } from '@/components/ui';
+'use client';
 
-const ESPECIALIDAD_LABEL: Record<string, string> = {
-  ALBANILERIA: 'Albañilería',
-  ACERO: 'Acero / fierro',
-  CIMBRA: 'Cimbra / carpintería',
-  INSTALACIONES: 'Instalaciones',
-  ACABADOS: 'Acabados',
-  MIXTA: 'Mixta',
-};
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import type { CuadrillaResumen } from '@/lib/data/cuadrillas';
+import { Badge, Button, EmptyState, TableContainer, TBody, Td, Th, THead, Tr } from '@/components/ui';
+import { ESPECIALIDAD_LABEL } from './especialidades';
+import { eliminarCuadrilla } from './actions';
 
 export default function TablaCuadrillas({ cuadrillas }: { cuadrillas: CuadrillaResumen[] }) {
+  const router = useRouter();
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+
+  async function onEliminar(id: string, nombre: string) {
+    if (!confirm(`¿Eliminar la cuadrilla "${nombre}"? Se quitarán sus miembros y asignaciones.`)) return;
+    setLoadingId(id);
+    const r = await eliminarCuadrilla(id);
+    setLoadingId(null);
+    if (!r.ok) {
+      alert(r.error ?? 'No se pudo eliminar.');
+      return;
+    }
+    router.refresh();
+  }
+
   if (cuadrillas.length === 0) {
     return (
       <EmptyState
         title="Aún no hay cuadrillas registradas."
-        description="Las cuadrillas se crean desde la app móvil (pestaña Equipo → Cuadrillas)."
+        description="Crea la primera con el botón Nueva cuadrilla."
       />
     );
   }
@@ -29,11 +42,16 @@ export default function TablaCuadrillas({ cuadrillas }: { cuadrillas: CuadrillaR
         <Th>Miembros</Th>
         <Th>Obras asignadas</Th>
         <Th>Estado</Th>
+        <Th />
       </THead>
       <TBody>
         {cuadrillas.map((c) => (
           <Tr key={c.id}>
-            <Td className="font-medium text-neutral-900">{c.nombre}</Td>
+            <Td className="font-medium text-neutral-900">
+              <Link href={`/admin/cuadrillas/${c.id}`} className="hover:underline">
+                {c.nombre}
+              </Link>
+            </Td>
             <Td>{ESPECIALIDAD_LABEL[c.especialidad] ?? c.especialidad}</Td>
             <Td>{c.cabo_nombre ?? '—'}</Td>
             <Td>
@@ -48,9 +66,24 @@ export default function TablaCuadrillas({ cuadrillas }: { cuadrillas: CuadrillaR
             </Td>
             <Td>{c.obras.length === 0 ? '—' : c.obras.join(', ')}</Td>
             <Td>
-              <Badge tone={c.activa ? 'green' : 'neutral'}>
-                {c.activa ? 'Activa' : 'Inactiva'}
-              </Badge>
+              <Badge tone={c.activa ? 'green' : 'neutral'}>{c.activa ? 'Activa' : 'Inactiva'}</Badge>
+            </Td>
+            <Td className="text-right">
+              <div className="flex items-center justify-end gap-2">
+                <Link href={`/admin/cuadrillas/${c.id}`}>
+                  <Button variant="secondary" size="sm">
+                    Gestionar
+                  </Button>
+                </Link>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={loadingId === c.id}
+                  onClick={() => onEliminar(c.id, c.nombre)}
+                >
+                  {loadingId === c.id ? 'Eliminando…' : 'Eliminar'}
+                </Button>
+              </div>
             </Td>
           </Tr>
         ))}
