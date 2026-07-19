@@ -151,9 +151,17 @@ flutter run -d <android>           # correr en dispositivo
 flutter run --dart-define=LOAD_DEMO=true
 ```
 
-**iOS sin Mac:** GitHub Actions (`.github/workflows/ios-build.yml`) compila un IPA sin
-firmar en un runner macOS; se instala en el iPhone con Sideloadly (Apple ID gratuito,
-certificado de 7 días).
+**iOS sin Mac (app nativa):** GitHub Actions (`.github/workflows/ios-build.yml`) compila
+un IPA sin firmar en un runner macOS y lo publica en un Release rodante con tag
+`sidestore` + un `apps.json`. Se instala con **SideStore** agregando esa fuente una sola
+vez: las actualizaciones se aplican desde el iPhone, sin PC. SideStore auto-renueva el
+certificado de 7 días del Apple ID gratuito por Wi-Fi (Sideloadly es el flujo de
+respaldo, y exige reconectar la PC cada semana).
+
+Esta vía sirve para uso propio; **no** para distribuir a clientes (cada uno necesitaría
+su Apple ID y una PC para el alta). Para clientes iOS, mientras no haya cuenta de Apple
+Developer (~$99 USD/año, que habilitaría TestFlight), la vía es la **PWA** de la web
+(ver `web/PWA.md`).
 
 ---
 

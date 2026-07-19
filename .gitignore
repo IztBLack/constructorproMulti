@@ -63,3 +63,10 @@ graphify-out/
 
 # Respaldos locales con datos reales — NUNCA versionar
 tools/backup_temp*/
+
+# Secretos locales — NUNCA versionar.
+# `.env.tokens` estaba protegido solo por `.git/info/exclude`, que es local y no
+# se comparte: en un clon nuevo habría quedado expuesto a un commit accidental.
+.env
+.env.*
+!.env.example

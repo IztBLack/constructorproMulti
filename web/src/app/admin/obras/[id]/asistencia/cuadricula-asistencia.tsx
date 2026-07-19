@@ -3,31 +3,13 @@
 import { useState } from 'react';
 import { Badge } from '@/components/ui';
 import type { Colaborador } from '@/lib/data/types';
-import { guardarAsistencia } from './actions';
-
-export interface DiaSemana {
-  ms: number; // medianoche local del día (clave canónica)
-  abbr: string; // Lun, Mar, …
-  dia: number; // día del mes
-  mes: number; // 1–12
-}
-
-/** Opciones del submenú de captura del pase de lista. */
-const OPCIONES: { valor: number; simbolo: string; etiqueta: string }[] = [
-  { valor: 0, simbolo: '·', etiqueta: 'Falta' },
-  { valor: 0.5, simbolo: '½', etiqueta: 'Medio' },
-  { valor: 0.75, simbolo: '¾', etiqueta: 'Tres cuartos' },
-  { valor: 1, simbolo: '1', etiqueta: 'Completo' },
-];
-
-function etiquetaFraccion(f: number): string {
-  if (f === 1) return '1';
-  if (f === 0.75) return '¾';
-  if (f === 0.5) return '½';
-  return '·';
-}
-
-const cellKey = (colaboradorId: string, ms: number) => `${colaboradorId}|${ms}`;
+import {
+  OPCIONES,
+  cellKey,
+  etiquetaFraccion,
+  llevaPaseDeLista,
+  type DiaSemana,
+} from './tipos';
 
 interface MenuAbierto {
   colaboradorId: string;
@@ -36,30 +18,28 @@ interface MenuAbierto {
   left: number;
 }
 
+/**
+ * Cuadrícula semanal (colaboradores × 7 días) del pase de lista, para pantallas
+ * con ancho suficiente. Es presentacional: el estado y la escritura viven en
+ * `vista-asistencia.tsx`, que los comparte con la vista por día.
+ */
 export default function CuadriculaAsistencia({
-  obraId,
   colaboradores,
   dias,
-  fraccionesIniciales,
+  fracciones,
+  pendientes,
+  conError,
+  onMarcar,
 }: {
-  obraId: string;
   colaboradores: Colaborador[];
   dias: DiaSemana[];
-  fraccionesIniciales: Record<string, number>;
+  fracciones: Record<string, number>;
+  /** Celdas encoladas en este dispositivo, todavía sin confirmar en el servidor. */
+  pendientes: Set<string>;
+  conError: Set<string>;
+  onMarcar: (colaboradorId: string, ms: number, valor: number) => void;
 }) {
-  const [fracciones, setFracciones] = useState<Record<string, number>>(fraccionesIniciales);
-  const [guardando, setGuardando] = useState<Set<string>>(new Set());
-  const [conError, setConError] = useState<Set<string>>(new Set());
   const [menu, setMenu] = useState<MenuAbierto | null>(null);
-
-  function marcarSet(setter: React.Dispatch<React.SetStateAction<Set<string>>>, key: string, on: boolean) {
-    setter((prev) => {
-      const next = new Set(prev);
-      if (on) next.add(key);
-      else next.delete(key);
-      return next;
-    });
-  }
 
   function abrirMenu(e: React.MouseEvent<HTMLButtonElement>, colaboradorId: string, ms: number) {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -68,23 +48,9 @@ export default function CuadriculaAsistencia({
     setMenu({ colaboradorId, ms, top: rect.bottom + 4, left: rect.left });
   }
 
-  async function elegir(colaboradorId: string, ms: number, valor: number) {
+  function elegir(colaboradorId: string, ms: number, valor: number) {
     setMenu(null);
-    const key = cellKey(colaboradorId, ms);
-    const previo = fracciones[key] ?? 0;
-    if (valor === previo) return; // sin cambios
-
-    setFracciones((p) => ({ ...p, [key]: valor }));
-    marcarSet(setConError, key, false);
-    marcarSet(setGuardando, key, true);
-
-    const result = await guardarAsistencia(obraId, colaboradorId, ms, valor);
-
-    marcarSet(setGuardando, key, false);
-    if (!result.ok) {
-      setFracciones((p) => ({ ...p, [key]: previo })); // revertir si falló
-      marcarSet(setConError, key, true);
-    }
+    onMarcar(colaboradorId, ms, valor);
   }
 
   function totalColaborador(colaboradorId: string): number {
@@ -113,7 +79,7 @@ export default function CuadriculaAsistencia({
           </thead>
           <tbody>
             {colaboradores.map((c) => {
-              const editable = c.tipo_pago === 'DIA';
+              const editable = llevaPaseDeLista(c.tipo_pago);
               return (
                 <tr key={c.id} className="border-b border-neutral-100 last:border-0 hover:bg-neutral-50">
                   <td className="sticky left-0 z-10 bg-white px-4 py-3">
@@ -138,9 +104,12 @@ export default function CuadriculaAsistencia({
                         <button
                           type="button"
                           onClick={(e) => abrirMenu(e, c.id, d.ms)}
-                          disabled={guardando.has(key)}
-                          title="Tocar para marcar el pase de lista"
-                          className={`h-9 w-9 rounded-lg border text-sm font-semibold transition disabled:opacity-50 ${
+                          title={
+                            pendientes.has(key)
+                              ? 'Guardado en este dispositivo, falta enviar'
+                              : 'Tocar para marcar el pase de lista'
+                          }
+                          className={`relative h-9 w-9 cursor-pointer rounded-lg border text-sm font-semibold transition ${
                             conError.has(key)
                               ? 'border-red-300 bg-red-50 text-red-600'
                               : tiene
@@ -149,6 +118,11 @@ export default function CuadriculaAsistencia({
                           }`}
                         >
                           {etiquetaFraccion(f)}
+                          {/* Punto de "falta enviar": la celda ya está capturada
+                              en este dispositivo pero no confirmada en el servidor. */}
+                          {pendientes.has(key) && !conError.has(key) && (
+                            <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-amber-400" />
+                          )}
                         </button>
                       </td>
                     );
@@ -181,7 +155,7 @@ export default function CuadriculaAsistencia({
                   key={o.valor}
                   type="button"
                   onClick={() => elegir(menu.colaboradorId, menu.ms, o.valor)}
-                  className={`flex w-full items-center gap-3 px-3 py-2 text-left text-sm transition hover:bg-neutral-100 ${
+                  className={`flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left text-sm transition hover:bg-neutral-100 ${
                     activo ? 'bg-neutral-50 font-medium text-neutral-900' : 'text-neutral-700'
                   }`}
                 >
