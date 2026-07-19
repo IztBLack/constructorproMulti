@@ -240,3 +240,49 @@ export async function desasignarObra(cuadrillaId: string, obraId: string): Promi
   revalidatePath(`/admin/cuadrillas/${cuadrillaId}`);
   return { ok: true };
 }
+
+/// Fase 4 — Destajo por cuadrilla: registra una BOLSA ya repartida como UNA fila
+/// de `destajos` por miembro (monto = bolsa × %), todas con el mismo
+/// `cuadrilla_id` y concepto. La nómina las suma por colaborador sin cambios.
+/// El repartidor (UI) garantiza que la suma de montos = total de la bolsa.
+export async function registrarDestajoCuadrilla(
+  cuadrillaId: string,
+  obraId: string,
+  concepto: string,
+  reparto: { colaboradorId: string; monto: number }[],
+): Promise<ActionResult> {
+  if (!obraId) return { ok: false, error: 'Selecciona una obra.' };
+  if (!concepto.trim()) return { ok: false, error: 'Captura el concepto del destajo.' };
+  if (reparto.length === 0) return { ok: false, error: 'La cuadrilla no tiene miembros.' };
+  if (reparto.some((r) => !Number.isFinite(r.monto) || r.monto < 0)) {
+    return { ok: false, error: 'Montos inválidos en el reparto.' };
+  }
+
+  let empresaId: string;
+  try {
+    ({ empresaId } = await getEmpresaUsuario());
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Error de autenticación.' };
+  }
+
+  const supabase = await createClient();
+  const now = Date.now();
+  const rows = reparto.map((r) => ({
+    id: crypto.randomUUID(),
+    empresa_id: empresaId,
+    colaborador_id: r.colaboradorId,
+    obra_id: obraId,
+    fecha: now,
+    concepto: concepto.trim(),
+    monto: r.monto,
+    cuadrilla_id: cuadrillaId,
+    created_at: now,
+    updated_at: now,
+  }));
+
+  const { error } = await supabase.from('destajos').insert(rows);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath(`/admin/cuadrillas/${cuadrillaId}`);
+  return { ok: true };
+}

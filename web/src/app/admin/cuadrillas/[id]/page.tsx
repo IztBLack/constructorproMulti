@@ -6,6 +6,7 @@ import { listColaboradores, listObrasDisponibles } from '@/lib/data/equipo';
 import { ESPECIALIDAD_LABEL } from '../especialidades';
 import EditarCuadrillaForm from './editar-cuadrilla-form';
 import GestionCuadrilla from './gestion-cuadrilla';
+import DestajoCuadrillaForm from './destajo-cuadrilla-form';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,7 +56,14 @@ export default async function CuadrillaDetallePage({
             {ESPECIALIDAD_LABEL[cuadrilla.especialidad] ?? cuadrilla.especialidad}
           </p>
         </div>
-        <EditarCuadrillaForm cuadrilla={cuadrilla} />
+        <div className="flex flex-wrap items-center gap-2">
+          <DestajoCuadrillaForm
+            cuadrillaId={cuadrilla.id}
+            miembros={cuadrilla.miembros}
+            obras={cuadrilla.obras.length > 0 ? cuadrilla.obras : obras}
+          />
+          <EditarCuadrillaForm cuadrilla={cuadrilla} />
+        </div>
       </header>
 
       <GestionCuadrilla
