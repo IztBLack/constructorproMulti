@@ -61,6 +61,11 @@ class SyncService {
     'puestos',
     'colaboradores',
     'obras',
+    // Cuadrillas: van DESPUÉS de colaboradores/obras y ANTES de asistencias/
+    // destajos, que ahora referencian cuadrilla_id (evita fallo de FK en push).
+    'cuadrillas',
+    'cuadrilla_miembro',
+    'asignacion_cuadrilla_obra',
     'obra_presupuesto',
     'cotizaciones',
     'secciones',

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
 import '../../data/providers.dart';
 import '../common/app_spacing.dart';
 import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
+import '../cuadrillas/cuadrillas_screen.dart' show especialidadLabel;
 
 /// Pase de lista UNIFICADO: pasa lista de todas las obras activas en un día.
 class PaseListaScreen extends ConsumerStatefulWidget {
@@ -96,6 +98,10 @@ class _ObraPaseLista extends ConsumerWidget {
     // Cada colaborador se muestra SOLO bajo su última obra asignada, para no
     // duplicarlo cuando está en varias obras a la vez.
     final ultimaObra = ref.watch(ultimaObraPorColaboradorProvider).asData?.value ?? {};
+    // Cuadrilla vigente por colaborador (para agrupar y etiquetar la asistencia).
+    final cuadrillaPorColab =
+        ref.watch(cuadrillaPorColaboradorProvider).asData?.value ??
+            const <String, Cuadrilla>{};
     final dia = workers
         .where((c) => c.tipoPago == 'DIA')
         .where((c) => ultimaObra[c.id]?.id == obraId)
@@ -103,20 +109,111 @@ class _ObraPaseLista extends ConsumerWidget {
     if (dia.isEmpty) return const SizedBox.shrink();
     final frac = {for (final a in asistencias) a.colaboradorId: a.fraccion};
 
-    return ExpansionTile(
-      initiallyExpanded: true,
-      title: Text(obraNombre, style: const TextStyle(fontWeight: FontWeight.bold)),
-      subtitle: Text('${dia.length} trabajador(es)'),
-      children: dia.map((c) {
-        return _PaseListaRow(
+    // Agrupa por cuadrilla vigente (preserva orden de aparición). Los que no
+    // tienen cuadrilla caen bajo la clave null ("Sin cuadrilla").
+    final grupos = <String?, List<Colaborador>>{};
+    for (final c in dia) {
+      final cid = cuadrillaPorColab[c.id]?.id;
+      (grupos[cid] ??= []).add(c);
+    }
+    // Orden: cuadrillas primero (por nombre), "Sin cuadrilla" al final.
+    final claves = grupos.keys.toList()
+      ..sort((a, b) {
+        if (a == null) return 1;
+        if (b == null) return -1;
+        final na = cuadrillaPorColab.values
+            .firstWhere((q) => q.id == a)
+            .nombre;
+        final nb = cuadrillaPorColab.values
+            .firstWhere((q) => q.id == b)
+            .nombre;
+        return na.compareTo(nb);
+      });
+
+    final children = <Widget>[];
+    for (final cid in claves) {
+      final miembros = grupos[cid]!;
+      final cuadrilla = cid == null
+          ? null
+          : cuadrillaPorColab.values.firstWhere((q) => q.id == cid);
+      // Encabezado de grupo (solo si hay cuadrilla) con acción "marcar todos".
+      if (cuadrilla != null) {
+        children.add(_CuadrillaHeader(
+          nombre: cuadrilla.nombre,
+          especialidad: especialidadLabel(cuadrilla.especialidad),
+          count: miembros.length,
+          onMarcarTodos: () async {
+            final repo = ref.read(asistenciaRepositoryProvider);
+            for (final c in miembros) {
+              await repo.setFraccion(
+                obraId: obraId,
+                colaboradorId: c.id,
+                fecha: diaMillis,
+                fraccion: 1.0,
+                cuadrillaId: cid,
+              );
+            }
+          },
+        ));
+      }
+      for (final c in miembros) {
+        children.add(_PaseListaRow(
           key: ValueKey('${obraId}_${c.id}_$diaMillis'),
           obraId: obraId,
           colaboradorId: c.id,
           nombre: c.nombre,
           diaMillis: diaMillis,
           fraccionInicial: frac[c.id] ?? 0.0,
-        );
-      }).toList(),
+          cuadrillaId: cid,
+        ));
+      }
+    }
+
+    return ExpansionTile(
+      initiallyExpanded: true,
+      title: Text(obraNombre, style: const TextStyle(fontWeight: FontWeight.bold)),
+      subtitle: Text('${dia.length} trabajador(es)'),
+      children: children,
+    );
+  }
+}
+
+/// Encabezado de un grupo de cuadrilla dentro del pase de lista, con acción
+/// rápida para marcar a todos los miembros como presentes (día completo).
+class _CuadrillaHeader extends StatelessWidget {
+  const _CuadrillaHeader({
+    required this.nombre,
+    required this.especialidad,
+    required this.count,
+    required this.onMarcarTodos,
+  });
+
+  final String nombre;
+  final String especialidad;
+  final int count;
+  final Future<void> Function() onMarcarTodos;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      color: scheme.surfaceContainerHighest,
+      padding: const EdgeInsets.fromLTRB(16, 6, 8, 6),
+      child: Row(
+        children: [
+          Icon(Icons.groups, size: 18, color: scheme.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text('$nombre · $especialidad',
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          TextButton.icon(
+            icon: const Icon(Icons.done_all, size: 18),
+            label: const Text('Todos ✓'),
+            onPressed: onMarcarTodos,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -134,6 +231,7 @@ class _PaseListaRow extends ConsumerStatefulWidget {
     required this.nombre,
     required this.diaMillis,
     required this.fraccionInicial,
+    this.cuadrillaId,
   });
 
   final String obraId;
@@ -141,6 +239,7 @@ class _PaseListaRow extends ConsumerStatefulWidget {
   final String nombre;
   final int diaMillis;
   final double fraccionInicial;
+  final String? cuadrillaId;
 
   @override
   ConsumerState<_PaseListaRow> createState() => _PaseListaRowState();
@@ -162,6 +261,7 @@ class _PaseListaRowState extends ConsumerState<_PaseListaRow> {
             colaboradorId: widget.colaboradorId,
             fecha: widget.diaMillis,
             fraccion: nueva,
+            cuadrillaId: widget.cuadrillaId,
           );
       if (mounted) setState(() => _save = _SaveState.saved);
     } catch (_) {

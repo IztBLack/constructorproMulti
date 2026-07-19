@@ -8,6 +8,7 @@ import 'backup/backup_service.dart';
 import 'maintenance_repository.dart';
 import 'repositories.dart';
 import 'repositories_obra.dart';
+import 'repositories_cuadrilla.dart';
 import 'repositories_cotizacion.dart';
 
 /// Pestaña seleccionada del shell inferior (para accesos rápidos del dashboard).
@@ -57,6 +58,9 @@ final asistenciaRepositoryProvider = Provider<AsistenciaRepository>(
 
 final destajoRepositoryProvider = Provider<DestajoRepository>(
     (ref) => DestajoRepository(ref.watch(databaseProvider)));
+
+final cuadrillaRepositoryProvider = Provider<CuadrillaRepository>(
+    (ref) => CuadrillaRepository(ref.watch(databaseProvider)));
 
 final movimientoRepositoryProvider = Provider<MovimientoRepository>(
     (ref) => MovimientoRepository(ref.watch(databaseProvider)));
@@ -140,6 +144,29 @@ final movimientoColaboradorServiceProvider =
 final destajosRangoProvider =
     StreamProvider.family<List<Destajo>, RangoObra>((ref, r) =>
         ref.watch(destajoRepositoryProvider).watchRango(r.obraId, r.start, r.end));
+
+// ---------------- Cuadrillas ----------------
+final cuadrillasProvider = StreamProvider<List<Cuadrilla>>(
+    (ref) => ref.watch(cuadrillaRepositoryProvider).watchAll());
+
+/// cuadrillaId → nº de miembros vigentes (para la lista de cuadrillas).
+final conteoMiembrosCuadrillaProvider = StreamProvider<Map<String, int>>(
+    (ref) => ref.watch(cuadrillaRepositoryProvider).watchConteoMiembros());
+
+/// Miembros vigentes de una cuadrilla.
+final miembrosDeCuadrillaProvider =
+    StreamProvider.family<List<Colaborador>, String>((ref, cuadrillaId) =>
+        ref.watch(cuadrillaRepositoryProvider).watchMiembros(cuadrillaId));
+
+/// Cuadrillas asignadas (vigentes) a una obra.
+final cuadrillasPorObraProvider =
+    StreamProvider.family<List<Cuadrilla>, String>((ref, obraId) =>
+        ref.watch(cuadrillaRepositoryProvider).watchCuadrillasPorObra(obraId));
+
+/// colaboradorId → cuadrilla vigente (para etiquetar/agrupar el pase de lista).
+final cuadrillaPorColaboradorProvider = StreamProvider<Map<String, Cuadrilla>>(
+    (ref) =>
+        ref.watch(cuadrillaRepositoryProvider).watchCuadrillaPorColaborador());
 
 // ---------------- Cotizaciones / Presupuesto ----------------
 final cotizacionRepositoryProvider = Provider<CotizacionRepository>(
