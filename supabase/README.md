@@ -23,6 +23,12 @@ Supabase es el punto de encuentro para sync y para la web `/admin` + `/cliente`.
 | `migrations/0007_storage_y_cliente_responde.sql` | Bucket Storage `cotizaciones` (archivos adjuntos) + RPC `cliente_responder_cotizacion`. |
 | `migrations/0008_control_pagos_obra.sql` | `movimientos.nombre` + tabla `obra_presupuesto` (estado de cuenta de obra estilo Excel). |
 | `migrations/0009_sueldo_periodo_colaborador.sql` | `colaboradores.periodo_pago`/`salario_periodo`/`dias_semana` — sueldo capturado por periodo (semanal/quincenal/mensual); el salario diario que usa la nómina (`salario_personalizado`) pasa a derivarse de estos campos. |
+| `migrations/0010_cliente_estado_cuenta.sql` | Portal del cliente: estado de cuenta REAL por obra (lee `obra_presupuesto` y sus ENTRADAS; nunca ve movimientos de SALIDA). |
+| `migrations/0011_cotizacion_reaprobacion.sql` | Re-aprobación de cambios por el cliente: snapshot de la cotización al aceptarla, para detectar cambios posteriores. |
+| `migrations/0012_obra_presupuesto_seccion.sql` | `obra_presupuesto.seccion` — el presupuesto de obra conserva las secciones de la cotización de origen. |
+| `migrations/0013_fix_codigos_vinculacion_insert.sql` | 🔴 Seguridad: cierra escalada a admin vía códigos de vinculación (INSERT solo para admin/supervisor). |
+| `migrations/0014_role_granularity_colaborador.sql` | Seguridad: `colaborador` = staff de campo — escribe solo tablas de captura (asistencias, destajos, movimientos, obra_colaborador) y **lee** el resto; admin/supervisor conservan acceso total (policies granulares `_staff_read/insert/update/delete`). |
+| `migrations/0015_cuadrillas.sql` | **Cuadrillas**: `cuadrillas` (nombre, especialidad, cabo), `cuadrilla_miembro` (N:M con historial) y `asignacion_cuadrilla_obra` (cuadrilla↔obra con fechas), + `cuadrilla_id` nullable en `asistencias`/`destajos`. Aditiva e idempotente; RLS espejo de 0014. |
 
 ## Pasos para activarlo (ya activo; referencia si se recrea el proyecto)
 
