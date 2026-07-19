@@ -87,6 +87,23 @@ CRUD de colaboradores: activar/inactivar, contacto de emergencia, **historial de
 buscar, ordenar (nombre/puesto/obra). **Asignación multi-obra**: un colaborador puede
 estar en varias obras a la vez (chips), asignar/desvincular desde la propia lista.
 
+#### Cuadrillas (equipos de colaboradores)
+Capa organizativa encima de los colaboradores: una **cuadrilla** agrupa trabajadores por
+**especialidad** (albañilería, acero, cimbra, instalaciones, acabados, mixta) bajo un
+**cabo** (jefe de cuadrilla). Es **global por empresa** y **rota entre obras** mediante
+asignaciones con fechas, conservando el historial.
+
+- **Gestión** (icono de grupos en Equipo): crear/editar, agregar/quitar miembros, marcar
+  el cabo, asignar/desasignar obras.
+- **Pase de lista agrupado**: los trabajadores se listan bajo su cuadrilla, con acción
+  **"marcar toda la cuadrilla"**. La asistencia sigue siendo individual.
+- **Destajo por cuadrilla**: se captura una **bolsa** (obra, concepto, total) y se reparte
+  por **porcentaje** entre los miembros; genera un destajo por persona, así la **nómina lo
+  suma sin cambios**.
+
+También disponible en la **web admin** (`/admin/cuadrillas`), salvo el pase de lista.
+Detalle de diseño y decisiones en [`docs/cuadrillas_diseno.md`](docs/cuadrillas_diseno.md).
+
 ### Resumen (dashboard)
 Selector **Mes/Año**, contadores (obras/equipo/cotizaciones), **KPI Pipeline** (valor de
 cotizaciones pendientes), **accesos rápidos** (pase de lista, cotizar, equipo, catálogo),
@@ -100,15 +117,21 @@ Tema, recordatorio de nómina, **Puestos**, **Catálogo (CRUD + cargar oficial)*
 datos de prueba, respaldo export/import, reporte de errores, **zona de peligro**.
 
 ### Pase de lista (cross-obra)
-Pantalla dedicada para pasar lista de **todas las obras activas** en un día.
+Pantalla dedicada para pasar lista de **todas las obras activas** en un día. Los
+trabajadores aparecen **agrupados por cuadrilla**, con acción para marcar a todo el equipo.
 
 ---
 
 ## 4. Datos (Drift)
 
-13 tablas: `obras, puestos, colaboradores, obra_colaborador, asistencias, destajos,
-cotizaciones, secciones, partidas, pagos, movimientos, catalogo_conceptos, archivos_cotizacion`.
+17 tablas: `obras, puestos, colaboradores, obra_colaborador, asistencias, destajos,
+cuadrillas, cuadrilla_miembro, asignacion_cuadrilla_obra, cotizaciones, secciones,
+partidas, pagos, movimientos, catalogo_conceptos, archivos_cotizacion, obra_presupuesto`.
 Catálogo base sembrado desde `assets/catalogo_base.json`.
+
+Esquema local en **v7** (`schemaVersion`), con snapshots en `drift_schemas/` y prueba de
+migración en `test/data/migration_v7_test.dart`. Espejo en Supabase vía
+`supabase/migrations/` (cuadrillas = `0015_cuadrillas.sql`).
 
 **Continuidad de datos:** `BackupService` importa/exporta el mismo esquema JSON que la app
 Kotlin → migración de datos sin pérdida.
@@ -145,7 +168,8 @@ mejoras nuevas.
 |---|---|
 | Obras | CRUD · detalle 4 pestañas · **switcher entre obras** |
 | Equipo | CRUD · activar/inactivar · contacto emergencia · **historial de obras** · buscar · ordenar (nombre/puesto/obra) · **crear inline al asignar** · **multi-obra (chips + asignar/desvincular desde la lista)** |
-| Asistencia | pase de lista por día · **vista semanal (grid)** · resumen semanal · **pase de lista unificado cross-obra** |
+| Cuadrillas ⭐ | **nuevo (no existía en Kotlin)**: equipos por especialidad con cabo · membresía N:M con historial · asignación a obra con fechas · pase de lista agrupado · **destajo por cuadrilla con reparto por %** · también en web admin |
+| Asistencia | pase de lista por día · **vista semanal (grid)** · resumen semanal · **pase de lista unificado cross-obra** · **agrupado por cuadrilla** |
 | Nómina | cálculo semanal (16 tests de paridad) · detalle por día · agregar/**eliminar destajo** · **registrar en caja** · PDF |
 | Flujo de caja | entradas/salidas · **gasto ligado a partida** · PDF |
 | Cotizaciones | CRUD · estados · duplicar · vincular/convertir a obra · **IVA% y descuento configurables** |

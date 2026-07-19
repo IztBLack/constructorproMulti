@@ -1,37 +1,65 @@
 # Cuadrillas de colaboradores — análisis y diseño
 
-> Rama: `feat/colaboradores-cuadrillas`. Análisis apoyado en el grafo Graphify
-> (`graphify-out/graph.html`, 1336 nodos / 60 comunidades, extracción AST de `lib/`)
-> + investigación de cómo operan las cuadrillas en construcción (México)
+> Rama: `feat/colaboradores-cuadrillas` (mergeada a `main`). Análisis apoyado en el grafo
+> Graphify + investigación de cómo operan las cuadrillas en construcción (México)
 > + introspección del esquema REAL de producción (Supabase Management API).
+>
+> **Grafo** (`graphify-out/graph.html`, extracción AST de `lib/`, regenerado tras la
+> feature): 64 archivos → **1424 nodos / 2143 aristas / 63 comunidades** (antes de
+> cuadrillas: 1336 / 1964 / 60). `SyncCols` pasó a ser *god node* (grado 19) al
+> incorporarlo las 3 tablas nuevas — evidencia de que la feature siguió el molde
+> existente en vez de inventar uno.
 
-## Estado de implementación (Fases 1–3 ✅ hechas y verificadas)
+## Estado: ✅ COMPLETO (Fases 1–4) en móvil y web, desplegado a producción
 
-- **Fase 1 — Datos + sync:** ✅ 3 tablas Drift (`Cuadrillas`, `CuadrillaMiembro`,
+### Móvil (Flutter)
+
+- **Fase 1 — Datos + sync:** 3 tablas Drift (`Cuadrillas`, `CuadrillaMiembro`,
   `AsignacionCuadrillaObra`) + `cuadrilla_id` nullable en `asistencias`/`destajos`;
   migración local v6→**v7** idempotente; snapshot `drift_schemas/drift_schema_v7.json`;
   cableado de sync (`pushOrder`, `resetAll`, `sellarEmpresaId`); migración Supabase
-  **`supabase/migrations/0015_cuadrillas.sql`** (aditiva, idempotente, RLS espejo de
-  0014); `CuadrillaRepository` + providers.
-- **Fase 2 — UI gestión:** ✅ `cuadrillas_screen.dart` (lista, crear/editar, miembros,
-  cabo, asignación a obra); acceso desde "Equipo".
-- **Fase 3 — Pase de lista por cuadrilla:** ✅ agrupación por cuadrilla + acción
-  "marcar toda la cuadrilla"; sella `cuadrilla_id` sin afectar la nómina.
-- **Fase 4 — Destajo por cuadrilla + reparto:** ✅ hecha SIN tabla nueva ni migración:
-  la bolsa se guarda como **N filas de `destajos`** (una por miembro, monto = bolsa × %),
-  todas con el mismo `cuadrilla_id` y concepto (reutiliza la columna ya aplicada en 0015).
-  `DestajoRepository.registrarBolsaCuadrilla` + `destajo_cuadrilla_screen.dart` (captura de
-  bolsa, reparto por % con validación 100%, "partes iguales"). La nómina existente las suma
-  por colaborador sin cambios.
+  **`supabase/migrations/0015_cuadrillas.sql`**; `CuadrillaRepository` + providers.
+- **Fase 2 — UI gestión:** `lib/presentation/cuadrillas/cuadrillas_screen.dart` (lista,
+  crear/editar, miembros, cabo, asignación a obra); acceso desde "Equipo".
+- **Fase 3 — Pase de lista por cuadrilla:** agrupación por cuadrilla + acción "marcar
+  toda la cuadrilla"; sella `cuadrilla_id` sin afectar la nómina.
+- **Fase 4 — Destajo por cuadrilla:** `DestajoRepository.registrarBolsaCuadrilla` +
+  `destajo_cuadrilla_screen.dart` (bolsa, reparto por % con validación 100%).
+
+### Web (Next.js admin) — paridad de gestión
+
+`/admin/cuadrillas` (+ enlace en la navegación admin):
+
+- **Lista:** nombre, especialidad, cabo, miembros, obras asignadas, estado; crear
+  (`nueva-cuadrilla-form.tsx`) y eliminar (soft-delete en cascada).
+- **Detalle** `/admin/cuadrillas/[id]`: editar nombre/especialidad, activar/desactivar,
+  gestión de **miembros** (agregar/quitar), **cabo** (marcar/quitar) y **obras**
+  (asignar/desasignar) — `gestion-cuadrilla.tsx`.
+- **Fase 4 en web:** botón "Registrar destajo" → `destajo-cuadrilla-form.tsx` (obra,
+  concepto, bolsa y reparto por % con montos en vivo); la server action
+  `registrarDestajoCuadrilla` inserta una fila de `destajos` por miembro.
+- Server actions en `web/src/app/admin/cuadrillas/actions.ts` (resuelven `empresa_id`
+  con `getEmpresaUsuario` + `revalidatePath`); datos en `web/src/lib/data/cuadrillas.ts`.
+
+> El **pase de lista agrupado por cuadrilla** (Fase 3) es exclusivo del móvil: es captura
+> de campo.
+
+### Decisión clave de la Fase 4
+
+Se implementó **sin tabla nueva ni migración adicional**: la bolsa se guarda como **N
+filas de `destajos`** (una por miembro, monto = bolsa × %), todas con el mismo
+`cuadrilla_id` y concepto, reutilizando la columna ya creada en la `0015`. Así la
+**nómina existente las suma por colaborador sin cambio alguno**.
 
 **Verificación:** `dart analyze lib` sin errores; **65 tests** en verde, incluyendo
 `test/data/cuadrilla_test.dart` (flujo end-to-end + reparto de bolsa) y
 `test/data/migration_v7_test.dart` (migración v6→v7 valida esquema contra snapshot y
-preserva datos).
+preserva datos). `npm run build` del web en verde.
 
-**Producción:** `0015_cuadrillas.sql` ✅ **YA aplicada** (2026-07-18, verificada: 3
-tablas, `cuadrilla_id` nullable en asistencias/destajos, 4 policies RLS por tabla,
-RLS + trigger). Al ser aditiva, la app y la web actuales la ignoran hasta desplegar.
+**Producción:** `0015_cuadrillas.sql` **aplicada y verificada** (3 tablas, `cuadrilla_id`
+nullable en asistencias/destajos, 4 policies RLS por tabla, RLS + trigger). Código
+mergeado a `main` y desplegado en **https://constructorpro-tawny.vercel.app**. La
+sección arranca **vacía** (los datos demo usados para validar fueron eliminados).
 
 ## 1. Forma actual de los colaboradores (lo que ya existe)
 
