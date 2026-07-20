@@ -96,7 +96,28 @@ Conviene hacerlo al instalar la app, antes de salir a obra.
 Si alguna vez hace falta cachear algo autenticado, primero hay que resolver el
 aislamiento por usuario. No es un ajuste de configuración.
 
-## 5. Cómo se comporta la cola de asistencia
+## 5. En qué obra aparece cada colaborador
+
+En `/campo` cada persona aparece **una sola vez por día**, y la obra se decide así:
+
+1. **Si ya tiene asistencia ese día** → aparece en la obra con la que quedó
+   registrada, aunque después la hayan reasignado a otra.
+2. **Si no tiene asistencia todavía** → aparece en su última obra asignada
+   (mayor `fecha_ingreso`), igual que `ultimaObraPorColaboradorProvider` del móvil.
+
+La regla 1 no es cosmética. Al mover a alguien de obra a media semana, su marca del
+lunes conserva el `obra_id` viejo; si se le listara bajo la obra nueva, esa marca
+sería invisible y el capturista la volvería a poner, creando un **segundo registro
+del mismo día en otra obra**. Ese día se pagaría dos veces.
+
+La regla 2 evita el problema opuesto: quien sigue asignado a tres obras a la vez
+—normal cuando nadie cierra asignaciones viejas— aparecería tres veces y podrían
+marcarle tres jornadas en un día.
+
+> Caso no cubierto: si la asistencia quedó en una obra que después se **desactivó**,
+> no hay sección donde mostrarla y la persona vuelve a su obra vigente.
+
+## 6. Cómo se comporta la cola de asistencia
 
 - Indexada por la **clave natural** `(obra, colaborador, fecha)`: re-marcar la misma
   celda reemplaza la entrada, nunca apila. Idempotente por diseño.
@@ -112,7 +133,7 @@ aislamiento por usuario. No es un ajuste de configuración.
 - Marcas de otra empresa (otro usuario inició sesión en el dispositivo) **sí** se
   descartan al enviar, por seguridad multi-tenant.
 
-## 6. Pendiente de probar en dispositivo real
+## 7. Pendiente de probar en dispositivo real
 
 Nada de esto se pudo verificar automáticamente (hace falta un iPhone y una sesión):
 
