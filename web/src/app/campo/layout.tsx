@@ -14,8 +14,10 @@ import Link from 'next/link';
  * /login desde el middleware, y es a propósito: una redirección exige red, y
  * esta pantalla tiene que abrir sin señal.
  */
+// El layout raíz ya aplica la plantilla "%s · ConstructorPro", así que aquí va
+// solo el nombre de la pantalla; incluir la marca la duplicaría en la pestaña.
 export const metadata = {
-  title: 'Pase de lista · ConstructorPro',
+  title: 'Pase de lista',
 };
 
 export default function CampoLayout({ children }: { children: React.ReactNode }) {
