@@ -4,15 +4,18 @@ import type { MetadataRoute } from 'next';
  * Manifest de la PWA (convención de archivo de metadata de Next 16:
  * `app/manifest.ts` → se sirve en `/manifest.webmanifest`).
  *
- * `start_url` apunta a `/admin` porque es el punto de entrada real de la app
- * instalada; si no hay sesión, el layout de admin redirige a `/login`.
+ * `start_url` apunta a `/campo`, no a `/admin`, porque la app instalada existe
+ * sobre todo para pasar lista en obra. Y es la única pantalla que abre **sin
+ * señal**: su HTML es estático y está precacheada por el service worker,
+ * mientras que `/admin` se renderiza en el servidor y sin red termina en
+ * `/offline`. Arrancar en `/campo` es lo que hace útil a la app instalada.
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'ConstructorPro',
     short_name: 'ConstructorPro',
     description: 'Gestión de obras: nómina, asistencia, cotizaciones y pagos.',
-    start_url: '/admin',
+    start_url: '/campo',
     scope: '/',
     display: 'standalone',
     orientation: 'portrait',

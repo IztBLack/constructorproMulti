@@ -116,7 +116,14 @@ export default function ObraTabs({ obraId }: ObraTabsProps) {
       {!enLinea && (
         <p className="text-xs text-amber-700">
           Sin conexión · la navegación se reactiva al volver la señal. Puedes seguir
-          capturando en esta pantalla.
+          capturando aquí, o ir al{' '}
+          {/* <a> y no <Link>: sin red, la navegación de cliente de Next falla al
+              pedir el payload RSC. Una navegación dura sí la puede atender el
+              service worker desde el precache. */}
+          <a href="/campo" className="font-medium underline">
+            pase de lista de campo
+          </a>
+          , que funciona sin conexión y cubre todas las obras.
         </p>
       )}
     </div>

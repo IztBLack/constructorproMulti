@@ -21,12 +21,19 @@
  * guarda; si la red falla se sirve `/offline` desde el precache.
  */
 
-const CACHE = 'constructorpro-v1';
+const CACHE = 'constructorpro-v2';
 const OFFLINE_URL = '/offline';
+
+/** Pantalla de captura de campo. Se precachea porque es la única que tiene que
+ *  poder abrirse **sin señal y con la app cerrada**: su HTML es estático y no
+ *  contiene datos de ninguna empresa (ver `src/app/campo/page.tsx`), así que
+ *  guardarla no rompe el aislamiento multi-tenant. */
+const CAMPO_URL = '/campo';
 
 /** Recursos precacheados en `install`. Todos públicos y sin datos de usuario. */
 const PRECACHE_URLS = [
   OFFLINE_URL,
+  CAMPO_URL,
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/icon-maskable-192.png',
@@ -106,12 +113,21 @@ async function cacheFirst(request) {
 /**
  * Network-first para navegaciones. La respuesta NO se guarda nunca: puede ser
  * una página de `/admin` con datos de una empresa concreta.
+ *
+ * Si la red falla, antes de rendirse se busca la propia ruta en el precache.
+ * Eso solo puede acertar con `/campo` y `/offline` —son las únicas navegaciones
+ * precacheadas, ambas sin datos de usuario—, así que abrir la app sin señal
+ * lleva al pase de lista en vez de a la pantalla de error.
  */
 async function navegacionConFallback(request) {
   try {
     return await fetch(request);
   } catch {
     const cache = await caches.open(CACHE);
+
+    const propia = await cache.match(new URL(request.url).pathname, { ignoreSearch: true });
+    if (propia) return propia;
+
     const offline = await cache.match(OFFLINE_URL);
     if (offline) return offline;
     return new Response(

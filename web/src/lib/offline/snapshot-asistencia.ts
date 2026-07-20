@@ -83,12 +83,22 @@ export async function leerSnapshot(
  * Safari puede purgar TODO el origen (incluida la cola de escritura pendiente).
  * Por eso la poda es agresiva con la lectura, que siempre se puede recuperar
  * del servidor, y nunca toca la cola, que es dato del usuario aún no subido.
+ *
+ * Solo poda SUS propios registros. El pase de lista de campo comparte este store
+ * con claves prefijadas `pl|` (ver `snapshot-pase-lista.ts`), y entre ellas está
+ * el mapa `userId → empresaId` que ancla la guarda multi-tenant offline.
+ * Borrarlo no abriría la guarda —sin mapa, la lectura falla cerrado— pero dejaría
+ * la pantalla de campo vacía hasta recuperar señal, que es justo cuando no la hay.
  */
+const PREFIJO_AJENO = 'pl|';
+
 export async function podarSnapshots(
   maxSemanas: number = MAX_SEMANAS_POR_DEFECTO,
 ): Promise<void> {
   if (!hayIdb()) return;
-  const todos = await idbGetAll<RegistroSnapshot>(STORE_SNAPSHOTS);
+  const todos = (await idbGetAll<RegistroSnapshot>(STORE_SNAPSHOTS)).filter(
+    (r) => !r.clave.startsWith(PREFIJO_AJENO),
+  );
   if (todos.length <= maxSemanas) return;
   todos.sort((a, b) => b.guardadoEn - a.guardadoEn); // más reciente primero
   const sobran = todos.slice(maxSemanas).map((r) => r.clave);

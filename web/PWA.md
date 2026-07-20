@@ -35,31 +35,51 @@ alternativos del DMA europeo (iOS 17.4+) **no aplica en México**.
 
 ## 3. Qué funciona sin señal, y qué no
 
+La pantalla de campo es **`/campo`**: el pase de lista unificado (un día, todas las
+obras activas, sin navegar entre ellas). Es el puerto a web de `PaseListaScreen` del
+móvil, y la app instalada arranca ahí.
+
 | Escenario | ¿Funciona? |
 |---|---|
-| Marcar asistencia con la pantalla ya abierta y la señal caída | **Sí.** Se encola local y se envía al reconectar. |
-| Cambiar de semana / navegar a otra pantalla sin señal | Se muestra la página `/offline`. |
-| Abrir la app desde cero, sin señal, y pasar lista | **No.** Ver la limitación de abajo. |
-| Ver reportes, PDF, cotizaciones sin señal | **No.** Solo el pase de lista tiene cola offline. |
+| Abrir la app instalada sin señal y pasar lista | **Sí**, en `/campo` — si ya se abrió una vez con señal (ver abajo) |
+| Pasar lista de **varias obras** sin señal | **Sí.** `/campo` las lista todas; no hay que navegar |
+| Marcar con la pantalla ya abierta y la señal caída | **Sí.** Se encola local y se envía al reconectar |
+| Cambiar de día dentro de `/campo` sin señal | **Sí**, si ese día tiene copia guardada |
+| Navegar por `/admin` sin señal | **No.** Se muestra `/offline`; las pestañas de obra se desactivan y ofrecen ir a `/campo` |
+| Ver reportes, PDF, cotizaciones sin señal | **No.** Solo el pase de lista tiene cola offline |
 
-### La limitación del arranque en frío
+### Por qué `/campo` vive fuera de `/admin`
 
-Las pantallas de `/admin` se renderizan en el servidor y **no se cachean a propósito**:
-la app es multi-tenant, y cachear una respuesta autenticada significaría servirle a un
-usuario los datos de la empresa de otro que usó el mismo dispositivo. Es una decisión
-de seguridad, no una omisión.
+El layout de `/admin` es `force-dynamic` e imprime el nombre de la empresa y del
+usuario en el HTML. Cachear eso significaría servirle a un usuario los datos de la
+empresa de otro que usó el mismo dispositivo.
 
-Consecuencia: sin señal, abrir la app desde cero llega a `/offline`, no al pase de
-lista. Resolverlo bien exige una ruta aparte, renderizada 100% en el cliente y sin
-datos de usuario en el HTML (cacheable sin riesgo), que lea de IndexedDB. Es trabajo
-pendiente, no un ajuste.
+`/campo` tiene su propio layout que **no consulta nada en el servidor**: su HTML es
+idéntico para cualquier usuario, así que el service worker puede precachearlo sin
+riesgo. Los datos los pide el cliente con la sesión de la persona, con RLS de por
+medio, y la copia local se valida contra la empresa de la sesión antes de mostrarse.
+
+> Si algún día se añade una consulta de servidor a `/campo`, deja de ser cacheable y
+> el arranque en frío sin conexión se rompe. Es la invariante a proteger.
+
+### La condición que queda: una primera visita con señal
+
+El HTML de `/campo` se precachea al instalar el service worker, pero **sus bundles de
+JavaScript llevan hash en el nombre** y un `sw.js` estático no puede conocerlos por
+adelantado: se cachean la primera vez que se visita la pantalla. En la práctica: hay
+que **abrir `/campo` una vez con señal** para que quede lista para funcionar sin ella.
+
+Conviene hacerlo al instalar la app, antes de salir a obra.
 
 ## 4. Piezas
 
 | Archivo | Qué hace |
 |---|---|
-| `src/app/manifest.ts` | Manifest (nombre, íconos, `display: standalone`, `start_url: /admin`) |
-| `public/sw.js` | Service worker. Cachea **solo** estáticos, íconos y `/offline` |
+| `src/app/campo/` | **Pantalla de campo**: pase de lista unificado, renderizado en cliente |
+| `src/lib/data/pase-lista-cliente.ts` | Carga desde el navegador: obras activas, personal por día, asistencias |
+| `src/lib/offline/snapshot-pase-lista.ts` | Copia local por día + guarda multi-tenant offline |
+| `src/app/manifest.ts` | Manifest (nombre, íconos, `display: standalone`, `start_url: /campo`) |
+| `public/sw.js` | Service worker. Cachea **solo** estáticos, íconos, `/offline` y `/campo` |
 | `public/icons/` | 192, 512, maskable y apple-touch-icon, derivados del ícono de la app Flutter |
 | `src/components/pwa/registrar-sw.tsx` | Registra el SW (solo en producción) y pide `storage.persist()` |
 | `src/components/pwa/aviso-instalar.tsx` | Aviso de instalación, con ramas para iOS/Safari, iOS/otro navegador y Chromium |

@@ -5,6 +5,9 @@ import { usePathname } from 'next/navigation';
 
 const NAV_LINKS = [
   { href: '/admin', label: 'Inicio' },
+  // Vive fuera de /admin a propósito (ver src/app/campo/layout.tsx), pero se
+  // enlaza desde aquí porque es una pantalla de uso diario.
+  { href: '/campo', label: 'Pase de lista' },
   { href: '/admin/obras', label: 'Obras' },
   { href: '/admin/cotizaciones', label: 'Cotizaciones' },
   { href: '/admin/clientes', label: 'Clientes' },

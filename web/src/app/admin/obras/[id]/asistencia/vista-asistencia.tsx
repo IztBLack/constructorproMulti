@@ -18,7 +18,7 @@ import {
 } from '@/lib/offline/snapshot-asistencia';
 import CuadriculaAsistencia from './cuadricula-asistencia';
 import VistaDia from './vista-dia';
-import BarraOffline from './barra-offline';
+import BarraOffline from '@/components/offline/barra-offline';
 import { cellKey, type DiaSemana } from './tipos';
 
 type Modo = 'dia' | 'semana';
