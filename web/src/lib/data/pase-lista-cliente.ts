@@ -19,7 +19,7 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { ESPECIALIDAD_LABEL } from '@/app/admin/cuadrillas/especialidades';
-import { DIA_MS, partesTz } from './tz';
+import { DIA_MS, partesTz, siguienteMedianocheMx } from './tz';
 
 // ── Tipos públicos ────────────────────────────────────────────────────────
 
@@ -172,15 +172,23 @@ export async function cargarPaseLista(diaMs: number): Promise<DatosPaseLista> {
   }
   const obraIds = obras.map((o) => o.id);
 
-  // 3. Relación N:M vigente (misma regla que `listColaboradoresActivosObra`:
-  //    asignación sin fecha de salida y no borrada).
+  // 3. Relación N:M vigente EL DÍA CONSULTADO (misma regla que
+  //    `listColaboradoresActivosObra`). No basta con `fecha_salida is null`: al
+  //    mover a alguien de obra se le cierra la anterior, y con ese filtro
+  //    desaparecería de la obra vieja también al revisar días pasados, cuando sí
+  //    trabajó ahí.
+  //
+  //    `fecha_salida` es el día en que deja de pertenecer a la obra: ese día ya
+  //    no cuenta como suyo. Se compara contra la medianoche del día siguiente
+  //    para que la hora de reloj de las filas viejas no altere el resultado.
+  const finDelDia = siguienteMedianocheMx(diaMs);
   const asignaciones = await enLotes<FilaAsignacion>(obraIds, async (lote) =>
     orLanzar<FilaAsignacion[]>(
       await supabase
         .from('obra_colaborador')
         .select('obra_id, colaborador_id, fecha_ingreso')
         .in('obra_id', lote)
-        .is('fecha_salida', null)
+        .or(`fecha_salida.is.null,fecha_salida.gte.${finDelDia}`)
         .is('deleted_at', null),
       'las asignaciones de colaboradores',
     ),

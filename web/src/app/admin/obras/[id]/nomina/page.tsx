@@ -94,7 +94,7 @@ export default async function NominaObraPage({
     { data: destajos, error: destError },
     { data: puestos, error: puestosError },
   ] = await Promise.all([
-    listColaboradoresActivosObra(id),
+    listColaboradoresActivosObra(id, inicioMs),
     listAsistenciasObraRango(id, inicioMs, finMs),
     listDestajosObraRango(id, inicioMs, finMs),
     listPuestosLite(),
