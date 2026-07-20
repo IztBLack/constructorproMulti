@@ -29,6 +29,7 @@ Supabase es el punto de encuentro para sync y para la web `/admin` + `/cliente`.
 | `migrations/0013_fix_codigos_vinculacion_insert.sql` | 🔴 Seguridad: cierra escalada a admin vía códigos de vinculación (INSERT solo para admin/supervisor). |
 | `migrations/0014_role_granularity_colaborador.sql` | Seguridad: `colaborador` = staff de campo — escribe solo tablas de captura (asistencias, destajos, movimientos, obra_colaborador) y **lee** el resto; admin/supervisor conservan acceso total (policies granulares `_staff_read/insert/update/delete`). |
 | `migrations/0015_cuadrillas.sql` | **Cuadrillas**: `cuadrillas` (nombre, especialidad, cabo), `cuadrilla_miembro` (N:M con historial) y `asignacion_cuadrilla_obra` (cuadrilla↔obra con fechas), + `cuadrilla_id` nullable en `asistencias`/`destajos`. Aditiva e idempotente; RLS espejo de 0014. |
+| `migrations/0016_asistencia_max_un_dia.sql` | **Tope de una jornada por día**: trigger que impide que la suma de `fraccion` de un colaborador en una fecha supere 1 contando **todas las obras**. `uq_asist` incluye `obra_id`, así que la base aceptaba 1 día en dos obras el mismo día → doble pago. Permite el día partido (0.5+0.5) y no bloquea updates que no empeoren el dato heredado, para no romper el sync del móvil. Aditiva e idempotente. |
 
 ## Pasos para activarlo (ya activo; referencia si se recrea el proyecto)
 
