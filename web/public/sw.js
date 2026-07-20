@@ -21,7 +21,7 @@
  * guarda; si la red falla se sirve `/offline` desde el precache.
  */
 
-const CACHE = 'constructorpro-v2';
+const CACHE = 'constructorpro-v3';
 const OFFLINE_URL = '/offline';
 
 /** Pantalla de captura de campo. Se precachea porque es la única que tiene que
@@ -110,25 +110,76 @@ async function cacheFirst(request) {
   return respuesta;
 }
 
+/** ¿La petición es de la pantalla de campo (HTML o payload RSC)? */
+function esCampo(url) {
+  return url.pathname === CAMPO_URL || url.pathname.startsWith(CAMPO_URL + '/');
+}
+
 /**
- * Network-first para navegaciones. La respuesta NO se guarda nunca: puede ser
- * una página de `/admin` con datos de una empresa concreta.
+ * `/campo` con "cache-first + actualización en segundo plano".
  *
- * Si la red falla, antes de rendirse se busca la propia ruta en el precache.
- * Eso solo puede acertar con `/campo` y `/offline` —son las únicas navegaciones
- * precacheadas, ambas sin datos de usuario—, así que abrir la app sin señal
- * lleva al pase de lista en vez de a la pantalla de error.
+ * Es la única ruta que recibe este trato, y solo puede recibirlo porque su HTML
+ * es estático y **no contiene datos de ninguna empresa**.
+ *
+ * Por qué cache-first y no network-first como el resto: al abrir la app sin
+ * señal, depender de que `fetch` falle "bien" es frágil. Peor aún, el router de
+ * Next pide además el payload RSC de la ruta; si ese pedido falla, hace una
+ * navegación dura de rescate y la pantalla termina en `/offline` — que es
+ * exactamente el síntoma observado ("se actualiza sola y muestra sin conexión").
+ * Sirviendo ambos —HTML y RSC— desde el caché, esa cadena no se dispara.
+ *
+ * `ignoreVary` es imprescindible: Next responde con `Vary: RSC, Next-Router-...`,
+ * y sin ignorarlo `cache.match` no acierta aunque el recurso esté guardado.
+ */
+async function campoDesdeCache(event) {
+  const { request } = event;
+  const cache = await caches.open(CACHE);
+  const esNavegacion = request.mode === 'navigate';
+
+  // Las navegaciones se guardan bajo una clave fija: el HTML de /campo es el
+  // mismo para cualquier usuario y cualquier query.
+  const clave = esNavegacion ? CAMPO_URL : request;
+  const enCache = await cache.match(clave, { ignoreVary: true, ignoreSearch: esNavegacion });
+
+  const desdeRed = fetch(request)
+    .then((respuesta) => {
+      if (respuesta && respuesta.status === 200 && respuesta.type === 'basic') {
+        cache.put(clave, respuesta.clone()).catch(() => undefined);
+      }
+      return respuesta;
+    })
+    .catch(() => null);
+
+  if (enCache) {
+    // Se responde ya con la copia y se refresca por detrás: la próxima apertura
+    // trae la versión nueva sin que esta se quede esperando a la red.
+    event.waitUntil(desdeRed);
+    return enCache;
+  }
+
+  const respuesta = await desdeRed;
+  if (respuesta) return respuesta;
+
+  const offline = await cache.match(OFFLINE_URL, { ignoreVary: true });
+  return (
+    offline ??
+    new Response('<!doctype html><meta charset="utf-8"><p>Sin conexión.</p>', {
+      status: 503,
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    })
+  );
+}
+
+/**
+ * Network-first para el resto de navegaciones. La respuesta NO se guarda nunca:
+ * puede ser una página de `/admin` con datos de una empresa concreta.
  */
 async function navegacionConFallback(request) {
   try {
     return await fetch(request);
   } catch {
     const cache = await caches.open(CACHE);
-
-    const propia = await cache.match(new URL(request.url).pathname, { ignoreSearch: true });
-    if (propia) return propia;
-
-    const offline = await cache.match(OFFLINE_URL);
+    const offline = await cache.match(OFFLINE_URL, { ignoreVary: true });
     if (offline) return offline;
     return new Response(
       '<!doctype html><meta charset="utf-8"><title>Sin conexión</title><p>Sin conexión.</p>',
@@ -151,6 +202,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   if (url.origin !== self.location.origin) return;
+
+  // `/campo` primero: cubre tanto su HTML como el payload RSC que pide el
+  // router de Next, que es el que rompía el arranque sin señal.
+  if (esCampo(url)) {
+    event.respondWith(campoDesdeCache(event));
+    return;
+  }
 
   if (request.mode === 'navigate') {
     event.respondWith(navegacionConFallback(request));

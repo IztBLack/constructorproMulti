@@ -13,8 +13,9 @@ import {
 } from '@/lib/data/pase-lista-cliente';
 import {
   guardarSnapshotDia,
-  leerSnapshotDia,
+  leerSnapshotDiaConMotivo,
   podarSnapshotsDia,
+  type MotivoSinCopia,
 } from '@/lib/offline/snapshot-pase-lista';
 import {
   encolarMarca,
@@ -107,6 +108,7 @@ export default function PaseLista() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [confirmando, setConfirmando] = useState<string | null>(null);
+  const [motivoSinCopia, setMotivoSinCopia] = useState<MotivoSinCopia | null>(null);
 
   /** Estado por celda, reconstruido desde la cola (solo el día en pantalla). */
   const refrescarPendientes = useCallback(async () => {
@@ -147,8 +149,9 @@ export default function PaseLista() {
       setCargando(true);
       setError(null);
 
-      const copia = await leerSnapshotDia(dia);
+      const { datos: copia, motivo } = await leerSnapshotDiaConMotivo(dia);
       if (cancelado) return;
+      setMotivoSinCopia(copia ? null : (motivo ?? null));
       if (copia) {
         setDatos(copia);
         setFracciones(await conPendientes(copia.fracciones, dia));
@@ -285,12 +288,43 @@ export default function PaseLista() {
 
       {cargando && obras.length === 0 && <p className="text-sm text-neutral-500">Cargando…</p>}
 
+      {/* Sin datos hay que decir POR QUÉ. Una pantalla vacía en obra, sin señal,
+          es indistinguible de "no tienes gente asignada" y no da qué hacer. */}
       {!cargando && obras.length === 0 && !error && (
         <div className="rounded-xl border border-neutral-200 bg-white p-6 text-center">
-          <p className="font-medium text-neutral-900">No hay obras activas con personal por día.</p>
-          <p className="mt-1 text-sm text-neutral-500">
-            Activa una obra y asígnale colaboradores para pasar lista.
-          </p>
+          {motivoSinCopia && motivoSinCopia !== 'sin-copia' ? (
+            <>
+              <p className="font-medium text-neutral-900">
+                {motivoSinCopia === 'otra-empresa'
+                  ? 'La copia de este dispositivo es de otra empresa'
+                  : 'No se pudo validar tu sesión sin conexión'}
+              </p>
+              <p className="mt-1 text-sm text-neutral-500">
+                {motivoSinCopia === 'otra-empresa'
+                  ? 'Se descartó por seguridad. Conéctate para cargar la tuya.'
+                  : 'Tus marcas guardadas siguen a salvo. Conéctate una vez y vuelve a abrir esta pantalla.'}
+              </p>
+            </>
+          ) : motivoSinCopia === 'sin-copia' ? (
+            <>
+              <p className="font-medium text-neutral-900">
+                No hay copia de este día en el dispositivo
+              </p>
+              <p className="mt-1 text-sm text-neutral-500">
+                Abre esta pantalla con señal al menos una vez para poder usarla sin
+                conexión.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="font-medium text-neutral-900">
+                No hay obras activas con personal por día.
+              </p>
+              <p className="mt-1 text-sm text-neutral-500">
+                Activa una obra y asígnale colaboradores para pasar lista.
+              </p>
+            </>
+          )}
         </div>
       )}
 

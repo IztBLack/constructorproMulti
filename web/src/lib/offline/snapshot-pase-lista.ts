@@ -149,34 +149,49 @@ export async function guardarSnapshotDia(d: DatosPaseLista): Promise<void> {
  * que el capturista vea sus propias capturas offline reflejadas.
  */
 export async function leerSnapshotDia(diaMs: number): Promise<DatosPaseLista | null> {
-  if (!hayIdb()) return null;
+  return (await leerSnapshotDiaConMotivo(diaMs)).datos;
+}
+
+/** Por qué no se pudo mostrar la copia local. Sirve para explicárselo a quien
+ *  está en obra en vez de dejarle una pantalla vacía sin razón. */
+export type MotivoSinCopia = 'sin-copia' | 'sin-sesion' | 'sin-mapa' | 'otra-empresa';
+
+/**
+ * Igual que `leerSnapshotDia`, pero informando el motivo del rechazo.
+ *
+ * IMPORTANTE — sobre borrar: solo se destruye la copia cuando **consta** que es
+ * de otra empresa. No tener sesión utilizable, o no tener el mapa de empresa, no
+ * prueba que los datos sean ajenos: es ausencia de prueba. Y ocurre justo sin
+ * señal (si el JWT necesita refrescarse, `getSession()` no puede confirmarlo),
+ * que es cuando la copia hace falta. Borrar ahí dejaba al capturista sin
+ * respaldo de forma permanente por una condición pasajera.
+ */
+export async function leerSnapshotDiaConMotivo(
+  diaMs: number,
+): Promise<{ datos: DatosPaseLista | null; motivo?: MotivoSinCopia }> {
+  if (!hayIdb()) return { datos: null, motivo: 'sin-copia' };
 
   const clave = claveDia(diaMs);
   const reg = await idbGet<RegistroDia>(STORE_SNAPSHOTS, clave);
-  if (!reg) return null;
+  if (!reg) return { datos: null, motivo: 'sin-copia' };
 
-  // Caso 1: no hay sesión (usuario salió, o el storage de auth se limpió).
+  // Caso 1: sin sesión utilizable. Se oculta la copia, pero se CONSERVA.
   const userId = await userIdDeLaSesion();
-  if (!userId) {
-    await idbDelete(STORE_SNAPSHOTS, clave);
-    return null;
-  }
+  if (!userId) return { datos: null, motivo: 'sin-sesion' };
 
-  // Caso 2: hay sesión pero ese usuario nunca guardó nada en este dispositivo,
-  // así que no sabemos su empresa y no podemos afirmar que el snapshot sea suyo.
+  // Caso 2: no sabemos la empresa de este usuario en este dispositivo (el mapa
+  // pudo podarse). Se oculta, se conserva.
   const tenant = await idbGet<RegistroTenant>(STORE_SNAPSHOTS, claveTenant(userId));
-  if (!tenant) {
-    await idbDelete(STORE_SNAPSHOTS, clave);
-    return null;
-  }
+  if (!tenant) return { datos: null, motivo: 'sin-mapa' };
 
-  // Caso 3: el snapshot es de otra empresa (dispositivo compartido).
+  // Caso 3: consta que es de otra empresa (dispositivo compartido). Único caso
+  // en que se borra: son datos que este usuario no debe tener.
   if (tenant.empresaId !== reg.datos.empresaId) {
     await idbDelete(STORE_SNAPSHOTS, clave);
-    return null;
+    return { datos: null, motivo: 'otra-empresa' };
   }
 
-  return reg.datos;
+  return { datos: reg.datos };
 }
 
 /**
