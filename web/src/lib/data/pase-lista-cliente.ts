@@ -239,9 +239,10 @@ export async function cargarPaseLista(diaMs: number): Promise<DatosPaseLista> {
     }
   }
 
-  // Cada colaborador aparece SOLO bajo su última obra asignada (mayor
-  // `fecha_ingreso`). Es la regla del móvil (`ultimaObraPorColaboradorProvider`)
-  // y no es cosmética: si alguien sigue asignado a tres obras a la vez —lo
+  // Cada colaborador aparece UNA sola vez. La obra por defecto es su última
+  // asignada (mayor `fecha_ingreso`), regla del móvil
+  // (`ultimaObraPorColaboradorProvider`), y no es cosmética: si alguien sigue
+  // asignado a tres obras a la vez —lo
   // normal cuando nadie cierra las asignaciones viejas— aparecería tres veces y
   // el capturista podría marcarle tres días en la misma jornada, inflando la
   // nómina. Empate de `fecha_ingreso`: gana el `obra_id` menor, para que el
@@ -257,9 +258,37 @@ export async function cargarPaseLista(diaMs: number): Promise<DatosPaseLista> {
     if (mejor) ultimaObra.set(a.colaborador_id, { obraId: a.obra_id, fechaIngreso: a.fecha_ingreso });
   }
 
+  // …PERO la última obra solo decide dónde va quien AÚN NO tiene asistencia ese
+  // día. Si ya la tiene, manda la obra con la que quedó registrada.
+  //
+  // Sin esto, mover a alguien de obra a media semana rompe los días anteriores:
+  // su marca del lunes quedó con `obra_id` = obra vieja, pero él pasa a listarse
+  // bajo la nueva. La marca se vuelve invisible (la obra vieja ya no lo lista) y
+  // el capturista, viéndolo "sin marcar", lo marca otra vez — creando un SEGUNDO
+  // registro de ese mismo día bajo la obra nueva. El día se pagaría dos veces.
+  // No es un detalle de presentación: es dinero.
+  //
+  // Empate raro (dos registros del mismo día en obras distintas, dato heredado
+  // de antes de `uq_asist`): gana la fracción mayor y, si igualan, el `obra_id`
+  // menor — determinista, para que la lista no baile entre cargas.
+  const obraDelDia = new Map<string, { obraId: string; fraccion: number }>();
+  for (const a of asistencias) {
+    if (!colabPorId.has(a.colaborador_id)) continue;
+    const prev = obraDelDia.get(a.colaborador_id);
+    const mejor =
+      !prev ||
+      a.fraccion > prev.fraccion ||
+      (a.fraccion === prev.fraccion && a.obra_id < prev.obraId);
+    if (mejor) obraDelDia.set(a.colaborador_id, { obraId: a.obra_id, fraccion: a.fraccion });
+  }
+
   const porObra = new Map<string, ColaboradorPaseLista[]>(obraIds.map((id) => [id, []]));
-  for (const [colabId, { obraId }] of ultimaObra) {
+  for (const [colabId, { obraId: obraAsignada }] of ultimaObra) {
     const c = colabPorId.get(colabId);
+    // La obra del registro solo se respeta si sigue activa (si no, no hay
+    // sección donde ponerlo y se cae a la asignación vigente).
+    const registrada = obraDelDia.get(colabId)?.obraId;
+    const obraId = registrada && porObra.has(registrada) ? registrada : obraAsignada;
     const destino = porObra.get(obraId);
     if (!c || !destino) continue;
     const q = cuadrillaPorColab.get(colabId) ?? null;
