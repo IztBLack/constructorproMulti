@@ -97,6 +97,23 @@ export function hoyMxMs(): number {
   return medianocheMx(p.year, p.month, p.day);
 }
 
+/**
+ * Medianoche del día SIGUIENTE al de `ms`, en México.
+ *
+ * Sirve para comparar a granularidad de día contra columnas que guardan hora de
+ * reloj. `obra_colaborador.fecha_ingreso/fecha_salida` se escriben con
+ * `Date.now()`, así que una salida del 30-jun a las 14:30 es mayor que la
+ * medianoche del 30-jun y el filtro ingenuo `fecha_salida > dia` la dejaría
+ * pasar, mostrando a la persona en la obra el día en que ya salió.
+ * Con `fecha_salida >= siguienteMedianocheMx(dia)` la comparación es por día
+ * natural y funciona igual con los datos viejos (con hora) y con los nuevos.
+ */
+export function siguienteMedianocheMx(ms: number): number {
+  const p = partesTz(ms);
+  const c = sumarDiasCalendario(p.year, p.month, p.day, 1);
+  return medianocheMx(c.y, c.m0, c.d);
+}
+
 /** Suma `n` días de calendario a la fecha calendario dada; devuelve {y,m0,d}. */
 export function sumarDiasCalendario(y: number, m0: number, d: number, n: number) {
   const t = new Date(Date.UTC(y, m0, d) + n * DIA_MS);

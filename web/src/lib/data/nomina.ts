@@ -10,7 +10,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import type { Asistencia, Colaborador, Destajo, Puesto } from './types';
-import { partesTz, medianocheMx, sumarDiasCalendario, DIA_MS } from './tz';
+import { partesTz, medianocheMx, sumarDiasCalendario, siguienteMedianocheMx, DIA_MS } from './tz';
 
 export interface SemanaRango {
   inicioMs: number;
@@ -115,16 +115,36 @@ export function calcularNomina(params: {
 
 /// --- Lecturas -----------------------------------------------------------
 
-/** Colaboradores activos asignados a una obra (vía `obra_colaborador`, sin fecha de salida). */
+/**
+ * Colaboradores asignados a una obra (vía `obra_colaborador`).
+ *
+ * Con `vigentesDesdeMs` la consulta es **consciente de la fecha**: devuelve a
+ * quien estaba asignado en ese momento, no solo a quien lo está hoy. Sin ese
+ * parámetro conserva el comportamiento viejo ("asignados ahora mismo").
+ *
+ * Hace falta porque al mover a alguien de obra se le cierra la asignación
+ * anterior. Con el filtro de solo `fecha_salida is null`, esa persona
+ * desaparecería de la obra vieja **también en las semanas pasadas**, cuando sí
+ * trabajó ahí, y no se podría corregir una asistencia anterior.
+ *
+ * `fecha_salida` marca el día en que la persona DEJA de pertenecer a la obra:
+ * ese día ya no cuenta como suyo (convención observada en los datos: en las 9
+ * asignaciones cerradas, nadie trabajó el día de su salida). Por eso la
+ * comparación es contra la medianoche del día siguiente — así además se ignora
+ * la hora de reloj con la que se guardaron las filas viejas.
+ */
 export async function listColaboradoresActivosObra(
   obraId: string,
+  vigentesDesdeMs?: number,
 ): Promise<{ data: Colaborador[]; error: string | null }> {
   const supabase = await createClient();
-  const { data: asignaciones, error: asigError } = await supabase
-    .from('obra_colaborador')
-    .select('colaborador_id')
-    .eq('obra_id', obraId)
-    .is('fecha_salida', null);
+  const base = supabase.from('obra_colaborador').select('colaborador_id').eq('obra_id', obraId);
+  const { data: asignaciones, error: asigError } =
+    vigentesDesdeMs === undefined
+      ? await base.is('fecha_salida', null)
+      : await base.or(
+          `fecha_salida.is.null,fecha_salida.gte.${siguienteMedianocheMx(vigentesDesdeMs)}`,
+        );
 
   if (asigError) return { data: [], error: asigError.message };
 

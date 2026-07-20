@@ -43,7 +43,7 @@ export default async function AsistenciaObraPage({
     { data: asistencias, error: asisError },
     empresa,
   ] = await Promise.all([
-    listColaboradoresActivosObra(id),
+    listColaboradoresActivosObra(id, inicioMs),
     listAsistenciasObraRango(id, inicioMs, finMs),
     // La captura offline escribe directo a Supabase desde el navegador y sella
     // `empresa_id` en cada marca, así que la empresa debe resolverse aquí (en el

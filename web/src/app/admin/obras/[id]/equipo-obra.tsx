@@ -22,6 +22,7 @@ export default function EquipoObra({
   const [loading, setLoading] = useState(false);
   const [desvinculandoId, setDesvinculandoId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
 
   const asignadosIds = new Set(asignados.map((a) => a.id));
   const noAsignados = colaboradoresDisponibles.filter((c) => !asignadosIds.has(c.id));
@@ -34,11 +35,17 @@ export default function EquipoObra({
     }
     setLoading(true);
     setError(null);
+    setAviso(null);
     const result = await asignarObraColaborador(colaboradorId, obraId);
     setLoading(false);
     if (!result.ok) {
       setError(result.error ?? 'No se pudo asignar al colaborador.');
       return;
+    }
+    // Asignar es un movimiento: si venía de otra obra, se le dio de baja ahí.
+    // Hay que decirlo, porque cambia dónde le aparece el pase de lista.
+    if (result.cerradas?.length) {
+      setAviso(`Se dio de baja de: ${result.cerradas.join(', ')}.`);
     }
     setColaboradorId('');
     router.refresh();
@@ -86,6 +93,12 @@ export default function EquipoObra({
       {error && (
         <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           {error}
+        </p>
+      )}
+
+      {aviso && (
+        <p className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+          {aviso}
         </p>
       )}
 
