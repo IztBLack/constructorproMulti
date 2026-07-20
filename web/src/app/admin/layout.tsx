@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getNombreEmpresa } from '@/lib/data/empresa';
 import { nombreUsuario } from '@/lib/data/usuario';
 import { NavLinks } from './nav-links';
+import { AvisoInstalar } from '@/components/pwa/aviso-instalar';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,7 +42,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <NavLinks className="flex sm:hidden gap-1 overflow-x-auto border-t border-neutral-100 px-4 py-2" itemClassName="shrink-0" />
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-8">{children}</main>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-8">
+        <div className="mb-6 empty:mb-0">
+          <AvisoInstalar />
+        </div>
+        {children}
+      </main>
     </div>
   );
 }

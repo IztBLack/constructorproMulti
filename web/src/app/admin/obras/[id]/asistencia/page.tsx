@@ -2,9 +2,11 @@ import { notFound } from 'next/navigation';
 import { Card, CardTitle, EmptyState, LinkButton, PageHeader } from '@/components/ui';
 import { getObra } from '@/lib/data/obras';
 import { listColaboradoresActivosObra, listAsistenciasObraRango, navegarSemana, semanaDe } from '@/lib/data/nomina';
-import { partesTz, medianocheMx, sumarDiasCalendario } from '@/lib/data/tz';
+import { getEmpresaUsuario } from '@/lib/data/empresa';
+import { partesTz, medianocheMx, sumarDiasCalendario, hoyMxMs } from '@/lib/data/tz';
 import { formatDate } from '@/lib/data/format';
-import CuadriculaAsistencia, { type DiaSemana } from './cuadricula-asistencia';
+import VistaAsistencia from './vista-asistencia';
+import type { DiaSemana } from './tipos';
 import ObraTabs from '../_obra-tabs';
 
 export const dynamic = 'force-dynamic';
@@ -36,13 +38,23 @@ export default async function AsistenciaObraPage({
   const semanaAnterior = navegarSemana(inicioMs, -1);
   const semanaSiguiente = navegarSemana(inicioMs, 1);
 
-  const [{ data: colaboradores, error: colabError }, { data: asistencias, error: asisError }] =
-    await Promise.all([
-      listColaboradoresActivosObra(id),
-      listAsistenciasObraRango(id, inicioMs, finMs),
-    ]);
+  const [
+    { data: colaboradores, error: colabError },
+    { data: asistencias, error: asisError },
+    empresa,
+  ] = await Promise.all([
+    listColaboradoresActivosObra(id),
+    listAsistenciasObraRango(id, inicioMs, finMs),
+    // La captura offline escribe directo a Supabase desde el navegador y sella
+    // `empresa_id` en cada marca, así que la empresa debe resolverse aquí (en el
+    // servidor) y viajar a la vista. Sin ella no se puede capturar: la cola
+    // descarta marcas cuya empresa no coincide con la sesión, y encolar con un
+    // valor vacío las perdería en silencio.
+    getEmpresaUsuario().catch(() => null),
+  ]);
 
-  const error = colabError ?? asisError;
+  const error =
+    colabError ?? asisError ?? (empresa ? null : 'No se pudo determinar la empresa del usuario.');
 
   // Los 7 días de la semana (lunes→domingo). `ms` = medianoche de México de
   // cada día (clave canónica para leer/escribir asistencias, igual que el móvil
@@ -58,6 +70,9 @@ export default async function AsistenciaObraPage({
     dia: c.d,
     mes: c.m0 + 1,
   }));
+
+  // La vista por día se abre en hoy cuando la semana mostrada lo contiene.
+  const hoyMs = hoyMxMs();
 
   // Asistencias existentes → fracción por celda. Se asocia cada registro al día
   // por su fecha de calendario en México (robusto si el ms guardado no es
@@ -80,7 +95,7 @@ export default async function AsistenciaObraPage({
 
       <PageHeader
         title="Asistencia"
-        description={`Pase de lista semanal en ${obra.nombre}. Toca una celda para marcar la asistencia del día.`}
+        description={`Pase de lista en ${obra.nombre}. En el teléfono se captura día por día; en pantalla grande, la semana completa.`}
       />
 
       <Card>
@@ -121,36 +136,20 @@ export default async function AsistenciaObraPage({
         />
       )}
 
-      {!error && colaboradores.length > 0 && (
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium text-neutral-700">Cuadrícula semanal</h2>
-            <p className="hidden text-xs text-neutral-400 md:block">
-              Clic para cambiar: · sin registro → ½ medio → ¾ → 1 completa
-            </p>
-          </div>
-
-          {/* La cuadrícula es una matriz (colaboradores × días): no se comprime bien
-              a un teléfono. En pantallas chicas mostramos un aviso en lugar de una
-              tabla peleada; la captura de campo vive en la app móvil nativa. */}
-          <div className="rounded-xl border border-neutral-200 bg-white p-6 text-center md:hidden">
-            <p className="font-medium text-neutral-900">
-              El pase de lista se ve mejor en una pantalla más grande
-            </p>
-            <p className="mt-1 text-sm text-neutral-500">
-              Ábrelo desde una laptop, o captura la asistencia desde la app en tu celular.
-            </p>
-          </div>
-
-          <div className="hidden md:block">
-            <CuadriculaAsistencia
-              obraId={id}
-              colaboradores={colaboradores}
-              dias={dias}
-              fraccionesIniciales={fraccionesIniciales}
-            />
-          </div>
-        </section>
+      {/* Se renderiza también cuando la carga falló (si hay empresa): la vista
+          intenta rehidratarse desde la copia local de la semana, para poder
+          seguir pasando lista sin señal. */}
+      {empresa && (colaboradores.length > 0 || Boolean(colabError ?? asisError)) && (
+        <VistaAsistencia
+          obraId={id}
+          empresaId={empresa.empresaId}
+          colaboradores={colaboradores}
+          dias={dias}
+          fraccionesIniciales={fraccionesIniciales}
+          hoyMs={hoyMs}
+          inicioSemanaMs={inicioMs}
+          huboErrorDeCarga={Boolean(colabError ?? asisError)}
+        />
       )}
     </div>
   );

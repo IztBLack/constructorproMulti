@@ -85,6 +85,18 @@ export function fechaInputAMs(s: string | null | undefined): number {
   return medianocheMx(y, m - 1, d);
 }
 
+/**
+ * Epoch ms de la medianoche de HOY en México.
+ *
+ * Vive aquí y no en el componente porque en Vercel el servidor corre en UTC:
+ * calcular "hoy" con la fecha local del proceso adelanta el día durante la
+ * tarde-noche de México y abriría el pase de lista en el día equivocado.
+ */
+export function hoyMxMs(): number {
+  const p = partesTz(Date.now());
+  return medianocheMx(p.year, p.month, p.day);
+}
+
 /** Suma `n` días de calendario a la fecha calendario dada; devuelve {y,m0,d}. */
 export function sumarDiasCalendario(y: number, m0: number, d: number, n: number) {
   const t = new Date(Date.UTC(y, m0, d) + n * DIA_MS);
