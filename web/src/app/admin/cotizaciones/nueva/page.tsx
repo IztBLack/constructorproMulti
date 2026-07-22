@@ -1,12 +1,15 @@
 import Link from 'next/link';
 import { Card, PageHeader } from '@/components/ui';
 import { listClientes } from '@/lib/data/clientes';
+import { getEmpresaConfig } from '@/lib/data/empresa-config';
 import { CotizacionForm } from '../cotizacion-form';
 
 export const dynamic = 'force-dynamic';
 
 export default async function NuevaCotizacionPage() {
   const { data: clientes } = await listClientes();
+  // Tasa vigente de la empresa: es la que se congelará en esta cotización.
+  const { ivaPorcentaje } = await getEmpresaConfig();
 
   return (
     <div className="space-y-6">
@@ -34,7 +37,7 @@ export default async function NuevaCotizacionPage() {
       />
 
       <Card>
-        <CotizacionForm mode="crear" clientes={clientes} />
+        <CotizacionForm mode="crear" clientes={clientes} ivaPct={ivaPorcentaje} />
       </Card>
     </div>
   );

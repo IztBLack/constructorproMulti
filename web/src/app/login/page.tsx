@@ -4,7 +4,9 @@ import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button, Field, Input } from '@/components/ui';
-import { Turnstile, captchaConfigurado } from './turnstile';
+import Link from 'next/link';
+import { Turnstile, captchaConfigurado } from '@/components/auth/turnstile';
+import { traducirErrorAuth } from '@/lib/auth/errores';
 
 type Modo = 'login' | 'registro';
 
@@ -47,19 +49,14 @@ async function resolverDestino(supabase: SupabaseBrowserClient, userId: string):
   return '/admin';
 }
 
-const ERRORES: Record<string, string> = {
-  'Invalid login credentials': 'Correo o contraseña incorrectos.',
-  'Email not confirmed': 'Debes confirmar tu correo antes de iniciar sesión.',
-  'User already registered': 'Ya existe una cuenta con ese correo. Inicia sesión.',
-  'Password should be at least 6 characters': 'La contraseña debe tener al menos 6 caracteres.',
+/**
+ * Avisos que llegan como `?error=` desde `/auth/callback` cuando un enlace de
+ * correo falla. Son códigos propios, no mensajes de Supabase.
+ */
+const AVISOS_ENLACE: Record<string, string> = {
+  enlace_expirado: 'El enlace del correo ya se usó o caducó. Pide uno nuevo.',
+  enlace_invalido: 'Ese enlace no es válido. Pide uno nuevo.',
 };
-
-function traducirError(msg: string): string {
-  if (msg.toLowerCase().includes('captcha')) {
-    return 'La verificación de seguridad falló. Recárgala e intenta de nuevo.';
-  }
-  return ERRORES[msg] ?? msg;
-}
 
 function LoginInner() {
   const router = useRouter();
@@ -71,7 +68,12 @@ function LoginInner() {
   const [modo, setModo] = useState<Modo>(modoInicial);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  // Un enlace de correo que falló llega aquí como `?error=…`; se muestra desde
+  // el primer render en vez de esperar a que el usuario intente entrar.
+  const codigoEnlace = searchParams.get('error');
+  const [error, setError] = useState<string | null>(
+    codigoEnlace ? (AVISOS_ENLACE[codigoEnlace] ?? traducirErrorAuth(codigoEnlace)) : null,
+  );
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
@@ -98,7 +100,7 @@ function LoginInner() {
       });
       setLoading(false);
       if (signUpError) {
-        setError(traducirError(signUpError.message));
+        setError(traducirErrorAuth(signUpError.message));
         resetCaptcha();
         return;
       }
@@ -121,7 +123,7 @@ function LoginInner() {
     });
     if (signInError) {
       setLoading(false);
-      setError(traducirError(signInError.message));
+      setError(traducirErrorAuth(signInError.message));
       resetCaptcha();
       return;
     }
@@ -235,6 +237,17 @@ function LoginInner() {
                 ? 'Crear cuenta'
                 : 'Entrar'}
           </Button>
+
+          {/* Solo al iniciar sesión: en el modo registro no hay contraseña que
+              recuperar todavía y el enlace solo confundiría. */}
+          {!esRegistro && (
+            <Link
+              href="/recuperar"
+              className="block text-center text-sm text-neutral-600 underline hover:text-neutral-900"
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
+          )}
         </form>
       </div>
     </main>

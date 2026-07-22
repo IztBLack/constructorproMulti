@@ -1,6 +1,14 @@
 /// Tipos TS del esquema Postgres relevantes para el panel de oficina (/admin).
 /// Las fechas se guardan como bigint epoch ms.
 
+/**
+ * Tasa con la que operó la app desde siempre, antes de ser configurable.
+ * Es el respaldo para las cotizaciones anteriores a la migración 0017, que no
+ * tienen tasa propia: con este valor sus totales dan exactamente lo mismo que
+ * daban antes.
+ */
+export const IVA_POR_DEFECTO = 16;
+
 export type EstadoCotizacion = 'BORRADOR' | 'ENVIADA' | 'ACEPTADA' | 'RECHAZADA' | 'CONVERTIDA';
 export type TipoPago = 'DIA' | 'DESTAJO';
 /// Esquema con el que el usuario captura el sueldo base del colaborador.
@@ -37,6 +45,11 @@ export interface Cotizacion {
   fecha: number;
   estado: EstadoCotizacion;
   iva_enabled: boolean;
+  /// Tasa de IVA CONGELADA al crear la cotización (migración 0017). Los cálculos
+  /// la toman de AQUÍ y no de la configuración de la empresa: si la tomaran de
+  /// allá, cambiar el IVA por defecto reescribiría el total de cotizaciones ya
+  /// enviadas y aceptadas. Opcional porque las filas previas a 0017 no la traen.
+  iva_porcentaje?: number | null;
   descuento: number;
   notas: string | null;
   obra_id: string | null;

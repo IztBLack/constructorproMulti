@@ -3,6 +3,7 @@
 /// No filtrar manualmente por cliente_id: RLS lo hace. Solo agregar .is('deleted_at', null).
 
 import { createClient } from '@/lib/supabase/server';
+import { IVA_POR_DEFECTO } from './types';
 
 // ─── Tipos propios del portal ─────────────────────────────────────────────────
 
@@ -63,6 +64,10 @@ export interface CotizacionPortal {
   fecha: number;
   estado: EstadoCotizacionPortal;
   iva_enabled: boolean;
+  /// Tasa congelada al crear la cotización (migración 0017). El portal DEBE usar
+  /// esta y no una constante: si el cliente viera un IVA distinto al del panel,
+  /// su estado de cuenta dejaría de cuadrar con lo que aprobó.
+  iva_porcentaje?: number | null;
   descuento: number;
   notas: string | null;
   cliente_id: string | null;
@@ -78,6 +83,8 @@ export interface CotizacionPortalConDetalle extends CotizacionPortal {
 }
 
 export interface TotalesCotizacionPortal {
+  /// Tasa aplicada, para rotularla sin volver a suponerla.
+  ivaPct: number;
   subtotal: number;
   descuentoMonto: number;
   base: number;
@@ -119,18 +126,18 @@ export function calcularTotales(cot: CotizacionPortalConDetalle): TotalesCotizac
 
   const descuentoMonto = subtotal * ((cot.descuento ?? 0) / 100);
   const base = subtotal - descuentoMonto;
-  const ivaMonto = cot.iva_enabled ? base * 0.16 : 0;
+  const ivaMonto = cot.iva_enabled ? base * ((cot.iva_porcentaje ?? IVA_POR_DEFECTO) / 100) : 0;
   const total = base + ivaMonto;
 
-  return { subtotal, descuentoMonto, base, ivaMonto, total };
+  return { subtotal, descuentoMonto, base, ivaMonto, ivaPct: cot.iva_porcentaje ?? IVA_POR_DEFECTO, total };
 }
 
 /// Versión simplificada para listas (sin secciones/partidas): usa solo el total de pagos
 /// o el total calculado si se tienen las partidas. Esta función recibe subtotal ya calculado.
-export function calcularTotalSimple(cot: Pick<CotizacionPortal, 'descuento' | 'iva_enabled'>, subtotal: number): number {
+export function calcularTotalSimple(cot: Pick<CotizacionPortal, 'descuento' | 'iva_enabled' | 'iva_porcentaje'>, subtotal: number): number {
   const descuentoMonto = subtotal * ((cot.descuento ?? 0) / 100);
   const base = subtotal - descuentoMonto;
-  const ivaMonto = cot.iva_enabled ? base * 0.16 : 0;
+  const ivaMonto = cot.iva_enabled ? base * ((cot.iva_porcentaje ?? IVA_POR_DEFECTO) / 100) : 0;
   return base + ivaMonto;
 }
 
@@ -204,7 +211,7 @@ export async function listCotizacionesCliente(): Promise<{
   // Traer cotizaciones
   const { data: cotsData, error: cotsError } = await supabase
     .from('cotizaciones')
-    .select('id, nombre_proyecto, ubicacion, fecha, estado, iva_enabled, descuento, notas, cliente_id')
+    .select('id, nombre_proyecto, ubicacion, fecha, estado, iva_enabled, iva_porcentaje, descuento, notas, cliente_id')
     .is('deleted_at', null)
     // Un BORRADOR aún no se ha compartido con el cliente: nunca debe aparecer en
     // el portal (evita que el cliente responda una cotización no enviada).
@@ -270,7 +277,7 @@ export async function getCotizacionClienteConDetalle(
 
   const { data: cotData, error: cotError } = await supabase
     .from('cotizaciones')
-    .select('id, nombre_proyecto, ubicacion, fecha, estado, iva_enabled, descuento, notas, cliente_id, aprobado_snapshot_json')
+    .select('id, nombre_proyecto, ubicacion, fecha, estado, iva_enabled, iva_porcentaje, descuento, notas, cliente_id, aprobado_snapshot_json')
     .eq('id', id)
     .is('deleted_at', null)
     // Un BORRADOR no es visible en el portal (aún no se ha enviado al cliente).

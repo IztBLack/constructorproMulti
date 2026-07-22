@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Field, Input } from '@/components/ui';
-import type { Cliente, Cotizacion } from '@/lib/data/types';
+import { IVA_POR_DEFECTO, type Cliente, type Cotizacion } from '@/lib/data/types';
 import { msAFechaInput } from '@/lib/data/tz';
 import { crearCotizacionAction, actualizarCotizacionAction } from './actions';
 
@@ -15,7 +15,8 @@ function msToInputDate(ms: number): string {
 }
 
 type Props =
-  | { mode: 'crear'; clientes: Cliente[] }
+  /** `ivaPct` al crear = tasa vigente de la empresa; se congelará en la cotización. */
+  | { mode: 'crear'; clientes: Cliente[]; ivaPct: number }
   | { mode: 'editar'; cotizacion: Cotizacion; clientes: Cliente[]; onCancelar?: () => void };
 
 export function CotizacionForm(props: Props) {
@@ -26,6 +27,11 @@ export function CotizacionForm(props: Props) {
 
   const cotizacion = props.mode === 'editar' ? props.cotizacion : null;
   const clientes = props.clientes;
+
+  // Al EDITAR se muestra la tasa congelada de esa cotización, no la vigente de
+  // la empresa: editar una cotización no le cambia el IVA con el que nació.
+  const ivaPct =
+    props.mode === 'crear' ? props.ivaPct : (props.cotizacion.iva_porcentaje ?? IVA_POR_DEFECTO);
 
   // Cliente unificado: si se elige un cliente del portal, se autocompleta el nombre
   // (solo lectura); si no, el nombre se captura a mano en texto libre.
@@ -135,7 +141,7 @@ export function CotizacionForm(props: Props) {
           disabled={pending}
           className="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-900"
         />
-        Aplicar IVA (16%)
+        Aplicar IVA ({ivaPct}%)
       </label>
 
       <Field label="Notas" hint="Opcional">

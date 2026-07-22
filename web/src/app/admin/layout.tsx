@@ -5,6 +5,8 @@ import { getNombreEmpresa } from '@/lib/data/empresa';
 import { nombreUsuario } from '@/lib/data/usuario';
 import { NavLinks } from './nav-links';
 import { AvisoInstalar } from '@/components/pwa/aviso-instalar';
+import { ToggleTema } from '@/components/tema/toggle-tema';
+import { EnlaceAjustes } from '@/components/ajustes/enlace-ajustes';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +33,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden sm:inline text-sm text-neutral-500">{nombre}</span>
+            <EnlaceAjustes href="/admin/ajustes" />
+            <ToggleTema />
             <form action="/auth/signout" method="post">
               <button className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100 cursor-pointer">
                 Salir

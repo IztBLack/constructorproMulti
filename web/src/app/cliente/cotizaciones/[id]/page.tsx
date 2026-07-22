@@ -48,7 +48,7 @@ export default async function CotizacionDetallePage({
 
   if (!cot) notFound();
 
-  const { subtotal, descuentoMonto, ivaMonto, total } = calcularTotales(cot);
+  const { subtotal, descuentoMonto, ivaMonto, ivaPct, total } = calcularTotales(cot);
   const tone = ESTADO_TONE[cot.estado];
   const totalPagado = pagos.reduce((acc, p) => acc + p.monto, 0);
   const saldoRestante = total - totalPagado;
@@ -285,7 +285,7 @@ export default async function CotizacionDetallePage({
               )}
               {cot.iva_enabled && (
                 <div className="flex justify-between gap-4">
-                  <span className="text-neutral-600">IVA (16%)</span>
+                  <span className="text-neutral-600">IVA ({ivaPct}%)</span>
                   <span className="tabular-nums text-neutral-900">{formatCurrency(ivaMonto)}</span>
                 </div>
               )}

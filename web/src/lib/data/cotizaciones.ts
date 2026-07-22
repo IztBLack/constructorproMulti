@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { getEmpresaUsuario } from './empresa';
 import { buildSnapshot } from './cotizacion-diff';
+import { getEmpresaConfig } from './empresa-config';
+import { IVA_POR_DEFECTO } from './types';
 import type { Cotizacion, CotizacionConDetalle, EstadoCotizacion, Partida, Seccion } from './types';
 
 export async function listCotizaciones(): Promise<{
@@ -74,6 +76,8 @@ export interface TotalesCotizacion {
   descuentoMonto: number;
   baseConDescuento: number;
   ivaMonto: number;
+  /** Tasa aplicada, para poder rotularla ("IVA (16%)") sin volver a suponerla. */
+  ivaPct: number;
   total: number;
 }
 
@@ -88,10 +92,16 @@ export function calcularTotales(cotizacion: CotizacionConDetalle): TotalesCotiza
   const descuentoPct = cotizacion.descuento ?? 0;
   const descuentoMonto = subtotal * (descuentoPct / 100);
   const baseConDescuento = subtotal - descuentoMonto;
-  const ivaMonto = cotizacion.iva_enabled ? baseConDescuento * 0.16 : 0;
+
+  // La tasa sale de la COTIZACIÓN, no de la configuración de la empresa: cada
+  // una guarda la suya (migración 0017) para que cambiar el IVA por defecto no
+  // reescriba el total de documentos ya enviados y aceptados por un cliente.
+  // El `?? IVA_POR_DEFECTO` cubre las filas leídas antes de aplicar 0017.
+  const ivaPct = cotizacion.iva_porcentaje ?? IVA_POR_DEFECTO;
+  const ivaMonto = cotizacion.iva_enabled ? baseConDescuento * (ivaPct / 100) : 0;
   const total = baseConDescuento + ivaMonto;
 
-  return { subtotal, descuentoMonto, baseConDescuento, ivaMonto, total };
+  return { subtotal, descuentoMonto, baseConDescuento, ivaMonto, ivaPct, total };
 }
 
 /// --- Escritura ---------------------------------------------------------
@@ -131,6 +141,11 @@ export async function crearCotizacion(
     fecha: input.fecha,
     estado: 'BORRADOR',
     iva_enabled: input.iva_enabled,
+    // Se CONGELA la tasa vigente de la empresa en el momento de crearla. A
+    // partir de aquí esta cotización es inmune a que se cambie el IVA por
+    // defecto: lo que el cliente reciba y acepte seguirá cuadrando siempre.
+    // `actualizarCotizacion` tampoco la toca, a propósito.
+    iva_porcentaje: (await getEmpresaConfig()).ivaPorcentaje,
     descuento: input.descuento,
     notas: input.notas ?? '',
     obra_id: null,

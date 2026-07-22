@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server';
 import { ClienteNavLinks } from './nav-links';
 import { getClienteActual } from '@/lib/data/portal-cliente';
 import { getNombreEmpresa } from '@/lib/data/empresa';
+import { ToggleTema } from '@/components/tema/toggle-tema';
+import { EnlaceAjustes } from '@/components/ajustes/enlace-ajustes';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,6 +55,8 @@ export default async function ClienteLayout({ children }: { children: React.Reac
               </span>
               <span className="text-sm text-neutral-600">{nombreCliente}</span>
             </div>
+            <EnlaceAjustes href="/cliente/ajustes" />
+            <ToggleTema />
             <form action="/auth/signout" method="post">
               <button
                 type="submit"

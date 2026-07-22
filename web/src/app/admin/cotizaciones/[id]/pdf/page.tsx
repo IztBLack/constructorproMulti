@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { calcularTotales, getCotizacionConDetalle } from '@/lib/data/cotizaciones';
 import { formatCurrency, formatDate } from '@/lib/data/format';
 import { createClient } from '@/lib/supabase/server';
+import { getEmpresaConfig } from '@/lib/data/empresa-config';
 import { PrintButton } from './print-button';
 
 export const dynamic = 'force-dynamic';
@@ -39,6 +40,10 @@ export default async function CotizacionPdfPage({ params }: Props) {
     .maybeSingle();
 
   const nombreEmpresa: string = empresaData?.nombre ?? 'ConstructorPro';
+  // Personalización de la empresa (Ajustes → Operación → Documentos). El color
+  // va por `style` y no por clase de Tailwind: Tailwind compila las clases de
+  // antemano y no puede generar uno que se decide en tiempo de ejecución.
+  const { pdf } = await getEmpresaConfig();
   const totales = calcularTotales(cotizacion);
   const folio = folioCorto(cotizacion.id);
 
@@ -70,8 +75,12 @@ export default async function CotizacionPdfPage({ params }: Props) {
         }
       `}</style>
 
-      {/* Screen wrapper: white card centered, max letter width */}
-      <div className="min-h-screen bg-neutral-100 print:bg-white print:min-h-0">
+      {/* Screen wrapper: white card centered, max letter width.
+          `tema-papel` deja esta vista fuera del tema oscuro a propósito: es un
+          documento, y su texto usa hexadecimales fijos (#0F172A) que no
+          responden al tema — sobre una hoja oscura serían ilegibles. Ver
+          globals.css. */}
+      <div className="tema-papel min-h-screen bg-neutral-100 print:bg-white print:min-h-0">
         <div className="mx-auto max-w-[816px] bg-white px-10 py-10 print:px-0 print:py-0 print:max-w-none print:shadow-none shadow-md print:rounded-none rounded-none sm:my-8 print:my-0">
 
           {/* ── Action bar (screen only) ── */}
@@ -86,12 +95,18 @@ export default async function CotizacionPdfPage({ params }: Props) {
             <div className="flex items-start justify-between gap-4">
               {/* Emisor */}
               <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-[#0369A1]">
+                <p
+                  className="text-xs font-semibold uppercase tracking-widest"
+                  style={{ color: pdf.colorHex }}
+                >
                   Cotización / Presupuesto
                 </p>
                 <h1 className="mt-1 text-2xl font-bold text-[#0F172A] leading-tight">
                   {nombreEmpresa}
                 </h1>
+                {pdf.empresaContacto && (
+                  <p className="mt-0.5 text-xs text-neutral-600">{pdf.empresaContacto}</p>
+                )}
               </div>
 
               {/* Folio + Fecha */}
@@ -143,7 +158,7 @@ export default async function CotizacionPdfPage({ params }: Props) {
             {cotizacion.secciones.map((seccion) => (
               <div key={seccion.id} className="print-avoid-break">
                 {/* Section title */}
-                <div className="mb-1 border-l-4 border-[#0369A1] pl-3">
+                <div className="mb-1 border-l-4 pl-3" style={{ borderColor: pdf.colorHex }}>
                   <h2 className="text-sm font-semibold uppercase tracking-wide text-[#0F172A]">
                     {seccion.nombre}
                   </h2>
@@ -228,7 +243,7 @@ export default async function CotizacionPdfPage({ params }: Props) {
 
                 {cotizacion.iva_enabled && (
                   <div className="flex justify-between border-b border-neutral-100 py-1.5">
-                    <dt className="text-neutral-600">IVA (16%)</dt>
+                    <dt className="text-neutral-600">IVA ({totales.ivaPct}%)</dt>
                     <dd className="tabular-nums font-medium text-[#0F172A]">
                       {formatCurrency(totales.ivaMonto)}
                     </dd>
@@ -263,10 +278,13 @@ export default async function CotizacionPdfPage({ params }: Props) {
                 Esta cotización tiene una vigencia de 30 días naturales a partir de la fecha de emisión.
                 Los precios están expresados en pesos mexicanos (MXN).
                 {cotizacion.iva_enabled
-                  ? ' Los precios incluyen IVA (16%).'
+                  ? ` Los precios incluyen IVA (${totales.ivaPct}%).`
                   : ' Los precios no incluyen IVA.'}
                 {` Para consultas o aclaraciones comuníquese con ${nombreEmpresa}.`}
               </p>
+              {pdf.pieDePagina && (
+                <p className="mt-2 text-[10px] font-medium text-[#0F172A]">{pdf.pieDePagina}</p>
+              )}
             </div>
           </footer>
 

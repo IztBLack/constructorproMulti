@@ -102,7 +102,7 @@ export default async function CotizacionDetallePage({
           )}
           {cotizacion.iva_enabled && (
             <div className="flex justify-between">
-              <dt className="text-neutral-600">IVA (16%)</dt>
+              <dt className="text-neutral-600">IVA ({totales.ivaPct}%)</dt>
               <dd className="tabular-nums font-medium text-neutral-900">{formatCurrency(totales.ivaMonto)}</dd>
             </div>
           )}
