@@ -67,8 +67,12 @@ type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   invalid?: boolean;
 };
 
+// `bg-white` es obligatorio, no decorativo: sin un fondo explícito el control
+// hereda el del navegador (blanco en casi todos), y en tema oscuro el texto —que
+// sí se aclara— quedaría casi invisible sobre ese blanco. Con `bg-white` el fondo
+// entra en la inversión de paleta junto con el resto (ver globals.css).
 const baseInputClasses =
-  'w-full rounded-lg border px-3 py-2 text-sm text-neutral-900 outline-none transition placeholder:text-neutral-500 focus:border-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-900/10';
+  'w-full rounded-lg border bg-white px-3 py-2 text-sm text-neutral-900 outline-none transition placeholder:text-neutral-500 focus:border-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-900/10';
 
 /** Input de texto estándar del kit, server-safe (sin estado propio). */
 export function Input({ invalid = false, className = '', ...rest }: InputProps) {
@@ -84,8 +88,9 @@ type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
   invalid?: boolean;
 };
 
+// Ver la nota de `baseInputClasses` sobre por qué `bg-white` es obligatorio.
 const baseSelectClasses =
-  'w-full cursor-pointer rounded-lg border px-3 py-2 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-900/10';
+  'w-full cursor-pointer rounded-lg border bg-white px-3 py-2 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-900/10';
 
 /** Select estándar del kit, mismo look que Input. Úsalo como children de <Field>. */
 export function Select({ invalid = false, className = '', children, ...rest }: SelectProps) {
@@ -103,8 +108,9 @@ type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   invalid?: boolean;
 };
 
+// Ver la nota de `baseInputClasses` sobre por qué `bg-white` es obligatorio.
 const baseTextareaClasses =
-  'w-full rounded-lg border px-3 py-2 text-sm text-neutral-900 outline-none transition placeholder:text-neutral-500 focus:border-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-900/10';
+  'w-full rounded-lg border bg-white px-3 py-2 text-sm text-neutral-900 outline-none transition placeholder:text-neutral-500 focus:border-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-900/10';
 
 /** Textarea estándar del kit, mismo look que Input. Úsalo como children de <Field>. */
 export function Textarea({ invalid = false, className = '', rows = 4, ...rest }: TextareaProps) {

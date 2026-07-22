@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ToastProvider } from "@/components/ui";
 import { RegistrarSW } from "@/components/pwa/registrar-sw";
+import { ScriptTema } from "@/components/tema/script-tema";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -49,7 +50,16 @@ export default function RootLayout({
     <html
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      // El script de tema añade la clase `dark` al <html> antes de que React
+      // hidrate, así que el marcado del cliente no coincide con el del servidor.
+      // Es intencional y es la única forma de evitar el destello de tema claro;
+      // sin esta línea React avisaría de la discrepancia en cada carga.
+      suppressHydrationWarning
     >
+      <head>
+        {/* Lo más arriba posible: tiene que correr antes del primer pintado. */}
+        <ScriptTema />
+      </head>
       <body className="min-h-full flex flex-col">
         {/* ToastProvider es un Client Component; el layout sigue siendo Server
             Component (ver "Context providers" en la guía de Next). */}

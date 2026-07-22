@@ -517,7 +517,9 @@ export default function Home() {
                     <p className="text-xs text-neutral-500">Celular o tablet</p>
                   </div>
                   {!DESCARGAS.android && (
-                    <span className="inline-flex items-center rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium text-neutral-500">
+                    // neutral-600 y no -500: sobre `bg-neutral-100` el -500 da
+                    // 4.35:1 y WCAG AA pide 4.5:1 para texto normal.
+                    <span className="inline-flex items-center rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium text-neutral-600">
                       Próximamente
                     </span>
                   )}
@@ -535,7 +537,11 @@ export default function Home() {
                   ) : (
                     <span
                       aria-disabled="true"
-                      className="inline-flex min-h-11 cursor-not-allowed items-center justify-center rounded-lg bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-400"
+                      // `text-neutral-400` daba 2.31:1 y era ilegible. WCAG exime a
+                      // los controles deshabilitados, pero este no es un botón
+                      // muerto: es el único aviso de que la descarga aún no existe,
+                      // así que tiene que leerse.
+                      className="inline-flex min-h-11 cursor-not-allowed items-center justify-center rounded-lg bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-600"
                     >
                       Disponible pronto
                     </span>
@@ -554,7 +560,9 @@ export default function Home() {
                     <p className="text-xs text-neutral-500">Apple</p>
                   </div>
                   {!DESCARGAS.ios && (
-                    <span className="inline-flex items-center rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium text-neutral-500">
+                    // neutral-600 y no -500: sobre `bg-neutral-100` el -500 da
+                    // 4.35:1 y WCAG AA pide 4.5:1 para texto normal.
+                    <span className="inline-flex items-center rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium text-neutral-600">
                       Próximamente
                     </span>
                   )}
@@ -572,7 +580,11 @@ export default function Home() {
                   ) : (
                     <span
                       aria-disabled="true"
-                      className="inline-flex min-h-11 cursor-not-allowed items-center justify-center rounded-lg bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-400"
+                      // `text-neutral-400` daba 2.31:1 y era ilegible. WCAG exime a
+                      // los controles deshabilitados, pero este no es un botón
+                      // muerto: es el único aviso de que la descarga aún no existe,
+                      // así que tiene que leerse.
+                      className="inline-flex min-h-11 cursor-not-allowed items-center justify-center rounded-lg bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-600"
                     >
                       Disponible pronto
                     </span>
@@ -642,7 +654,8 @@ export default function Home() {
           </nav>
         </div>
         <div className="border-t border-neutral-200">
-          <p className="mx-auto max-w-6xl px-4 py-4 text-xs text-neutral-400 sm:px-6">
+          {/* neutral-600: el -400 daba 2.52:1 sobre blanco. */}
+          <p className="mx-auto max-w-6xl px-4 py-4 text-xs text-neutral-600 sm:px-6">
             © {new Date().getFullYear()} ConstructorPro. Todos los derechos reservados.
           </p>
         </div>

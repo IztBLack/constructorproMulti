@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ToggleTema } from '@/components/tema/toggle-tema';
 
 /**
  * Layout de la pantalla de campo.
@@ -26,12 +27,18 @@ export default function CampoLayout({ children }: { children: React.ReactNode })
       <header className="border-b border-neutral-200 bg-white">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3">
           <span className="text-base font-semibold text-neutral-900">Pase de lista</span>
-          <Link
-            href="/admin"
-            className="text-sm text-neutral-500 transition hover:text-neutral-900 hover:underline"
-          >
-            Panel
-          </Link>
+          {/* El toggle es puramente de cliente (localStorage), así que no rompe
+              la premisa de esta ruta: el HTML sigue siendo idéntico para
+              cualquier usuario y el service worker lo puede cachear igual. */}
+          <div className="flex items-center gap-2">
+            <ToggleTema />
+            <Link
+              href="/admin"
+              className="text-sm text-neutral-500 transition hover:text-neutral-900 hover:underline"
+            >
+              Panel
+            </Link>
+          </div>
         </div>
       </header>
 

@@ -1,0 +1,25 @@
+# Vercel solo construye `web/` (es el Root Directory del proyecto). Todo lo
+# demás de este monorepo es la app Flutter y no tiene por qué viajar en el
+# despliegue.
+#
+# Sin este archivo el CLI intenta subir ~17,000 archivos (build/, .dart_tool/,
+# android/, ios/…) y el despliegue falla con el límite de 15,000 de la API.
+#
+# OJO CON LA BARRA INICIAL: igual que en .gitignore, un patrón como `lib/`
+# coincide en CUALQUIER nivel — excluiría también `web/src/lib/` y el build
+# fallaría con "module not found". Todas las rutas de aquí van ancladas a la
+# raíz con `/` para que solo afecten al lado Flutter.
+
+/android/
+/ios/
+/build/
+/.dart_tool/
+/lib/
+/test/
+/assets/
+/tools/
+/drift_schemas/
+/docs/
+
+/*.zip
+/*.ps1

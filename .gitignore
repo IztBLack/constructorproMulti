@@ -70,3 +70,9 @@ tools/backup_temp*/
 .env
 .env.*
 !.env.example
+
+# Vercel CLI
+.vercel/
+
+# Configuración local de Claude Code (launch.json, worktrees)
+.claude/

@@ -1,27 +1,326 @@
 @import "tailwindcss";
 
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * TEMA CLARO / OSCURO — técnica de "paleta invertida"
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * CONTEXTO. La app tiene ~1,484 colores fijos (`bg-white`, `text-neutral-900`,
+ * `border-neutral-300`…) repartidos en 104 de 113 archivos. Un intento previo de
+ * modo oscuro se revirtió a propósito porque solo oscurecía el `body`: los
+ * componentes del kit seguían blancos y quedaban ilegibles sobre él.
+ *
+ * QUÉ SE HACE AQUÍ. En vez de reescribir esos 1,484 usos con nombres semánticos
+ * (`bg-surface`, `text-fg` — el camino "correcto", ~1 semana de refactor), se
+ * redefine el VALOR de la paleta de Tailwind. La escala `neutral` deja de ser
+ * fija y pasa a apuntar a variables propias; bajo `.dark` esas variables se
+ * invierten. Resultado: `bg-neutral-50` sigue siendo el fondo de página y
+ * `text-neutral-900` sigue siendo el texto principal — en AMBOS temas. Un
+ * archivo hace el trabajo de 104.
+ *
+ * Esto NO cierra la puerta a tokenizar de verdad más adelante; la facilita,
+ * porque obliga a clasificar cada color como "superficie" o "acento".
+ *
+ * LAS TRES REGLAS QUE HACEN QUE FUNCIONE
+ *
+ *   1. Los GRISES se invierten (50 ↔ 950). Son superficies y texto: en oscuro
+ *      deben intercambiar papeles.
+ *
+ *   2. El BLANCO y el NEGRO también se invierten. Es lo que hace que `bg-white`
+ *      (tarjetas) se oscurezca solo, y que el botón primario
+ *      `bg-neutral-900 text-white` se voltee completo y siga siendo legible sin
+ *      tocar una sola línea de Button.tsx.
+ *
+ *   3. Los colores CON SIGNIFICADO (rojo=error, verde=éxito, ámbar=aviso) NO se
+ *      invierten — un error rojo debe verse rojo en ambos temas. Solo se les
+ *      sube la luminosidad para que contrasten contra fondo oscuro.
+ *
+ * LA TRAMPA QUE DEJA (leer antes de escribir UI nueva)
+ *
+ *   Como el blanco se invierte, `text-white` sobre un fondo QUE NO SE INVIERTE
+ *   (rojo, verde, ámbar) queda texto oscuro sobre color saturado → ilegible.
+ *   Para esos casos existe `text-siempre-claro` / `bg-siempre-oscuro`, que no
+ *   responden al tema. Regla práctica:
+ *     · texto sobre gris/blanco/negro  → `text-white`, `text-neutral-*` (se invierten)
+ *     · texto sobre rojo/verde/ámbar   → `text-siempre-claro` (NO se invierte)
+ *
+ * La inversión no es aritmética (50↔950 exacto): los valores oscuros están
+ * ajustados a mano para que el fondo de página no sea negro puro, las tarjetas
+ * queden un escalón por encima del fondo, y los grises de texto pasen WCAG AA.
+ */
+
+/* El toggle escribe la clase `dark` en <html> (ver components/tema/). Se declara
+   la variante para poder escribir `dark:` en los pocos casos que la inversión
+   automática no resuelve. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Tema claro (por defecto) ──────────────────────────────────────────────
+   Valores idénticos a la paleta `neutral` de Tailwind: el tema claro se ve
+   EXACTAMENTE igual que antes de este cambio. Eso es intencional — la fase 1 no
+   debe alterar el aspecto actual de la app, solo agregar el oscuro. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Le dice al NAVEGADOR en qué tema está, cosa que el CSS por sí solo no puede.
+     Sin esto, los controles que dibuja el sistema operativo —el calendario de
+     `<input type="date">`, la lista desplegable de un `<select>`, las barras de
+     desplazamiento, el autocompletado— seguirían saliendo blancos sobre la app
+     oscura. Es una línea que arregla lo que ninguna clase de Tailwind alcanza. */
+  color-scheme: light;
+
+  --n-50:  #fafafa;
+  --n-100: #f5f5f5;
+  --n-200: #e5e5e5;
+  --n-300: #d4d4d4;
+  --n-400: #a3a3a3;
+  --n-500: #737373;
+  --n-600: #525252;
+  --n-700: #404040;
+  --n-800: #262626;
+  --n-900: #171717;
+  --n-950: #0a0a0a;
+
+  --blanco: #ffffff;
+  --negro:  #000000;
+
+  /* Colores CON SIGNIFICADO. Conservan el tono en ambos temas (un error se ve
+     rojo siempre); lo que se invierte es la LUMINOSIDAD dentro de cada familia.
+     Son exactamente los 37 tonos que usa la app hoy — ni uno más. */
+  --rojo-50:    #fef2f2;
+  --rojo-100:   #fee2e2;
+  --rojo-200:   #fecaca;
+  --rojo-300:   #fca5a5;
+  --rojo-400:   #f87171;
+  --rojo-600:   #dc2626;
+  --rojo-700:   #b91c1c;
+  --rojo-800:   #991b1b;
+
+  --verde-50:   #f0fdf4;
+  --verde-100:  #dcfce7;
+  --verde-200:  #bbf7d0;
+  --verde-500:  #22c55e;
+  --verde-600:  #16a34a;
+  --verde-700:  #15803d;
+  --verde-800:  #166534;
+
+  --ambar-50:   #fffbeb;
+  --ambar-100:  #fef3c7;
+  --ambar-200:  #fde68a;
+  --ambar-300:  #fcd34d;
+  --ambar-400:  #fbbf24;
+  --ambar-600:  #d97706;
+  --ambar-700:  #b45309;
+  --ambar-800:  #92400e;
+  --ambar-900:  #78350f;
+
+  --azul-50:    #eff6ff;
+  --azul-100:   #dbeafe;
+  --azul-200:   #bfdbfe;
+  --azul-500:   #3b82f6;
+  --azul-700:   #1d4ed8;
+  --azul-800:   #1e40af;
+  --azul-900:   #1e3a8a;
+
+  --morado-100: #f3e8ff;
+  --morado-700: #7e22ce;
+
+  --indigo-500: #6366f1;
+  --naranja-500: #f97316;
+  --teal-700:   #0f766e;
 }
 
+/* ── Tema oscuro ───────────────────────────────────────────────────────────
+   Los grises se invierten. Notas de por qué NO es una inversión mecánica:
+     · --n-50 (fondo de página) es #171717, no #0a0a0a: el negro puro cansa la
+       vista y no deja margen para que las tarjetas se distingan por debajo.
+     · --blanco (tarjetas, `bg-white`) queda un escalón POR ENCIMA del fondo de
+       página. En claro la jerarquía es "tarjeta blanca sobre fondo gris"; en
+       oscuro se conserva como "tarjeta gris sobre fondo más oscuro".
+     · --n-500 y --n-600 (texto secundario) están aclarados hasta pasar AA
+       (≥4.5:1) contra el fondo de tarjeta — la inversión literal los dejaba
+       cortos. */
+.dark {
+  color-scheme: dark;
+
+  --n-50:  #171717;
+  --n-100: #1f1f1f;
+  --n-200: #2e2e2e;
+  --n-300: #404040;
+  /* --n-400 y --n-500 están MÁS claros de lo que daría la inversión literal
+     (#a3a3a3 → #6b6b6b). Con el valor literal, los textos atenuados
+     ("Disponible pronto", el pie de página) quedaban en 3.09:1 contra el fondo
+     de tarjeta y no pasaban WCAG AA, que pide 4.5:1 para texto normal. Medido
+     en el navegador, no estimado. */
+  --n-400: #878787;
+  --n-500: #9c9c9c;
+  --n-600: #a8a8a8;
+  --n-700: #c9c9c9;
+  --n-800: #e0e0e0;
+  --n-900: #f2f2f2;
+  --n-950: #fafafa;
+
+  --blanco: #1f1f1f;
+  --negro:  #f2f2f2;
+
+  /* Mismo TONO, luminosidad invertida dentro de cada familia: el `-50` deja de
+     ser casi blanco y pasa a ser el tinte MÁS OSCURO, mientras el `-700`/`-800`
+     pasa a ser el MÁS CLARO.
+
+     Ese detalle es lo que hace que no haya que tocar los ~40 bloques de error
+     repartidos por la app: el patrón `bg-red-50 text-red-700` significa "fondo
+     tenue + texto fuerte" en claro, y sigue significando exactamente eso en
+     oscuro, sin editar una sola línea. Lo mismo aplica a los avisos ámbar, las
+     confirmaciones verdes y los informativos azules. */
+  --rojo-50:    #2a1416;
+  --rojo-100:   #3b191c;
+  --rojo-200:   #7f2229;
+  --rojo-300:   #a8383e;
+  --rojo-400:   #d05a5f;
+  --rojo-600:   #f87171;
+  --rojo-700:   #fca5a5;
+  --rojo-800:   #fecdd3;
+
+  --verde-50:   #0f2418;
+  --verde-100:  #14301f;
+  --verde-200:  #1f5133;
+  --verde-500:  #34d399;
+  --verde-600:  #4ade80;
+  --verde-700:  #86efac;
+  --verde-800:  #bbf7d0;
+
+  --ambar-50:   #2a1f0d;
+  --ambar-100:  #3a2a10;
+  --ambar-200:  #6b4c14;
+  --ambar-300:  #8a6318;
+  --ambar-400:  #d9a520;
+  --ambar-600:  #fbbf24;
+  --ambar-700:  #fcd34d;
+  --ambar-800:  #fde68a;
+  --ambar-900:  #fef3c7;
+
+  --azul-50:    #101c33;
+  --azul-100:   #16264a;
+  --azul-200:   #1e3a6b;
+  --azul-500:   #4b8ef7;
+  --azul-700:   #93c5fd;
+  --azul-800:   #bfdbfe;
+  --azul-900:   #dbeafe;
+
+  --morado-100: #2a1740;
+  --morado-700: #d8b4fe;
+
+  /* Categóricos de la gráfica de gasto. Se aclaran para no apagarse contra el
+     fondo oscuro; su tercera hermana es `neutral-400`, que se invierte sola y
+     queda en un gris medio equivalente. */
+  --indigo-500: #818cf8;
+  --naranja-500: #fb923c;
+  --teal-700:   #5eead4;
+}
+
+/* ── Excepción: las vistas "papel" ─────────────────────────────────────────
+   Las pantallas de PDF de cotización y estado de cuenta son documentos: se ven
+   como una hoja blanca y están hechas para imprimirse. Su texto usa hexadecimales
+   fijos (`text-[#0F172A]`) que NINGUNA variable puede alcanzar, así que si la
+   hoja se oscureciera quedaría texto casi negro sobre fondo casi negro — el peor
+   caso de todo el cambio.
+
+   La solución es que la hoja NO participe del tema: dentro de `.tema-papel` las
+   variables vuelven a sus valores claros, y como las variables CSS se heredan,
+   todo el documento vuelve con ellas.
+
+   Debe ir DESPUÉS de `.dark` para ganarle en el desempate (misma especificidad,
+   gana la última). Solo se listan los tonos que esas dos vistas usan de verdad;
+   si alguna empieza a usar otro, hay que añadirlo aquí. */
+.tema-papel {
+  color-scheme: light;
+
+  --blanco: #ffffff;
+  --n-50:  #fafafa;
+  --n-100: #f5f5f5;
+  --n-200: #e5e5e5;
+  --n-300: #d4d4d4;
+  --n-400: #a3a3a3;
+  --n-500: #737373;
+  --n-600: #525252;
+  --n-700: #404040;
+}
+
+/*
+ * `inline` es obligatorio aquí: estas variables apuntan a OTRAS variables
+ * (`var(--n-50)`). Sin `inline`, Tailwind congelaría el valor al compilar y
+ * `.dark` no tendría ningún efecto en tiempo de ejecución.
+ */
 @theme inline {
+  --color-neutral-50:  var(--n-50);
+  --color-neutral-100: var(--n-100);
+  --color-neutral-200: var(--n-200);
+  --color-neutral-300: var(--n-300);
+  --color-neutral-400: var(--n-400);
+  --color-neutral-500: var(--n-500);
+  --color-neutral-600: var(--n-600);
+  --color-neutral-700: var(--n-700);
+  --color-neutral-800: var(--n-800);
+  --color-neutral-900: var(--n-900);
+  --color-neutral-950: var(--n-950);
+
+  --color-white: var(--blanco);
+  --color-black: var(--negro);
+
+  --color-red-50:     var(--rojo-50);
+  --color-red-100:    var(--rojo-100);
+  --color-red-200:    var(--rojo-200);
+  --color-red-300:    var(--rojo-300);
+  --color-red-400:    var(--rojo-400);
+  --color-red-600:    var(--rojo-600);
+  --color-red-700:    var(--rojo-700);
+  --color-red-800:    var(--rojo-800);
+
+  --color-green-50:   var(--verde-50);
+  --color-green-100:  var(--verde-100);
+  --color-green-200:  var(--verde-200);
+  --color-green-500:  var(--verde-500);
+  --color-green-600:  var(--verde-600);
+  --color-green-700:  var(--verde-700);
+  --color-green-800:  var(--verde-800);
+
+  --color-amber-50:   var(--ambar-50);
+  --color-amber-100:  var(--ambar-100);
+  --color-amber-200:  var(--ambar-200);
+  --color-amber-300:  var(--ambar-300);
+  --color-amber-400:  var(--ambar-400);
+  --color-amber-600:  var(--ambar-600);
+  --color-amber-700:  var(--ambar-700);
+  --color-amber-800:  var(--ambar-800);
+  --color-amber-900:  var(--ambar-900);
+
+  --color-blue-50:    var(--azul-50);
+  --color-blue-100:   var(--azul-100);
+  --color-blue-200:   var(--azul-200);
+  --color-blue-500:   var(--azul-500);
+  --color-blue-700:   var(--azul-700);
+  --color-blue-800:   var(--azul-800);
+  --color-blue-900:   var(--azul-900);
+
+  --color-purple-100: var(--morado-100);
+  --color-purple-700: var(--morado-700);
+
+  --color-indigo-500: var(--indigo-500);
+  --color-orange-500: var(--naranja-500);
+  --color-teal-700:   var(--teal-700);
+
+  /* Escotillas de escape: NO responden al tema. Para texto sobre fondos de
+     color saturado (ver "LA TRAMPA QUE DEJA" arriba). */
+  --color-siempre-claro:  #ffffff;
+  --color-siempre-oscuro: #0a0a0a;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-/*
- * Decisión de diseño (pragmática, no implementa el design system Lexend/verde de
- * MASTER.md — fuera de alcance): la app fuerza tema claro por ahora.
- *
- * Se elimina el bloque `@media (prefers-color-scheme: dark)` que existía aquí:
- * solo oscurecía --background/--foreground del body, pero ningún componente del
- * kit (Card, Table, Field, etc.) tiene estilos dark reales — quedaban con fondos
- * blancos y bordes claros sobre un body oscuro, ilegible. Mejor no tener soporte
- * dark "a medias" que uno roto.
- */
+:root {
+  --background: var(--blanco);
+  --foreground: var(--n-900);
+}
 
 body {
   background: var(--background);
@@ -29,4 +328,25 @@ body {
   /* No forzamos font-family aquí: Tailwind ya aplica --font-sans (Geist, cargado
      vía next/font en layout.tsx) como fuente por defecto del documento. Antes
      había `font-family: Arial, Helvetica, sans-serif` que la pisaba. */
+}
+
+/* La transición de color al cambiar de tema se aplica SOLO durante el cambio (la
+   clase la pone y la quita `usar-tema.ts`). Sin esa acotación, cada cambio de
+   color de la app —hovers, focus, badges que cambian de estado— heredaría una
+   transición de 200ms y la interfaz se sentiría pastosa. */
+.cambiando-tema,
+.cambiando-tema *,
+.cambiando-tema *::before,
+.cambiando-tema *::after {
+  transition: background-color 200ms ease, border-color 200ms ease,
+    color 200ms ease, fill 200ms ease, stroke 200ms ease !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cambiando-tema,
+  .cambiando-tema *,
+  .cambiando-tema *::before,
+  .cambiando-tema *::after {
+    transition: none !important;
+  }
 }
