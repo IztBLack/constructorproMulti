@@ -149,8 +149,12 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
   // ---------------------------------------------------------------------------
   Future<void> _vincular() async {
     final codigo = _codigoCtrl.text.trim();
-    if (codigo.length != 6) {
-      setState(() => _error = 'El código debe tener exactamente 6 dígitos.');
+    // Se acepta 6 o más para no volver a quedar acoplado a un largo exacto: la
+    // web genera 6, pero si algún día cambia, la validación real del código la
+    // hace el servidor (`canjear_codigo_vinculacion`), no esta longitud. Antes
+    // era `!= 6`, que rechazaba de entrada cualquier código de otro largo.
+    if (codigo.length < 6) {
+      setState(() => _error = 'El código debe tener al menos 6 dígitos.');
       return;
     }
 

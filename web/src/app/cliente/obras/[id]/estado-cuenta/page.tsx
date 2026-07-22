@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { formatCurrency, formatDate } from '@/lib/data/format';
 import { getObraCliente, getEstadoCuentaObra } from '@/lib/data/portal-cliente';
 import { getNombreEmpresa } from '@/lib/data/empresa';
+import { hoyMxMs } from '@/lib/data/tz';
 import { PrintButton } from './print-button';
 
 export const dynamic = 'force-dynamic';
@@ -28,7 +29,15 @@ export default async function EstadoCuentaPdfPage({ params }: Props) {
 
   const marca = (await getNombreEmpresa()) ?? 'ConstructorPro';
   const folio = folioCorto(obra.id);
-  const hoy = Date.now();
+  // Medianoche de HOY en México, no el instante actual. Dos razones:
+  //   1. El documento dice "estado de cuenta al <fecha>": lo que importa es el
+  //      día, no la hora. Con `Date.now()` el valor cambiaba en cada render,
+  //      que es lo que marcaba `react-hooks/purity`.
+  //   2. Centraliza el cálculo del día en `tz.ts`, que ya sabe que en Vercel el
+  //      servidor corre en UTC. (`formatDate` ya fija la zona al imprimir, así
+  //      que aquí no había fecha corrida — pero conviene que "hoy" signifique
+  //      lo mismo en toda la app.)
+  const hoy = hoyMxMs();
 
   return (
     <>
@@ -58,7 +67,10 @@ export default async function EstadoCuentaPdfPage({ params }: Props) {
         }
       `}</style>
 
-      <div className="min-h-screen bg-neutral-100 print:bg-white print:min-h-0">
+      {/* `tema-papel`: esta vista es un documento y queda fuera del tema oscuro
+          a propósito — su texto usa hexadecimales fijos (#0F172A) que no
+          responden al tema. Ver globals.css. */}
+      <div className="tema-papel min-h-screen bg-neutral-100 print:bg-white print:min-h-0">
         <div className="mx-auto max-w-[816px] bg-white px-10 py-10 print:px-0 print:py-0 print:max-w-none print:shadow-none shadow-md rounded-none sm:my-8 print:my-0">
 
           {/* ── Barra de acciones (solo pantalla) ── */}

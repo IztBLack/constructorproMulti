@@ -19,10 +19,19 @@ export async function getEmpresaUsuario(): Promise<EmpresaUsuario> {
     throw new Error('No hay sesión activa.');
   }
 
+  // El `order` no es cosmético. Con `limit(1)` a secas, si una persona
+  // pertenece a dos empresas (es personal de una y cliente de otra, algo
+  // perfectamente posible), Postgres devuelve una fila ARBITRARIA que puede
+  // cambiar entre peticiones: la pantalla mostraría un rol distinto según el
+  // momento. No es explotable —RLS rechaza igual lo que no corresponda al rol
+  // real— pero es la clase de indeterminismo del que salen los bugs de permisos
+  // en cuanto alguien añada una comprobación de rol en TypeScript.
+  // Se ordena por antigüedad: la primera empresa a la que se unió.
   const { data, error } = await supabase
     .from('usuarios_empresa')
     .select('empresa_id, rol')
     .eq('user_id', user.id)
+    .order('created_at', { ascending: true })
     .limit(1)
     .maybeSingle();
 

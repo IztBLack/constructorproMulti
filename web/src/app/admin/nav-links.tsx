@@ -15,7 +15,10 @@ const NAV_LINKS = [
   { href: '/admin/cuadrillas', label: 'Cuadrillas' },
   { href: '/admin/catalogo', label: 'Catálogo' },
   { href: '/admin/puestos', label: 'Puestos' },
-  { href: '/admin/vincular', label: 'Vincular' },
+  // "Usuarios" reemplaza al viejo "Vincular": ahora es un solo módulo con el
+  // listado de accesos + invitar (mismo código que se canjea en móvil o web).
+  // /admin/vincular quedó como redirección para no romper enlaces guardados.
+  { href: '/admin/usuarios', label: 'Usuarios' },
 ];
 
 function isActive(pathname: string, href: string): boolean {
