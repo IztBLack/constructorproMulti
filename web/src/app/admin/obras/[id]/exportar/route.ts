@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getObra, listMovimientosByObra } from '@/lib/data/obras';
 import { listPresupuestoObra } from '@/lib/data/presupuesto-obra';
+import { getNotaCaja } from '@/lib/data/caja-nota';
 import { createClient } from '@/lib/supabase/server';
 import { construirExcelEstadoCuenta } from '@/lib/excel/estado-cuenta-excel';
 
@@ -27,10 +28,12 @@ export async function GET(
     { data: obra, error: obraError },
     { data: partidas, error: partidasError },
     { data: movimientos, error: movError },
+    notaCaja,
   ] = await Promise.all([
     getObra(id),
     listPresupuestoObra(id),
     listMovimientosByObra(id),
+    getNotaCaja(id),
   ]);
 
   if (obraError) {
@@ -53,6 +56,7 @@ export async function GET(
       obra,
       partidas: partidas ?? [],
       movimientos: movimientos ?? [],
+      notaCaja,
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Error desconocido al generar el Excel.';

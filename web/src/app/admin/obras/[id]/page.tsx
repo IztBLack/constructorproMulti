@@ -3,7 +3,10 @@ import { getObra, listMovimientosByObra } from '@/lib/data/obras';
 import { listPresupuestoObra } from '@/lib/data/presupuesto-obra';
 import { listColaboradores, listColaboradoresDeObra } from '@/lib/data/equipo';
 import { listClientes } from '@/lib/data/clientes';
+import { getEmpresaUsuario } from '@/lib/data/empresa';
+import { getNotaCaja } from '@/lib/data/caja-nota';
 import ObraHeader from './obra-header';
+import { NotaCaja } from './nota-caja';
 import RegistrarMovimiento from './registrar-movimiento';
 import MovimientosTabla from './movimientos-tabla';
 import EquipoObra from './equipo-obra';
@@ -37,13 +40,20 @@ export default async function ObraDetallePage({
     { data: equipoAsignado, error: equipoError },
     { data: colaboradores, error: colaboradoresError },
     { data: clientes },
+    notaCaja,
   ] = await Promise.all([
     listMovimientosByObra(id),
     listPresupuestoObra(id),
     listColaboradoresDeObra(id),
     listColaboradores(),
     listClientes(),
+    getNotaCaja(id),
   ]);
+
+  // Quién puede editar la nota de caja. Si falla la consulta de rol, se asume
+  // que no (mejor solo lectura que romper la página).
+  const rol = await getEmpresaUsuario().then((e) => e.rol).catch(() => '');
+  const puedeEditarNota = ['admin', 'supervisor', 'contador'].includes(rol);
 
   return (
     <div className="space-y-6">
@@ -61,6 +71,9 @@ export default async function ObraDetallePage({
       ) : (
         <EstadoCuenta obraId={id} partidas={partidas} movimientos={movimientos ?? []} />
       )}
+
+      {/* Nota de conciliación (el apunte al pie del Excel de la contadora). */}
+      <NotaCaja obraId={id} notaInicial={notaCaja} puedeEditar={puedeEditarNota} />
 
       {/* 2. Presupuesto por partidas (editable) */}
       {!presupuestoError && (

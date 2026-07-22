@@ -122,12 +122,15 @@ export interface ExportInput {
   obra: Obra;
   partidas: PartidaPresupuesto[];
   movimientos: Movimiento[];
+  /** Nota de conciliación de caja (migración 0023). Opcional. */
+  notaCaja?: string;
 }
 
 export async function construirExcelEstadoCuenta({
   obra,
   partidas,
   movimientos,
+  notaCaja,
 }: ExportInput): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
   wb.creator = 'ConstructorPro';
@@ -431,6 +434,24 @@ export async function construirExcelEstadoCuenta({
     row.getCell(2).font = boldFont;
     [1, 2].forEach((c) => applyBorder(row.getCell(c)));
     row.commit();
+    rowIdx++;
+  }
+
+  // ── Nota de conciliación al pie (como el apunte del Excel de la contadora) ──
+  const textoNota = notaCaja?.trim();
+  if (textoNota) {
+    rowIdx += 1; // renglón en blanco de separación
+    const etiqueta = ws.getRow(rowIdx);
+    etiqueta.getCell(1).value = 'NOTA DE CONCILIACIÓN';
+    etiqueta.getCell(1).font = boldFont;
+    etiqueta.commit();
+    rowIdx++;
+    const filaNota = ws.getRow(rowIdx);
+    filaNota.getCell(1).value = textoNota;
+    // Que la nota se lea completa a lo ancho de las columnas del libro.
+    ws.mergeCells(rowIdx, 1, rowIdx, 7);
+    filaNota.getCell(1).alignment = { wrapText: true, vertical: 'top' };
+    filaNota.commit();
     rowIdx++;
   }
 
