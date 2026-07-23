@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
   const pedido = searchParams.get('destino') ?? '';
+  const esSocio = searchParams.get('socio') === '1';
   const errorDescripcion = searchParams.get('error_description');
 
   const destino = DESTINOS.has(pedido) ? pedido : '/admin';
@@ -47,6 +48,14 @@ export async function GET(request: NextRequest) {
     // El enlace ya se usó o caducó. Se manda a /login con aviso en vez de
     // dejar una pantalla en blanco.
     return NextResponse.redirect(`${origin}/login?error=enlace_expirado`);
+  }
+
+  // Invitación de socio (magic link con ?socio=1): ya hay sesión, así que se
+  // concilia la invitación pendiente por correo y el socio queda como admin de
+  // la empresa. Best-effort: si no hay invitación vigente, el middleware lo
+  // llevará a /onboarding, no se rompe el aterrizaje.
+  if (esSocio) {
+    await supabase.rpc('canjear_invitacion_por_correo');
   }
 
   return NextResponse.redirect(`${origin}${destino}`);
