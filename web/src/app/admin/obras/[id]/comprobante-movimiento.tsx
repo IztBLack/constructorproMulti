@@ -3,7 +3,13 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui';
-import { subirComprobante, quitarComprobante, urlComprobante } from './comprobante-actions';
+import { createClient } from '@/lib/supabase/client';
+import {
+  crearUrlSubidaComprobante,
+  registrarComprobante,
+  quitarComprobante,
+  urlComprobante,
+} from './comprobante-actions';
 
 /**
  * Comprobante de un movimiento (imagen o PDF de la transferencia).
@@ -50,13 +56,41 @@ export function ComprobanteMovimiento({
     setCargando(true);
     setError(null);
 
-    const fd = new FormData();
-    fd.set('comprobante', file);
-    const r = await subirComprobante(obraId, movimientoId, fd);
+    function fallar(msg: string) {
+      setCargando(false);
+      if (inputRef.current) inputRef.current.value = '';
+      setError(msg);
+    }
+
+    // 1. Pedir al servidor una URL de subida firmada (solo viajan los metadatos).
+    const prep = await crearUrlSubidaComprobante(
+      obraId,
+      movimientoId,
+      file.name,
+      file.type,
+      file.size,
+    );
+    if (!prep.ok || !prep.path || !prep.token) {
+      fallar(prep.error ?? 'No se pudo preparar la subida.');
+      return;
+    }
+
+    // 2. Subir el archivo DIRECTO a Storage (evita el límite de body del servidor).
+    const supabase = createClient();
+    const { error: upErr } = await supabase.storage
+      .from('comprobantes')
+      .uploadToSignedUrl(prep.path, prep.token, file, { contentType: file.type });
+    if (upErr) {
+      fallar(`No se pudo subir: ${upErr.message}`);
+      return;
+    }
+
+    // 3. Enlazar la ruta subida al movimiento.
+    const r = await registrarComprobante(obraId, movimientoId, prep.path);
     setCargando(false);
     if (inputRef.current) inputRef.current.value = '';
     if (!r.ok) {
-      setError(r.error ?? 'No se pudo subir.');
+      setError(r.error ?? 'No se pudo guardar.');
       return;
     }
     router.refresh();

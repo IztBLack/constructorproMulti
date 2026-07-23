@@ -7,37 +7,48 @@ import { getEmpresaUsuario } from '@/lib/data/empresa';
 const BUCKET = 'comprobantes';
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB, igual que el límite del bucket
 const TIPOS_OK = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+const ROLES_OFICINA = ['admin', 'supervisor', 'contador'];
 
 export interface ResultadoComprobante {
   ok: boolean;
   error?: string;
 }
 
+export interface UrlSubidaComprobante {
+  ok: boolean;
+  error?: string;
+  path?: string;
+  token?: string;
+}
+
 /**
- * Sube el comprobante de un movimiento al bucket privado y guarda su ruta en
- * `movimientos.comprobante_uri`.
+ * Paso 1 de la subida: valida el permiso y devuelve una URL de subida FIRMADA
+ * para que el navegador suba el archivo DIRECTO a Storage.
  *
- * Quién puede: solo oficina (admin/supervisor/contador). Lo impone la policy del
- * bucket (0024) y la comprobación de rol de abajo es solo para dar un mensaje
- * entendible en vez de un error crudo de Storage.
+ * Por qué directo y no por el Server Action: el cuerpo de un Server Action está
+ * limitado a ~1 MB (y Vercel corta el request a 4.5 MB), así que una foto de
+ * comprobante de varios MB dejaba la subida colgada. Con este esquema el archivo
+ * NO pasa por el servidor: solo viajan el nombre, el tipo y el tamaño para poder
+ * firmar la ruta y validar.
  *
- * La ruta empieza con el empresa_id porque la policy valida el rol contra ese
- * primer segmento (`storage.foldername(name)[1]`). No es cosmético: es la línea
- * que impide que la empresa A lea comprobantes de la B.
+ * La ruta empieza con el empresa_id porque la policy del bucket (0024) valida el
+ * rol contra ese primer segmento. Se construye aquí, en el servidor, para que el
+ * cliente no pueda apuntar a la carpeta de otra empresa.
  */
-export async function subirComprobante(
+export async function crearUrlSubidaComprobante(
   obraId: string,
   movimientoId: string,
-  formData: FormData,
-): Promise<ResultadoComprobante> {
-  const file = formData.get('comprobante') as File | null;
-  if (!file || file.size === 0) {
+  fileName: string,
+  fileType: string,
+  fileSize: number,
+): Promise<UrlSubidaComprobante> {
+  if (!fileSize || fileSize === 0) {
     return { ok: false, error: 'Elige un archivo.' };
   }
-  if (file.size > MAX_BYTES) {
+  if (fileSize > MAX_BYTES) {
     return { ok: false, error: 'El archivo pasa de 10 MB.' };
   }
-  if (!TIPOS_OK.includes(file.type)) {
+  if (!TIPOS_OK.includes(fileType)) {
     return { ok: false, error: 'Solo imágenes (JPG, PNG, WEBP) o PDF.' };
   }
 
@@ -48,21 +59,51 @@ export async function subirComprobante(
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Error de autenticación.' };
   }
-  if (!['admin', 'supervisor', 'contador'].includes(rol)) {
+  if (!ROLES_OFICINA.includes(rol)) {
     return { ok: false, error: 'No tienes permiso para subir comprobantes.' };
   }
 
   const supabase = await createClient();
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-60);
+  const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-60);
   const path = `${empresaId}/${obraId}/${movimientoId}-${crypto.randomUUID()}-${safeName}`;
 
-  const { error: upErr } = await supabase.storage
-    .from(BUCKET)
-    .upload(path, file, { contentType: file.type, upsert: false });
-  if (upErr) {
-    return { ok: false, error: `No se pudo subir: ${upErr.message}` };
+  // La firma corre con la sesión del usuario, así que la policy INSERT del bucket
+  // sigue siendo la barrera real: si no es oficina de esta empresa, falla aquí.
+  const { data, error } = await supabase.storage.from(BUCKET).createSignedUploadUrl(path);
+  if (error || !data) {
+    return { ok: false, error: `No se pudo preparar la subida: ${error?.message ?? 'desconocido'}` };
+  }
+  return { ok: true, path: data.path, token: data.token };
+}
+
+/**
+ * Paso 2: una vez que el navegador subió el archivo a `path`, enlaza esa ruta al
+ * movimiento en la base.
+ *
+ * Revalida el rol y que la ruta caiga DENTRO de la carpeta de esta empresa/obra,
+ * para que un cliente manipulado no pueda enlazar una ruta arbitraria (la SELECT
+ * policy ya la aislaría por empresa, pero no se deja pasar de largo).
+ */
+export async function registrarComprobante(
+  obraId: string,
+  movimientoId: string,
+  path: string,
+): Promise<ResultadoComprobante> {
+  let empresaId: string;
+  let rol: string;
+  try {
+    ({ empresaId, rol } = await getEmpresaUsuario());
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Error de autenticación.' };
+  }
+  if (!ROLES_OFICINA.includes(rol)) {
+    return { ok: false, error: 'No tienes permiso para subir comprobantes.' };
+  }
+  if (!path.startsWith(`${empresaId}/${obraId}/`)) {
+    return { ok: false, error: 'Ruta de comprobante inválida.' };
   }
 
+  const supabase = await createClient();
   const { error: dbErr } = await supabase
     .from('movimientos')
     .update({ comprobante_uri: path, updated_at: Date.now() })

@@ -21,8 +21,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const nombre = nombreUsuario(user);
 
   return (
-    <div className="min-h-screen flex flex-col bg-neutral-50">
-      <header className="border-b border-neutral-200 bg-white">
+    // `print:*` deja fuera de la impresión el chrome del admin (nav, encabezado,
+    // padding). Sin esto, cualquier página imprimible bajo /admin —en particular
+    // el PDF de cotización— sacaba también la barra de navegación y el usuario, e
+    // "imprimía toda la página" en vez del documento solo.
+    <div className="min-h-screen flex flex-col bg-neutral-50 print:min-h-0 print:bg-white">
+      <header className="border-b border-neutral-200 bg-white print:hidden">
         <div className="mx-auto max-w-6xl flex items-center justify-between gap-4 px-4 py-3 sm:px-8">
           <div className="flex items-center gap-6">
             <Link href="/admin" className="text-base font-semibold text-neutral-900">
@@ -46,8 +50,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <NavLinks className="flex sm:hidden gap-1 overflow-x-auto border-t border-neutral-100 px-4 py-2" itemClassName="shrink-0" />
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-8">
-        <div className="mb-6 empty:mb-0">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-8 print:max-w-none print:p-0">
+        <div className="mb-6 empty:mb-0 print:hidden">
           <AvisoInstalar />
         </div>
         {children}

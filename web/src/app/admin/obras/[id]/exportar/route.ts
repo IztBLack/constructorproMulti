@@ -74,7 +74,10 @@ export async function GET(
 
   const filename = `${nombreSeguro || 'obra'}_estado-cuenta.xlsx`;
 
-  return new NextResponse(buffer.buffer as ArrayBuffer, {
+  // Un Buffer de Node se toma de un pool compartido, así que `buffer.buffer`
+  // devuelve el ArrayBuffer del pool ENTERO (mucho más grande que estos datos)
+  // y el .xlsx sale corrupto. `new Uint8Array(buffer)` copia solo la vista real.
+  return new NextResponse(new Uint8Array(buffer), {
     status: 200,
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

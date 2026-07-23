@@ -26,7 +26,7 @@ export async function invitarUsuario(formData: FormData): Promise<ResultadoUsuar
   const rol = String(formData.get('rol') ?? '');
 
   if (!nombre) return { ok: false, error: 'Escribe el nombre de la persona.' };
-  if (rol !== 'supervisor' && rol !== 'colaborador') {
+  if (rol !== 'supervisor' && rol !== 'colaborador' && rol !== 'contador') {
     return { ok: false, error: 'Elige un rol válido.' };
   }
 
