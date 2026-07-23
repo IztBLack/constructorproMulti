@@ -50,10 +50,11 @@ export default async function ObraDetallePage({
     getNotaCaja(id),
   ]);
 
-  // Quién puede editar la nota de caja. Si falla la consulta de rol, se asume
-  // que no (mejor solo lectura que romper la página).
+  // Personal de oficina (admin/supervisor/contador): edita la nota de caja y
+  // gestiona los comprobantes. Si falla la consulta de rol, se asume que no
+  // (mejor solo lectura que romper la página).
   const rol = await getEmpresaUsuario().then((e) => e.rol).catch(() => '');
-  const puedeEditarNota = ['admin', 'supervisor', 'contador'].includes(rol);
+  const esOficina = ['admin', 'supervisor', 'contador'].includes(rol);
 
   return (
     <div className="space-y-6">
@@ -73,7 +74,7 @@ export default async function ObraDetallePage({
       )}
 
       {/* Nota de conciliación (el apunte al pie del Excel de la contadora). */}
-      <NotaCaja obraId={id} notaInicial={notaCaja} puedeEditar={puedeEditarNota} />
+      <NotaCaja obraId={id} notaInicial={notaCaja} puedeEditar={esOficina} />
 
       {/* 2. Presupuesto por partidas (editable) */}
       {!presupuestoError && (
@@ -118,7 +119,13 @@ export default async function ObraDetallePage({
           </p>
         )}
 
-        {!movError && <MovimientosTabla obraId={id} movimientos={movimientos} />}
+        {!movError && (
+          <MovimientosTabla
+            obraId={id}
+            movimientos={movimientos}
+            puedeGestionarComprobante={esOficina}
+          />
+        )}
       </section>
     </div>
   );

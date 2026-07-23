@@ -173,6 +173,9 @@ export interface Movimiento {
   nombre: string | null;
   cotizacion_id: string | null;
   partida_id: string | null;
+  /// Ruta del comprobante en el bucket privado `comprobantes` (migración 0024).
+  /// Null si no se adjuntó. Solo la ve/gestiona el personal de oficina.
+  comprobante_uri?: string | null;
   created_at: number;
   updated_at: number;
   server_updated_at: number | null;

@@ -8,6 +8,7 @@ import { fechaInputAMs } from '@/lib/data/tz';
 import type { Movimiento } from '@/lib/data/types';
 import { eliminarMovimientoAction } from './actions';
 import MovimientoForm from './movimiento-form';
+import { ComprobanteMovimiento } from './comprobante-movimiento';
 
 type FiltroTipo = 'TODOS' | 'ENTRADA' | 'SALIDA';
 
@@ -22,9 +23,12 @@ function normalizar(s: string | null | undefined): string {
 export default function MovimientosTabla({
   obraId,
   movimientos,
+  puedeGestionarComprobante = false,
 }: {
   obraId: string;
   movimientos: Movimiento[];
+  /** Personal de oficina (admin/supervisor/contador): sube y quita comprobantes. */
+  puedeGestionarComprobante?: boolean;
 }) {
   const router = useRouter();
   const [editandoId, setEditandoId] = useState<string | null>(null);
@@ -261,24 +265,32 @@ export default function MovimientosTabla({
                     {formatCurrency(m.monto)}
                   </Td>
                   <Td className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setEditandoId(m.id)}
-                      >
-                        Editar
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="danger"
-                        size="sm"
-                        disabled={eliminandoId === m.id}
-                        onClick={() => onEliminar(m.id)}
-                      >
-                        {eliminandoId === m.id ? 'Eliminando…' : 'Eliminar'}
-                      </Button>
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setEditandoId(m.id)}
+                        >
+                          Editar
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="danger"
+                          size="sm"
+                          disabled={eliminandoId === m.id}
+                          onClick={() => onEliminar(m.id)}
+                        >
+                          {eliminandoId === m.id ? 'Eliminando…' : 'Eliminar'}
+                        </Button>
+                      </div>
+                      <ComprobanteMovimiento
+                        obraId={obraId}
+                        movimientoId={m.id}
+                        uri={m.comprobante_uri}
+                        puedeGestionar={puedeGestionarComprobante}
+                      />
                     </div>
                   </Td>
                 </Tr>
