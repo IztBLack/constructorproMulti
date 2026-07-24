@@ -60,6 +60,9 @@ export default function EstadoCuenta({ obraId, partidas, movimientos }: Props) {
             >
               Exportar a Excel
             </LinkButton>
+            <LinkButton href={`/admin/obras/${obraId}/pdf`} variant="secondary" size="sm">
+              Ver PDF
+            </LinkButton>
           </div>
         </div>
 

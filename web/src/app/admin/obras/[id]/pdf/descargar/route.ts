@@ -1,8 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getCotizacionConDetalle, calcularTotales } from '@/lib/data/cotizaciones';
-import { createClient } from '@/lib/supabase/server';
+import { getObra, listMovimientosByObra } from '@/lib/data/obras';
+import { listPresupuestoObra } from '@/lib/data/presupuesto-obra';
+import { getNotaCaja } from '@/lib/data/caja-nota';
+import { getNombreEmpresa } from '@/lib/data/empresa';
 import { getEmpresaConfig } from '@/lib/data/empresa-config';
-import { construirCotizacionDocumentoHtml } from '@/lib/cotizacion/documento-html';
+import { createClient } from '@/lib/supabase/server';
+import { construirCajaDocumentoHtml } from '@/lib/obra/documento-caja-html';
 import { folioCorto } from '@/lib/pdf/documento-base';
 import { renderHtmlToPdf, pdfResponse } from '@/lib/pdf/render-html-to-pdf';
 
@@ -23,29 +26,36 @@ export async function GET(
   }
 
   const { id } = await params;
-  const { data: cotizacion, error } = await getCotizacionConDetalle(id);
+  const [{ data: obra, error }, { data: partidas }, { data: movimientos }, notaCaja, nombreEmpresa, { pdf }] =
+    await Promise.all([
+      getObra(id),
+      listPresupuestoObra(id),
+      listMovimientosByObra(id),
+      getNotaCaja(id),
+      getNombreEmpresa(),
+      getEmpresaConfig(),
+    ]);
+
   if (error) {
     return NextResponse.json({ error: `Error al cargar: ${error}` }, { status: 500 });
   }
-  if (!cotizacion) {
-    return NextResponse.json({ error: 'Cotización no encontrada.' }, { status: 404 });
+  if (!obra) {
+    return NextResponse.json({ error: 'Obra no encontrada.' }, { status: 404 });
   }
 
-  const { data: empresaData } = await supabase
-    .from('empresas')
-    .select('nombre')
-    .eq('id', cotizacion.empresa_id)
-    .maybeSingle();
-  const nombreEmpresa: string = empresaData?.nombre ?? 'ConstructorPro';
-  const { pdf } = await getEmpresaConfig();
-  const totales = calcularTotales(cotizacion);
-
-  const html = construirCotizacionDocumentoHtml({ cotizacion, totales, nombreEmpresa, pdf });
+  const html = construirCajaDocumentoHtml({
+    obra,
+    partidas,
+    movimientos,
+    notaCaja,
+    nombreEmpresa: nombreEmpresa ?? 'ConstructorPro',
+    pdf,
+  });
 
   try {
     const bytes = await renderHtmlToPdf(html);
     const inline = request.nextUrl.searchParams.get('disp') === 'inline';
-    return pdfResponse(bytes, `cotizacion_${folioCorto(cotizacion.id)}.pdf`, inline);
+    return pdfResponse(bytes, `estado-cuenta_${folioCorto(obra.id)}.pdf`, inline);
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error desconocido al generar el PDF.';
     return NextResponse.json({ error: msg }, { status: 500 });

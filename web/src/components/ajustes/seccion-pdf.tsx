@@ -113,8 +113,11 @@ export function SeccionPdf({ configActual }: { configActual: PdfConfig }) {
           />
         </Field>
 
-        {/* Vista previa: reproduce el encabezado real del documento. */}
-        <div className="rounded-lg border border-neutral-200 bg-white p-4">
+        {/* Vista previa: reproduce el encabezado real del documento. Va en
+            `tema-papel` porque simula una hoja impresa (siempre blanca): sin esto,
+            en modo oscuro la tarjeta se invertía a oscura mientras el color de
+            acento (hex fijo) se quedaba igual, dejando el rótulo casi ilegible. */}
+        <div className="tema-papel rounded-lg border border-neutral-200 bg-white p-4">
           <p className="mb-2 text-xs font-medium text-neutral-500">Vista previa</p>
           <div
             className="border-b-2 pb-2"
