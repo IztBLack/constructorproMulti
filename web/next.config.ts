@@ -7,12 +7,17 @@ const nextConfig: NextConfig = {
   // headless: tampoco deben bundlearse (traen binarios y rutas nativas).
   serverExternalPackages: ['pdfjs-dist', 'puppeteer-core', '@sparticuz/chromium'],
 
-  // Fuerza a incluir el binario de Chromium (archivos .br) en el trazado de la
-  // función que genera el PDF; sin esto, el file-tracing de Next puede dejarlo
-  // fuera y la función falla en runtime al buscar el ejecutable.
+  // Fuerza a incluir el binario de Chromium (carpeta bin/*.br) en el trazado de
+  // la función que genera el PDF. Sin esto, el file-tracing de Next solo sigue los
+  // .js de @sparticuz/chromium (los que se `require`) y deja fuera el binario, que
+  // se carga por una ruta calculada en runtime → la función truena buscándolo.
+  //
+  // La clave es un glob de RUTA (picomatch): los corchetes del segmento dinámico
+  // van ESCAPADOS (`\\[id\\]`), si no picomatch los toma como clase de caracteres
+  // y no hace match. Los valores se resuelven desde la raíz del proyecto (web/).
   outputFileTracingIncludes: {
-    '/admin/cotizaciones/[id]/pdf/descargar/route': [
-      './node_modules/@sparticuz/chromium/**',
+    '/admin/cotizaciones/\\[id\\]/pdf/descargar': [
+      './node_modules/@sparticuz/chromium/**/*',
     ],
   },
 
