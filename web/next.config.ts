@@ -22,6 +22,15 @@ const nextConfig: NextConfig = {
     '/admin/obras/\\[id\\]/pdf/descargar': [
       './node_modules/@sparticuz/chromium/**/*',
     ],
+    '/cliente/obras/\\[id\\]/estado-cuenta/descargar': [
+      './node_modules/@sparticuz/chromium/**/*',
+    ],
+    '/cliente/cotizaciones/\\[id\\]/pdf/descargar': [
+      './node_modules/@sparticuz/chromium/**/*',
+    ],
+    '/admin/obras/\\[id\\]/nomina/pdf/descargar': [
+      './node_modules/@sparticuz/chromium/**/*',
+    ],
   },
 
   async headers() {

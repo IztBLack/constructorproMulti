@@ -1,5 +1,3 @@
-import type { CotizacionConDetalle } from '@/lib/data/types';
-import type { TotalesCotizacion } from '@/lib/data/cotizaciones';
 import type { PdfConfig } from '@/lib/data/empresa-config';
 import { formatCurrency, formatDate } from '@/lib/data/format';
 import { envolverDocumento, esc, folioCorto } from '@/lib/pdf/documento-base';
@@ -8,7 +6,45 @@ import { envolverDocumento, esc, folioCorto } from '@/lib/pdf/documento-base';
  * HTML del documento de una cotización. Solo arma el CUERPO y sus estilos
  * propios; el esqueleto, la tipografía y las clases comunes vienen de
  * `documento-base.ts`, compartidas con los demás PDF.
+ *
+ * Los tipos de entrada son ESTRUCTURALES (solo lo que el documento pinta), para
+ * que lo usen tanto la cotización de oficina (`CotizacionConDetalle`, con
+ * `cliente` y `clave`) como la del portal del cliente (`CotizacionPortalConDetalle`,
+ * sin esos campos) sin adaptadores ni casts.
  */
+
+/** Lo mínimo que el documento necesita de una cotización. */
+export interface CotizacionDocData {
+  id: string;
+  cliente?: string | null;
+  nombre_proyecto: string;
+  ubicacion: string | null;
+  fecha: number;
+  descuento: number;
+  iva_enabled: boolean;
+  notas: string | null;
+  secciones: {
+    id: string;
+    nombre: string;
+    partidas: {
+      id: string;
+      clave?: string | null;
+      descripcion: string;
+      unidad: string | null;
+      cantidad: number;
+      precio_unitario: number;
+    }[];
+  }[];
+}
+
+/** Lo mínimo que el documento necesita de los totales. */
+export interface TotalesDocData {
+  subtotal: number;
+  descuentoMonto: number;
+  ivaPct: number;
+  ivaMonto: number;
+  total: number;
+}
 
 /** Estilos específicos de la cotización (anchos de columna del cuerpo). */
 const ESTILOS = `
@@ -18,8 +54,8 @@ const ESTILOS = `
 `;
 
 export function construirCotizacionDocumentoHtml(params: {
-  cotizacion: CotizacionConDetalle;
-  totales: TotalesCotizacion;
+  cotizacion: CotizacionDocData;
+  totales: TotalesDocData;
   nombreEmpresa: string;
   pdf: PdfConfig;
 }): string {
@@ -70,6 +106,10 @@ export function construirCotizacionDocumentoHtml(params: {
       ? `<p class="nota-vacia">Esta cotización no tiene partidas registradas.</p>`
       : '';
 
+  const bloqueCliente = cotizacion.cliente
+    ? `<div><p class="etiqueta">Cliente</p><p class="dato">${esc(cotizacion.cliente)}</p></div>`
+    : '';
+
   const bloqueUbicacion = cotizacion.ubicacion
     ? `<div><p class="etiqueta">Ubicación</p><p class="dato">${esc(cotizacion.ubicacion)}</p></div>`
     : '';
@@ -109,7 +149,7 @@ export function construirCotizacionDocumentoHtml(params: {
     </header>
 
     <section class="info-grid avoid">
-      <div><p class="etiqueta">Cliente</p><p class="dato">${esc(cotizacion.cliente)}</p></div>
+      ${bloqueCliente}
       <div><p class="etiqueta">Proyecto</p><p class="dato">${esc(cotizacion.nombre_proyecto)}</p></div>
       ${bloqueUbicacion}
     </section>

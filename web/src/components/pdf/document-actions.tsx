@@ -16,6 +16,9 @@ export function DocumentActions({
   volverHref: string;
   descargarHref: string;
 }) {
+  // Añade disp=inline respetando si la URL ya trae query params (p. ej. ?inicio=).
+  const imprimirHref = `${descargarHref}${descargarHref.includes('?') ? '&' : '?'}disp=inline`;
+
   return (
     <div className="flex flex-wrap items-center gap-3">
       <Link
@@ -35,7 +38,7 @@ export function DocumentActions({
       </a>
 
       <a
-        href={`${descargarHref}?disp=inline`}
+        href={imprimirHref}
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50"

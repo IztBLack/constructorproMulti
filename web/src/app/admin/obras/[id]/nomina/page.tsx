@@ -136,6 +136,13 @@ export default async function NominaObraPage({
             >
               Siguiente →
             </LinkButton>
+            <LinkButton
+              variant="secondary"
+              size="sm"
+              href={`/admin/obras/${id}/nomina/pdf?inicio=${inicioMs}`}
+            >
+              Ver PDF
+            </LinkButton>
           </div>
         </div>
       </Card>
