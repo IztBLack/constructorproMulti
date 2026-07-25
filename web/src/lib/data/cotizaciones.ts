@@ -4,6 +4,8 @@ import { buildSnapshot } from './cotizacion-diff';
 import { getEmpresaConfig } from './empresa-config';
 import { IVA_POR_DEFECTO } from './types';
 import type { Cotizacion, CotizacionConDetalle, EstadoCotizacion, Partida, Seccion } from './types';
+import { generarClave } from '@/lib/cotizacion/clave-generator';
+import type { ParsedConcepto } from '@/lib/cotizacion/text-import-parser';
 
 export async function listCotizaciones(): Promise<{
   data: Cotizacion[];
@@ -556,4 +558,230 @@ export async function eliminarPartida(id: string): Promise<{ error: string | nul
 
   if (error) return { error: error.message };
   return { error: null };
+}
+
+// ── Paridad con la app móvil ────────────────────────────────────────────────
+// Funciones que hasta ahora solo existían en el móvil, portadas con el mismo
+// comportamiento (ver `lib/data/repositories_cotizacion.dart`).
+
+/**
+ * Duplica una cotización: copia encabezado + secciones + partidas con ids nuevos.
+ * Nace como BORRADOR con fecha de hoy y SIN obra ligada; no copia pagos, archivos
+ * ni el snapshot de aprobación. Conserva la tasa de IVA CONGELADA del original
+ * (no la re-congela de la empresa), para no reescribir el precio de la copia.
+ */
+export async function duplicarCotizacion(
+  id: string,
+): Promise<{ id: string | null; error: string | null }> {
+  const supabase = await createClient();
+  const { empresaId } = await getEmpresaUsuario();
+
+  const { data: origen, error } = await getCotizacionConDetalle(id);
+  if (error) return { id: null, error };
+  if (!origen) return { id: null, error: 'Cotización no encontrada.' };
+
+  const now = Date.now();
+  const nuevaId = crypto.randomUUID();
+
+  const { error: cotErr } = await supabase.from('cotizaciones').insert({
+    id: nuevaId,
+    empresa_id: empresaId,
+    cliente: origen.cliente,
+    cliente_id: origen.cliente_id,
+    nombre_proyecto: `${origen.nombre_proyecto} (copia)`,
+    ubicacion: origen.ubicacion ?? '',
+    fecha: now,
+    estado: 'BORRADOR',
+    iva_enabled: origen.iva_enabled,
+    iva_porcentaje: origen.iva_porcentaje ?? IVA_POR_DEFECTO,
+    descuento: origen.descuento,
+    notas: origen.notas ?? '',
+    obra_id: null,
+    created_at: now,
+    updated_at: now,
+    deleted_at: null,
+  });
+  if (cotErr) return { id: null, error: cotErr.message };
+
+  for (const s of origen.secciones) {
+    const nuevaSecId = crypto.randomUUID();
+    const { error: secErr } = await supabase.from('secciones').insert({
+      id: nuevaSecId,
+      empresa_id: empresaId,
+      cotizacion_id: nuevaId,
+      nombre: s.nombre,
+      orden: s.orden,
+      created_at: now,
+      updated_at: now,
+      deleted_at: null,
+    });
+    if (secErr) return { id: null, error: secErr.message };
+
+    const filas = s.partidas.map((p) => ({
+      id: crypto.randomUUID(),
+      empresa_id: empresaId,
+      seccion_id: nuevaSecId,
+      clave: p.clave ?? '',
+      descripcion: p.descripcion,
+      unidad: p.unidad ?? '',
+      cantidad: p.cantidad,
+      precio_unitario: p.precio_unitario,
+      orden: p.orden,
+      created_at: now,
+      updated_at: now,
+      deleted_at: null,
+    }));
+    if (filas.length > 0) {
+      const { error: partErr } = await supabase.from('partidas').insert(filas);
+      if (partErr) return { id: null, error: partErr.message };
+    }
+  }
+
+  return { id: nuevaId, error: null };
+}
+
+/**
+ * Liga una cotización a una obra que YA existe (distinto de convertir, que crea
+ * una obra nueva y copia el presupuesto). Solo escribe `obra_id`. La obra debe
+ * ser de la misma empresa (lo garantiza la RLS + la lista de origen).
+ */
+export async function vincularCotizacionAObra(
+  cotId: string,
+  obraId: string,
+): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+
+  const { data: cot, error } = await supabase
+    .from('cotizaciones')
+    .select('id, estado, obra_id')
+    .eq('id', cotId)
+    .maybeSingle();
+  if (error) return { error: error.message };
+  if (!cot) return { error: 'Cotización no encontrada.' };
+  if (cot.obra_id) return { error: 'Esta cotización ya está ligada a una obra.' };
+  if (cot.estado === 'CONVERTIDA') return { error: 'Esta cotización ya se convirtió en obra.' };
+
+  const { error: updErr } = await supabase
+    .from('cotizaciones')
+    .update({ obra_id: obraId, updated_at: Date.now() })
+    .eq('id', cotId);
+  if (updErr) return { error: updErr.message };
+  return { error: null };
+}
+
+/**
+ * Ajuste global de precios: multiplica el `precio_unitario` de TODAS las partidas
+ * por `factor` (= 1 + pct/100). No toca cantidades ni redondea (igual que el
+ * móvil). Se exige `factor > 0` — el móvil no lo hacía, pero un factor ≤ 0
+ * dejaría precios en cero o negativos.
+ */
+export async function ajustarPreciosCotizacion(
+  cotId: string,
+  factor: number,
+): Promise<{ n: number; error: string | null }> {
+  if (!(factor > 0)) {
+    return { n: 0, error: 'El ajuste dejaría precios en cero o negativos.' };
+  }
+  const supabase = await createClient();
+
+  const { data: detalle, error } = await getCotizacionConDetalle(cotId);
+  if (error) return { n: 0, error };
+  if (!detalle) return { n: 0, error: 'Cotización no encontrada.' };
+
+  const partidas = detalle.secciones.flatMap((s) => s.partidas);
+  const now = Date.now();
+  let n = 0;
+  for (const p of partidas) {
+    const { error: updErr } = await supabase
+      .from('partidas')
+      .update({ precio_unitario: p.precio_unitario * factor, updated_at: now })
+      .eq('id', p.id);
+    if (updErr) return { n, error: updErr.message };
+    n++;
+  }
+  return { n, error: null };
+}
+
+/**
+ * Inserta partidas parseadas de texto pegado en una sección. Genera la clave de
+ * cada una con el mismo generador del móvil, acumulando para no colisionar entre
+ * sí ni con las claves ya existentes de la cotización. Se agregan al final (orden
+ * después de la última partida de la sección).
+ */
+export async function importarPartidasTexto(
+  seccionId: string,
+  conceptos: ParsedConcepto[],
+): Promise<{ n: number; error: string | null }> {
+  if (conceptos.length === 0) return { n: 0, error: 'No hay partidas que importar.' };
+  const supabase = await createClient();
+  const { empresaId } = await getEmpresaUsuario();
+
+  const { data: sec, error: secErr } = await supabase
+    .from('secciones')
+    .select('cotizacion_id')
+    .eq('id', seccionId)
+    .maybeSingle();
+  if (secErr) return { n: 0, error: secErr.message };
+  if (!sec) return { n: 0, error: 'Sección no encontrada.' };
+
+  const { data: detalle } = await getCotizacionConDetalle(sec.cotizacion_id as string);
+  const claves = detalle
+    ? detalle.secciones
+        .flatMap((s) => s.partidas.map((p) => p.clave ?? ''))
+        .filter((c) => c.length > 0)
+    : [];
+  const seccionActual = detalle?.secciones.find((s) => s.id === seccionId);
+  let orden =
+    seccionActual && seccionActual.partidas.length > 0
+      ? Math.max(...seccionActual.partidas.map((p) => p.orden)) + 1
+      : 0;
+
+  const now = Date.now();
+  const filas = conceptos.map((c) => {
+    const clave = generarClave(c.nombre, claves);
+    claves.push(clave);
+    return {
+      id: crypto.randomUUID(),
+      empresa_id: empresaId,
+      seccion_id: seccionId,
+      clave,
+      descripcion: c.nombre,
+      unidad: c.unidad,
+      cantidad: c.cantidad,
+      precio_unitario: c.precioUnitario,
+      orden: orden++,
+      created_at: now,
+      updated_at: now,
+      deleted_at: null,
+    };
+  });
+
+  const { error: insErr } = await supabase.from('partidas').insert(filas);
+  if (insErr) return { n: 0, error: insErr.message };
+  return { n: filas.length, error: null };
+}
+
+/**
+ * "Aportado" (gasto real) por partida: suma de las SALIDAS ligadas a esa partida
+ * vía `movimientos.partida_id`, para la cotización dada. Devuelve un mapa
+ * partida_id → monto gastado. Las ENTRADAS y las salidas sin partida no cuentan.
+ */
+export async function aportadoPorCotizacion(cotId: string): Promise<Record<string, number>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('movimientos')
+    .select('monto, partida_id')
+    .eq('cotizacion_id', cotId)
+    .eq('tipo', 'SALIDA')
+    .not('partida_id', 'is', null)
+    .is('deleted_at', null);
+
+  if (error || !data) return {};
+
+  const map: Record<string, number> = {};
+  for (const m of data) {
+    const pid = m.partida_id as string;
+    map[pid] = (map[pid] ?? 0) + (m.monto as number);
+  }
+  return map;
 }
