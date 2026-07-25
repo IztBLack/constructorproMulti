@@ -30,9 +30,13 @@ export function DocumentActions({
 
       <div className="flex-1" />
 
+      {/* `siempre-oscuro/claro` NO se invierten con el tema: el botón queda
+          negro con texto blanco en claro, oscuro y dentro de `tema-papel`. Con
+          `bg-neutral-900` se volvía invisible en el documento (tema-papel no
+          re-fija el tono 900, así que quedaba fondo claro + texto blanco). */}
       <a
         href={descargarHref}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+        className="inline-flex items-center gap-1.5 rounded-lg bg-siempre-oscuro px-4 py-2 text-sm font-medium text-siempre-claro transition-opacity hover:opacity-90"
       >
         Descargar PDF
       </a>
