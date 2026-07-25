@@ -75,6 +75,35 @@ export async function listMovimientosByObra(
   return { data: (data ?? []) as Movimiento[], error: null };
 }
 
+// Categorías "de sistema" que no son conceptos que el usuario escriba a mano;
+// se excluyen de las sugerencias (igual que el móvil).
+const CATEGORIAS_SISTEMA = new Set(['INGRESO_LIBRE', 'GASTO_LIBRE', 'NOMINA', 'MATERIAL']);
+
+/**
+ * Sugerencias de autocompletado para el form de movimiento, a partir del
+ * HISTORIAL de la obra (paridad móvil): conceptos = categorías (sin las de
+ * sistema) ∪ conceptos usados; nombres = beneficiarios/pagadores usados. Todo
+ * distinto, sin vacíos, ordenado alfabéticamente. Función PURA para computarlo
+ * desde una lista ya cargada (sin viaje de red extra).
+ */
+export function sugerenciasDeMovimientos(movs: Movimiento[]): {
+  conceptos: string[];
+  nombres: string[];
+} {
+  const conceptos = new Set<string>();
+  const nombres = new Set<string>();
+  for (const m of movs) {
+    const cat = String(m.categoria ?? '').trim();
+    if (cat && !CATEGORIAS_SISTEMA.has(cat)) conceptos.add(cat);
+    const con = String(m.concepto ?? '').trim();
+    if (con) conceptos.add(con);
+    const nom = String(m.nombre ?? '').trim();
+    if (nom) nombres.add(nom);
+  }
+  const ordenar = (s: Set<string>) => [...s].sort((a, b) => a.localeCompare(b, 'es'));
+  return { conceptos: ordenar(conceptos), nombres: ordenar(nombres) };
+}
+
 export function calcularSaldo(movimientos: Movimiento[]): number {
   return movimientos.reduce((acc, m) => {
     if (m.tipo === 'ENTRADA') return acc + m.monto;

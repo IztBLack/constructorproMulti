@@ -26,6 +26,7 @@ import {
   type EstadoOffline,
 } from '@/lib/offline/cola-asistencia';
 import { hoyMxMs, partesTz, medianocheMx, sumarDiasCalendario } from '@/lib/data/tz';
+import { asignarObraColaborador } from '@/app/admin/equipo/actions';
 
 /**
  * Instante en que la persona tocó el botón.
@@ -110,6 +111,34 @@ export default function PaseLista() {
   const [confirmando, setConfirmando] = useState<string | null>(null);
   const [motivoSinCopia, setMotivoSinCopia] = useState<MotivoSinCopia | null>(null);
 
+  // "Mover a otra obra" desde el pase (paridad móvil). `recargar` fuerza recargar
+  // el día tras mover, para que la persona reaparezca bajo la obra nueva.
+  const [recargar, setRecargar] = useState(0);
+  const [moviendoKey, setMoviendoKey] = useState<string | null>(null);
+  const [obraDestino, setObraDestino] = useState('');
+  const [movPend, setMovPend] = useState(false);
+  const [movError, setMovError] = useState<string | null>(null);
+
+  async function mover(colaboradorId: string, destinoId: string) {
+    if (!destinoId) return;
+    setMovPend(true);
+    setMovError(null);
+    try {
+      const r = await asignarObraColaborador(colaboradorId, destinoId);
+      if (!r.ok) {
+        setMovError(r.error ?? 'No se pudo mover.');
+        return;
+      }
+      setMoviendoKey(null);
+      setObraDestino('');
+      setRecargar((n) => n + 1);
+    } catch {
+      setMovError('No se pudo mover (¿sin conexión?).');
+    } finally {
+      setMovPend(false);
+    }
+  }
+
   /** Estado por celda, reconstruido desde la cola (solo el día en pantalla). */
   const refrescarPendientes = useCallback(async () => {
     if (dia === null) return;
@@ -187,7 +216,7 @@ export default function PaseLista() {
     return () => {
       cancelado = true;
     };
-  }, [dia]);
+  }, [dia, recargar]);
 
   async function marcar(obraId: string, colaboradorId: string, valor: number) {
     if (dia === null || !datos) return;
@@ -446,6 +475,61 @@ export default function PaseLista() {
                                 );
                               })}
                             </div>
+
+                            {obras.length > 1 &&
+                              (moviendoKey === k ? (
+                                <div className="mt-2 space-y-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <select
+                                      value={obraDestino}
+                                      onChange={(e) => setObraDestino(e.target.value)}
+                                      disabled={movPend}
+                                      className="min-w-0 flex-1 rounded-lg border border-neutral-300 px-2 py-1.5 text-sm text-neutral-900"
+                                    >
+                                      <option value="">Mover a…</option>
+                                      {obras
+                                        .filter((o) => o.id !== obra.id)
+                                        .map((o) => (
+                                          <option key={o.id} value={o.id}>
+                                            {o.nombre}
+                                          </option>
+                                        ))}
+                                    </select>
+                                    <Button
+                                      size="sm"
+                                      disabled={movPend || !obraDestino}
+                                      onClick={() => void mover(c.id, obraDestino)}
+                                    >
+                                      {movPend ? '…' : 'Mover'}
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      disabled={movPend}
+                                      onClick={() => {
+                                        setMoviendoKey(null);
+                                        setObraDestino('');
+                                        setMovError(null);
+                                      }}
+                                    >
+                                      Cancelar
+                                    </Button>
+                                  </div>
+                                  {movError && <p className="text-xs text-red-600">{movError}</p>}
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setMoviendoKey(k);
+                                    setObraDestino('');
+                                    setMovError(null);
+                                  }}
+                                  className="mt-2 text-xs text-neutral-500 underline underline-offset-2 hover:text-neutral-900"
+                                >
+                                  Mover a otra obra
+                                </button>
+                              ))}
                           </li>
                         );
                       })}

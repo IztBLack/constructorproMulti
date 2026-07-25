@@ -24,11 +24,18 @@ const METODOS_PAGO = ['EFECTIVO', 'TRANSFERENCIA', 'CHEQUE', 'OTRO'];
 
 const toDateInputValue = msAFechaInput; // 'YYYY-MM-DD' en zona México
 
+/** Sugerencias de autocompletado (historial de la obra). Paridad móvil. */
+export interface SugerenciasMovimiento {
+  conceptos: string[];
+  nombres: string[];
+}
+
 type MovimientoFormProps =
   | {
       obraId: string;
       mode: 'crear';
       movimiento?: undefined;
+      sugerencias?: SugerenciasMovimiento;
       onDone?: () => void;
       onCancel?: () => void;
     }
@@ -36,11 +43,24 @@ type MovimientoFormProps =
       obraId: string;
       mode: 'editar';
       movimiento: Movimiento;
+      sugerencias?: SugerenciasMovimiento;
       onDone?: () => void;
       onCancel?: () => void;
     };
 
-export default function MovimientoForm({ obraId, mode, movimiento, onDone, onCancel }: MovimientoFormProps) {
+export default function MovimientoForm({
+  obraId,
+  mode,
+  movimiento,
+  sugerencias,
+  onDone,
+  onCancel,
+}: MovimientoFormProps) {
+  // Conceptos: historial de la obra + defaults útiles (para obras sin historial).
+  const conceptosDatalist = [
+    ...new Set([...(sugerencias?.conceptos ?? []), ...CONCEPTOS_FRECUENTES]),
+  ];
+  const nombresDatalist = sugerencias?.nombres ?? [];
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [tipo, setTipo] = useState<TipoMovimiento>(movimiento?.tipo ?? 'SALIDA');
@@ -98,7 +118,7 @@ export default function MovimientoForm({ obraId, mode, movimiento, onDone, onCan
           className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-neutral-900"
         />
         <datalist id="conceptos-frecuentes">
-          {CONCEPTOS_FRECUENTES.map((c) => (
+          {conceptosDatalist.map((c) => (
             <option key={c} value={c} />
           ))}
         </datalist>
@@ -113,11 +133,18 @@ export default function MovimientoForm({ obraId, mode, movimiento, onDone, onCan
       </Field>
 
       <Field label="Nombre" hint="A quién se paga o de quién se recibe.">
-        <Input
+        <input
           name="nombre"
+          list="nombres-frecuentes"
           defaultValue={movimiento?.nombre ?? ''}
           placeholder="Ej. Juan García"
+          className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-neutral-900"
         />
+        <datalist id="nombres-frecuentes">
+          {nombresDatalist.map((n) => (
+            <option key={n} value={n} />
+          ))}
+        </datalist>
       </Field>
 
       <Field label="Canal de pago">

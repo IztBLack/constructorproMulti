@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getObra, listMovimientosByObra } from '@/lib/data/obras';
+import { getObra, listMovimientosByObra, sugerenciasDeMovimientos } from '@/lib/data/obras';
 import { listPresupuestoObra } from '@/lib/data/presupuesto-obra';
 import { listColaboradores, listColaboradoresDeObra } from '@/lib/data/equipo';
 import { listClientes } from '@/lib/data/clientes';
@@ -110,7 +110,7 @@ export default async function ObraDetallePage({
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-sm font-medium text-neutral-700">Movimientos</h2>
-          <RegistrarMovimiento obraId={id} />
+          <RegistrarMovimiento obraId={id} sugerencias={sugerenciasDeMovimientos(movimientos)} />
         </div>
 
         {movError && (
@@ -123,6 +123,7 @@ export default async function ObraDetallePage({
           <MovimientosTabla
             obraId={id}
             movimientos={movimientos}
+            sugerencias={sugerenciasDeMovimientos(movimientos)}
             puedeGestionarComprobante={esOficina}
           />
         )}

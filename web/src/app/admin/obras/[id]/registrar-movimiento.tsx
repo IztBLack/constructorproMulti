@@ -2,9 +2,15 @@
 
 import { useState } from 'react';
 import { Button, Modal } from '@/components/ui';
-import MovimientoForm from './movimiento-form';
+import MovimientoForm, { type SugerenciasMovimiento } from './movimiento-form';
 
-export default function RegistrarMovimiento({ obraId }: { obraId: string }) {
+export default function RegistrarMovimiento({
+  obraId,
+  sugerencias,
+}: {
+  obraId: string;
+  sugerencias?: SugerenciasMovimiento;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -17,6 +23,7 @@ export default function RegistrarMovimiento({ obraId }: { obraId: string }) {
         <MovimientoForm
           obraId={obraId}
           mode="crear"
+          sugerencias={sugerencias}
           onDone={() => setOpen(false)}
           onCancel={() => setOpen(false)}
         />

@@ -7,7 +7,7 @@ import { formatCurrency, formatDate } from '@/lib/data/format';
 import { fechaInputAMs } from '@/lib/data/tz';
 import type { Movimiento } from '@/lib/data/types';
 import { eliminarMovimientoAction } from './actions';
-import MovimientoForm from './movimiento-form';
+import MovimientoForm, { type SugerenciasMovimiento } from './movimiento-form';
 import { ComprobanteMovimiento } from './comprobante-movimiento';
 
 type FiltroTipo = 'TODOS' | 'ENTRADA' | 'SALIDA';
@@ -23,10 +23,13 @@ function normalizar(s: string | null | undefined): string {
 export default function MovimientosTabla({
   obraId,
   movimientos,
+  sugerencias,
   puedeGestionarComprobante = false,
 }: {
   obraId: string;
   movimientos: Movimiento[];
+  /** Autocompletado del form (historial de la obra). Paridad móvil. */
+  sugerencias?: SugerenciasMovimiento;
   /** Personal de oficina (admin/supervisor/contador): sube y quita comprobantes. */
   puedeGestionarComprobante?: boolean;
 }) {
@@ -232,6 +235,7 @@ export default function MovimientosTabla({
                       obraId={obraId}
                       mode="editar"
                       movimiento={m}
+                      sugerencias={sugerencias}
                       onDone={() => setEditandoId(null)}
                       onCancel={() => setEditandoId(null)}
                     />
