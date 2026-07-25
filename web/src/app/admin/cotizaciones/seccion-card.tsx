@@ -2,20 +2,50 @@
 
 import { useOptimistic, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmptyState, Input, TBody, TableContainer, Td, Th, THead, Tr } from '@/components/ui';
+import {
+  Button,
+  EmptyState,
+  Field,
+  Input,
+  Modal,
+  TBody,
+  TableContainer,
+  Td,
+  Textarea,
+  Th,
+  THead,
+  Tr,
+} from '@/components/ui';
 import { formatCurrency } from '@/lib/data/format';
 import type { Partida, Seccion } from '@/lib/data/types';
-import { actualizarSeccionAction, eliminarPartidaAction, eliminarSeccionAction } from './actions';
+import {
+  actualizarSeccionAction,
+  eliminarPartidaAction,
+  eliminarSeccionAction,
+  importarPartidasTextoAction,
+} from './actions';
+import { parseImportText } from '@/lib/cotizacion/text-import-parser';
 import { PartidaForm } from './partida-form';
 
 type SeccionConPartidas = Seccion & { partidas: Partida[] };
 
+/** % aportado (gasto real / presupuestado), entero. */
+function pctAportado(gasto: number, total: number): number {
+  return total > 0 ? Math.round((gasto / total) * 100) : 0;
+}
+
 export function SeccionCard({
   seccion,
   cotizacionId,
+  aportado = {},
+  clavesExistentes = [],
 }: {
   seccion: SeccionConPartidas;
   cotizacionId: string;
+  /** Gasto real por partida_id (SALIDAS ligadas). Paridad móvil. */
+  aportado?: Record<string, number>;
+  /** Claves de toda la cotización, para "Generar clave" sin colisión. */
+  clavesExistentes?: string[];
 }) {
   const router = useRouter();
   const [renombrando, setRenombrando] = useState(false);
@@ -25,6 +55,25 @@ export function SeccionCard({
   const [confirmandoBorradoPartidaId, setConfirmandoBorradoPartidaId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  // Importar partidas pegando texto (paridad móvil).
+  const [importando, setImportando] = useState(false);
+  const [textoImport, setTextoImport] = useState('');
+  const previewImport = parseImportText(textoImport);
+
+  function handleImportar() {
+    setError(null);
+    startTransition(async () => {
+      const result = await importarPartidasTextoAction(seccion.id, cotizacionId, textoImport);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+      setImportando(false);
+      setTextoImport('');
+      router.refresh();
+    });
+  }
 
   // Partidas optimistas: al eliminar, la fila desaparece de inmediato sin esperar
   // el viaje de red completo; si la acción falla, React revierte solo al terminar
@@ -74,6 +123,7 @@ export function SeccionCard({
 
   const siguienteOrden = partidasOptimistas.length;
   const subtotalSeccion = partidasOptimistas.reduce((acc, p) => acc + p.cantidad * p.precio_unitario, 0);
+  const aportadoSec = partidasOptimistas.reduce((acc, p) => acc + (aportado[p.id] ?? 0), 0);
 
   return (
     <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white">
@@ -95,6 +145,11 @@ export function SeccionCard({
             <span className="text-xs tabular-nums text-neutral-500">
               Subtotal: {formatCurrency(subtotalSeccion)}
             </span>
+            {aportadoSec > 0 && (
+              <span className="text-xs tabular-nums text-neutral-400">
+                · aportado {formatCurrency(aportadoSec)} ({pctAportado(aportadoSec, subtotalSeccion)}%)
+              </span>
+            )}
           </div>
         )}
 
@@ -153,6 +208,7 @@ export function SeccionCard({
                       mode="editar"
                       partida={p}
                       cotizacionId={cotizacionId}
+                      clavesExistentes={clavesExistentes}
                       onListo={() => setEditandoPartidaId(null)}
                     />
                   </td>
@@ -160,7 +216,15 @@ export function SeccionCard({
               ) : (
                 <Tr key={p.id}>
                   <Td>{p.clave || '—'}</Td>
-                  <Td className="text-neutral-700">{p.descripcion}</Td>
+                  <Td className="text-neutral-700">
+                    {p.descripcion}
+                    {(aportado[p.id] ?? 0) > 0 && (
+                      <span className="mt-0.5 block text-xs text-neutral-400">
+                        aportado {formatCurrency(aportado[p.id])} (
+                        {pctAportado(aportado[p.id], p.cantidad * p.precio_unitario)}%)
+                      </span>
+                    )}
+                  </Td>
                   <Td className="text-right">{p.cantidad}</Td>
                   <Td>{p.unidad || '—'}</Td>
                   <Td className="text-right tabular-nums">{formatCurrency(p.precio_unitario)}</Td>
@@ -223,14 +287,78 @@ export function SeccionCard({
             seccionId={seccion.id}
             cotizacionId={cotizacionId}
             siguienteOrden={siguienteOrden}
+            clavesExistentes={clavesExistentes}
             onListo={() => setAgregandoPartida(false)}
           />
         ) : (
-          <Button variant="secondary" size="sm" onClick={() => setAgregandoPartida(true)}>
-            + Agregar partida
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setAgregandoPartida(true)}>
+              + Agregar partida
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setImportando(true)}>
+              Importar texto
+            </Button>
+          </div>
         )}
       </div>
+
+      <Modal
+        open={importando}
+        onClose={() => setImportando(false)}
+        title={`Importar partidas · ${seccion.nombre}`}
+        size="lg"
+      >
+        <div className="space-y-4">
+          <Field
+            label="Pega una partida por línea"
+            hint="Detecta unidad, cantidad y precio. Ej: Muro de block 85 m2 $201.34"
+          >
+            <Textarea
+              value={textoImport}
+              onChange={(e) => setTextoImport(e.target.value)}
+              rows={7}
+              placeholder={'Muro de block 85 m2 $201.34\nAplanado interior 120 m2 91.68'}
+              disabled={pending}
+              autoFocus
+            />
+          </Field>
+
+          {previewImport.length > 0 && (
+            <div className="rounded-lg border border-neutral-200">
+              <p className="border-b border-neutral-100 px-3 py-2 text-xs font-medium text-neutral-500">
+                Vista previa · {previewImport.length} partida(s)
+              </p>
+              <div className="max-h-56 overflow-y-auto">
+                <table className="w-full text-xs">
+                  <tbody>
+                    {previewImport.map((c, i) => (
+                      <tr key={i} className="border-b border-neutral-50 last:border-0">
+                        <td className="px-3 py-1.5 text-neutral-700">{c.nombre}</td>
+                        <td className="px-2 py-1.5 text-center text-neutral-500">{c.unidad}</td>
+                        <td className="px-2 py-1.5 text-right tabular-nums text-neutral-500">
+                          {c.cantidad}
+                        </td>
+                        <td className="px-3 py-1.5 text-right tabular-nums text-neutral-700">
+                          {formatCurrency(c.precioUnitario)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center gap-3">
+            <Button disabled={pending || previewImport.length === 0} onClick={handleImportar}>
+              {pending ? 'Importando…' : `Importar (${previewImport.length})`}
+            </Button>
+            <Button variant="secondary" disabled={pending} onClick={() => setImportando(false)}>
+              Cancelar
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

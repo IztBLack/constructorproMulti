@@ -1,6 +1,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { calcularTotales, getCotizacionConDetalle } from '@/lib/data/cotizaciones';
+import {
+  aportadoPorCotizacion,
+  calcularTotales,
+  getCotizacionConDetalle,
+} from '@/lib/data/cotizaciones';
+import { listObras } from '@/lib/data/obras';
 import { hayCambiosSinAprobar } from '@/lib/data/cotizacion-diff';
 import { listPagosByCotizacion, sumaPagos } from '@/lib/data/pagos';
 import { listArchivosCotizacion } from '@/lib/data/archivos';
@@ -34,12 +39,20 @@ export default async function CotizacionDetallePage({
 
   const totales = calcularTotales(cotizacion);
 
-  const [{ data: pagos }, { data: clientes }, { data: archivos }] = await Promise.all([
-    listPagosByCotizacion(id),
-    listClientes(),
-    listArchivosCotizacion(id),
-  ]);
+  const [{ data: pagos }, { data: clientes }, { data: archivos }, { data: obras }, aportado] =
+    await Promise.all([
+      listPagosByCotizacion(id),
+      listClientes(),
+      listArchivosCotizacion(id),
+      listObras(),
+      aportadoPorCotizacion(id),
+    ]);
   const totalPagado = sumaPagos(pagos ?? []);
+
+  // Obras activas para "Vincular a obra" (paridad móvil).
+  const obrasActivas = (obras ?? [])
+    .filter((o) => o.activa)
+    .map((o) => ({ id: o.id, nombre: o.nombre }));
 
   // Aviso al admin: la cotización está aceptada pero hubo ediciones que el
   // cliente aún no aprueba (compara la foto aprobada contra el estado actual).
@@ -75,6 +88,7 @@ export default async function CotizacionDetallePage({
       <CotizacionHeader
         cotizacion={cotizacion}
         clientes={clientes}
+        obras={obrasActivas}
         cambiosPendientes={cambiosPendientes}
       />
 
@@ -85,7 +99,11 @@ export default async function CotizacionDetallePage({
         </section>
       )}
 
-      <SeccionesList cotizacionId={cotizacion.id} secciones={cotizacion.secciones} />
+      <SeccionesList
+        cotizacionId={cotizacion.id}
+        secciones={cotizacion.secciones}
+        aportado={aportado}
+      />
 
       <section className="rounded-xl border border-neutral-200 bg-white p-5">
         <h2 className="mb-3 text-sm font-medium text-neutral-500">Resumen</h2>

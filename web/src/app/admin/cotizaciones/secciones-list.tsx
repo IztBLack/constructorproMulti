@@ -13,9 +13,12 @@ type SeccionConPartidas = Seccion & { partidas: Partida[] };
 export function SeccionesList({
   cotizacionId,
   secciones,
+  aportado = {},
 }: {
   cotizacionId: string;
   secciones: SeccionConPartidas[];
+  /** Gasto real por partida_id (SALIDAS ligadas). Paridad móvil. */
+  aportado?: Record<string, number>;
 }) {
   const router = useRouter();
   const [agregando, setAgregando] = useState(false);
@@ -37,6 +40,10 @@ export function SeccionesList({
 
   const siguienteOrden = secciones.length;
   const totalPartidas = secciones.reduce((acc, s) => acc + s.partidas.length, 0);
+  // Claves de toda la cotización, para "Generar clave" sin colisión.
+  const clavesExistentes = secciones
+    .flatMap((s) => s.partidas.map((p) => p.clave ?? ''))
+    .filter((c) => c.length > 0);
   const totalCorriente = secciones.reduce(
     (acc, s) => acc + s.partidas.reduce((sum, p) => sum + p.cantidad * p.precio_unitario, 0),
     0,
@@ -52,7 +59,13 @@ export function SeccionesList({
       )}
 
       {secciones.map((seccion) => (
-        <SeccionCard key={seccion.id} seccion={seccion} cotizacionId={cotizacionId} />
+        <SeccionCard
+          key={seccion.id}
+          seccion={seccion}
+          cotizacionId={cotizacionId}
+          aportado={aportado}
+          clavesExistentes={clavesExistentes}
+        />
       ))}
 
       {totalPartidas > 0 && (

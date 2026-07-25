@@ -5,16 +5,21 @@ import {
   actualizarCotizacion,
   actualizarPartida,
   actualizarSeccion,
+  ajustarPreciosCotizacion,
   cambiarEstadoCotizacion,
   convertirCotizacionEnObra,
   crearCotizacion,
   crearPartida,
   crearSeccion,
+  duplicarCotizacion,
   eliminarCotizacion,
   eliminarPartida,
   eliminarSeccion,
   enviarCotizacion,
+  importarPartidasTexto,
+  vincularCotizacionAObra,
 } from '@/lib/data/cotizaciones';
+import { parseImportText } from '@/lib/cotizacion/text-import-parser';
 import { buscarCatalogoConceptos } from '@/lib/data/catalogo';
 import type { EstadoCotizacion } from '@/lib/data/types';
 import { fechaInputAMs } from '@/lib/data/tz';
@@ -140,6 +145,59 @@ export async function convertirCotizacionEnObraAction(
   revalidatePath(`/admin/cotizaciones/${id}`);
   revalidatePath('/admin/obras');
   return { error: null, obraId: obraId ?? undefined };
+}
+
+// ── Paridad con la app móvil ────────────────────────────────────────────────
+
+export async function duplicarCotizacionAction(
+  id: string,
+): Promise<ActionResult & { id: string | null }> {
+  const { id: nuevaId, error } = await duplicarCotizacion(id);
+  if (error) return { id: null, error };
+
+  revalidatePath('/admin/cotizaciones');
+  return { id: nuevaId, error: null };
+}
+
+export async function vincularCotizacionAObraAction(
+  cotId: string,
+  obraId: string,
+): Promise<ActionResult> {
+  if (!obraId) return { error: 'Elige una obra.' };
+  const { error } = await vincularCotizacionAObra(cotId, obraId);
+  if (error) return { error };
+
+  revalidatePath('/admin/cotizaciones');
+  revalidatePath(`/admin/cotizaciones/${cotId}`);
+  revalidatePath('/admin/obras');
+  return { error: null };
+}
+
+export async function ajustarPreciosCotizacionAction(
+  cotId: string,
+  pct: number,
+): Promise<ActionResult & { n: number }> {
+  if (!Number.isFinite(pct)) return { n: 0, error: 'Escribe un porcentaje válido.' };
+  const { n, error } = await ajustarPreciosCotizacion(cotId, 1 + pct / 100);
+  if (error) return { n: 0, error };
+
+  revalidatePath(`/admin/cotizaciones/${cotId}`);
+  return { n, error: null };
+}
+
+export async function importarPartidasTextoAction(
+  seccionId: string,
+  cotizacionId: string,
+  texto: string,
+): Promise<ActionResult & { n: number }> {
+  const conceptos = parseImportText(texto);
+  if (conceptos.length === 0) return { n: 0, error: 'No se reconoció ninguna partida en el texto.' };
+
+  const { n, error } = await importarPartidasTexto(seccionId, conceptos);
+  if (error) return { n: 0, error };
+
+  revalidatePath(`/admin/cotizaciones/${cotizacionId}`);
+  return { n, error: null };
 }
 
 export async function crearSeccionAction(

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Input } from '@/components/ui';
 import { formatCurrency } from '@/lib/data/format';
+import { generarClave } from '@/lib/cotizacion/clave-generator';
 import type { Partida } from '@/lib/data/types';
 import {
   actualizarPartidaAction,
@@ -13,8 +14,15 @@ import {
 } from './actions';
 
 type Props =
-  | { mode: 'crear'; seccionId: string; cotizacionId: string; siguienteOrden: number; onListo: () => void }
-  | { mode: 'editar'; partida: Partida; cotizacionId: string; onListo: () => void };
+  | {
+      mode: 'crear';
+      seccionId: string;
+      cotizacionId: string;
+      siguienteOrden: number;
+      clavesExistentes?: string[];
+      onListo: () => void;
+    }
+  | { mode: 'editar'; partida: Partida; cotizacionId: string; clavesExistentes?: string[]; onListo: () => void };
 
 export function PartidaForm(props: Props) {
   const router = useRouter();
@@ -64,6 +72,11 @@ export function PartidaForm(props: Props) {
     document.addEventListener('mousedown', onClickFuera);
     return () => document.removeEventListener('mousedown', onClickFuera);
   }, []);
+
+  function handleGenerarClave() {
+    if (!descripcion.trim()) return;
+    setClave(generarClave(descripcion, props.clavesExistentes ?? []));
+  }
 
   function elegirConcepto(c: ConceptoCatalogo) {
     setClave(c.clave);
@@ -184,6 +197,17 @@ export function PartidaForm(props: Props) {
           disabled={pending}
         />
       </div>
+
+      {descripcion.trim().length > 0 && (
+        <button
+          type="button"
+          onClick={handleGenerarClave}
+          disabled={pending}
+          className="text-xs font-medium text-neutral-500 underline underline-offset-2 hover:text-neutral-900 disabled:opacity-50"
+        >
+          Generar clave automática
+        </button>
+      )}
 
       <input
         type="hidden"

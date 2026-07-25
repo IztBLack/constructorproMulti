@@ -2,17 +2,25 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Badge, Button, Modal, PageHeader } from '@/components/ui';
+import { Badge, Button, Field, Input, Modal, PageHeader, Select } from '@/components/ui';
 import type { BadgeTone } from '@/components/ui';
 import { formatDate } from '@/lib/data/format';
 import type { Cliente, Cotizacion, EstadoCotizacion } from '@/lib/data/types';
 import { CotizacionForm } from './cotizacion-form';
 import {
+  ajustarPreciosCotizacionAction,
   cambiarEstadoCotizacionAction,
   convertirCotizacionEnObraAction,
+  duplicarCotizacionAction,
   eliminarCotizacionAction,
   enviarCotizacionAction,
+  vincularCotizacionAObraAction,
 } from './actions';
+
+export interface ObraLite {
+  id: string;
+  nombre: string;
+}
 
 const ESTADO_LABEL: Record<EstadoCotizacion, string> = {
   BORRADOR: 'Borrador',
@@ -33,10 +41,13 @@ const ESTADO_TONE: Record<EstadoCotizacion, BadgeTone> = {
 export function CotizacionHeader({
   cotizacion,
   clientes,
+  obras = [],
   cambiosPendientes = false,
 }: {
   cotizacion: Cotizacion;
   clientes: Cliente[];
+  /** Obras activas de la empresa, para "Vincular a obra". */
+  obras?: ObraLite[];
   /** True si la cotización está ACEPTADA y hubo ediciones que el cliente aún no aprueba. */
   cambiosPendientes?: boolean;
 }) {
@@ -49,7 +60,60 @@ export function CotizacionHeader({
   const [errorEstado, setErrorEstado] = useState<string | null>(null);
   const [pendingEstado, startTransitionEstado] = useTransition();
 
+  // Acciones "paridad móvil": duplicar, vincular a obra, ajuste global de precios.
+  const [pendingExtra, startTransitionExtra] = useTransition();
+  const [vinculando, setVinculando] = useState(false);
+  const [obraSel, setObraSel] = useState('');
+  const [ajustando, setAjustando] = useState(false);
+  const [pctAjuste, setPctAjuste] = useState('');
+  const [avisoExtra, setAvisoExtra] = useState<string | null>(null);
+
   const estado = cotizacion.estado;
+
+  function handleDuplicar() {
+    setErrorEstado(null);
+    startTransitionExtra(async () => {
+      const result = await duplicarCotizacionAction(cotizacion.id);
+      if (result.error) {
+        setErrorEstado(result.error);
+        return;
+      }
+      if (result.id) router.push(`/admin/cotizaciones/${result.id}`);
+    });
+  }
+
+  function handleVincular() {
+    setErrorEstado(null);
+    setAvisoExtra(null);
+    startTransitionExtra(async () => {
+      const result = await vincularCotizacionAObraAction(cotizacion.id, obraSel);
+      if (result.error) {
+        setErrorEstado(result.error);
+        return;
+      }
+      setVinculando(false);
+      router.refresh();
+    });
+  }
+
+  function handleAjustar() {
+    setErrorEstado(null);
+    setAvisoExtra(null);
+    const pct = Number.parseFloat(pctAjuste.replace(',', '.'));
+    startTransitionExtra(async () => {
+      const result = await ajustarPreciosCotizacionAction(cotizacion.id, pct);
+      if (result.error) {
+        setErrorEstado(result.error);
+        return;
+      }
+      setAjustando(false);
+      setPctAjuste('');
+      setAvisoExtra(`Ajuste aplicado a ${result.n} partida(s).`);
+      router.refresh();
+    });
+  }
+
+  const puedeVincular = !cotizacion.obra_id && estado !== 'CONVERTIDA';
 
   function handleEliminar() {
     setErrorBorrado(null);
@@ -146,6 +210,33 @@ export function CotizacionHeader({
             <Button variant="secondary" size="sm" onClick={() => setEditando(true)}>
               Editar
             </Button>
+            <Button variant="secondary" size="sm" disabled={pendingExtra} onClick={handleDuplicar}>
+              {pendingExtra ? 'Duplicando…' : 'Duplicar'}
+            </Button>
+            {puedeVincular && (
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={pendingExtra}
+                onClick={() => {
+                  setObraSel('');
+                  setVinculando(true);
+                }}
+              >
+                Vincular a obra
+              </Button>
+            )}
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={pendingExtra}
+              onClick={() => {
+                setPctAjuste('');
+                setAjustando(true);
+              }}
+            >
+              Ajustar precios
+            </Button>
             {confirmandoBorrado ? (
               <div className="flex items-center gap-2">
                 <span className="text-sm text-neutral-600">¿Eliminar cotización?</span>
@@ -181,6 +272,12 @@ export function CotizacionHeader({
         </p>
       )}
 
+      {avisoExtra && (
+        <p className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+          {avisoExtra}
+        </p>
+      )}
+
       {/* Indicador: el cliente aceptó, pero hay ediciones que aún no aprueba. */}
       {cambiosPendientes && (
         <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
@@ -202,6 +299,69 @@ export function CotizacionHeader({
           clientes={clientes}
           onCancelar={() => setEditando(false)}
         />
+      </Modal>
+
+      <Modal open={vinculando} onClose={() => setVinculando(false)} title="Vincular a una obra" size="sm">
+        <div className="space-y-4">
+          <p className="text-sm text-neutral-600">
+            Liga esta cotización a una obra que ya existe (no crea una nueva ni copia el
+            presupuesto).
+          </p>
+          {obras.length === 0 ? (
+            <p className="text-sm text-neutral-500">No hay obras activas para vincular.</p>
+          ) : (
+            <Field label="Obra">
+              <Select
+                value={obraSel}
+                onChange={(e) => setObraSel(e.target.value)}
+                disabled={pendingExtra}
+              >
+                <option value="">Elige una obra…</option>
+                {obras.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.nombre}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          )}
+          <div className="flex items-center gap-3">
+            <Button disabled={pendingExtra || !obraSel} onClick={handleVincular}>
+              {pendingExtra ? 'Vinculando…' : 'Vincular'}
+            </Button>
+            <Button variant="secondary" disabled={pendingExtra} onClick={() => setVinculando(false)}>
+              Cancelar
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={ajustando} onClose={() => setAjustando(false)} title="Ajuste global de precios" size="sm">
+        <div className="space-y-4">
+          <p className="text-sm text-neutral-600">
+            Sube o baja el precio unitario de <strong>todas</strong> las partidas por un
+            porcentaje. No cambia las cantidades.
+          </p>
+          <Field label="Porcentaje" hint="Ej: 10 = +10%, -5 = −5%.">
+            <Input
+              type="text"
+              inputMode="decimal"
+              value={pctAjuste}
+              onChange={(e) => setPctAjuste(e.target.value)}
+              placeholder="10"
+              disabled={pendingExtra}
+              autoFocus
+            />
+          </Field>
+          <div className="flex items-center gap-3">
+            <Button disabled={pendingExtra || pctAjuste.trim() === ''} onClick={handleAjustar}>
+              {pendingExtra ? 'Aplicando…' : 'Aplicar'}
+            </Button>
+            <Button variant="secondary" disabled={pendingExtra} onClick={() => setAjustando(false)}>
+              Cancelar
+            </Button>
+          </div>
+        </div>
       </Modal>
     </>
   );
