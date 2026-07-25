@@ -12,6 +12,8 @@ import {
 } from '@/lib/data/nomina';
 import { formatCurrency, formatDate } from '@/lib/data/format';
 import ObraTabs from '../_obra-tabs';
+import { RegistrarNominaCaja } from './nomina-acciones';
+import { DestajosSemana } from './destajos-semana';
 
 export const dynamic = 'force-dynamic';
 
@@ -179,6 +181,22 @@ export default async function NominaObraPage({
               />
             )}
           </section>
+
+          <RegistrarNominaCaja
+            obraId={id}
+            inicioMs={inicioMs}
+            finMs={finMs}
+            total={summary.totalNomina}
+          />
+
+          <DestajosSemana
+            obraId={id}
+            inicioMs={inicioMs}
+            workers={summary.items
+              .filter((i) => i.colaborador.tipo_pago === 'DESTAJO')
+              .map((i) => ({ id: i.colaborador.id, nombre: i.colaborador.nombre }))}
+            destajos={destajos ?? []}
+          />
         </>
       )}
     </div>

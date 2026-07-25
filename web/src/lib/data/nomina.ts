@@ -9,6 +9,7 @@
 /// - totalNomina = Σ totalPagar de todos los colaboradores
 
 import { createClient } from '@/lib/supabase/server';
+import { getEmpresaUsuario } from './empresa';
 import type { Asistencia, Colaborador, Destajo, Puesto } from './types';
 import { partesTz, medianocheMx, sumarDiasCalendario, siguienteMedianocheMx, DIA_MS } from './tz';
 
@@ -209,4 +210,71 @@ export async function listPuestosLite(): Promise<{ data: Puesto[]; error: string
 
   if (error) return { data: [], error: error.message };
   return { data: (data ?? []) as Puesto[], error: null };
+}
+
+// ── Escrituras (paridad con el móvil) ────────────────────────────────────────
+
+/**
+ * Crea un destajo INDIVIDUAL (no de cuadrilla) para un colaborador. La `fecha`
+ * debe ser el inicio de la semana mostrada (como en el móvil): así cae dentro
+ * del rango que suma esa semana de nómina. `concepto` es obligatorio.
+ */
+export async function crearDestajo(input: {
+  obraId: string;
+  colaboradorId: string;
+  fecha: number;
+  concepto: string;
+  monto: number;
+}): Promise<{ error: string | null }> {
+  const { empresaId } = await getEmpresaUsuario();
+  const supabase = await createClient();
+  const now = Date.now();
+
+  const { error } = await supabase.from('destajos').insert({
+    id: crypto.randomUUID(),
+    empresa_id: empresaId,
+    colaborador_id: input.colaboradorId,
+    obra_id: input.obraId,
+    fecha: input.fecha,
+    concepto: input.concepto,
+    monto: input.monto,
+    cuadrilla_id: null,
+    created_at: now,
+    updated_at: now,
+    deleted_at: null,
+  });
+
+  if (error) return { error: error.message };
+  return { error: null };
+}
+
+/** Borrado SUAVE de un destajo (como el móvil): marca deleted_at. */
+export async function eliminarDestajo(id: string): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+  const now = Date.now();
+  const { error } = await supabase
+    .from('destajos')
+    .update({ deleted_at: now, updated_at: now })
+    .eq('id', id);
+
+  if (error) return { error: error.message };
+  return { error: null };
+}
+
+/**
+ * ¿Ya se registró en caja la nómina de esta semana? Evita el doble registro que
+ * el móvil no previene: busca un movimiento SALIDA de categoría NOMINA con el
+ * mismo concepto (rango de la semana) en la obra.
+ */
+export async function nominaYaRegistrada(obraId: string, concepto: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('movimientos')
+    .select('id')
+    .eq('obra_id', obraId)
+    .eq('categoria', 'NOMINA')
+    .eq('concepto', concepto)
+    .is('deleted_at', null)
+    .limit(1);
+  return (data?.length ?? 0) > 0;
 }
