@@ -3,10 +3,74 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getEmpresaUsuario } from '@/lib/data/empresa';
+import catalogoBase from '@/lib/data/catalogo-base.json';
 
 export interface ActionResult {
   ok: boolean;
   error?: string;
+}
+
+interface ConceptoBase {
+  clave: string;
+  descripcion: string;
+  unidad: string;
+  precioUnitarioDefault: number;
+  categoria: string;
+}
+
+/**
+ * Carga el catálogo oficial (semilla de 239 conceptos, portado del móvil) para
+ * la empresa, insertando SOLO las claves que aún no existen (dedup por clave,
+ * como el móvil). Idempotente: correrlo de nuevo no duplica.
+ */
+export async function cargarCatalogoOficial(): Promise<ActionResult & { agregados?: number }> {
+  let empresaId: string;
+  try {
+    ({ empresaId } = await getEmpresaUsuario());
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Error de autenticación.' };
+  }
+
+  const supabase = await createClient();
+  const { data: rows, error: readErr } = await supabase
+    .from('catalogo_conceptos')
+    .select('clave')
+    .eq('empresa_id', empresaId)
+    .is('deleted_at', null);
+  if (readErr) return { ok: false, error: readErr.message };
+
+  const existentes = new Set(
+    (rows ?? []).map((r) => String(r.clave ?? '').trim()).filter((c) => c.length > 0),
+  );
+  const now = Date.now();
+  const vistos = new Set<string>();
+  const filas = (catalogoBase as ConceptoBase[])
+    .filter((c) => {
+      const clave = c.clave.trim();
+      if (!clave || existentes.has(clave) || vistos.has(clave)) return false;
+      vistos.add(clave);
+      return true;
+    })
+    .map((c) => ({
+      id: crypto.randomUUID(),
+      empresa_id: empresaId,
+      clave: c.clave.trim(),
+      descripcion: c.descripcion,
+      unidad: c.unidad,
+      precio_unitario_default: c.precioUnitarioDefault,
+      categoria: c.categoria,
+      es_personalizado: false,
+      created_at: now,
+      updated_at: now,
+    }));
+
+  if (filas.length > 0) {
+    const { error } = await supabase.from('catalogo_conceptos').insert(filas);
+    if (error) return { ok: false, error: error.message };
+  }
+
+  revalidatePath('/admin/catalogo');
+  return { ok: true, agregados: filas.length };
 }
 
 function parseConceptoFormData(formData: FormData): { input: {

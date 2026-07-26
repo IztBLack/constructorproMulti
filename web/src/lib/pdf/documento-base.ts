@@ -129,16 +129,57 @@ const BASE_CSS = `
   .pie-empresa { font-size: 10px; font-weight: 500; color: #0F172A; margin: 8px 0 0; }
 `;
 
+// CSS de las opciones de personalización (marca de agua y firmas). Inofensivo
+// cuando no se usan: los elementos simplemente no se renderizan.
+const EXTRAS_CSS = `
+  .marca-agua { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; transform: rotate(-30deg); font-size: 92px; font-weight: 800; letter-spacing: .05em; color: rgba(15,23,42,0.07); z-index: 0; pointer-events: none; text-transform: uppercase; }
+  .doc { position: relative; z-index: 1; }
+  .firmas { display: flex; gap: 48px; justify-content: space-between; margin-top: 44px; }
+  .firma { flex: 1; }
+  .firma .linea { display: block; height: 40px; border-bottom: 1px solid #0F172A; }
+  .firma .rotulo { display: block; margin-top: 6px; text-align: center; font-size: 10px; color: #525252; text-transform: uppercase; letter-spacing: 0.06em; }
+`;
+
+/** Config mínima de personalización que aplica el envoltorio (subconjunto de PdfConfig). */
+export interface OpcionesDocumento {
+  colorHex: string;
+  watermark?: string;
+  mayusculas?: boolean;
+  modoCompacto?: boolean;
+  firmaIzquierda?: string;
+  firmaDerecha?: string;
+}
+
 /**
  * Envuelve el cuerpo de un documento en el HTML autocontenido completo, con el
- * CSS base + el color de acento + estilos extra opcionales del documento.
+ * CSS base, el color de acento y las opciones de personalización (marca de agua,
+ * MAYÚSCULAS, modo compacto y firmas). Compartido por todos los PDF.
  */
 export function envolverDocumento(p: {
   titulo: string;
-  accent: string;
+  pdf: OpcionesDocumento;
   cuerpo: string;
   estilos?: string;
 }): string {
+  const { pdf } = p;
+
+  const opcionesCss = [
+    pdf.modoCompacto ? '@page { margin: 10mm 12mm; }' : '',
+    pdf.mayusculas ? '.doc { text-transform: uppercase; }' : '',
+  ].join('\n');
+
+  const marcaAgua = pdf.watermark
+    ? `<div class="marca-agua" aria-hidden="true">${esc(pdf.watermark)}</div>`
+    : '';
+
+  const firmas =
+    pdf.firmaIzquierda || pdf.firmaDerecha
+      ? `<div class="firmas avoid">
+      <div class="firma"><span class="linea"></span><span class="rotulo">${esc(pdf.firmaIzquierda) || '&nbsp;'}</span></div>
+      <div class="firma"><span class="linea"></span><span class="rotulo">${esc(pdf.firmaDerecha) || '&nbsp;'}</span></div>
+    </div>`
+      : '';
+
   return `<!doctype html>
 <html lang="es">
 <head>
@@ -146,14 +187,18 @@ export function envolverDocumento(p: {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(p.titulo)}</title>
 <style>
-  :root { --accent: ${p.accent}; }
+  :root { --accent: ${pdf.colorHex}; }
 ${BASE_CSS}
+${EXTRAS_CSS}
+${opcionesCss}
 ${p.estilos ?? ''}
 </style>
 </head>
 <body>
+  ${marcaAgua}
   <div class="doc">
 ${p.cuerpo}
+${firmas}
   </div>
 </body>
 </html>`;

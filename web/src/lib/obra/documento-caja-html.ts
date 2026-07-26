@@ -197,7 +197,7 @@ export function construirCajaDocumentoHtml(params: {
 
   return envolverDocumento({
     titulo: `Estado de cuenta ${obra.nombre} #${folio}`,
-    accent: pdf.colorHex,
+    pdf,
     cuerpo,
     estilos: ESTILOS,
   });

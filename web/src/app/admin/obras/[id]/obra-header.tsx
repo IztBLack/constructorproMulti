@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Badge, Button, Modal } from '@/components/ui';
 import { formatDate } from '@/lib/data/format';
 import type { Cliente, Obra } from '@/lib/data/types';
@@ -10,10 +11,14 @@ import ObraAcciones from './obra-acciones';
 export default function ObraHeader({
   obra,
   clientes,
+  obras = [],
 }: {
   obra: Obra;
   clientes: Cliente[];
+  /** Todas las obras, para el cambio rápido entre obras (paridad móvil). */
+  obras?: { id: string; nombre: string }[];
 }) {
+  const router = useRouter();
   const [editando, setEditando] = useState(false);
 
   return (
@@ -35,6 +40,22 @@ export default function ObraHeader({
           )}
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          {obras.length > 1 && (
+            <select
+              aria-label="Cambiar de obra"
+              value={obra.id}
+              onChange={(e) => {
+                if (e.target.value !== obra.id) router.push(`/admin/obras/${e.target.value}`);
+              }}
+              className="max-w-[200px] cursor-pointer rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-900 outline-none transition focus:border-neutral-900"
+            >
+              {obras.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.nombre}
+                </option>
+              ))}
+            </select>
+          )}
           <Button variant="secondary" size="sm" onClick={() => setEditando(true)}>
             Editar
           </Button>

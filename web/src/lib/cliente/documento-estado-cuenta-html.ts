@@ -134,7 +134,7 @@ export function construirEstadoCuentaClienteHtml(params: {
 
   return envolverDocumento({
     titulo: `Estado de cuenta ${obra.nombre} #${folio}`,
-    accent: pdf.colorHex,
+    pdf,
     cuerpo,
     estilos: `.led-fecha { width: 84px; white-space: nowrap; }`,
   });

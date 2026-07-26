@@ -1,5 +1,10 @@
 import { notFound } from 'next/navigation';
-import { getObra, listMovimientosByObra, sugerenciasDeMovimientos } from '@/lib/data/obras';
+import {
+  getObra,
+  listMovimientosByObra,
+  listObras,
+  sugerenciasDeMovimientos,
+} from '@/lib/data/obras';
 import { listPresupuestoObra } from '@/lib/data/presupuesto-obra';
 import { listColaboradores, listColaboradoresDeObra } from '@/lib/data/equipo';
 import { listClientes } from '@/lib/data/clientes';
@@ -41,6 +46,7 @@ export default async function ObraDetallePage({
     { data: colaboradores, error: colaboradoresError },
     { data: clientes },
     notaCaja,
+    { data: todasLasObras },
   ] = await Promise.all([
     listMovimientosByObra(id),
     listPresupuestoObra(id),
@@ -48,7 +54,11 @@ export default async function ObraDetallePage({
     listColaboradores(),
     listClientes(),
     getNotaCaja(id),
+    listObras(),
   ]);
+
+  // Para el cambio rápido entre obras (paridad móvil): todas por nombre.
+  const obrasLite = (todasLasObras ?? []).map((o) => ({ id: o.id, nombre: o.nombre }));
 
   // Personal de oficina (admin/supervisor/contador): edita la nota de caja y
   // gestiona los comprobantes. Si falla la consulta de rol, se asume que no
@@ -60,7 +70,7 @@ export default async function ObraDetallePage({
     <div className="space-y-6">
       <ObraTabs obraId={id} />
 
-      <ObraHeader obra={obra} clientes={clientes} />
+      <ObraHeader obra={obra} clientes={clientes} obras={obrasLite} />
 
       {/* ── Sección financiera ──────────────────────────────────────────── */}
 

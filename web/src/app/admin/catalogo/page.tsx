@@ -1,6 +1,7 @@
 import { listCatalogoConceptos } from '@/lib/data/catalogo';
 import { PageHeader } from '@/components/ui';
 import NuevoConceptoForm from './nuevo-concepto-form';
+import CargarOficialBoton from './cargar-oficial-boton';
 import TablaConceptos from './tabla-conceptos';
 
 export const dynamic = 'force-dynamic';
@@ -13,7 +14,12 @@ export default async function CatalogoPage() {
       <PageHeader
         title="Catálogo de conceptos"
         description="Conceptos reutilizables para cotizaciones, con su precio unitario por defecto."
-        actions={<NuevoConceptoForm />}
+        actions={
+          <div className="flex flex-wrap items-start gap-3">
+            <CargarOficialBoton />
+            <NuevoConceptoForm />
+          </div>
+        }
       />
 
       {error && (

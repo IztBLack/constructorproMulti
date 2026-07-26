@@ -180,7 +180,7 @@ export function construirCotizacionDocumentoHtml(params: {
 
   return envolverDocumento({
     titulo: `Cotización ${nombreEmpresa} #${folio}`,
-    accent: pdf.colorHex,
+    pdf,
     cuerpo,
     estilos: ESTILOS,
   });

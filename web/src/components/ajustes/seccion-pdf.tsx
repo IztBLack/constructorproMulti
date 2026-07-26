@@ -7,22 +7,24 @@ import { actualizarPdfConfig } from '@/lib/auth/empresa-actions';
 import type { PdfConfig } from '@/lib/data/empresa-config';
 
 /**
- * Personalización de los documentos (cotización en PDF, estado de cuenta).
- *
- * ALCANCE DELIBERADAMENTE CORTO. Solo contacto, color y pie de página. Faltan
- * el logo y la firma, que son imágenes y necesitan subida a Storage; y faltan
- * marca de agua, mayúsculas y modo compacto, que la app móvil sí tiene pero
- * cuyas vistas web todavía no saben aplicar. Se agregan cuando haya dónde
- * aplicarlos: un campo que se guarda pero no cambia nada es peor que no tenerlo.
+ * Personalización de los documentos (cotización en PDF, estado de cuenta, caja,
+ * nómina). Incluye contacto, color, pie, marca de agua, MAYÚSCULAS, modo
+ * compacto y firmas — las mismas opciones del móvil (salvo logo/firma en imagen,
+ * que van a Storage y quedan para después). Se aplican en `documento-base.ts`.
  *
  * Vista previa en vivo: el color se ve aplicado antes de guardar, porque
- * elegir un hexadecimal a ciegas y tener que abrir un PDF para saber cómo quedó
- * es un ciclo de prueba y error innecesario.
+ * elegir un hexadecimal a ciegas y abrir un PDF para saber cómo quedó es un
+ * ciclo de prueba y error innecesario.
  */
 export function SeccionPdf({ configActual }: { configActual: PdfConfig }) {
   const [contacto, setContacto] = useState(configActual.empresaContacto);
   const [color, setColor] = useState(configActual.colorHex);
   const [pie, setPie] = useState(configActual.pieDePagina);
+  const [watermark, setWatermark] = useState(configActual.watermark);
+  const [mayusculas, setMayusculas] = useState(configActual.mayusculas);
+  const [compacto, setCompacto] = useState(configActual.modoCompacto);
+  const [firmaIzq, setFirmaIzq] = useState(configActual.firmaIzquierda);
+  const [firmaDer, setFirmaDer] = useState(configActual.firmaDerecha);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -31,7 +33,12 @@ export function SeccionPdf({ configActual }: { configActual: PdfConfig }) {
   const sinCambios =
     contacto === configActual.empresaContacto &&
     color === configActual.colorHex &&
-    pie === configActual.pieDePagina;
+    pie === configActual.pieDePagina &&
+    watermark === configActual.watermark &&
+    mayusculas === configActual.mayusculas &&
+    compacto === configActual.modoCompacto &&
+    firmaIzq === configActual.firmaIzquierda &&
+    firmaDer === configActual.firmaDerecha;
 
   async function alEnviar(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -112,6 +119,68 @@ export function SeccionPdf({ configActual }: { configActual: PdfConfig }) {
             disabled={cargando}
           />
         </Field>
+
+        <Field
+          label="Marca de agua"
+          hint="Texto en diagonal detrás del documento (ej. BORRADOR, PAGADO). Vacío = sin marca."
+        >
+          <Input
+            name="watermark"
+            value={watermark}
+            onChange={(e) => setWatermark(e.target.value)}
+            maxLength={40}
+            placeholder="BORRADOR"
+            disabled={cargando}
+          />
+        </Field>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Firma izquierda" hint="Rótulo bajo la línea de firma. Vacío = sin firmas.">
+            <Input
+              name="firma_izquierda"
+              value={firmaIzq}
+              onChange={(e) => setFirmaIzq(e.target.value)}
+              maxLength={60}
+              placeholder="Autorizado por la obra"
+              disabled={cargando}
+            />
+          </Field>
+          <Field label="Firma derecha" hint="La otra línea de firma.">
+            <Input
+              name="firma_derecha"
+              value={firmaDer}
+              onChange={(e) => setFirmaDer(e.target.value)}
+              maxLength={60}
+              placeholder="Aceptado por el cliente"
+              disabled={cargando}
+            />
+          </Field>
+        </div>
+
+        <div className="flex flex-wrap gap-x-6 gap-y-2">
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-neutral-700">
+            <input
+              type="checkbox"
+              name="mayusculas"
+              checked={mayusculas}
+              onChange={(e) => setMayusculas(e.target.checked)}
+              disabled={cargando}
+              className="h-4 w-4 accent-neutral-900"
+            />
+            Todo en MAYÚSCULAS
+          </label>
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-neutral-700">
+            <input
+              type="checkbox"
+              name="modo_compacto"
+              checked={compacto}
+              onChange={(e) => setCompacto(e.target.checked)}
+              disabled={cargando}
+              className="h-4 w-4 accent-neutral-900"
+            />
+            Modo compacto (márgenes reducidos)
+          </label>
+        </div>
 
         {/* Vista previa: reproduce el encabezado real del documento. Va en
             `tema-papel` porque simula una hoja impresa (siempre blanca): sin esto,

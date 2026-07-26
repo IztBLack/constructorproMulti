@@ -12,10 +12,8 @@ export const IVA_POR_DEFECTO = 16;
  * móvil podrá leer y escribir este JSON sin traducir nombres.
  *
  * Faltan a propósito los campos de imagen (`logoPath`, `firmaPath`): son
- * archivos y van al bucket de Storage, no a un jsonb. Y faltan `watermark`,
- * `mayusculas`, `modoCompacto`, `firmaIzquierda` y `firmaDerecha`, que existen
- * en el móvil pero cuyas vistas web todavía no los usan — se agregarán cuando
- * haya dónde aplicarlos, no antes.
+ * archivos y van al bucket de Storage, no a un jsonb. El resto usa las MISMAS
+ * claves que el móvil.
  */
 export interface PdfConfig {
   /** Teléfono, correo o dirección que se imprime bajo el nombre de la empresa. */
@@ -24,13 +22,32 @@ export interface PdfConfig {
   colorHex: string;
   /** Línea libre al pie de cada documento. */
   pieDePagina: string;
+  /** Texto de marca de agua en diagonal (vacío = sin marca). */
+  watermark: string;
+  /** Imprimir todo el documento en MAYÚSCULAS. */
+  mayusculas: boolean;
+  /** Márgenes reducidos (más contenido por hoja). */
+  modoCompacto: boolean;
+  /** Rótulo de la firma izquierda (vacío = sin firmas). */
+  firmaIzquierda: string;
+  /** Rótulo de la firma derecha (vacío = sin firmas). */
+  firmaDerecha: string;
 }
 
-/** Mismos valores que trae el móvil de fábrica, para que ambos arranquen igual. */
+/**
+ * Valores por defecto. Ojo: a diferencia del móvil (que trae firmas con texto),
+ * en web las firmas nacen VACÍAS para no cambiar en silencio los PDF actuales;
+ * el admin las activa desde Ajustes → PDF si las quiere.
+ */
 export const PDF_CONFIG_POR_DEFECTO: PdfConfig = {
   empresaContacto: '',
   colorHex: '#0369A1',
   pieDePagina: '',
+  watermark: '',
+  mayusculas: false,
+  modoCompacto: false,
+  firmaIzquierda: '',
+  firmaDerecha: '',
 };
 
 export interface EmpresaConfig {
@@ -44,13 +61,19 @@ function leerPdfConfig(crudo: unknown): PdfConfig {
   const o = crudo as Record<string, unknown>;
   const color = typeof o.colorHex === 'string' ? o.colorHex : '';
 
+  const str = (v: unknown) => (typeof v === 'string' ? v : '');
   return {
-    empresaContacto: typeof o.empresaContacto === 'string' ? o.empresaContacto : '',
+    empresaContacto: str(o.empresaContacto),
     // Se valida el formato antes de usarlo: este valor termina dentro de un
     // atributo `style`, y aceptar cualquier cadena sería meter texto libre en
     // el CSS del documento.
     colorHex: /^#[0-9a-fA-F]{6}$/.test(color) ? color : PDF_CONFIG_POR_DEFECTO.colorHex,
-    pieDePagina: typeof o.pieDePagina === 'string' ? o.pieDePagina : '',
+    pieDePagina: str(o.pieDePagina),
+    watermark: str(o.watermark),
+    mayusculas: o.mayusculas === true,
+    modoCompacto: o.modoCompacto === true,
+    firmaIzquierda: str(o.firmaIzquierda),
+    firmaDerecha: str(o.firmaDerecha),
   };
 }
 

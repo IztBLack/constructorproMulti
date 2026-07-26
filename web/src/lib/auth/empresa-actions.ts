@@ -65,6 +65,11 @@ export async function actualizarPdfConfig(formData: FormData): Promise<Resultado
     empresaContacto: String(formData.get('empresa_contacto') ?? '').trim().slice(0, 120),
     colorHex: String(formData.get('color_hex') ?? '').trim(),
     pieDePagina: String(formData.get('pie_de_pagina') ?? '').trim().slice(0, 160),
+    watermark: String(formData.get('watermark') ?? '').trim().slice(0, 40),
+    mayusculas: formData.get('mayusculas') === 'on',
+    modoCompacto: formData.get('modo_compacto') === 'on',
+    firmaIzquierda: String(formData.get('firma_izquierda') ?? '').trim().slice(0, 60),
+    firmaDerecha: String(formData.get('firma_derecha') ?? '').trim().slice(0, 60),
   };
 
   const resultado = await guardarPdfConfig(pdf);

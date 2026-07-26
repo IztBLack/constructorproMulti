@@ -97,7 +97,7 @@ export function construirNominaDocumentoHtml(params: {
 
   return envolverDocumento({
     titulo: `Nómina ${obra.nombre} #${folio}`,
-    accent: pdf.colorHex,
+    pdf,
     cuerpo,
     estilos: '',
   });
