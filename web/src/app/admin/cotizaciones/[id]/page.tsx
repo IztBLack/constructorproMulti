@@ -89,6 +89,7 @@ export default async function CotizacionDetallePage({
         cotizacion={cotizacion}
         clientes={clientes}
         obras={obrasActivas}
+        totalActual={totales.total}
         cambiosPendientes={cambiosPendientes}
       />
 

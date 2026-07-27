@@ -6,6 +6,7 @@ import {
   actualizarPartida,
   actualizarSeccion,
   ajustarPreciosCotizacion,
+  ajustarPreciosCotizacionAObjetivo,
   cambiarEstadoCotizacion,
   convertirCotizacionEnObra,
   crearCotizacion,
@@ -179,6 +180,19 @@ export async function ajustarPreciosCotizacionAction(
 ): Promise<ActionResult & { n: number }> {
   if (!Number.isFinite(pct)) return { n: 0, error: 'Escribe un porcentaje válido.' };
   const { n, error } = await ajustarPreciosCotizacion(cotId, 1 + pct / 100);
+  if (error) return { n: 0, error };
+
+  revalidatePath(`/admin/cotizaciones/${cotId}`);
+  return { n, error: null };
+}
+
+/** Ajusta los precios para que el TOTAL final quede en `objetivo`. */
+export async function ajustarPrecioFinalCotizacionAction(
+  cotId: string,
+  objetivo: number,
+): Promise<ActionResult & { n: number }> {
+  if (!Number.isFinite(objetivo)) return { n: 0, error: 'Escribe un precio final válido.' };
+  const { n, error } = await ajustarPreciosCotizacionAObjetivo(cotId, objetivo);
   if (error) return { n: 0, error };
 
   revalidatePath(`/admin/cotizaciones/${cotId}`);

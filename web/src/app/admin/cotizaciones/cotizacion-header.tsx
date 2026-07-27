@@ -4,11 +4,12 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, Field, Input, Modal, PageHeader, Select } from '@/components/ui';
 import type { BadgeTone } from '@/components/ui';
-import { formatDate } from '@/lib/data/format';
+import { formatCurrency, formatDate } from '@/lib/data/format';
 import type { Cliente, Cotizacion, EstadoCotizacion } from '@/lib/data/types';
 import { CotizacionForm } from './cotizacion-form';
 import {
   ajustarPreciosCotizacionAction,
+  ajustarPrecioFinalCotizacionAction,
   cambiarEstadoCotizacionAction,
   convertirCotizacionEnObraAction,
   duplicarCotizacionAction,
@@ -42,12 +43,15 @@ export function CotizacionHeader({
   cotizacion,
   clientes,
   obras = [],
+  totalActual = 0,
   cambiosPendientes = false,
 }: {
   cotizacion: Cotizacion;
   clientes: Cliente[];
   /** Obras activas de la empresa, para "Vincular a obra". */
   obras?: ObraLite[];
+  /** Total actual (con descuento + IVA), para el ajuste "a precio final". */
+  totalActual?: number;
   /** True si la cotización está ACEPTADA y hubo ediciones que el cliente aún no aprueba. */
   cambiosPendientes?: boolean;
 }) {
@@ -65,7 +69,9 @@ export function CotizacionHeader({
   const [vinculando, setVinculando] = useState(false);
   const [obraSel, setObraSel] = useState('');
   const [ajustando, setAjustando] = useState(false);
+  const [modoAjuste, setModoAjuste] = useState<'pct' | 'final'>('pct');
   const [pctAjuste, setPctAjuste] = useState('');
+  const [precioFinal, setPrecioFinal] = useState('');
   const [avisoExtra, setAvisoExtra] = useState<string | null>(null);
 
   const estado = cotizacion.estado;
@@ -99,16 +105,26 @@ export function CotizacionHeader({
   function handleAjustar() {
     setErrorEstado(null);
     setAvisoExtra(null);
-    const pct = Number.parseFloat(pctAjuste.replace(',', '.'));
     startTransitionExtra(async () => {
-      const result = await ajustarPreciosCotizacionAction(cotizacion.id, pct);
+      const result =
+        modoAjuste === 'final'
+          ? await ajustarPrecioFinalCotizacionAction(
+              cotizacion.id,
+              // Se quitan separadores de miles y espacios (ej. "150,000.00").
+              Number.parseFloat(precioFinal.replace(/[,\s]/g, '')),
+            )
+          : await ajustarPreciosCotizacionAction(
+              cotizacion.id,
+              Number.parseFloat(pctAjuste.replace(',', '.')),
+            );
       if (result.error) {
         setErrorEstado(result.error);
         return;
       }
       setAjustando(false);
       setPctAjuste('');
-      setAvisoExtra(`Ajuste aplicado a ${result.n} partida(s).`);
+      setPrecioFinal('');
+      setAvisoExtra(`Precios ajustados en ${result.n} partida(s).`);
       router.refresh();
     });
   }
@@ -336,25 +352,83 @@ export function CotizacionHeader({
         </div>
       </Modal>
 
-      <Modal open={ajustando} onClose={() => setAjustando(false)} title="Ajuste global de precios" size="sm">
+      <Modal open={ajustando} onClose={() => setAjustando(false)} title="Ajustar precios" size="sm">
         <div className="space-y-4">
-          <p className="text-sm text-neutral-600">
-            Sube o baja el precio unitario de <strong>todas</strong> las partidas por un
-            porcentaje. No cambia las cantidades.
-          </p>
-          <Field label="Porcentaje" hint="Ej: 10 = +10%, -5 = −5%.">
-            <Input
-              type="text"
-              inputMode="decimal"
-              value={pctAjuste}
-              onChange={(e) => setPctAjuste(e.target.value)}
-              placeholder="10"
-              disabled={pendingExtra}
-              autoFocus
-            />
-          </Field>
+          {/* Selector de modo: por porcentaje (como antes) o fijando el total. */}
+          <div className="flex rounded-lg border border-neutral-300 p-1 text-sm">
+            <button
+              type="button"
+              onClick={() => setModoAjuste('pct')}
+              className={`flex-1 rounded-md px-3 py-1.5 font-medium transition-colors ${
+                modoAjuste === 'pct'
+                  ? 'bg-neutral-900 text-white'
+                  : 'text-neutral-600 hover:bg-neutral-100'
+              }`}
+            >
+              Por porcentaje
+            </button>
+            <button
+              type="button"
+              onClick={() => setModoAjuste('final')}
+              className={`flex-1 rounded-md px-3 py-1.5 font-medium transition-colors ${
+                modoAjuste === 'final'
+                  ? 'bg-neutral-900 text-white'
+                  : 'text-neutral-600 hover:bg-neutral-100'
+              }`}
+            >
+              Precio final
+            </button>
+          </div>
+
+          {modoAjuste === 'pct' ? (
+            <>
+              <p className="text-sm text-neutral-600">
+                Sube o baja el precio de <strong>todas</strong> las partidas por un porcentaje. No
+                cambia las cantidades.
+              </p>
+              <Field label="Porcentaje" hint="Ej: 10 = +10%, -5 = −5%.">
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={pctAjuste}
+                  onChange={(e) => setPctAjuste(e.target.value)}
+                  placeholder="10"
+                  disabled={pendingExtra}
+                  autoFocus
+                />
+              </Field>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-neutral-600">
+                Escribe el <strong>total que quieres cobrar</strong>. El sistema ajusta los precios
+                de todas las partidas en la misma proporción para llegar exacto a ese monto.
+              </p>
+              <Field
+                label="Precio final (ya con IVA y descuento)"
+                hint={`Total actual: ${formatCurrency(totalActual)}`}
+              >
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={precioFinal}
+                  onChange={(e) => setPrecioFinal(e.target.value)}
+                  placeholder={String(Math.round(totalActual))}
+                  disabled={pendingExtra}
+                  autoFocus
+                />
+              </Field>
+            </>
+          )}
+
           <div className="flex items-center gap-3">
-            <Button disabled={pendingExtra || pctAjuste.trim() === ''} onClick={handleAjustar}>
+            <Button
+              disabled={
+                pendingExtra ||
+                (modoAjuste === 'pct' ? pctAjuste.trim() === '' : precioFinal.trim() === '')
+              }
+              onClick={handleAjustar}
+            >
               {pendingExtra ? 'Aplicando…' : 'Aplicar'}
             </Button>
             <Button variant="secondary" disabled={pendingExtra} onClick={() => setAjustando(false)}>

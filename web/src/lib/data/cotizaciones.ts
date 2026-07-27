@@ -703,6 +703,35 @@ export async function ajustarPreciosCotizacion(
 }
 
 /**
+ * Ajusta los precios para que el TOTAL final (con descuento + IVA) quede EXACTO
+ * en `objetivo`. El total escala linealmente con los precios de las partidas, así
+ * que basta multiplicar todas por `objetivo / totalActual` — se conserva la
+ * proporción entre partidas y secciones. Reutiliza `ajustarPreciosCotizacion`.
+ */
+export async function ajustarPreciosCotizacionAObjetivo(
+  cotId: string,
+  objetivo: number,
+): Promise<{ n: number; error: string | null }> {
+  if (!(objetivo > 0)) {
+    return { n: 0, error: 'El precio final debe ser mayor que cero.' };
+  }
+
+  const { data: detalle, error } = await getCotizacionConDetalle(cotId);
+  if (error) return { n: 0, error };
+  if (!detalle) return { n: 0, error: 'Cotización no encontrada.' };
+
+  const totalActual = calcularTotales(detalle).total;
+  if (!(totalActual > 0)) {
+    return {
+      n: 0,
+      error: 'El presupuesto está en cero; escribe precios en las partidas antes de fijar un total.',
+    };
+  }
+
+  return ajustarPreciosCotizacion(cotId, objetivo / totalActual);
+}
+
+/**
  * Inserta partidas parseadas de texto pegado en una sección. Genera la clave de
  * cada una con el mismo generador del móvil, acumulando para no colisionar entre
  * sí ni con las claves ya existentes de la cotización. Se agregan al final (orden
