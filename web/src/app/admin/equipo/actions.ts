@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getEmpresaUsuario } from '@/lib/data/empresa';
 import type { PeriodoPago, TipoPago } from '@/lib/data/types';
 import { esPeriodoPago, salarioDiarioDesdePeriodo } from '@/lib/data/salario';
-import { hoyMxMs } from '@/lib/data/tz';
+import { asignarColaboradorAObra } from '@/lib/data/asignar-obra';
 
 export interface ActionResult {
   ok: boolean;
@@ -191,78 +191,96 @@ export async function asignarObraColaborador(
   }
 
   const supabase = await createClient();
-  // Medianoche de México, no `Date.now()`: las asistencias se guardan por día
-  // natural y la comparación entre ambas cosas tiene que ser exacta.
-  const now = hoyMxMs();
+  const r = await asignarColaboradorAObra(
+    supabase,
+    empresaId,
+    colaboradorId,
+    obraId,
+    mantenerAnteriores,
+  );
 
-  const cerradas: string[] = [];
-  if (!mantenerAnteriores) {
-    const { data: abiertas, error: abiertasError } = await supabase
-      .from('obra_colaborador')
-      .select('obra_id, obras(nombre)')
-      .eq('colaborador_id', colaboradorId)
-      .neq('obra_id', obraId)
-      .is('fecha_salida', null)
-      .is('deleted_at', null);
-
-    if (abiertasError) return { ok: false, error: abiertasError.message };
-
-    for (const a of abiertas ?? []) {
-      const { error } = await supabase
-        .from('obra_colaborador')
-        .update({ fecha_salida: now })
-        .eq('colaborador_id', colaboradorId)
-        .eq('obra_id', a.obra_id as string);
-      if (error) return { ok: false, error: error.message };
-      const obra = a.obras as { nombre?: string } | null;
-      cerradas.push(obra?.nombre ?? 'obra sin nombre');
-    }
-  }
-
-  // Si ya existe la fila (PK compuesta obra_id, colaborador_id) por una asignación
-  // previa que fue desvinculada, la reabrimos en vez de insertar duplicado.
-  const { data: existente, error: existenteError } = await supabase
-    .from('obra_colaborador')
-    .select('obra_id, colaborador_id, fecha_salida')
-    .eq('obra_id', obraId)
-    .eq('colaborador_id', colaboradorId)
-    .maybeSingle();
-
-  if (existenteError) {
-    return { ok: false, error: existenteError.message };
-  }
-
-  if (existente) {
-    if (existente.fecha_salida === null) {
-      return { ok: false, error: 'El colaborador ya está asignado a esta obra.' };
-    }
-    const { error } = await supabase
-      .from('obra_colaborador')
-      .update({ fecha_ingreso: now, fecha_salida: null })
-      .eq('obra_id', obraId)
-      .eq('colaborador_id', colaboradorId);
-
-    if (error) {
-      return { ok: false, error: error.message };
-    }
-  } else {
-    const { error } = await supabase.from('obra_colaborador').insert({
-      empresa_id: empresaId,
-      obra_id: obraId,
-      colaborador_id: colaboradorId,
-      fecha_ingreso: now,
-      fecha_salida: null,
-      salario_dia_override: null,
-    });
-
-    if (error) {
-      return { ok: false, error: error.message };
-    }
-  }
+  if (!r.ok) return { ok: false, error: r.error };
+  // En el flujo de uno, reasignar a quien ya estaba es un error de usuario que
+  // conviene decirle. En lote es solo una omisión (ver `asignarObraColaboradores`).
+  if (r.yaEstaba) return { ok: false, error: 'El colaborador ya está asignado a esta obra.' };
 
   revalidatePath(`/admin/equipo/`);
   revalidatePath('/admin/obras');
-  return { ok: true, cerradas };
+  return { ok: true, cerradas: r.cerradas };
+}
+
+/** Resultado de una asignación en lote, para poder reportar éxitos y fallos por separado. */
+export interface ResultadoLoteAsignacion extends ActionResult {
+  /** Ids efectivamente asignados. */
+  asignados: string[];
+  /** Ids que ya estaban vigentes en la obra: se omiten sin considerarlo error. */
+  omitidos: string[];
+  /** Ids que fallaron, con el motivo. */
+  fallidos: { id: string; error: string }[];
+  /** Nombres de obras de las que se dio de baja a alguien (sin repetir). */
+  cerradas: string[];
+}
+
+/**
+ * Asigna VARIOS colaboradores a una obra de una sola pasada.
+ *
+ * No es atómico: Supabase-js no expone transacciones, así que se aplica uno por
+ * uno y se reporta el desglose. Un fallo a la mitad NO cancela los anteriores,
+ * por eso se devuelven `asignados`/`fallidos` en vez de un booleano: la UI tiene
+ * que poder decir exactamente quién sí quedó y quién no.
+ */
+export async function asignarObraColaboradores(
+  colaboradorIds: string[],
+  obraId: string,
+  mantenerAnteriores = false,
+): Promise<ResultadoLoteAsignacion> {
+  const vacio = { asignados: [], omitidos: [], fallidos: [], cerradas: [] };
+  if (!obraId) return { ok: false, error: 'Selecciona una obra.', ...vacio };
+  if (colaboradorIds.length === 0) {
+    return { ok: false, error: 'Selecciona al menos un colaborador.', ...vacio };
+  }
+
+  let empresaId: string;
+  try {
+    ({ empresaId } = await getEmpresaUsuario());
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : 'Error de autenticación.',
+      ...vacio,
+    };
+  }
+
+  const supabase = await createClient();
+  const asignados: string[] = [];
+  const omitidos: string[] = [];
+  const fallidos: { id: string; error: string }[] = [];
+  const cerradas = new Set<string>();
+
+  for (const colaboradorId of colaboradorIds) {
+    const r = await asignarColaboradorAObra(
+      supabase,
+      empresaId,
+      colaboradorId,
+      obraId,
+      mantenerAnteriores,
+    );
+    r.cerradas.forEach((c) => cerradas.add(c));
+    if (!r.ok) fallidos.push({ id: colaboradorId, error: r.error ?? 'Error desconocido.' });
+    else if (r.yaEstaba) omitidos.push(colaboradorId);
+    else asignados.push(colaboradorId);
+  }
+
+  revalidatePath('/admin/equipo');
+  revalidatePath('/admin/obras');
+  return {
+    ok: fallidos.length === 0,
+    error: fallidos.length > 0 ? `No se pudo asignar a ${fallidos.length}.` : undefined,
+    asignados,
+    omitidos,
+    fallidos,
+    cerradas: [...cerradas],
+  };
 }
 
 export async function desvincularObraColaborador(

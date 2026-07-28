@@ -2,11 +2,21 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, EmptyState, TableContainer, TBody, Td, Th, THead, Tr } from '@/components/ui';
+import {
+  Button,
+  EmptyState,
+  MultiSelectList,
+  TableContainer,
+  TBody,
+  Td,
+  Th,
+  THead,
+  Tr,
+} from '@/components/ui';
 import { formatDate } from '@/lib/data/format';
 import type { ColaboradorEnObra } from '@/lib/data/equipo';
 import type { Colaborador } from '@/lib/data/types';
-import { asignarObraColaborador, desvincularObraColaborador } from '../../equipo/actions';
+import { asignarObraColaboradores, desvincularObraColaborador } from '../../equipo/actions';
 
 export default function EquipoObra({
   obraId,
@@ -18,7 +28,7 @@ export default function EquipoObra({
   colaboradoresDisponibles: Colaborador[];
 }) {
   const router = useRouter();
-  const [colaboradorId, setColaboradorId] = useState('');
+  const [seleccionados, setSeleccionados] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [desvinculandoId, setDesvinculandoId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -27,27 +37,36 @@ export default function EquipoObra({
   const asignadosIds = new Set(asignados.map((a) => a.id));
   const noAsignados = colaboradoresDisponibles.filter((c) => !asignadosIds.has(c.id));
 
+  const nombrePorId = new Map(colaboradoresDisponibles.map((c) => [c.id, c.nombre]));
+
   async function onAsignar(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!colaboradorId) {
-      setError('Selecciona un colaborador.');
+    if (seleccionados.length === 0) {
+      setError('Selecciona al menos un colaborador.');
       return;
     }
     setLoading(true);
     setError(null);
     setAviso(null);
-    const result = await asignarObraColaborador(colaboradorId, obraId);
+    const result = await asignarObraColaboradores(seleccionados, obraId);
     setLoading(false);
-    if (!result.ok) {
-      setError(result.error ?? 'No se pudo asignar al colaborador.');
-      return;
+
+    if (result.fallidos.length) {
+      const nombres = result.fallidos
+        .map((f) => nombrePorId.get(f.id) ?? f.id)
+        .join(', ');
+      setError(`No se pudo asignar a ${nombres}: ${result.fallidos[0].error}`);
     }
-    // Asignar es un movimiento: si venía de otra obra, se le dio de baja ahí.
-    // Hay que decirlo, porque cambia dónde le aparece el pase de lista.
-    if (result.cerradas?.length) {
-      setAviso(`Se dio de baja de: ${result.cerradas.join(', ')}.`);
-    }
-    setColaboradorId('');
+
+    const partes: string[] = [];
+    if (result.asignados.length) partes.push(`${result.asignados.length} asignado(s).`);
+    if (result.omitidos.length) partes.push(`${result.omitidos.length} ya estaban en la obra.`);
+    // Asignar es un movimiento: si venían de otra obra, se les dio de baja ahí.
+    // Hay que decirlo, porque cambia dónde les aparece el pase de lista.
+    if (result.cerradas.length) partes.push(`Se dieron de baja de: ${result.cerradas.join(', ')}.`);
+    if (partes.length) setAviso(partes.join(' '));
+
+    setSeleccionados([]);
     router.refresh();
   }
 
@@ -68,26 +87,27 @@ export default function EquipoObra({
     <div className="space-y-4">
       <form
         onSubmit={onAsignar}
-        className="flex flex-wrap items-end gap-3 rounded-xl border border-neutral-200 bg-white p-4"
+        className="space-y-3 rounded-xl border border-neutral-200 bg-white p-4"
       >
-        <label className="block min-w-[220px] flex-1 space-y-1">
-          <span className="text-sm font-medium text-neutral-700">Asignar colaborador</span>
-          <select
-            value={colaboradorId}
-            onChange={(e) => setColaboradorId(e.target.value)}
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 outline-none focus:border-neutral-900"
-          >
-            <option value="">Selecciona un colaborador…</option>
-            {noAsignados.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre}
-              </option>
-            ))}
-          </select>
-        </label>
-        <Button type="submit" disabled={loading || noAsignados.length === 0}>
-          {loading ? 'Asignando…' : 'Asignar'}
-        </Button>
+        <span className="block text-sm font-medium text-neutral-700">Asignar colaboradores</span>
+        <MultiSelectList
+          etiqueta="Colaboradores por asignar"
+          opciones={noAsignados}
+          seleccionados={seleccionados}
+          onChange={setSeleccionados}
+          buscarPlaceholder="Buscar colaborador…"
+          vacioTexto="No hay colaboradores disponibles para asignar."
+          disabled={loading}
+        />
+        {noAsignados.length > 0 && (
+          <Button type="submit" disabled={loading || seleccionados.length === 0}>
+            {loading
+              ? 'Asignando…'
+              : seleccionados.length > 1
+                ? `Asignar ${seleccionados.length}`
+                : 'Asignar'}
+          </Button>
+        )}
       </form>
 
       {error && (

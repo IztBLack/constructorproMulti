@@ -9,6 +9,8 @@ export { TableContainer, THead, Th, TBody, Tr, Td, RowLink } from './Table';
 export { DataTable } from './DataTable';
 export type { DataColumn } from './DataTable';
 export { Field, Input, Select, Textarea } from './Field';
+export { MultiSelectList } from './MultiSelectList';
+export type { OpcionMulti } from './MultiSelectList';
 export { Modal } from './Modal';
 export type { ModalSize } from './Modal';
 export { BackLink } from './BackLink';
