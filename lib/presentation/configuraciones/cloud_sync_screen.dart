@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/settings/settings_provider.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/sync/cloud_providers.dart';
 import '../../core/sync/supabase_config.dart';
 import '../../core/sync/sync_service.dart';
@@ -482,11 +483,11 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Icon(Icons.link_off_outlined, size: 48, color: Colors.orange),
+        Icon(Icons.link_off_outlined, size: 48, color: context.colores.warning),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           'Tu cuenta no está vinculada a ninguna empresa.',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          style: Theme.of(context).textTheme.titleMedium,
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
@@ -502,7 +503,10 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
           keyboardType: TextInputType.number,
           maxLength: 6,
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 24, letterSpacing: 8),
+          style: Theme.of(context)
+              .textTheme
+              .headlineSmall
+              ?.copyWith(letterSpacing: 8),
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           decoration: const InputDecoration(
             labelText: 'Código de vinculación',
@@ -533,18 +537,18 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
         const SizedBox(height: 12),
         OutlinedButton.icon(
           onPressed: _loading ? null : _cerrarSesion,
-          icon: const Icon(Icons.logout, color: Colors.red),
-          label: const Text('Cerrar sesión',
-              style: TextStyle(color: Colors.red)),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: context.colores.danger,
+          ),
+          icon: const Icon(Icons.logout),
+          label: const Text('Cerrar sesión'),
         ),
         if (user != null) ...[
           const SizedBox(height: 16),
           Text(
             'Cuenta: ${user.email ?? user.id}',
             textAlign: TextAlign.center,
-            style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
+            style: Theme.of(context).textTheme.bodySmall,
           ),
         ],
       ],
@@ -558,7 +562,8 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
     return ListView(
       children: [
         ListTile(
-          leading: const Icon(Icons.cloud_done_outlined, color: Colors.green),
+          leading:
+              Icon(Icons.cloud_done_outlined, color: context.colores.success),
           title: const Text('Conectado'),
           subtitle: Text(user?.email ?? user?.id ?? ''),
         ),
@@ -582,9 +587,14 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
           enabled: !_loading,
           onTap: _loading ? null : _forzarResyncCompleto,
         ),
+        // Cerrar sesión va al final y en rojo: es la única acción de esta
+        // pantalla que se lleva el acceso a los datos de la nube, y debe
+        // distinguirse de las de sincronizar (regla
+        // `destructive-nav-separation`).
         ListTile(
-          leading: const Icon(Icons.logout, color: Colors.red),
-          title: const Text('Cerrar sesión'),
+          leading: Icon(Icons.logout, color: context.colores.danger),
+          title: Text('Cerrar sesión',
+              style: TextStyle(color: context.colores.danger)),
           onTap: _cerrarSesion,
         ),
       ],

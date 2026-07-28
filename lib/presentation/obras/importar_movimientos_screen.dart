@@ -9,12 +9,15 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
+import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
 import '../../domain/import/dedup_movimientos.dart';
 import '../../domain/import/estado_cuenta_parser.dart';
 import '../../domain/import/import_models.dart';
 import '../../domain/import/presupuesto_reconciliation.dart';
+import '../common/app_badge.dart';
 import '../common/app_spacing.dart';
+import '../common/money_text.dart';
 
 /// Flujo de importación de un estado de cuenta (Excel/CSV) hacia la caja de
 /// una obra EXISTENTE. Consume el parser + clasificador de duplicados +
@@ -314,7 +317,6 @@ class _ImportarMovimientosScreenState
   // ── Vista preview ──────────────────────────────────────────────────────
   Widget _vistaPreview() {
     final total = _movimientos.length;
-    final cs = Theme.of(context).colorScheme;
     return ListView(
       padding: AppSpacing.allMd,
       children: [
@@ -332,12 +334,9 @@ class _ImportarMovimientosScreenState
           spacing: AppSpacing.sm,
           runSpacing: AppSpacing.xs,
           children: [
-            _pill('$total en el archivo', cs.secondaryContainer,
-                cs.onSecondaryContainer),
-            _pill('$_nNuevos nuevos', Colors.green.shade100,
-                Colors.green.shade900),
-            _pill('$_nDuplicados duplicados', Colors.amber.shade100,
-                Colors.amber.shade900),
+            AppBadge('$total en el archivo'),
+            AppBadge('$_nNuevos nuevos', tone: BadgeTone.success),
+            AppBadge('$_nDuplicados duplicados', tone: BadgeTone.warning),
           ],
         ),
         AppSpacing.gapSm,
@@ -360,16 +359,6 @@ class _ImportarMovimientosScreenState
     );
   }
 
-  Widget _pill(String texto, Color bg, Color fg) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Text(texto,
-            style: TextStyle(color: fg, fontWeight: FontWeight.w600)),
-      );
-
   Widget _advertencias() {
     final avisos = <String>[];
     if (_nDuplicados > 0 && !_importarTodo) {
@@ -385,30 +374,31 @@ class _ImportarMovimientosScreenState
     }
     avisos.addAll(_parsed?.advertencias ?? const []);
     if (avisos.isEmpty) return const SizedBox.shrink();
+    final c = context.colores;
     return Container(
       width: double.infinity,
       padding: AppSpacing.allSm,
       decoration: BoxDecoration(
-        color: Colors.amber.shade50,
+        color: c.warningSoft,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.amber.shade300),
+        border: Border.all(color: c.warning),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Icon(Icons.warning_amber, size: 18, color: Colors.amber.shade900),
+            Icon(Icons.warning_amber, size: 18, color: c.warning),
             const SizedBox(width: 6),
             Text('Advertencias',
-                style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.amber.shade900)),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleSmall
+                    ?.copyWith(color: c.warning)),
           ]),
           const SizedBox(height: 4),
           ...avisos.map((a) => Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: Text('• $a',
-                    style: TextStyle(color: Colors.amber.shade900)),
+                child: Text('• $a', style: TextStyle(color: c.warning)),
               )),
         ],
       ),
@@ -423,7 +413,7 @@ class _ImportarMovimientosScreenState
       dense: true,
       leading: Icon(
         entrada ? Icons.south_west : Icons.north_east,
-        color: entrada ? Colors.green : Colors.red,
+        color: entrada ? context.colores.success : context.colores.danger,
       ),
       title: Text(_prettify(m.categoria),
           maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -435,28 +425,17 @@ class _ImportarMovimientosScreenState
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Text('${entrada ? '+' : '-'}${Fmt.money(m.monto)}',
-              style: TextStyle(
-                  color: entrada ? Colors.green : Colors.red,
-                  fontWeight: FontWeight.bold)),
-          _estadoChip(dup),
+          MoneyText(entrada ? m.monto : -m.monto,
+              colorearPorSigno: true,
+              mostrarSigno: true,
+              style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 2),
+          AppBadge(dup ? 'Duplicado' : 'Nuevo',
+              tone: dup ? BadgeTone.warning : BadgeTone.success),
         ],
       ),
     );
   }
-
-  Widget _estadoChip(bool dup) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-        decoration: BoxDecoration(
-          color: dup ? Colors.amber.shade100 : Colors.green.shade100,
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Text(dup ? 'Duplicado' : 'Nuevo',
-            style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: dup ? Colors.amber.shade900 : Colors.green.shade900)),
-      );
 
   // ── Sección presupuesto ────────────────────────────────────────────────
   Widget _seccionPresupuesto() {
@@ -501,11 +480,10 @@ class _ImportarMovimientosScreenState
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Costo total resultante',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(Fmt.money(_costoTotalResultante),
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text('Costo total resultante',
+                      style: Theme.of(context).textTheme.titleSmall),
+                  MoneyText(_costoTotalResultante,
+                      style: Theme.of(context).textTheme.titleMedium),
                 ],
               ),
             ],
@@ -518,13 +496,13 @@ class _ImportarMovimientosScreenState
   Widget _filaReconciliacion(PartidaReconciliada p) {
     switch (p.estado) {
       case EstadoPartida.igual:
-        return _partidaSimple(p.concepto, 'Igual', Colors.grey,
+        return _partidaSimple(p.concepto, 'Igual', context.colores.textMuted,
             p.deObra != null ? p.deObra!.cantidad * p.deObra!.precioUnitario : 0);
       case EstadoPartida.nueva:
-        return _partidaSimple(p.concepto, 'Nueva (se agrega)', Colors.green,
-            p.deArchivo?.total ?? 0);
+        return _partidaSimple(p.concepto, 'Nueva (se agrega)',
+            context.colores.success, p.deArchivo?.total ?? 0);
       case EstadoPartida.soloPortal:
-        return _partidaSimple(p.concepto, 'Se conserva', Colors.blueGrey,
+        return _partidaSimple(p.concepto, 'Se conserva', context.colores.info,
             p.deObra != null ? p.deObra!.cantidad * p.deObra!.precioUnitario : 0);
       case EstadoPartida.conflicto:
         return _partidaConflicto(p);
@@ -544,11 +522,14 @@ class _ImportarMovimientosScreenState
                 Text(_prettify(concepto),
                     maxLines: 1, overflow: TextOverflow.ellipsis),
                 Text(etiqueta,
-                    style: TextStyle(fontSize: 12, color: color)),
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: color)),
               ],
             ),
           ),
-          Text(Fmt.money(total)),
+          MoneyText(total),
         ],
       ),
     );
@@ -570,19 +551,7 @@ class _ImportarMovimientosScreenState
                 child: Text(_prettify(p.concepto),
                     style: const TextStyle(fontWeight: FontWeight.w600)),
               ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade100,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text('Conflicto',
-                    style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.orange.shade900)),
-              ),
+              const AppBadge('Conflicto', tone: BadgeTone.warning),
             ],
           ),
           const SizedBox(height: 4),
@@ -594,12 +563,12 @@ class _ImportarMovimientosScreenState
                 value: false,
                 label: Text(
                     'Mantener · ${Fmt.money(o.cantidad * o.precioUnitario)}',
-                    style: const TextStyle(fontSize: 11)),
+                    style: Theme.of(context).textTheme.labelSmall),
               ),
               ButtonSegment(
                 value: true,
                 label: Text('Usar · ${Fmt.money(a.total)}',
-                    style: const TextStyle(fontSize: 11)),
+                    style: Theme.of(context).textTheme.labelSmall),
               ),
             ],
             selected: {usarArch},

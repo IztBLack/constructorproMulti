@@ -249,6 +249,23 @@ class MovimientoRepository {
       ),
     );
   }
+
+  /// Revierte un [delete]. Es barato porque el borrado es SUAVE: la fila nunca
+  /// se fue, solo se le puso `deletedAt`, así que deshacer es limpiar la marca.
+  ///
+  /// Escribe exactamente las mismas tres columnas que [delete] —incluido
+  /// `syncStatus: 'pending'`— para que el push a la nube trate el "deshacer"
+  /// como cualquier otra edición y no haga falta un camino aparte.
+  Future<void> restore(String id) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return (db.update(db.movimientos)..where((t) => t.id.equals(id))).write(
+      MovimientosCompanion(
+        deletedAt: const Value(null),
+        updatedAt: Value(now),
+        syncStatus: const Value('pending'),
+      ),
+    );
+  }
 }
 
 class ObraPresupuestoRepository {

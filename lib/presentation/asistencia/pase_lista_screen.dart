@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
+import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
 import '../common/app_spacing.dart';
 import '../common/empty_state_view.dart';
@@ -337,7 +338,8 @@ class _PaseListaRowState extends ConsumerState<_PaseListaRow> {
           child: CircularProgressIndicator(strokeWidth: 2),
         );
       case _SaveState.saved:
-        return const Icon(Icons.check_circle, size: 18, color: Colors.green);
+        return Icon(Icons.check_circle,
+            size: 18, color: context.colores.success);
       case _SaveState.error:
         return Tooltip(
           message: 'No se guardó. Toca de nuevo para reintentar.',

@@ -233,31 +233,35 @@ class _DestajoCuadrillaScreenState
                         children: [
                           const Text('Total repartido'),
                           Text(Fmt.money(bolsa),
-                              style: const TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.bold)),
+                              style: Theme.of(context).textTheme.titleLarge),
                         ],
                       ),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text('$totalPct%',
-                              style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: cuadra
-                                      ? null
-                                      : Theme.of(context).colorScheme.error)),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(
+                                      color: cuadra
+                                          ? null
+                                          : Theme.of(context)
+                                              .colorScheme
+                                              .error)),
                           Text(
                             cuadra
                                 ? 'cuadra la bolsa'
                                 : (totalPct > 100
                                     ? 'sobra ${totalPct - 100}%'
                                     : 'falta ${100 - totalPct}%'),
-                            style: TextStyle(
-                                fontSize: 12,
-                                color: cuadra
-                                    ? null
-                                    : Theme.of(context).colorScheme.error),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                    color: cuadra
+                                        ? null
+                                        : Theme.of(context).colorScheme.error),
                           ),
                         ],
                       ),

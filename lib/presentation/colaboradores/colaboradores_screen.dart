@@ -7,6 +7,7 @@ import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
 import '../../core/sync/cloud_providers.dart';
 import '../../domain/logic/salario_periodo.dart';
+import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
 import '../common/async_action_button.dart';
 import '../common/confirm_dialog.dart';
@@ -141,7 +142,7 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
               return ListTile(
                 isThreeLine: true,
                 leading: CircleAvatar(
-                  backgroundColor: c.activo ? null : Colors.grey,
+                  backgroundColor: c.activo ? null : context.colores.neutralSoft,
                   child: Text(c.nombre.isNotEmpty ? c.nombre[0].toUpperCase() : '?'),
                 ),
                 title: Text(c.nombre,

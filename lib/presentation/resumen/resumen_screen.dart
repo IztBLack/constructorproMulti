@@ -4,6 +4,7 @@ import 'package:printing/printing.dart';
 
 import '../../core/format/format.dart';
 import '../../core/pdf/pdf_config.dart';
+import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
 import '../../domain/logic/flujo_calculator.dart';
 import '../../domain/logic/nomina_calculator.dart';
@@ -12,7 +13,10 @@ import '../../domain/mappers.dart';
 import '../../pdf/pdf_service.dart';
 import '../asistencia/pase_lista_screen.dart';
 import '../configuraciones/catalogo_screen.dart';
+import '../common/app_card.dart';
 import '../common/error_state_view.dart';
+import '../common/money_text.dart';
+import '../common/section_header.dart';
 import '../obras/obra_detail_screen.dart';
 import '../pdf_pre_dialog.dart';
 
@@ -128,91 +132,108 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
                   .resumen(movs.where((x) => x.obraId == o.id).map(movimientoToDomain).toList())
           };
 
+          final colores = context.colores;
+          final textTheme = Theme.of(context).textTheme;
+
           return ListView(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
             children: [
               // Selector de periodo
-              Row(children: [
-                Expanded(
-                  child: SegmentedButton<bool>(
-                    segments: const [
-                      ButtonSegment(value: false, label: Text('Mes')),
-                      ButtonSegment(value: true, label: Text('Año')),
-                    ],
-                    selected: {_anual},
-                    onSelectionChanged: (s) => setState(() => _anual = s.first),
-                  ),
-                ),
-              ]),
+              SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(value: false, label: Text('Mes')),
+                  ButtonSegment(value: true, label: Text('Año')),
+                ],
+                selected: {_anual},
+                onSelectionChanged: (s) => setState(() => _anual = s.first),
+              ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  IconButton(icon: const Icon(Icons.chevron_left), onPressed: () => _navPeriodo(-1)),
-                  Text(_periodoLabel, style: Theme.of(context).textTheme.titleMedium),
-                  IconButton(icon: const Icon(Icons.chevron_right), onPressed: () => _navPeriodo(1)),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left),
+                    tooltip: _anual ? 'Año anterior' : 'Mes anterior',
+                    onPressed: () => _navPeriodo(-1),
+                  ),
+                  Text(_periodoLabel, style: textTheme.titleMedium),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right),
+                    tooltip: _anual ? 'Año siguiente' : 'Mes siguiente',
+                    onPressed: () => _navPeriodo(1),
+                  ),
                 ],
               ),
+              const SizedBox(height: 4),
               // Contadores
               Row(children: [
                 _contador('Obras', obras.where((o) => o.activa).length, Icons.foundation),
+                const SizedBox(width: 8),
                 _contador('Equipo', colabs.where((c) => c.activo).length, Icons.people),
+                const SizedBox(width: 8),
                 _contador('Cotizaciones', cots.length, Icons.description),
               ]),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               // Pipeline: valor de cotizaciones pendientes
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.trending_up, color: Colors.teal),
-                  title: const Text('Pipeline'),
-                  subtitle: const Text('Cotizaciones pendientes (borrador/enviada)'),
-                  trailing: Text(Fmt.money(pipeline),
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Colors.teal)),
+              AppCard(
+                padding: CardPadding.sm,
+                child: Row(
+                  children: [
+                    Icon(Icons.trending_up, color: colores.info),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Pipeline', style: textTheme.titleSmall),
+                          Text('Cotizaciones pendientes (borrador/enviada)',
+                              style: textTheme.bodySmall),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    MoneyText(
+                      pipeline,
+                      color: colores.info,
+                      style: textTheme.titleMedium,
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               // Accesos rápidos
               _accesosRapidos(),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               // Flujo del periodo
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(children: [
-                    Text('Flujo de caja · $_periodoLabel',
-                        style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 12),
-                    Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-                      _kpi('Ingresos', global.totalEntradas, Colors.green),
-                      _kpi('Egresos', global.totalSalidas, Colors.red),
-                      _kpi('Saldo', global.saldo, global.saldo >= 0 ? Colors.green : Colors.red),
-                    ]),
+              AppCard(
+                child: Column(children: [
+                  Text('Flujo de caja · $_periodoLabel',
+                      style: textTheme.titleSmall),
+                  const SizedBox(height: 16),
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+                    _kpi('Ingresos', global.totalEntradas, colores.success),
+                    _kpi('Egresos', global.totalSalidas, colores.danger),
+                    _kpi('Saldo', global.saldo, colores.montoTone(global.saldo)),
                   ]),
-                ),
-              ),
-              const SizedBox(height: 8),
-              // % de gasto
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('Distribución del gasto · $_periodoLabel',
-                        style: Theme.of(context).textTheme.titleSmall),
-                    const SizedBox(height: 8),
-                    _barraGasto('Nómina', salNomina, totalSal, Colors.indigo),
-                    _barraGasto('Material', salMaterial, totalSal, Colors.orange),
-                    _barraGasto('Otros', salOtros, totalSal, Colors.grey),
-                    const SizedBox(height: 4),
-                    Text('Nómina ${pct(salNomina)}% · Material ${pct(salMaterial)}% · Otros ${pct(salOtros)}%',
-                        style: Theme.of(context).textTheme.bodySmall),
-                  ]),
-                ),
+                ]),
               ),
               const SizedBox(height: 12),
-              Text('Saldo por obra', style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: 4),
+              // % de gasto
+              AppCard(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  SectionHeader(title: 'Distribución del gasto · $_periodoLabel'),
+                  _barraGasto('Nómina', salNomina, totalSal, colores.chartPayroll),
+                  _barraGasto('Material', salMaterial, totalSal, colores.chartMaterial),
+                  _barraGasto('Otros', salOtros, totalSal, colores.chartOther),
+                  const SizedBox(height: 8),
+                  Text('Nómina ${pct(salNomina)}% · Material ${pct(salMaterial)}% · Otros ${pct(salOtros)}%',
+                      style: textTheme.bodySmall),
+                ]),
+              ),
+              const SizedBox(height: 20),
+              const SectionHeader(
+                title: 'Saldo por obra',
+                description: 'Histórico completo, sin filtrar por periodo.',
+              ),
               if (obras.isEmpty)
                 const Padding(
                   padding: EdgeInsets.all(16),
@@ -225,16 +246,31 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
                   final sub = o.cliente.isEmpty
                       ? '$nEquipo en equipo'
                       : '${o.cliente} · $nEquipo en equipo';
-                  return Card(
-                    child: ListTile(
-                      title: Text(o.nombre),
-                      subtitle: Text(sub),
-                      trailing: Text(Fmt.money(r.saldo),
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: r.saldo >= 0 ? Colors.green : Colors.red)),
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: AppCard(
+                      padding: CardPadding.sm,
                       onTap: () => Navigator.of(context).push(MaterialPageRoute(
                           builder: (_) => ObraDetailScreen(obra: o))),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(o.nombre, style: textTheme.bodyLarge),
+                                Text(sub, style: textTheme.bodySmall),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          MoneyText(
+                            r.saldo,
+                            colorearPorSigno: true,
+                            style: textTheme.titleSmall,
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 }),
@@ -257,54 +293,81 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
         ],
       );
 
+  /// El `Tooltip` explícito es lo que le da nombre al botón para el lector de
+  /// pantalla: el ícono por sí solo no dice nada (regla `aria-labels`). La
+  /// etiqueta visible de abajo no cumple ese papel — es un `Text` hermano, no el
+  /// nombre accesible del control.
   Widget _accion(IconData icon, String label, VoidCallback onTap) => Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton.filledTonal(onPressed: onTap, icon: Icon(icon)),
-          Text(label, style: const TextStyle(fontSize: 12)),
+          IconButton.filledTonal(
+            onPressed: onTap,
+            icon: Icon(icon),
+            tooltip: label,
+          ),
+          const SizedBox(height: 2),
+          Text(label, style: Theme.of(context).textTheme.labelSmall),
         ],
       );
 
   Widget _barraGasto(String label, double valor, double total, Color color) {
     final frac = total > 0 ? valor / total : 0.0;
+    final textTheme = Theme.of(context).textTheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(children: [
-        SizedBox(width: 70, child: Text(label, style: const TextStyle(fontSize: 12))),
+        SizedBox(width: 66, child: Text(label, style: textTheme.bodySmall)),
         Expanded(
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(999),
             child: LinearProgressIndicator(
-              value: frac, minHeight: 10,
-              backgroundColor: color.withValues(alpha: 0.15),
+              value: frac,
+              minHeight: 8,
+              backgroundColor: context.colores.surfaceMuted,
               valueColor: AlwaysStoppedAnimation(color),
             ),
           ),
         ),
-        const SizedBox(width: 8),
-        SizedBox(width: 80, child: Text(Fmt.money(valor),
-            textAlign: TextAlign.right, style: const TextStyle(fontSize: 12))),
+        const SizedBox(width: 10),
+        SizedBox(
+          width: 86,
+          child: MoneyText(
+            valor,
+            textAlign: TextAlign.right,
+            style: textTheme.bodySmall,
+          ),
+        ),
       ]),
     );
   }
 
-  Widget _contador(String label, int n, IconData icon) => Expanded(
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Column(children: [
-              Icon(icon),
-              const SizedBox(height: 4),
-              Text('$n', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-              Text(label, style: const TextStyle(fontSize: 12)),
-            ]),
-          ),
-        ),
-      );
+  Widget _contador(String label, int n, IconData icon) {
+    final textTheme = Theme.of(context).textTheme;
+    return Expanded(
+      child: AppCard(
+        padding: CardPadding.sm,
+        child: Column(children: [
+          Icon(icon, size: 20, color: context.colores.textMuted),
+          const SizedBox(height: 6),
+          Text('$n', style: textTheme.headlineSmall),
+          Text(label, style: textTheme.labelSmall, textAlign: TextAlign.center),
+        ]),
+      ),
+    );
+  }
 
   Widget _kpi(String label, double v, Color color) => Column(
         children: [
           Text(label, style: Theme.of(context).textTheme.labelMedium),
-          Text(Fmt.money(v), style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 2),
+          MoneyText(
+            v,
+            color: color,
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.w700),
+          ),
         ],
       );
 

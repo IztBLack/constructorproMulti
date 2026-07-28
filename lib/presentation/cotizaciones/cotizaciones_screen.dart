@@ -11,6 +11,7 @@ import '../common/confirm_dialog.dart';
 import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
 import 'cotizacion_detail_screen.dart';
+import 'estado_cotizacion_badge.dart';
 
 class CotizacionesScreen extends ConsumerWidget {
   const CotizacionesScreen({super.key});
@@ -42,9 +43,26 @@ class CotizacionesScreen extends ConsumerWidget {
               final c = cots[i];
               return ListTile(
                 title: Text(c.nombreProyecto),
-                subtitle: Text('${c.cliente} · ${Fmt.date(c.fecha)}'),
-                leading: _estadoChip(c.estado),
+                // El estado dejó de ser un círculo de color a la izquierda —que
+                // obligaba a memorizar qué significaba cada tono— y pasó a ser
+                // una etiqueta que lo dice con palabras, igual que en la web.
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Row(
+                    children: [
+                      EstadoCotizacionBadge(c.estado),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${c.cliente} · ${Fmt.date(c.fecha)}',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 trailing: PopupMenuButton<String>(
+                  tooltip: 'Acciones de la cotización',
                   onSelected: (v) {
                     if (v == 'editar') _dialog(context, ref, c);
                     if (v == 'eliminar') _confirmDelete(context, ref, c);
@@ -70,18 +88,6 @@ class CotizacionesScreen extends ConsumerWidget {
     );
   }
 
-  Widget _estadoChip(String estado) {
-    final color = switch (estado) {
-      'ACEPTADA' => Colors.green,
-      'RECHAZADA' => Colors.red,
-      'CONVERTIDA' => Colors.blue,
-      'ENVIADA' => Colors.orange,
-      _ => Colors.grey,
-    };
-    return CircleAvatar(
-        backgroundColor: color.withValues(alpha: 0.2),
-        child: Icon(Icons.description, color: color, size: 20));
-  }
 
   Future<void> _dialog(BuildContext context, WidgetRef ref, Cotizacion? cot) async {
     final nombreCtrl = TextEditingController(text: cot?.nombreProyecto ?? '');

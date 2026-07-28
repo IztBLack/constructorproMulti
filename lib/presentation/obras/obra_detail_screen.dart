@@ -8,12 +8,15 @@ import 'package:uuid/uuid.dart';
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
 import '../../core/pdf/pdf_config.dart';
+import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
 import '../../domain/logic/estado_cuenta_calculator.dart';
 import '../../domain/logic/flujo_calculator.dart';
 import '../../domain/logic/nomina_calculator.dart';
 import '../../domain/mappers.dart';
 import '../../pdf/pdf_service.dart';
+import '../common/app_snackbar.dart';
+import '../common/money_text.dart';
 import '../pdf_pre_dialog.dart';
 import 'importar_movimientos_screen.dart';
 
@@ -76,7 +79,11 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
         ],
         bottom: TabBar(
           controller: _tab,
-          isScrollable: true,
+          // Fijo, no desplazable: con `isScrollable` los cuatro títulos cortos
+          // se amontonaban a la izquierda dejando media barra vacía, y no había
+          // nada que desplazar. Repartidos ocupan el ancho y crecen sus áreas
+          // tocables.
+          isScrollable: false,
           tabs: const [
             Tab(text: 'Equipo'),
             Tab(text: 'Asistencia'),
@@ -486,7 +493,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
             const DataColumn(label: Text('Trabajador')),
             ...dias.map((d) => DataColumn(
                 label: Text(Fmt.dayName(d).split(' ').take(2).join('\n'),
-                    style: const TextStyle(fontSize: 11)))),
+                    style: Theme.of(context).textTheme.labelSmall))),
           ],
           rows: trabajadores.map((c) {
             return DataRow(cells: [
@@ -525,7 +532,9 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                   Center(child: Text(etiqueta(f),
                       style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: f > 0 ? Colors.green : Colors.grey))),
+                          color: f > 0
+                              ? context.colores.success
+                              : context.colores.textFaint))),
                   onTap: () => _editarCeldaSemana(c.id, c.nombre, d, diaMillis),
                 );
               }),
@@ -870,6 +879,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (movs) {
+          final c = context.colores;
           final resumen = const FlujoCalculator()
               .resumen(movs.map(movimientoToDomain).toList());
           final estado = const EstadoCuentaCalculator()
@@ -882,10 +892,9 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _kpi('Entradas', resumen.totalEntradas, Colors.green),
-                    _kpi('Salidas', resumen.totalSalidas, Colors.red),
-                    _kpi('Saldo', resumen.saldo,
-                        resumen.saldo >= 0 ? Colors.green : Colors.red),
+                    _kpi('Entradas', resumen.totalEntradas, c.success),
+                    _kpi('Salidas', resumen.totalSalidas, c.danger),
+                    _kpi('Saldo', resumen.saldo, c.montoTone(resumen.saldo)),
                   ],
                 ),
               ),
@@ -895,14 +904,14 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                   titulo: 'Pagado por persona',
                   entradas: estado.porPersona,
                   total: estado.totalSalidas,
-                  color: Colors.red,
+                  color: c.danger,
                 ),
               if (estado.porTipo.isNotEmpty)
                 _resumenCard(
                   titulo: 'Recibido por tipo',
                   entradas: estado.porTipo,
                   total: estado.recibido,
-                  color: Colors.green,
+                  color: c.success,
                 ),
               const Divider(height: 1),
               if (movs.isEmpty)
@@ -919,18 +928,21 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                       ListTile(
                         leading: Icon(
                           entrada ? Icons.south_west : Icons.north_east,
-                          color: entrada ? Colors.green : Colors.red,
+                          color: entrada ? c.success : c.danger,
                         ),
                         title: Text(m.concepto),
                         subtitle: Text(
                           '${Fmt.date(m.fecha)} · ${m.metodoPago}'
                           '${m.nombre.trim().isEmpty ? '' : ' · ${m.nombre}'}',
                         ),
-                        trailing: Text(
-                          '${entrada ? '+' : '-'}${Fmt.money(m.monto)}',
-                          style: TextStyle(
-                              color: entrada ? Colors.green : Colors.red,
-                              fontWeight: FontWeight.bold),
+                        // El signo va en el texto además del color: quien no
+                        // distingue verde de rojo necesita el «+»/«−» para leer
+                        // la lista (regla `color-not-only`).
+                        trailing: MoneyText(
+                          entrada ? m.monto : -m.monto,
+                          colorearPorSigno: true,
+                          mostrarSigno: true,
+                          style: Theme.of(context).textTheme.titleSmall,
                         ),
                         onLongPress: () => _eliminarMov(m),
                       ),
@@ -942,25 +954,37 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
           );
         },
       ),
-      floatingActionButton: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          FloatingActionButton.extended(
-            heroTag: 'ent',
-            onPressed: () => _movDialog('ENTRADA'),
-            backgroundColor: Colors.green,
-            icon: const Icon(Icons.add),
-            label: const Text('Entrada'),
-          ),
-          const SizedBox(width: 12),
-          FloatingActionButton.extended(
-            heroTag: 'sal',
-            onPressed: () => _movDialog('SALIDA'),
-            backgroundColor: Colors.red,
-            icon: const Icon(Icons.remove),
-            label: const Text('Salida'),
-          ),
-        ],
+      // Los dos botones usan el par (fondo suave + texto fuerte) en vez de un
+      // relleno verde/rojo saturado. El relleno saturado se veía más "botón",
+      // pero su texto blanco daba 2.8:1 sobre el verde de Material —reprueba
+      // AA— y en tema oscuro empeoraba. Con el par, el código de color se
+      // conserva y el texto es legible en ambos temas.
+      floatingActionButton: Builder(
+        builder: (context) {
+          final c = context.colores;
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              FloatingActionButton.extended(
+                heroTag: 'ent',
+                onPressed: () => _movDialog('ENTRADA'),
+                backgroundColor: c.successSoft,
+                foregroundColor: c.success,
+                icon: const Icon(Icons.add),
+                label: const Text('Entrada'),
+              ),
+              const SizedBox(width: 12),
+              FloatingActionButton.extended(
+                heroTag: 'sal',
+                onPressed: () => _movDialog('SALIDA'),
+                backgroundColor: c.dangerSoft,
+                foregroundColor: c.danger,
+                icon: const Icon(Icons.remove),
+                label: const Text('Salida'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -1168,10 +1192,22 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     return t;
   }
 
+  /// Borra el movimiento de inmediato y ofrece deshacer.
+  ///
+  /// Antes preguntaba "¿seguro?" en un diálogo. El diálogo protege del borrado
+  /// accidental, pero cobra un toque extra a los cientos de borrados
+  /// intencionales; y aquí no hace falta, porque el borrado es SUAVE y se puede
+  /// revertir. El aviso con "Deshacer" cambia el trato: la acción sucede al
+  /// instante y la red de seguridad queda a un toque (regla `undo-support`).
   Future<void> _eliminarMov(Movimiento m) async {
-    final ok = await _confirm(
-        '¿Eliminar el movimiento de ${Fmt.money(m.monto)}?', 'Eliminar');
-    if (ok) await ref.read(movimientoRepositoryProvider).delete(m.id);
+    final repo = ref.read(movimientoRepositoryProvider);
+    await repo.delete(m.id);
+    if (!mounted) return;
+    showAppSnack(
+      context,
+      'Movimiento de ${Fmt.money(m.monto)} eliminado.',
+      onUndo: () => repo.restore(m.id),
+    );
   }
 
   // ============ ESTADO DE CUENTA (Caja) ============
@@ -1180,6 +1216,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     final costo = e.costoTotal;
     final progreso = costo > 0 ? (e.recibido / costo).clamp(0.0, 1.0) : 0.0;
     final cs = Theme.of(context).colorScheme;
+    final c = context.colores;
     // Totales por sección (solo si la obra vino de una cotización con secciones).
     final porSeccion = <String, double>{};
     for (final p in partidas) {
@@ -1201,9 +1238,9 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _kpi('Costo total', costo, cs.onSurface),
-                _kpi('Recibido', e.recibido, Colors.green),
+                _kpi('Recibido', e.recibido, c.success),
                 _kpi('Pendiente', e.pendiente,
-                    e.pendiente > 0 ? Colors.red : Colors.green),
+                    e.pendiente > 0 ? c.danger : c.success),
               ],
             ),
             const SizedBox(height: 10),
@@ -1212,8 +1249,8 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
               child: LinearProgressIndicator(
                 value: progreso.toDouble(),
                 minHeight: 8,
-                backgroundColor: cs.surfaceContainerHighest,
-                valueColor: const AlwaysStoppedAnimation(Colors.green),
+                backgroundColor: c.surfaceMuted,
+                valueColor: AlwaysStoppedAnimation(c.success),
               ),
             ),
             const SizedBox(height: 4),
@@ -1299,30 +1336,37 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
   Widget _kpi(String label, double value, Color color) => Column(
         children: [
           Text(label, style: Theme.of(context).textTheme.labelMedium),
-          Text(Fmt.money(value),
-              style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 2),
+          MoneyText(
+            value,
+            color: color,
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.w700),
+          ),
         ],
       );
 
   Widget _totalBar(String label, double value) => Container(
         width: double.infinity,
-        color: Theme.of(context).colorScheme.primaryContainer,
+        decoration: BoxDecoration(
+          color: context.colores.surfaceMuted,
+          border: Border(top: BorderSide(color: context.colores.border)),
+        ),
         padding: const EdgeInsets.all(16),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text(Fmt.money(value),
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 18)),
+            Text(label, style: Theme.of(context).textTheme.titleSmall),
+            MoneyText(value, style: Theme.of(context).textTheme.titleLarge),
           ],
         ),
       );
 
   String _ini(String n) => n.isNotEmpty ? n[0].toUpperCase() : '?';
 
-  void _snack(String msg) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  void _snack(String msg) => showAppSnack(context, msg);
 
   Future<bool> _confirm(String msg, String accion) async {
     return await showDialog<bool>(
