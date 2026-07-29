@@ -27,13 +27,18 @@ enum SyncOutcome { ok, sinSesion, sinRed, sinEmpresa, error, parcial }
 ///   es más nuevo que el del servidor, se conserva el cambio local (se empuja luego).
 /// - **Tombstones:** `deleted_at` viaja como un campo más; nunca se borra físico.
 ///
+/// Las EDICIONES sí se sincronizan: el trigger `trg_<tabla>_mark_pending`
+/// (migración v3, ver `AppDatabase._instalarTriggersSync`) remarca `pending`
+/// en cada UPDATE de la app, así que altas, ediciones y borrados propagan por
+/// igual. Verificado por `test/data/edicion_marca_pending_test.dart` sobre los
+/// métodos de repositorio reales. (Este contrato reemplaza un comentario viejo
+/// que afirmaba lo contrario, de antes de que existiera el trigger.)
+///
 /// LÍMITES CONOCIDOS de v1 (documentados; refinar después):
 /// - Cursor solo por `server_updated_at` (no compuesto con id) → en el borde de
 ///   una página con timestamps idénticos podría re-traer/saltar filas; con
 ///   pocos datos no se nota.
 /// - Pull sin paginación (límite 1000/tabla/sync).
-/// - Las EDICIONES de repos aún no remarcan `pending` (Fase 0 paso 4 diferido):
-///   v1 sincroniza bien ALTAS y BORRADOS; las ediciones requieren ese marcado.
 class SyncService {
   SyncService({
     required this.db,
