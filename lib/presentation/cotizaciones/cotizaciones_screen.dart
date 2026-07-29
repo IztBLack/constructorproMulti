@@ -8,6 +8,7 @@ import '../../core/format/format.dart';
 import '../../data/providers.dart';
 import '../common/app_spacing.dart';
 import '../common/async_action_button.dart';
+import '../common/sync_status_action.dart';
 import '../common/confirm_dialog.dart';
 import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
@@ -56,6 +57,7 @@ class _CotizacionesScreenState extends ConsumerState<CotizacionesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Cotizaciones'),
+        actions: const [SyncStatusAction()],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56),
           child: Padding(

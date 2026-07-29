@@ -44,11 +44,20 @@ class SyncService {
     required this.db,
     required this.metadata,
     SupabaseClient? client,
+    this.onActividad,
   }) : client = client ?? SupabaseConfig.client;
 
   final AppDatabase db;
   final SyncMetadata metadata;
   final SupabaseClient client;
+
+  /// Notifica cuándo hay un sync corriendo (`true`) y cuándo termina (`false`).
+  ///
+  /// Vive aquí, en el único método por el que pasan TODOS los disparadores
+  /// —arranque, reconexión, post-escritura y el botón manual—, y no en el
+  /// [SyncController], que solo orquesta el automático: enganchar el controller
+  /// dejaría al indicador sin pulso durante un "Sincronizar ahora".
+  final void Function(bool activo)? onActividad;
 
   /// Guard compartido: evita que dos llamadas concurrentes a [syncAll] (una
   /// del [SyncController] automático y otra del botón manual) corran en
@@ -106,6 +115,7 @@ class SyncService {
     if (empresaId == null) return SyncOutcome.sinEmpresa;
 
     _enCurso = true;
+    onActividad?.call(true);
     var erroresPush = 0;
     try {
       // 1) PUSH primero (padres→hijos) para no traer del server algo que aún
@@ -148,6 +158,7 @@ class SyncService {
       return SyncOutcome.error;
     } finally {
       _enCurso = false;
+      onActividad?.call(false);
     }
   }
 

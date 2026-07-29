@@ -10,6 +10,7 @@ import '../../data/providers.dart';
 import '../common/app_badge.dart';
 import '../common/app_spacing.dart';
 import '../common/async_action_button.dart';
+import '../common/sync_status_action.dart';
 import '../common/confirm_dialog.dart';
 import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
@@ -111,6 +112,7 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
       appBar: AppBar(
         title: const Text('Mis Obras'),
         actions: [
+          const SyncStatusAction(),
           Center(
             child: Padding(
               padding: const EdgeInsets.only(right: AppSpacing.md),

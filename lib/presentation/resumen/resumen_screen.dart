@@ -15,6 +15,7 @@ import '../asistencia/pase_lista_screen.dart';
 import '../configuraciones/catalogo_screen.dart';
 import '../common/app_card.dart';
 import '../common/error_state_view.dart';
+import '../common/sync_status_action.dart';
 import '../common/money_text.dart';
 import '../common/section_header.dart';
 import '../obras/obra_detail_screen.dart';
@@ -81,6 +82,7 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
       appBar: AppBar(
         title: const Text('Resumen'),
         actions: [
+          const SyncStatusAction(),
           PopupMenuButton<String>(
             icon: const Icon(Icons.picture_as_pdf),
             tooltip: 'Reportes globales',
