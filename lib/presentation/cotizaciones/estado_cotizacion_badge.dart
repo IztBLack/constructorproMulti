@@ -34,6 +34,22 @@ const _iconos = <String, IconData>{
   'CONVERTIDA': Icons.swap_horiz,
 };
 
+/// Estados en el orden en que avanza una cotización, idéntico al arreglo
+/// `ESTADOS` de la web. El orden es el del ciclo de vida y no alfabético: el
+/// filtro de la lista se lee como una línea de tiempo, no como un diccionario.
+const estadosCotizacion = <String>[
+  'BORRADOR',
+  'ENVIADA',
+  'ACEPTADA',
+  'RECHAZADA',
+  'CONVERTIDA',
+];
+
+/// Nombre legible del estado. Expuesto —en vez de dejar la tabla encerrada en
+/// el badge— para que el filtro de la lista no tenga que escribir "Borrador"
+/// por su cuenta: dos copias de la misma tabla se desincronizan a la primera.
+String etiquetaEstadoCotizacion(String estado) => _etiquetas[estado] ?? estado;
+
 /// Insignia del estado de una cotización.
 class EstadoCotizacionBadge extends StatelessWidget {
   const EstadoCotizacionBadge(this.estado, {super.key});
