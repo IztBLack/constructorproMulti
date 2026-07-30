@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +11,7 @@ import '../../core/sync/cloud_providers.dart';
 import '../../core/sync/supabase_config.dart';
 import '../../core/sync/sync_service.dart';
 import '../../data/providers.dart';
+import '../common/error_state_view.dart';
 
 /// Pantalla de conexión a la nube (Fase 2). Sin sesión muestra el login; con
 /// sesión y empresa muestra el estado y el botón de sincronizar; con sesión pero
@@ -41,6 +44,11 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
   /// True mientras validamos contra el servidor una sesión ya restaurada.
   bool _validando = false;
 
+  /// True cuando la validación inicial no pudo completarse (timeout o error de
+  /// red). No sabemos si la cuenta está vinculada o no, así que mostramos un
+  /// estado de reintento en vez de arrastrar al usuario a una vista engañosa.
+  bool _falloValidacion = false;
+
   @override
   void initState() {
     super.initState();
@@ -54,14 +62,49 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
   }
 
   Future<void> _validarSesion() async {
-    final empresaId = await resolverEmpresaYsellar(ref);
-    if (!mounted) return;
+    try {
+      // `resolverEmpresaYsellar` hace una consulta de RED a Supabase. Su
+      // try/catch interno devuelve null solo ante un ERROR real; un cuelgue de
+      // red (nunca responde) no es un error, así que sin timeout la pantalla
+      // giraría para siempre. El timeout convierte el cuelgue en algo manejable.
+      final empresaId = await resolverEmpresaYsellar(ref)
+          .timeout(const Duration(seconds: 12));
+      if (!mounted) return;
+      setState(() {
+        _validando = false;
+        _falloValidacion = false;
+        _estado = empresaId == null
+            ? _PantallaEstado.vinculacion
+            : _PantallaEstado.conectado;
+      });
+    } on TimeoutException catch (_) {
+      // La red no respondió a tiempo. NO caemos a la vista de vinculación: no
+      // sabemos si la cuenta está vinculada, y mandarla a "ingresa código"
+      // sería engañoso. Los datos locales siguen intactos en el teléfono.
+      if (!mounted) return;
+      setState(() {
+        _validando = false;
+        _falloValidacion = true;
+      });
+    } catch (e) {
+      // Cualquier otro fallo (red caída, error inesperado): mismo criterio, no
+      // asumimos que falta vinculación. Mostramos el estado de reintento.
+      debugPrint('[CloudSyncScreen] _validarSesion error: $e');
+      if (!mounted) return;
+      setState(() {
+        _validando = false;
+        _falloValidacion = true;
+      });
+    }
+  }
+
+  /// Reintenta la validación inicial tras un fallo de red.
+  void _reintentarValidacion() {
     setState(() {
-      _validando = false;
-      _estado = empresaId == null
-          ? _PantallaEstado.vinculacion
-          : _PantallaEstado.conectado;
+      _validando = true;
+      _falloValidacion = false;
     });
+    _validarSesion();
   }
 
   @override
@@ -395,15 +438,31 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
       });
     }
 
+    // Tres casos en el arranque con sesión restaurada:
+    //  - _validando: girando mientras consultamos al servidor.
+    //  - _falloValidacion: no se pudo verificar (timeout/red). Reintentar.
+    //  - normal: mostramos la vista según el estado resuelto.
+    final Widget body;
+    if (_validando) {
+      body = const Center(child: CircularProgressIndicator());
+    } else if (_falloValidacion) {
+      body = ErrorStateView(
+        message:
+            'No se pudo verificar la conexión con la nube. Revisa tu internet '
+            'e intenta de nuevo. Tus datos siguen a salvo en el teléfono.',
+        onRetry: _reintentarValidacion,
+      );
+    } else {
+      body = switch (_estado) {
+        _PantallaEstado.login => _loginForm(),
+        _PantallaEstado.vinculacion => _vinculacionForm(user),
+        _PantallaEstado.conectado => _connectedView(user, empresaId),
+      };
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Nube y sincronización')),
-      body: _validando
-          ? const Center(child: CircularProgressIndicator())
-          : switch (_estado) {
-              _PantallaEstado.login => _loginForm(),
-              _PantallaEstado.vinculacion => _vinculacionForm(user),
-              _PantallaEstado.conectado => _connectedView(user, empresaId),
-            },
+      body: body,
     );
   }
 
