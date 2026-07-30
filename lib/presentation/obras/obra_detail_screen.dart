@@ -17,6 +17,7 @@ import '../../domain/mappers.dart';
 import '../../pdf/pdf_service.dart';
 import '../common/app_card.dart';
 import '../common/app_snackbar.dart';
+import '../common/confirm_dialog.dart';
 import '../common/money_text.dart';
 import '../common/section_header.dart';
 import '../pdf_pre_dialog.dart';
@@ -959,6 +960,23 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                     ],
                   );
                 }),
+              // Acción destructiva al pie de la lista: descubrible pero lejos de
+              // los FABs de captura, así no se toca por accidente. Solo aparece
+              // si hay algo que borrar. El color `danger` (texto + borde) y el
+              // ícono de bote dejan claro que es peligrosa.
+              if (movs.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
+                  child: OutlinedButton.icon(
+                    onPressed: () => _borrarTodosMovs(movs.length),
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('Borrar todos los movimientos'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: c.danger,
+                      side: BorderSide(color: c.danger),
+                    ),
+                  ),
+                ),
             ],
           );
         },
@@ -1201,22 +1219,71 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     return t;
   }
 
-  /// Borra el movimiento de inmediato y ofrece deshacer.
+  /// Borra UN movimiento, SIEMPRE pidiendo confirmar y avisando que no se puede
+  /// deshacer.
   ///
-  /// Antes preguntaba "¿seguro?" en un diálogo. El diálogo protege del borrado
-  /// accidental, pero cobra un toque extra a los cientos de borrados
-  /// intencionales; y aquí no hace falta, porque el borrado es SUAVE y se puede
-  /// revertir. El aviso con "Deshacer" cambia el trato: la acción sucede al
-  /// instante y la red de seguridad queda a un toque (regla `undo-support`).
+  /// Antes borraba al instante y ofrecía "Deshacer" (el borrado es SUAVE y
+  /// reversible). El dueño pidió lo contrario: en su operación un movimiento
+  /// borrado por error puede pasar inadvertido cuando el aviso de "Deshacer" ya
+  /// desapareció, así que prefiere el freno de un diálogo en cada borrado.
+  /// Reutilizamos `confirmDialog` (el mismo helper con el que se borra la obra),
+  /// con el monto en el mensaje y la advertencia de que la acción es
+  /// irreversible.
   Future<void> _eliminarMov(Movimiento m) async {
-    final repo = ref.read(movimientoRepositoryProvider);
-    await repo.delete(m.id);
-    if (!mounted) return;
-    showAppSnack(
+    final ok = await confirmDialog(
       context,
-      'Movimiento de ${Fmt.money(m.monto)} eliminado.',
-      onUndo: () => repo.restore(m.id),
+      title: 'Eliminar movimiento',
+      message: 'Se eliminará el movimiento de ${Fmt.money(m.monto)}'
+          '${m.concepto.trim().isEmpty ? '' : ' («${m.concepto}»)'}.\n\n'
+          'Esta acción NO se puede deshacer.',
+      actionLabel: 'Eliminar',
+      destructive: true,
     );
+    if (!ok) return;
+    await ref.read(movimientoRepositoryProvider).delete(m.id);
+    if (mounted) showAppSnack(context, 'Movimiento eliminado.');
+  }
+
+  /// Borra TODOS los movimientos de la obra. Es mucho más destructivo que borrar
+  /// uno, así que además del aviso de irreversibilidad exige un paso extra:
+  /// escribir la palabra "BORRAR". Es el mismo patrón de la "Zona de peligro" de
+  /// Configuración, replicado aquí a propósito porque aquel helper (`_dangerConfirm`)
+  /// es privado de esa pantalla.
+  Future<void> _borrarTodosMovs(int cantidad) async {
+    final ctrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Borrar todos los movimientos'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text('Se borrarán los $cantidad movimientos de esta obra.\n'
+              'Esta acción es IRREVERSIBLE.\n\n'
+              'Escribe "BORRAR" para confirmar.'),
+          const SizedBox(height: 12),
+          TextField(
+            controller: ctrl,
+            autofocus: true,
+            decoration: const InputDecoration(hintText: 'BORRAR'),
+          ),
+        ]),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Confirmar')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    if (ctrl.text.trim().toUpperCase() != 'BORRAR') {
+      if (mounted) showAppSnack(context, 'La palabra no coincide. Cancelado.');
+      return;
+    }
+    final n =
+        await ref.read(movimientoRepositoryProvider).deleteAllByObra(_obraId);
+    if (mounted) showAppSnack(context, '$n movimiento(s) eliminados.');
   }
 
   // ============ ESTADO DE CUENTA (Caja) ============

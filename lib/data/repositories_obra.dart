@@ -250,6 +250,24 @@ class MovimientoRepository {
     );
   }
 
+  /// SOFT-delete de TODOS los movimientos vivos (deletedAt nulo) de una obra.
+  /// Marca las mismas tres columnas que [delete] —deletedAt, updatedAt y
+  /// syncStatus 'pending'— para que el push a la nube propague el borrado como
+  /// una edición más. Devuelve cuántas filas se marcaron (`write` devuelve el
+  /// conteo de filas afectadas), útil para el aviso al usuario.
+  Future<int> deleteAllByObra(String obraId) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return (db.update(db.movimientos)
+          ..where((t) => t.obraId.equals(obraId) & t.deletedAt.isNull()))
+        .write(
+      MovimientosCompanion(
+        deletedAt: Value(now),
+        updatedAt: Value(now),
+        syncStatus: const Value('pending'),
+      ),
+    );
+  }
+
   /// Revierte un [delete]. Es barato porque el borrado es SUAVE: la fila nunca
   /// se fue, solo se le puso `deletedAt`, así que deshacer es limpiar la marca.
   ///
