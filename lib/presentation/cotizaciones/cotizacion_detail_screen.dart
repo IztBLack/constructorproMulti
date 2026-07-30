@@ -96,7 +96,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
             itemBuilder: (_) => [
               const PopupMenuItem(value: 'enviar', child: Text('Enviar al cliente')),
               CheckedPopupMenuItem(
-                  value: 'iva', checked: _ivaEnabled, child: Text('Aplicar IVA ${ref.read(ivaPorcentajeProvider).toStringAsFixed(0)}%')),
+                  value: 'iva', checked: _ivaEnabled, child: Text('Aplicar IVA ${widget.cotizacion.ivaPorcentaje.toStringAsFixed(0)}%')),
               const PopupMenuItem(value: 'estado', child: Text('Cambiar estado')),
               const PopupMenuItem(value: 'ajuste', child: Text('Ajuste global de precios')),
               const PopupMenuItem(value: 'duplicar', child: Text('Duplicar')),
@@ -256,11 +256,12 @@ class _State extends ConsumerState<CotizacionDetailScreen>
     final movs = ref.read(movimientosDeCotizacionProvider(_cotId)).asData?.value ?? [];
     final totalPagado = pagos.fold<double>(0, (a, p) => a + p.monto);
     final aportadoPorPartida = _aportadoPorPartida(movs);
-    final ivaPct = ref.read(ivaPorcentajeProvider);
+    // IVA congelado en la cotización: el total no se recotiza si cambia el
+    // valor global por defecto.
     final totales = const PresupuestoCalculator().calcular(
       partidas: partidas.map(partidaToDomain).toList(),
       ivaEnabled: _ivaEnabled,
-      ivaPercentage: ivaPct,
+      ivaPercentage: widget.cotizacion.ivaPorcentaje,
       descuentoPorcentaje: widget.cotizacion.descuento,
       totalPagado: totalPagado,
     );
@@ -301,11 +302,12 @@ class _State extends ConsumerState<CotizacionDetailScreen>
           final totalPagado = pagos.fold<double>(0, (a, p) => a + p.monto);
           final aportadoPorPartida = _aportadoPorPartida(movs);
 
-          final ivaPct = ref.watch(ivaPorcentajeProvider);
+          // IVA congelado en la cotización: el total no se recotiza si cambia
+          // el valor global por defecto.
           final totales = const PresupuestoCalculator().calcular(
             partidas: partidas.map(partidaToDomain).toList(),
             ivaEnabled: _ivaEnabled,
-            ivaPercentage: ivaPct,
+            ivaPercentage: widget.cotizacion.ivaPorcentaje,
             descuentoPorcentaje: widget.cotizacion.descuento,
             totalPagado: totalPagado,
           );
@@ -427,7 +429,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
         if (t.descuento > 0)
           row('Descuento (${widget.cotizacion.descuento.toStringAsFixed(0)}%)', -t.descuento),
         if (_ivaEnabled)
-          row('IVA (${ref.watch(ivaPorcentajeProvider).toStringAsFixed(0)}%)', t.iva),
+          row('IVA (${widget.cotizacion.ivaPorcentaje.toStringAsFixed(0)}%)', t.iva),
         row('TOTAL', t.total, bold: true),
         if (t.total != t.saldoRestante)
           row('Saldo por cobrar', t.saldoRestante, bold: true, color: cs.primary),

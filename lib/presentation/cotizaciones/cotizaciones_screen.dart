@@ -264,6 +264,12 @@ class _CotizacionesScreenState extends ConsumerState<CotizacionesScreen> {
                       fecha: Value(cot?.fecha ?? DateTime.now().millisecondsSinceEpoch),
                       estado: Value(cot?.estado ?? 'BORRADOR'),
                       ivaEnabled: Value(cot?.ivaEnabled ?? true),
+                      // Solo una cotización NUEVA toma la foto del IVA global
+                      // vigente; al editar se conserva la tasa ya congelada
+                      // (Value.absent no toca la columna en el upsert).
+                      ivaPorcentaje: cot == null
+                          ? Value(ref.read(ivaPorcentajeProvider))
+                          : const Value.absent(),
                       descuento: Value(double.tryParse(descuentoCtrl.text.trim()) ?? 0),
                     ),
                   );
