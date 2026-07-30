@@ -15,8 +15,10 @@ import '../../domain/logic/flujo_calculator.dart';
 import '../../domain/logic/nomina_calculator.dart';
 import '../../domain/mappers.dart';
 import '../../pdf/pdf_service.dart';
+import '../common/app_card.dart';
 import '../common/app_snackbar.dart';
 import '../common/money_text.dart';
+import '../common/section_header.dart';
 import '../pdf_pre_dialog.dart';
 import 'importar_movimientos_screen.dart';
 
@@ -913,6 +915,13 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                   total: estado.recibido,
                   color: c.success,
                 ),
+              // Nota libre para explicar el saldo (conciliación manual). Vive en
+              // su propio widget con State para dueñar el ciclo de vida del
+              // controller sin reconstruirlo en cada rebuild de la caja.
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                child: _NotaConciliacionCard(obraId: _obraId),
+              ),
               const Divider(height: 1),
               if (movs.isEmpty)
                 const Padding(
@@ -1385,5 +1394,89 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
           ),
         ) ??
         false;
+  }
+}
+
+/// Tarjeta editable de la nota de conciliación de caja de una obra.
+///
+/// Se aísla en su propio widget con State por el ciclo de vida del
+/// [TextEditingController]: el detalle de obra se reconstruye seguido (streams
+/// de caja), y crear el controller en cada rebuild perdería el cursor y el
+/// texto a medio escribir. Aquí el controller se crea UNA vez y se libera en
+/// [dispose]. Guarda al perder el foco: escribir en cada tecla dispararía un
+/// `pending` de sync por pulsación.
+class _NotaConciliacionCard extends ConsumerStatefulWidget {
+  final String obraId;
+  const _NotaConciliacionCard({required this.obraId});
+
+  @override
+  ConsumerState<_NotaConciliacionCard> createState() =>
+      _NotaConciliacionCardState();
+}
+
+class _NotaConciliacionCardState extends ConsumerState<_NotaConciliacionCard> {
+  final _controller = TextEditingController();
+  final _focus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    // Guardar al salir del campo, no en cada tecla.
+    _focus.addListener(() {
+      if (!_focus.hasFocus) _guardar();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  void _guardar() {
+    ref
+        .read(obraCajaNotaRepositoryProvider)
+        .upsert(widget.obraId, _controller.text);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final notaAsync = ref.watch(obraCajaNotaProvider(widget.obraId));
+    final nota = notaAsync.asData?.value?.nota ?? '';
+    // Refleja el valor del store (carga inicial o llegada por sync) SIN pisar lo
+    // que el usuario está escribiendo: solo si el campo no tiene el foco y el
+    // texto realmente cambió (evita un bucle de rebuild al reasignar igual).
+    if (!_focus.hasFocus && _controller.text != nota) {
+      _controller.text = nota;
+    }
+    final c = context.colores;
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionHeader(
+            title: 'Nota de conciliación',
+            description: 'Aclara el porqué del saldo (uso interno).',
+          ),
+          TextField(
+            controller: _controller,
+            focusNode: _focus,
+            minLines: 2,
+            maxLines: null,
+            keyboardType: TextInputType.multiline,
+            textCapitalization: TextCapitalization.sentences,
+            onEditingComplete: _guardar,
+            style: Theme.of(context).textTheme.bodyMedium,
+            decoration: InputDecoration(
+              hintText: 'Ej. DIFERENCIA A FAVOR \$20,957 CON…',
+              hintStyle: TextStyle(color: c.textFaint),
+              border: const OutlineInputBorder(),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

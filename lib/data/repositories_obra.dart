@@ -326,3 +326,25 @@ class ObraPresupuestoRepository {
     );
   }
 }
+
+/// Nota de conciliación de caja por obra: un texto libre, único por obra (la PK
+/// es `obraId`), donde se anota el "por qué" del saldo ("DIFERENCIA A FAVOR…").
+class ObraCajaNotaRepository {
+  final AppDatabase db;
+  ObraCajaNotaRepository(this.db);
+
+  /// La nota de la obra, o null si aún no se ha escrito ninguna.
+  Stream<ObraCajaNotaRow?> watch(String obraId) =>
+      (db.select(db.obraCajaNota)
+            ..where((t) => t.obraId.equals(obraId) & t.deletedAt.isNull()))
+          .watchSingleOrNull();
+
+  /// Crea o reemplaza la nota de la obra. Como la PK es `obraId`,
+  /// `insertOnConflictUpdate` sirve de upsert sin buscar antes la fila. El
+  /// trigger `mark_pending` del esquema marca `sync_status='pending'` solo; no
+  /// se toca a mano.
+  Future<void> upsert(String obraId, String nota) =>
+      db.into(db.obraCajaNota).insertOnConflictUpdate(
+            ObraCajaNotaCompanion.insert(obraId: obraId, nota: Value(nota)),
+          );
+}

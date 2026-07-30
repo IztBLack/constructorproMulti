@@ -68,6 +68,9 @@ final movimientoRepositoryProvider = Provider<MovimientoRepository>(
 final obraPresupuestoRepositoryProvider = Provider<ObraPresupuestoRepository>(
     (ref) => ObraPresupuestoRepository(ref.watch(databaseProvider)));
 
+final obraCajaNotaRepositoryProvider = Provider<ObraCajaNotaRepository>(
+    (ref) => ObraCajaNotaRepository(ref.watch(databaseProvider)));
+
 // ---------------- Streams ----------------
 final obrasProvider = StreamProvider<List<Obra>>(
     (ref) => ref.watch(obraRepositoryProvider).watchAll());
@@ -103,6 +106,11 @@ final movimientosTodosProvider = StreamProvider<List<Movimiento>>(
 final partidasPresupuestoPorObraProvider =
     StreamProvider.family<List<ObraPresupuestoRow>, String>((ref, obraId) =>
         ref.watch(obraPresupuestoRepositoryProvider).watchByObra(obraId));
+
+/// Nota de conciliación de caja de una obra (o null si no hay).
+final obraCajaNotaProvider =
+    StreamProvider.family<ObraCajaNotaRow?, String>((ref, obraId) =>
+        ref.watch(obraCajaNotaRepositoryProvider).watch(obraId));
 
 typedef RangoObra = ({String obraId, int start, int end});
 
