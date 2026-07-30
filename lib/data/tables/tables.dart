@@ -196,6 +196,18 @@ class Cotizaciones extends Table with SyncCols {
   IntColumn get fecha => integer()();
   TextColumn get estado => text().withDefault(const Constant('BORRADOR'))();
   BoolColumn get ivaEnabled => boolean().withDefault(const Constant(true))();
+
+  /// Tasa de IVA CONGELADA de esta cotización (%). Espeja
+  /// `cotizaciones.iva_porcentaje` de Supabase (migración 0017).
+  ///
+  /// Se toma una foto del IVA global vigente al CREAR la cotización y no vuelve
+  /// a cambiar: si mañana cambia el IVA por defecto de la empresa, el total de
+  /// esta cotización —que quizá ya firmó un cliente— NO se recalcula. Antes el
+  /// móvil leía el global en cada cálculo y re-cotizaba el pasado. El default 16
+  /// rellena las filas previas con la tasa que ya tenían quemada en el código,
+  /// así ningún total cambia al migrar.
+  RealColumn get ivaPorcentaje => real().withDefault(const Constant(16.0))();
+
   RealColumn get descuento => real().withDefault(const Constant(0.0))();
   TextColumn get notas => text().withDefault(const Constant(''))();
   TextColumn get obraId => text().nullable()();
@@ -262,6 +274,13 @@ class Movimientos extends Table with SyncCols {
   /// recibió). Espeja `movimientos.nombre` de Supabase (migración 0008).
   TextColumn get nombre => text().withDefault(const Constant(''))();
 
+  /// RUTA del comprobante en el bucket privado `comprobantes` de Supabase
+  /// Storage (`<empresa_id>/<obra_id>/<uuid>.<ext>`). Espeja
+  /// `movimientos.comprobante_uri` de Supabase (migración 0024). Nullable: la
+  /// mayoría de los movimientos no traen comprobante. Guarda la RUTA, no la
+  /// imagen; el archivo vive en Storage (ver T2 del plan de tesorería).
+  TextColumn get comprobanteUri => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -312,4 +331,22 @@ class ArchivosCotizacion extends Table with SyncCols {
 
   @override
   Set<Column> get primaryKey => {id};
+}
+
+/// Nota de conciliación de caja, una por obra. Espeja `obra_caja_nota` de
+/// Supabase (migración 0023): texto libre de la contadora al pie del Excel
+/// ("DIFERENCIA A FAVOR $20,957 CON…").
+///
+/// La PK es `obraId` (1-a-1 con la obra), no un id propio, igual que en el
+/// servidor. Es tabla aparte y no una columna en `obras` porque en la web la
+/// contadora solo tiene LECTURA sobre `obras` y RLS es por fila, no por columna;
+/// en el móvil se conserva el mismo modelo para que la sincronización sea
+/// copiar y pegar.
+@DataClassName('ObraCajaNotaRow')
+class ObraCajaNota extends Table with SyncCols {
+  TextColumn get obraId => text()();
+  TextColumn get nota => text().withDefault(const Constant(''))();
+
+  @override
+  Set<Column> get primaryKey => {obraId};
 }

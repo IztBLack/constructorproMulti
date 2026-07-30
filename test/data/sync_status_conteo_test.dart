@@ -1,6 +1,5 @@
 import 'package:constructorpro/core/db/app_database.dart';
 import 'package:constructorpro/core/sync/sync_service.dart';
-import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 

@@ -75,6 +75,8 @@ class SyncService {
     'puestos',
     'colaboradores',
     'obras',
+    // Nota de conciliación: DESPUÉS de obras (su PK/FK es obra_id).
+    'obra_caja_nota',
     // Cuadrillas: van DESPUÉS de colaboradores/obras y ANTES de asistencias/
     // destajos, que ahora referencian cuadrilla_id (evita fallo de FK en push).
     'cuadrillas',

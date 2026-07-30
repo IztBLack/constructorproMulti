@@ -39,6 +39,7 @@ class SyncMetadata {
       'puestos',
       'colaboradores',
       'obras',
+      'obra_caja_nota',
       'cuadrillas',
       'cuadrilla_miembro',
       'asignacion_cuadrilla_obra',

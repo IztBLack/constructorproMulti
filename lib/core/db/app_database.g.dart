@@ -6933,6 +6933,18 @@ class $CotizacionesTable extends Cotizaciones
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _ivaPorcentajeMeta = const VerificationMeta(
+    'ivaPorcentaje',
+  );
+  @override
+  late final GeneratedColumn<double> ivaPorcentaje = GeneratedColumn<double>(
+    'iva_porcentaje',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(16.0),
+  );
   static const VerificationMeta _descuentoMeta = const VerificationMeta(
     'descuento',
   );
@@ -6990,6 +7002,7 @@ class $CotizacionesTable extends Cotizaciones
     fecha,
     estado,
     ivaEnabled,
+    ivaPorcentaje,
     descuento,
     notas,
     obraId,
@@ -7096,6 +7109,15 @@ class $CotizacionesTable extends Cotizaciones
         ivaEnabled.isAcceptableOrUnknown(data['iva_enabled']!, _ivaEnabledMeta),
       );
     }
+    if (data.containsKey('iva_porcentaje')) {
+      context.handle(
+        _ivaPorcentajeMeta,
+        ivaPorcentaje.isAcceptableOrUnknown(
+          data['iva_porcentaje']!,
+          _ivaPorcentajeMeta,
+        ),
+      );
+    }
     if (data.containsKey('descuento')) {
       context.handle(
         _descuentoMeta,
@@ -7184,6 +7206,10 @@ class $CotizacionesTable extends Cotizaciones
         DriftSqlType.bool,
         data['${effectivePrefix}iva_enabled'],
       )!,
+      ivaPorcentaje: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}iva_porcentaje'],
+      )!,
       descuento: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}descuento'],
@@ -7234,6 +7260,17 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
   final int fecha;
   final String estado;
   final bool ivaEnabled;
+
+  /// Tasa de IVA CONGELADA de esta cotización (%). Espeja
+  /// `cotizaciones.iva_porcentaje` de Supabase (migración 0017).
+  ///
+  /// Se toma una foto del IVA global vigente al CREAR la cotización y no vuelve
+  /// a cambiar: si mañana cambia el IVA por defecto de la empresa, el total de
+  /// esta cotización —que quizá ya firmó un cliente— NO se recalcula. Antes el
+  /// móvil leía el global en cada cálculo y re-cotizaba el pasado. El default 16
+  /// rellena las filas previas con la tasa que ya tenían quemada en el código,
+  /// así ningún total cambia al migrar.
+  final double ivaPorcentaje;
   final double descuento;
   final String notas;
   final String? obraId;
@@ -7252,6 +7289,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
     required this.fecha,
     required this.estado,
     required this.ivaEnabled,
+    required this.ivaPorcentaje,
     required this.descuento,
     required this.notas,
     this.obraId,
@@ -7277,6 +7315,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
     map['fecha'] = Variable<int>(fecha);
     map['estado'] = Variable<String>(estado);
     map['iva_enabled'] = Variable<bool>(ivaEnabled);
+    map['iva_porcentaje'] = Variable<double>(ivaPorcentaje);
     map['descuento'] = Variable<double>(descuento);
     map['notas'] = Variable<String>(notas);
     if (!nullToAbsent || obraId != null) {
@@ -7307,6 +7346,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
       fecha: Value(fecha),
       estado: Value(estado),
       ivaEnabled: Value(ivaEnabled),
+      ivaPorcentaje: Value(ivaPorcentaje),
       descuento: Value(descuento),
       notas: Value(notas),
       obraId: obraId == null && nullToAbsent
@@ -7337,6 +7377,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
       fecha: serializer.fromJson<int>(json['fecha']),
       estado: serializer.fromJson<String>(json['estado']),
       ivaEnabled: serializer.fromJson<bool>(json['ivaEnabled']),
+      ivaPorcentaje: serializer.fromJson<double>(json['ivaPorcentaje']),
       descuento: serializer.fromJson<double>(json['descuento']),
       notas: serializer.fromJson<String>(json['notas']),
       obraId: serializer.fromJson<String?>(json['obraId']),
@@ -7360,6 +7401,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
       'fecha': serializer.toJson<int>(fecha),
       'estado': serializer.toJson<String>(estado),
       'ivaEnabled': serializer.toJson<bool>(ivaEnabled),
+      'ivaPorcentaje': serializer.toJson<double>(ivaPorcentaje),
       'descuento': serializer.toJson<double>(descuento),
       'notas': serializer.toJson<String>(notas),
       'obraId': serializer.toJson<String?>(obraId),
@@ -7381,6 +7423,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
     int? fecha,
     String? estado,
     bool? ivaEnabled,
+    double? ivaPorcentaje,
     double? descuento,
     String? notas,
     Value<String?> obraId = const Value.absent(),
@@ -7401,6 +7444,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
     fecha: fecha ?? this.fecha,
     estado: estado ?? this.estado,
     ivaEnabled: ivaEnabled ?? this.ivaEnabled,
+    ivaPorcentaje: ivaPorcentaje ?? this.ivaPorcentaje,
     descuento: descuento ?? this.descuento,
     notas: notas ?? this.notas,
     obraId: obraId.present ? obraId.value : this.obraId,
@@ -7431,6 +7475,9 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
       ivaEnabled: data.ivaEnabled.present
           ? data.ivaEnabled.value
           : this.ivaEnabled,
+      ivaPorcentaje: data.ivaPorcentaje.present
+          ? data.ivaPorcentaje.value
+          : this.ivaPorcentaje,
       descuento: data.descuento.present ? data.descuento.value : this.descuento,
       notas: data.notas.present ? data.notas.value : this.notas,
       obraId: data.obraId.present ? data.obraId.value : this.obraId,
@@ -7456,6 +7503,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
           ..write('fecha: $fecha, ')
           ..write('estado: $estado, ')
           ..write('ivaEnabled: $ivaEnabled, ')
+          ..write('ivaPorcentaje: $ivaPorcentaje, ')
           ..write('descuento: $descuento, ')
           ..write('notas: $notas, ')
           ..write('obraId: $obraId, ')
@@ -7479,6 +7527,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
     fecha,
     estado,
     ivaEnabled,
+    ivaPorcentaje,
     descuento,
     notas,
     obraId,
@@ -7501,6 +7550,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
           other.fecha == this.fecha &&
           other.estado == this.estado &&
           other.ivaEnabled == this.ivaEnabled &&
+          other.ivaPorcentaje == this.ivaPorcentaje &&
           other.descuento == this.descuento &&
           other.notas == this.notas &&
           other.obraId == this.obraId &&
@@ -7521,6 +7571,7 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
   final Value<int> fecha;
   final Value<String> estado;
   final Value<bool> ivaEnabled;
+  final Value<double> ivaPorcentaje;
   final Value<double> descuento;
   final Value<String> notas;
   final Value<String?> obraId;
@@ -7540,6 +7591,7 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
     this.fecha = const Value.absent(),
     this.estado = const Value.absent(),
     this.ivaEnabled = const Value.absent(),
+    this.ivaPorcentaje = const Value.absent(),
     this.descuento = const Value.absent(),
     this.notas = const Value.absent(),
     this.obraId = const Value.absent(),
@@ -7560,6 +7612,7 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
     required int fecha,
     this.estado = const Value.absent(),
     this.ivaEnabled = const Value.absent(),
+    this.ivaPorcentaje = const Value.absent(),
     this.descuento = const Value.absent(),
     this.notas = const Value.absent(),
     this.obraId = const Value.absent(),
@@ -7583,6 +7636,7 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
     Expression<int>? fecha,
     Expression<String>? estado,
     Expression<bool>? ivaEnabled,
+    Expression<double>? ivaPorcentaje,
     Expression<double>? descuento,
     Expression<String>? notas,
     Expression<String>? obraId,
@@ -7603,6 +7657,7 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
       if (fecha != null) 'fecha': fecha,
       if (estado != null) 'estado': estado,
       if (ivaEnabled != null) 'iva_enabled': ivaEnabled,
+      if (ivaPorcentaje != null) 'iva_porcentaje': ivaPorcentaje,
       if (descuento != null) 'descuento': descuento,
       if (notas != null) 'notas': notas,
       if (obraId != null) 'obra_id': obraId,
@@ -7625,6 +7680,7 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
     Value<int>? fecha,
     Value<String>? estado,
     Value<bool>? ivaEnabled,
+    Value<double>? ivaPorcentaje,
     Value<double>? descuento,
     Value<String>? notas,
     Value<String?>? obraId,
@@ -7645,6 +7701,7 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
       fecha: fecha ?? this.fecha,
       estado: estado ?? this.estado,
       ivaEnabled: ivaEnabled ?? this.ivaEnabled,
+      ivaPorcentaje: ivaPorcentaje ?? this.ivaPorcentaje,
       descuento: descuento ?? this.descuento,
       notas: notas ?? this.notas,
       obraId: obraId ?? this.obraId,
@@ -7695,6 +7752,9 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
     if (ivaEnabled.present) {
       map['iva_enabled'] = Variable<bool>(ivaEnabled.value);
     }
+    if (ivaPorcentaje.present) {
+      map['iva_porcentaje'] = Variable<double>(ivaPorcentaje.value);
+    }
     if (descuento.present) {
       map['descuento'] = Variable<double>(descuento.value);
     }
@@ -7729,6 +7789,7 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
           ..write('fecha: $fecha, ')
           ..write('estado: $estado, ')
           ..write('ivaEnabled: $ivaEnabled, ')
+          ..write('ivaPorcentaje: $ivaPorcentaje, ')
           ..write('descuento: $descuento, ')
           ..write('notas: $notas, ')
           ..write('obraId: $obraId, ')
@@ -10158,6 +10219,17 @@ class $MovimientosTable extends Movimientos
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _comprobanteUriMeta = const VerificationMeta(
+    'comprobanteUri',
+  );
+  @override
+  late final GeneratedColumn<String> comprobanteUri = GeneratedColumn<String>(
+    'comprobante_uri',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     empresaId,
@@ -10180,6 +10252,7 @@ class $MovimientosTable extends Movimientos
     seccionId,
     partidaId,
     nombre,
+    comprobanteUri,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -10332,6 +10405,15 @@ class $MovimientosTable extends Movimientos
         nombre.isAcceptableOrUnknown(data['nombre']!, _nombreMeta),
       );
     }
+    if (data.containsKey('comprobante_uri')) {
+      context.handle(
+        _comprobanteUriMeta,
+        comprobanteUri.isAcceptableOrUnknown(
+          data['comprobante_uri']!,
+          _comprobanteUriMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -10421,6 +10503,10 @@ class $MovimientosTable extends Movimientos
         DriftSqlType.string,
         data['${effectivePrefix}nombre'],
       )!,
+      comprobanteUri: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}comprobante_uri'],
+      ),
     );
   }
 
@@ -10465,6 +10551,13 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
   /// Beneficiario/pagador del movimiento (a quién se le pagó / de quién se
   /// recibió). Espeja `movimientos.nombre` de Supabase (migración 0008).
   final String nombre;
+
+  /// RUTA del comprobante en el bucket privado `comprobantes` de Supabase
+  /// Storage (`<empresa_id>/<obra_id>/<uuid>.<ext>`). Espeja
+  /// `movimientos.comprobante_uri` de Supabase (migración 0024). Nullable: la
+  /// mayoría de los movimientos no traen comprobante. Guarda la RUTA, no la
+  /// imagen; el archivo vive en Storage (ver T2 del plan de tesorería).
+  final String? comprobanteUri;
   const Movimiento({
     required this.empresaId,
     required this.createdAt,
@@ -10486,6 +10579,7 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
     this.seccionId,
     this.partidaId,
     required this.nombre,
+    this.comprobanteUri,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -10522,6 +10616,9 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
       map['partida_id'] = Variable<String>(partidaId);
     }
     map['nombre'] = Variable<String>(nombre);
+    if (!nullToAbsent || comprobanteUri != null) {
+      map['comprobante_uri'] = Variable<String>(comprobanteUri);
+    }
     return map;
   }
 
@@ -10559,6 +10656,9 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
           ? const Value.absent()
           : Value(partidaId),
       nombre: Value(nombre),
+      comprobanteUri: comprobanteUri == null && nullToAbsent
+          ? const Value.absent()
+          : Value(comprobanteUri),
     );
   }
 
@@ -10588,6 +10688,7 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
       seccionId: serializer.fromJson<String?>(json['seccionId']),
       partidaId: serializer.fromJson<String?>(json['partidaId']),
       nombre: serializer.fromJson<String>(json['nombre']),
+      comprobanteUri: serializer.fromJson<String?>(json['comprobanteUri']),
     );
   }
   @override
@@ -10614,6 +10715,7 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
       'seccionId': serializer.toJson<String?>(seccionId),
       'partidaId': serializer.toJson<String?>(partidaId),
       'nombre': serializer.toJson<String>(nombre),
+      'comprobanteUri': serializer.toJson<String?>(comprobanteUri),
     };
   }
 
@@ -10638,6 +10740,7 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
     Value<String?> seccionId = const Value.absent(),
     Value<String?> partidaId = const Value.absent(),
     String? nombre,
+    Value<String?> comprobanteUri = const Value.absent(),
   }) => Movimiento(
     empresaId: empresaId ?? this.empresaId,
     createdAt: createdAt ?? this.createdAt,
@@ -10661,6 +10764,9 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
     seccionId: seccionId.present ? seccionId.value : this.seccionId,
     partidaId: partidaId.present ? partidaId.value : this.partidaId,
     nombre: nombre ?? this.nombre,
+    comprobanteUri: comprobanteUri.present
+        ? comprobanteUri.value
+        : this.comprobanteUri,
   );
   Movimiento copyWithCompanion(MovimientosCompanion data) {
     return Movimiento(
@@ -10694,6 +10800,9 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
       seccionId: data.seccionId.present ? data.seccionId.value : this.seccionId,
       partidaId: data.partidaId.present ? data.partidaId.value : this.partidaId,
       nombre: data.nombre.present ? data.nombre.value : this.nombre,
+      comprobanteUri: data.comprobanteUri.present
+          ? data.comprobanteUri.value
+          : this.comprobanteUri,
     );
   }
 
@@ -10719,13 +10828,14 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
           ..write('cotizacionId: $cotizacionId, ')
           ..write('seccionId: $seccionId, ')
           ..write('partidaId: $partidaId, ')
-          ..write('nombre: $nombre')
+          ..write('nombre: $nombre, ')
+          ..write('comprobanteUri: $comprobanteUri')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     empresaId,
     createdAt,
     updatedAt,
@@ -10746,7 +10856,8 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
     seccionId,
     partidaId,
     nombre,
-  );
+    comprobanteUri,
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -10770,7 +10881,8 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
           other.cotizacionId == this.cotizacionId &&
           other.seccionId == this.seccionId &&
           other.partidaId == this.partidaId &&
-          other.nombre == this.nombre);
+          other.nombre == this.nombre &&
+          other.comprobanteUri == this.comprobanteUri);
 }
 
 class MovimientosCompanion extends UpdateCompanion<Movimiento> {
@@ -10794,6 +10906,7 @@ class MovimientosCompanion extends UpdateCompanion<Movimiento> {
   final Value<String?> seccionId;
   final Value<String?> partidaId;
   final Value<String> nombre;
+  final Value<String?> comprobanteUri;
   final Value<int> rowid;
   const MovimientosCompanion({
     this.empresaId = const Value.absent(),
@@ -10816,6 +10929,7 @@ class MovimientosCompanion extends UpdateCompanion<Movimiento> {
     this.seccionId = const Value.absent(),
     this.partidaId = const Value.absent(),
     this.nombre = const Value.absent(),
+    this.comprobanteUri = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   MovimientosCompanion.insert({
@@ -10839,6 +10953,7 @@ class MovimientosCompanion extends UpdateCompanion<Movimiento> {
     this.seccionId = const Value.absent(),
     this.partidaId = const Value.absent(),
     this.nombre = const Value.absent(),
+    this.comprobanteUri = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        obraId = Value(obraId),
@@ -10869,6 +10984,7 @@ class MovimientosCompanion extends UpdateCompanion<Movimiento> {
     Expression<String>? seccionId,
     Expression<String>? partidaId,
     Expression<String>? nombre,
+    Expression<String>? comprobanteUri,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -10892,6 +11008,7 @@ class MovimientosCompanion extends UpdateCompanion<Movimiento> {
       if (seccionId != null) 'seccion_id': seccionId,
       if (partidaId != null) 'partida_id': partidaId,
       if (nombre != null) 'nombre': nombre,
+      if (comprobanteUri != null) 'comprobante_uri': comprobanteUri,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -10917,6 +11034,7 @@ class MovimientosCompanion extends UpdateCompanion<Movimiento> {
     Value<String?>? seccionId,
     Value<String?>? partidaId,
     Value<String>? nombre,
+    Value<String?>? comprobanteUri,
     Value<int>? rowid,
   }) {
     return MovimientosCompanion(
@@ -10940,6 +11058,7 @@ class MovimientosCompanion extends UpdateCompanion<Movimiento> {
       seccionId: seccionId ?? this.seccionId,
       partidaId: partidaId ?? this.partidaId,
       nombre: nombre ?? this.nombre,
+      comprobanteUri: comprobanteUri ?? this.comprobanteUri,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -11007,6 +11126,9 @@ class MovimientosCompanion extends UpdateCompanion<Movimiento> {
     if (nombre.present) {
       map['nombre'] = Variable<String>(nombre.value);
     }
+    if (comprobanteUri.present) {
+      map['comprobante_uri'] = Variable<String>(comprobanteUri.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -11036,6 +11158,7 @@ class MovimientosCompanion extends UpdateCompanion<Movimiento> {
           ..write('seccionId: $seccionId, ')
           ..write('partidaId: $partidaId, ')
           ..write('nombre: $nombre, ')
+          ..write('comprobanteUri: $comprobanteUri, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -13353,6 +13476,531 @@ class ObraPresupuestoCompanion extends UpdateCompanion<ObraPresupuestoRow> {
   }
 }
 
+class $ObraCajaNotaTable extends ObraCajaNota
+    with TableInfo<$ObraCajaNotaTable, ObraCajaNotaRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ObraCajaNotaTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _empresaIdMeta = const VerificationMeta(
+    'empresaId',
+  );
+  @override
+  late final GeneratedColumn<String> empresaId = GeneratedColumn<String>(
+    'empresa_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _serverUpdatedAtMeta = const VerificationMeta(
+    'serverUpdatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> serverUpdatedAt = GeneratedColumn<int>(
+    'server_updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _obraIdMeta = const VerificationMeta('obraId');
+  @override
+  late final GeneratedColumn<String> obraId = GeneratedColumn<String>(
+    'obra_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _notaMeta = const VerificationMeta('nota');
+  @override
+  late final GeneratedColumn<String> nota = GeneratedColumn<String>(
+    'nota',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    obraId,
+    nota,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'obra_caja_nota';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ObraCajaNotaRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('empresa_id')) {
+      context.handle(
+        _empresaIdMeta,
+        empresaId.isAcceptableOrUnknown(data['empresa_id']!, _empresaIdMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('server_updated_at')) {
+      context.handle(
+        _serverUpdatedAtMeta,
+        serverUpdatedAt.isAcceptableOrUnknown(
+          data['server_updated_at']!,
+          _serverUpdatedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('obra_id')) {
+      context.handle(
+        _obraIdMeta,
+        obraId.isAcceptableOrUnknown(data['obra_id']!, _obraIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_obraIdMeta);
+    }
+    if (data.containsKey('nota')) {
+      context.handle(
+        _notaMeta,
+        nota.isAcceptableOrUnknown(data['nota']!, _notaMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {obraId};
+  @override
+  ObraCajaNotaRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ObraCajaNotaRow(
+      empresaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}empresa_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      serverUpdatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}server_updated_at'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      obraId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}obra_id'],
+      )!,
+      nota: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}nota'],
+      )!,
+    );
+  }
+
+  @override
+  $ObraCajaNotaTable createAlias(String alias) {
+    return $ObraCajaNotaTable(attachedDatabase, alias);
+  }
+}
+
+class ObraCajaNotaRow extends DataClass implements Insertable<ObraCajaNotaRow> {
+  /// Llave multitenant + RLS. Vacío mientras no haya backend.
+  final String empresaId;
+
+  /// Alta (UTC ms). 0 en filas previas a la migración.
+  final int createdAt;
+
+  /// Última edición de cliente (UTC ms). Árbitro local de LWW + dirty flag.
+  final int updatedAt;
+
+  /// Lo pone Postgres; árbitro de LWW y cursor de pull. Null hasta sincronizar.
+  final int? serverUpdatedAt;
+
+  /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
+  final int? deletedAt;
+
+  /// 'pending' | 'synced' | 'error'.
+  final String syncStatus;
+  final String obraId;
+  final String nota;
+  const ObraCajaNotaRow({
+    required this.empresaId,
+    required this.createdAt,
+    required this.updatedAt,
+    this.serverUpdatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.obraId,
+    required this.nota,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['empresa_id'] = Variable<String>(empresaId);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || serverUpdatedAt != null) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    map['obra_id'] = Variable<String>(obraId);
+    map['nota'] = Variable<String>(nota);
+    return map;
+  }
+
+  ObraCajaNotaCompanion toCompanion(bool nullToAbsent) {
+    return ObraCajaNotaCompanion(
+      empresaId: Value(empresaId),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      serverUpdatedAt: serverUpdatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverUpdatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      obraId: Value(obraId),
+      nota: Value(nota),
+    );
+  }
+
+  factory ObraCajaNotaRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ObraCajaNotaRow(
+      empresaId: serializer.fromJson<String>(json['empresaId']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      serverUpdatedAt: serializer.fromJson<int?>(json['serverUpdatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      obraId: serializer.fromJson<String>(json['obraId']),
+      nota: serializer.fromJson<String>(json['nota']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'empresaId': serializer.toJson<String>(empresaId),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'serverUpdatedAt': serializer.toJson<int?>(serverUpdatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'obraId': serializer.toJson<String>(obraId),
+      'nota': serializer.toJson<String>(nota),
+    };
+  }
+
+  ObraCajaNotaRow copyWith({
+    String? empresaId,
+    int? createdAt,
+    int? updatedAt,
+    Value<int?> serverUpdatedAt = const Value.absent(),
+    Value<int?> deletedAt = const Value.absent(),
+    String? syncStatus,
+    String? obraId,
+    String? nota,
+  }) => ObraCajaNotaRow(
+    empresaId: empresaId ?? this.empresaId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    serverUpdatedAt: serverUpdatedAt.present
+        ? serverUpdatedAt.value
+        : this.serverUpdatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    obraId: obraId ?? this.obraId,
+    nota: nota ?? this.nota,
+  );
+  ObraCajaNotaRow copyWithCompanion(ObraCajaNotaCompanion data) {
+    return ObraCajaNotaRow(
+      empresaId: data.empresaId.present ? data.empresaId.value : this.empresaId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      serverUpdatedAt: data.serverUpdatedAt.present
+          ? data.serverUpdatedAt.value
+          : this.serverUpdatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      obraId: data.obraId.present ? data.obraId.value : this.obraId,
+      nota: data.nota.present ? data.nota.value : this.nota,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ObraCajaNotaRow(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('obraId: $obraId, ')
+          ..write('nota: $nota')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    obraId,
+    nota,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ObraCajaNotaRow &&
+          other.empresaId == this.empresaId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.serverUpdatedAt == this.serverUpdatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.obraId == this.obraId &&
+          other.nota == this.nota);
+}
+
+class ObraCajaNotaCompanion extends UpdateCompanion<ObraCajaNotaRow> {
+  final Value<String> empresaId;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int?> serverUpdatedAt;
+  final Value<int?> deletedAt;
+  final Value<String> syncStatus;
+  final Value<String> obraId;
+  final Value<String> nota;
+  final Value<int> rowid;
+  const ObraCajaNotaCompanion({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.obraId = const Value.absent(),
+    this.nota = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ObraCajaNotaCompanion.insert({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String obraId,
+    this.nota = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : obraId = Value(obraId);
+  static Insertable<ObraCajaNotaRow> custom({
+    Expression<String>? empresaId,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? serverUpdatedAt,
+    Expression<int>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? obraId,
+    Expression<String>? nota,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (empresaId != null) 'empresa_id': empresaId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (serverUpdatedAt != null) 'server_updated_at': serverUpdatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (obraId != null) 'obra_id': obraId,
+      if (nota != null) 'nota': nota,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ObraCajaNotaCompanion copyWith({
+    Value<String>? empresaId,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int?>? serverUpdatedAt,
+    Value<int?>? deletedAt,
+    Value<String>? syncStatus,
+    Value<String>? obraId,
+    Value<String>? nota,
+    Value<int>? rowid,
+  }) {
+    return ObraCajaNotaCompanion(
+      empresaId: empresaId ?? this.empresaId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      obraId: obraId ?? this.obraId,
+      nota: nota ?? this.nota,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (empresaId.present) {
+      map['empresa_id'] = Variable<String>(empresaId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (serverUpdatedAt.present) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (obraId.present) {
+      map['obra_id'] = Variable<String>(obraId.value);
+    }
+    if (nota.present) {
+      map['nota'] = Variable<String>(nota.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ObraCajaNotaCompanion(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('obraId: $obraId, ')
+          ..write('nota: $nota, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -13382,6 +14030,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ObraPresupuestoTable obraPresupuesto = $ObraPresupuestoTable(
     this,
   );
+  late final $ObraCajaNotaTable obraCajaNota = $ObraCajaNotaTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -13404,6 +14053,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     catalogoConceptos,
     archivosCotizacion,
     obraPresupuesto,
+    obraCajaNota,
   ];
 }
 
@@ -16583,6 +17233,7 @@ typedef $$CotizacionesTableCreateCompanionBuilder =
       required int fecha,
       Value<String> estado,
       Value<bool> ivaEnabled,
+      Value<double> ivaPorcentaje,
       Value<double> descuento,
       Value<String> notas,
       Value<String?> obraId,
@@ -16604,6 +17255,7 @@ typedef $$CotizacionesTableUpdateCompanionBuilder =
       Value<int> fecha,
       Value<String> estado,
       Value<bool> ivaEnabled,
+      Value<double> ivaPorcentaje,
       Value<double> descuento,
       Value<String> notas,
       Value<String?> obraId,
@@ -16682,6 +17334,11 @@ class $$CotizacionesTableFilterComposer
 
   ColumnFilters<bool> get ivaEnabled => $composableBuilder(
     column: $table.ivaEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get ivaPorcentaje => $composableBuilder(
+    column: $table.ivaPorcentaje,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -16780,6 +17437,11 @@ class $$CotizacionesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get ivaPorcentaje => $composableBuilder(
+    column: $table.ivaPorcentaje,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<double> get descuento => $composableBuilder(
     column: $table.descuento,
     builder: (column) => ColumnOrderings(column),
@@ -16857,6 +17519,11 @@ class $$CotizacionesTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<double> get ivaPorcentaje => $composableBuilder(
+    column: $table.ivaPorcentaje,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<double> get descuento =>
       $composableBuilder(column: $table.descuento, builder: (column) => column);
 
@@ -16916,6 +17583,7 @@ class $$CotizacionesTableTableManager
                 Value<int> fecha = const Value.absent(),
                 Value<String> estado = const Value.absent(),
                 Value<bool> ivaEnabled = const Value.absent(),
+                Value<double> ivaPorcentaje = const Value.absent(),
                 Value<double> descuento = const Value.absent(),
                 Value<String> notas = const Value.absent(),
                 Value<String?> obraId = const Value.absent(),
@@ -16935,6 +17603,7 @@ class $$CotizacionesTableTableManager
                 fecha: fecha,
                 estado: estado,
                 ivaEnabled: ivaEnabled,
+                ivaPorcentaje: ivaPorcentaje,
                 descuento: descuento,
                 notas: notas,
                 obraId: obraId,
@@ -16956,6 +17625,7 @@ class $$CotizacionesTableTableManager
                 required int fecha,
                 Value<String> estado = const Value.absent(),
                 Value<bool> ivaEnabled = const Value.absent(),
+                Value<double> ivaPorcentaje = const Value.absent(),
                 Value<double> descuento = const Value.absent(),
                 Value<String> notas = const Value.absent(),
                 Value<String?> obraId = const Value.absent(),
@@ -16975,6 +17645,7 @@ class $$CotizacionesTableTableManager
                 fecha: fecha,
                 estado: estado,
                 ivaEnabled: ivaEnabled,
+                ivaPorcentaje: ivaPorcentaje,
                 descuento: descuento,
                 notas: notas,
                 obraId: obraId,
@@ -18049,6 +18720,7 @@ typedef $$MovimientosTableCreateCompanionBuilder =
       Value<String?> seccionId,
       Value<String?> partidaId,
       Value<String> nombre,
+      Value<String?> comprobanteUri,
       Value<int> rowid,
     });
 typedef $$MovimientosTableUpdateCompanionBuilder =
@@ -18073,6 +18745,7 @@ typedef $$MovimientosTableUpdateCompanionBuilder =
       Value<String?> seccionId,
       Value<String?> partidaId,
       Value<String> nombre,
+      Value<String?> comprobanteUri,
       Value<int> rowid,
     });
 
@@ -18182,6 +18855,11 @@ class $$MovimientosTableFilterComposer
 
   ColumnFilters<String> get nombre => $composableBuilder(
     column: $table.nombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get comprobanteUri => $composableBuilder(
+    column: $table.comprobanteUri,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -18294,6 +18972,11 @@ class $$MovimientosTableOrderingComposer
     column: $table.nombre,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get comprobanteUri => $composableBuilder(
+    column: $table.comprobanteUri,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$MovimientosTableAnnotationComposer
@@ -18374,6 +19057,11 @@ class $$MovimientosTableAnnotationComposer
 
   GeneratedColumn<String> get nombre =>
       $composableBuilder(column: $table.nombre, builder: (column) => column);
+
+  GeneratedColumn<String> get comprobanteUri => $composableBuilder(
+    column: $table.comprobanteUri,
+    builder: (column) => column,
+  );
 }
 
 class $$MovimientosTableTableManager
@@ -18427,6 +19115,7 @@ class $$MovimientosTableTableManager
                 Value<String?> seccionId = const Value.absent(),
                 Value<String?> partidaId = const Value.absent(),
                 Value<String> nombre = const Value.absent(),
+                Value<String?> comprobanteUri = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MovimientosCompanion(
                 empresaId: empresaId,
@@ -18449,6 +19138,7 @@ class $$MovimientosTableTableManager
                 seccionId: seccionId,
                 partidaId: partidaId,
                 nombre: nombre,
+                comprobanteUri: comprobanteUri,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -18473,6 +19163,7 @@ class $$MovimientosTableTableManager
                 Value<String?> seccionId = const Value.absent(),
                 Value<String?> partidaId = const Value.absent(),
                 Value<String> nombre = const Value.absent(),
+                Value<String?> comprobanteUri = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => MovimientosCompanion.insert(
                 empresaId: empresaId,
@@ -18495,6 +19186,7 @@ class $$MovimientosTableTableManager
                 seccionId: seccionId,
                 partidaId: partidaId,
                 nombre: nombre,
+                comprobanteUri: comprobanteUri,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -19638,6 +20330,267 @@ typedef $$ObraPresupuestoTableProcessedTableManager =
       ObraPresupuestoRow,
       PrefetchHooks Function()
     >;
+typedef $$ObraCajaNotaTableCreateCompanionBuilder =
+    ObraCajaNotaCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      required String obraId,
+      Value<String> nota,
+      Value<int> rowid,
+    });
+typedef $$ObraCajaNotaTableUpdateCompanionBuilder =
+    ObraCajaNotaCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      Value<String> obraId,
+      Value<String> nota,
+      Value<int> rowid,
+    });
+
+class $$ObraCajaNotaTableFilterComposer
+    extends Composer<_$AppDatabase, $ObraCajaNotaTable> {
+  $$ObraCajaNotaTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get obraId => $composableBuilder(
+    column: $table.obraId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nota => $composableBuilder(
+    column: $table.nota,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ObraCajaNotaTableOrderingComposer
+    extends Composer<_$AppDatabase, $ObraCajaNotaTable> {
+  $$ObraCajaNotaTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get obraId => $composableBuilder(
+    column: $table.obraId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nota => $composableBuilder(
+    column: $table.nota,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ObraCajaNotaTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ObraCajaNotaTable> {
+  $$ObraCajaNotaTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get empresaId =>
+      $composableBuilder(column: $table.empresaId, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get obraId =>
+      $composableBuilder(column: $table.obraId, builder: (column) => column);
+
+  GeneratedColumn<String> get nota =>
+      $composableBuilder(column: $table.nota, builder: (column) => column);
+}
+
+class $$ObraCajaNotaTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ObraCajaNotaTable,
+          ObraCajaNotaRow,
+          $$ObraCajaNotaTableFilterComposer,
+          $$ObraCajaNotaTableOrderingComposer,
+          $$ObraCajaNotaTableAnnotationComposer,
+          $$ObraCajaNotaTableCreateCompanionBuilder,
+          $$ObraCajaNotaTableUpdateCompanionBuilder,
+          (
+            ObraCajaNotaRow,
+            BaseReferences<_$AppDatabase, $ObraCajaNotaTable, ObraCajaNotaRow>,
+          ),
+          ObraCajaNotaRow,
+          PrefetchHooks Function()
+        > {
+  $$ObraCajaNotaTableTableManager(_$AppDatabase db, $ObraCajaNotaTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ObraCajaNotaTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ObraCajaNotaTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ObraCajaNotaTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String> obraId = const Value.absent(),
+                Value<String> nota = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ObraCajaNotaCompanion(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                obraId: obraId,
+                nota: nota,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                required String obraId,
+                Value<String> nota = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ObraCajaNotaCompanion.insert(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                obraId: obraId,
+                nota: nota,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ObraCajaNotaTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ObraCajaNotaTable,
+      ObraCajaNotaRow,
+      $$ObraCajaNotaTableFilterComposer,
+      $$ObraCajaNotaTableOrderingComposer,
+      $$ObraCajaNotaTableAnnotationComposer,
+      $$ObraCajaNotaTableCreateCompanionBuilder,
+      $$ObraCajaNotaTableUpdateCompanionBuilder,
+      (
+        ObraCajaNotaRow,
+        BaseReferences<_$AppDatabase, $ObraCajaNotaTable, ObraCajaNotaRow>,
+      ),
+      ObraCajaNotaRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -19679,4 +20632,6 @@ class $AppDatabaseManager {
       $$ArchivosCotizacionTableTableManager(_db, _db.archivosCotizacion);
   $$ObraPresupuestoTableTableManager get obraPresupuesto =>
       $$ObraPresupuestoTableTableManager(_db, _db.obraPresupuesto);
+  $$ObraCajaNotaTableTableManager get obraCajaNota =>
+      $$ObraCajaNotaTableTableManager(_db, _db.obraCajaNota);
 }
