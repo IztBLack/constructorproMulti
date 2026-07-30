@@ -8,6 +8,7 @@ import '../../core/sync/cloud_providers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
 import '../common/app_badge.dart';
+import '../common/app_snackbar.dart';
 import '../common/app_spacing.dart';
 import '../common/async_action_button.dart';
 import '../common/sync_status_action.dart';
@@ -303,11 +304,36 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
       trailing: PopupMenuButton<String>(
         onSelected: (v) {
           if (v == 'editar') _showObraDialog(obra);
+          if (v == 'archivar') _setArchivada(obra, true);
+          if (v == 'desarchivar') _setArchivada(obra, false);
           if (v == 'eliminar') _confirmDelete(obra);
         },
-        itemBuilder: (_) => const [
-          PopupMenuItem(value: 'editar', child: Text('Editar')),
-          PopupMenuItem(value: 'eliminar', child: Text('Eliminar')),
+        // No es `const` porque el ítem de archivar depende del estado de la obra.
+        itemBuilder: (_) => [
+          const PopupMenuItem(value: 'editar', child: Text('Editar')),
+          // Archivar/desarchivar es el MISMO acto reversible visto desde los dos
+          // lados: si está activa se ofrece guardarla, si ya está guardada se
+          // ofrece reactivarla. Va antes de "Eliminar" para separar lo
+          // reversible de lo irreversible.
+          if (obra.activa)
+            const PopupMenuItem(
+              value: 'archivar',
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.archive_outlined),
+                title: Text('Archivar'),
+              ),
+            )
+          else
+            const PopupMenuItem(
+              value: 'desarchivar',
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.unarchive_outlined),
+                title: Text('Desarchivar'),
+              ),
+            ),
+          const PopupMenuItem(value: 'eliminar', child: Text('Eliminar')),
         ],
       ),
       onTap: () => Navigator.of(context).push(
@@ -374,6 +400,21 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// Archiva o reactiva una obra. A diferencia de [_confirmDelete], NO pide
+  /// confirmación: archivar es reversible (solo cambia `activa`, no borra nada),
+  /// así que la acción directa + un aviso que la confirma basta; el diálogo
+  /// destructivo se reserva para eliminar, que sí arrastra el historial y no
+  /// tiene vuelta atrás.
+  Future<void> _setArchivada(Obra obra, bool archivada) async {
+    await ref.read(obraRepositoryProvider).setArchivada(obra.id, archivada);
+    if (!mounted) return;
+    showAppSnack(
+      context,
+      archivada ? 'Obra archivada.' : 'Obra reactivada.',
+      tone: SnackTone.success,
     );
   }
 
