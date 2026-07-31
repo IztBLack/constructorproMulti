@@ -178,6 +178,9 @@ class CotizacionRepository {
             fecha: DateTime.now().millisecondsSinceEpoch,
             estado: const Value('BORRADOR'),
             ivaEnabled: Value(orig.ivaEnabled),
+            // Una copia conserva la tasa congelada del original; NO re-toma el
+            // global vigente (que pudo cambiar desde que se creó la original).
+            ivaPorcentaje: Value(orig.ivaPorcentaje),
             descuento: Value(orig.descuento),
             notas: Value(orig.notas),
           ));

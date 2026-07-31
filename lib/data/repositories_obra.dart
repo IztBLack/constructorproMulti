@@ -46,6 +46,30 @@ class AsistenciaRepository {
         .watch();
   }
 
+  /// Suma de las fracciones que el colaborador ya tiene registradas ese [fecha]
+  /// en TODAS las obras EXCEPTO [exceptObraId] (ignora bajas lógicas).
+  ///
+  /// Espeja el trigger 0016 del servidor, que RECHAZA que un colaborador acumule
+  /// más de 1 jornada (suma de `fraccion`) en una misma fecha contando todas las
+  /// obras. El móvil llama a esto ANTES de escribir para no crear una fila que la
+  /// nube va a rechazar (quedaría en `sync_status='error'`). Se excluye la obra
+  /// en curso porque su fracción se va a REEMPLAZAR por el valor nuevo, no a
+  /// sumar sobre el anterior.
+  Future<double> fraccionOtrasObras(
+    String colaboradorId,
+    int fecha,
+    String exceptObraId,
+  ) async {
+    final filas = await (db.select(db.asistencias)
+          ..where((t) =>
+              t.colaboradorId.equals(colaboradorId) &
+              t.fecha.equals(fecha) &
+              t.obraId.equals(exceptObraId).not() &
+              t.deletedAt.isNull()))
+        .get();
+    return filas.fold<double>(0.0, (suma, a) => suma + a.fraccion);
+  }
+
   /// Registra/actualiza la fracción de un colaborador en un día (índice único).
   /// [cuadrillaId] es opcional y solo ETIQUETA la fila (agrupa el pase de lista
   /// para reportes); no afecta el cálculo de nómina. Se sella con la cuadrilla
@@ -249,6 +273,41 @@ class MovimientoRepository {
       ),
     );
   }
+
+  /// SOFT-delete de TODOS los movimientos vivos (deletedAt nulo) de una obra.
+  /// Marca las mismas tres columnas que [delete] —deletedAt, updatedAt y
+  /// syncStatus 'pending'— para que el push a la nube propague el borrado como
+  /// una edición más. Devuelve cuántas filas se marcaron (`write` devuelve el
+  /// conteo de filas afectadas), útil para el aviso al usuario.
+  Future<int> deleteAllByObra(String obraId) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return (db.update(db.movimientos)
+          ..where((t) => t.obraId.equals(obraId) & t.deletedAt.isNull()))
+        .write(
+      MovimientosCompanion(
+        deletedAt: Value(now),
+        updatedAt: Value(now),
+        syncStatus: const Value('pending'),
+      ),
+    );
+  }
+
+  /// Revierte un [delete]. Es barato porque el borrado es SUAVE: la fila nunca
+  /// se fue, solo se le puso `deletedAt`, así que deshacer es limpiar la marca.
+  ///
+  /// Escribe exactamente las mismas tres columnas que [delete] —incluido
+  /// `syncStatus: 'pending'`— para que el push a la nube trate el "deshacer"
+  /// como cualquier otra edición y no haga falta un camino aparte.
+  Future<void> restore(String id) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return (db.update(db.movimientos)..where((t) => t.id.equals(id))).write(
+      MovimientosCompanion(
+        deletedAt: const Value(null),
+        updatedAt: Value(now),
+        syncStatus: const Value('pending'),
+      ),
+    );
+  }
 }
 
 class ObraPresupuestoRepository {
@@ -308,4 +367,26 @@ class ObraPresupuestoRepository {
       ),
     );
   }
+}
+
+/// Nota de conciliación de caja por obra: un texto libre, único por obra (la PK
+/// es `obraId`), donde se anota el "por qué" del saldo ("DIFERENCIA A FAVOR…").
+class ObraCajaNotaRepository {
+  final AppDatabase db;
+  ObraCajaNotaRepository(this.db);
+
+  /// La nota de la obra, o null si aún no se ha escrito ninguna.
+  Stream<ObraCajaNotaRow?> watch(String obraId) =>
+      (db.select(db.obraCajaNota)
+            ..where((t) => t.obraId.equals(obraId) & t.deletedAt.isNull()))
+          .watchSingleOrNull();
+
+  /// Crea o reemplaza la nota de la obra. Como la PK es `obraId`,
+  /// `insertOnConflictUpdate` sirve de upsert sin buscar antes la fila. El
+  /// trigger `mark_pending` del esquema marca `sync_status='pending'` solo; no
+  /// se toca a mano.
+  Future<void> upsert(String obraId, String nota) =>
+      db.into(db.obraCajaNota).insertOnConflictUpdate(
+            ObraCajaNotaCompanion.insert(obraId: obraId, nota: Value(nota)),
+          );
 }

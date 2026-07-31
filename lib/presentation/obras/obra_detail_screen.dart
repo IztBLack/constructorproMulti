@@ -8,12 +8,18 @@ import 'package:uuid/uuid.dart';
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
 import '../../core/pdf/pdf_config.dart';
+import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
 import '../../domain/logic/estado_cuenta_calculator.dart';
 import '../../domain/logic/flujo_calculator.dart';
 import '../../domain/logic/nomina_calculator.dart';
 import '../../domain/mappers.dart';
 import '../../pdf/pdf_service.dart';
+import '../common/app_card.dart';
+import '../common/app_snackbar.dart';
+import '../common/confirm_dialog.dart';
+import '../common/money_text.dart';
+import '../common/section_header.dart';
 import '../pdf_pre_dialog.dart';
 import 'importar_movimientos_screen.dart';
 
@@ -76,7 +82,11 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
         ],
         bottom: TabBar(
           controller: _tab,
-          isScrollable: true,
+          // Fijo, no desplazable: con `isScrollable` los cuatro títulos cortos
+          // se amontonaban a la izquierda dejando media barra vacía, y no había
+          // nada que desplazar. Repartidos ocupan el ancho y crecen sus áreas
+          // tocables.
+          isScrollable: false,
           tabs: const [
             Tab(text: 'Equipo'),
             Tab(text: 'Asistencia'),
@@ -486,7 +496,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
             const DataColumn(label: Text('Trabajador')),
             ...dias.map((d) => DataColumn(
                 label: Text(Fmt.dayName(d).split(' ').take(2).join('\n'),
-                    style: const TextStyle(fontSize: 11)))),
+                    style: Theme.of(context).textTheme.labelSmall))),
           ],
           rows: trabajadores.map((c) {
             return DataRow(cells: [
@@ -525,7 +535,9 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                   Center(child: Text(etiqueta(f),
                       style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: f > 0 ? Colors.green : Colors.grey))),
+                          color: f > 0
+                              ? context.colores.success
+                              : context.colores.textFaint))),
                   onTap: () => _editarCeldaSemana(c.id, c.nombre, d, diaMillis),
                 );
               }),
@@ -870,6 +882,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (movs) {
+          final c = context.colores;
           final resumen = const FlujoCalculator()
               .resumen(movs.map(movimientoToDomain).toList());
           final estado = const EstadoCuentaCalculator()
@@ -882,10 +895,9 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _kpi('Entradas', resumen.totalEntradas, Colors.green),
-                    _kpi('Salidas', resumen.totalSalidas, Colors.red),
-                    _kpi('Saldo', resumen.saldo,
-                        resumen.saldo >= 0 ? Colors.green : Colors.red),
+                    _kpi('Entradas', resumen.totalEntradas, c.success),
+                    _kpi('Salidas', resumen.totalSalidas, c.danger),
+                    _kpi('Saldo', resumen.saldo, c.montoTone(resumen.saldo)),
                   ],
                 ),
               ),
@@ -895,15 +907,22 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                   titulo: 'Pagado por persona',
                   entradas: estado.porPersona,
                   total: estado.totalSalidas,
-                  color: Colors.red,
+                  color: c.danger,
                 ),
               if (estado.porTipo.isNotEmpty)
                 _resumenCard(
                   titulo: 'Recibido por tipo',
                   entradas: estado.porTipo,
                   total: estado.recibido,
-                  color: Colors.green,
+                  color: c.success,
                 ),
+              // Nota libre para explicar el saldo (conciliación manual). Vive en
+              // su propio widget con State para dueñar el ciclo de vida del
+              // controller sin reconstruirlo en cada rebuild de la caja.
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                child: _NotaConciliacionCard(obraId: _obraId),
+              ),
               const Divider(height: 1),
               if (movs.isEmpty)
                 const Padding(
@@ -919,18 +938,21 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                       ListTile(
                         leading: Icon(
                           entrada ? Icons.south_west : Icons.north_east,
-                          color: entrada ? Colors.green : Colors.red,
+                          color: entrada ? c.success : c.danger,
                         ),
                         title: Text(m.concepto),
                         subtitle: Text(
                           '${Fmt.date(m.fecha)} · ${m.metodoPago}'
                           '${m.nombre.trim().isEmpty ? '' : ' · ${m.nombre}'}',
                         ),
-                        trailing: Text(
-                          '${entrada ? '+' : '-'}${Fmt.money(m.monto)}',
-                          style: TextStyle(
-                              color: entrada ? Colors.green : Colors.red,
-                              fontWeight: FontWeight.bold),
+                        // El signo va en el texto además del color: quien no
+                        // distingue verde de rojo necesita el «+»/«−» para leer
+                        // la lista (regla `color-not-only`).
+                        trailing: MoneyText(
+                          entrada ? m.monto : -m.monto,
+                          colorearPorSigno: true,
+                          mostrarSigno: true,
+                          style: Theme.of(context).textTheme.titleSmall,
                         ),
                         onLongPress: () => _eliminarMov(m),
                       ),
@@ -938,29 +960,58 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                     ],
                   );
                 }),
+              // Acción destructiva al pie de la lista: descubrible pero lejos de
+              // los FABs de captura, así no se toca por accidente. Solo aparece
+              // si hay algo que borrar. El color `danger` (texto + borde) y el
+              // ícono de bote dejan claro que es peligrosa.
+              if (movs.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
+                  child: OutlinedButton.icon(
+                    onPressed: () => _borrarTodosMovs(movs.length),
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('Borrar todos los movimientos'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: c.danger,
+                      side: BorderSide(color: c.danger),
+                    ),
+                  ),
+                ),
             ],
           );
         },
       ),
-      floatingActionButton: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          FloatingActionButton.extended(
-            heroTag: 'ent',
-            onPressed: () => _movDialog('ENTRADA'),
-            backgroundColor: Colors.green,
-            icon: const Icon(Icons.add),
-            label: const Text('Entrada'),
-          ),
-          const SizedBox(width: 12),
-          FloatingActionButton.extended(
-            heroTag: 'sal',
-            onPressed: () => _movDialog('SALIDA'),
-            backgroundColor: Colors.red,
-            icon: const Icon(Icons.remove),
-            label: const Text('Salida'),
-          ),
-        ],
+      // Los dos botones usan el par (fondo suave + texto fuerte) en vez de un
+      // relleno verde/rojo saturado. El relleno saturado se veía más "botón",
+      // pero su texto blanco daba 2.8:1 sobre el verde de Material —reprueba
+      // AA— y en tema oscuro empeoraba. Con el par, el código de color se
+      // conserva y el texto es legible en ambos temas.
+      floatingActionButton: Builder(
+        builder: (context) {
+          final c = context.colores;
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              FloatingActionButton.extended(
+                heroTag: 'ent',
+                onPressed: () => _movDialog('ENTRADA'),
+                backgroundColor: c.successSoft,
+                foregroundColor: c.success,
+                icon: const Icon(Icons.add),
+                label: const Text('Entrada'),
+              ),
+              const SizedBox(width: 12),
+              FloatingActionButton.extended(
+                heroTag: 'sal',
+                onPressed: () => _movDialog('SALIDA'),
+                backgroundColor: c.dangerSoft,
+                foregroundColor: c.danger,
+                icon: const Icon(Icons.remove),
+                label: const Text('Salida'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -1168,10 +1219,71 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     return t;
   }
 
+  /// Borra UN movimiento, SIEMPRE pidiendo confirmar y avisando que no se puede
+  /// deshacer.
+  ///
+  /// Antes borraba al instante y ofrecía "Deshacer" (el borrado es SUAVE y
+  /// reversible). El dueño pidió lo contrario: en su operación un movimiento
+  /// borrado por error puede pasar inadvertido cuando el aviso de "Deshacer" ya
+  /// desapareció, así que prefiere el freno de un diálogo en cada borrado.
+  /// Reutilizamos `confirmDialog` (el mismo helper con el que se borra la obra),
+  /// con el monto en el mensaje y la advertencia de que la acción es
+  /// irreversible.
   Future<void> _eliminarMov(Movimiento m) async {
-    final ok = await _confirm(
-        '¿Eliminar el movimiento de ${Fmt.money(m.monto)}?', 'Eliminar');
-    if (ok) await ref.read(movimientoRepositoryProvider).delete(m.id);
+    final ok = await confirmDialog(
+      context,
+      title: 'Eliminar movimiento',
+      message: 'Se eliminará el movimiento de ${Fmt.money(m.monto)}'
+          '${m.concepto.trim().isEmpty ? '' : ' («${m.concepto}»)'}.\n\n'
+          'Esta acción NO se puede deshacer.',
+      actionLabel: 'Eliminar',
+      destructive: true,
+    );
+    if (!ok) return;
+    await ref.read(movimientoRepositoryProvider).delete(m.id);
+    if (mounted) showAppSnack(context, 'Movimiento eliminado.');
+  }
+
+  /// Borra TODOS los movimientos de la obra. Es mucho más destructivo que borrar
+  /// uno, así que además del aviso de irreversibilidad exige un paso extra:
+  /// escribir la palabra "BORRAR". Es el mismo patrón de la "Zona de peligro" de
+  /// Configuración, replicado aquí a propósito porque aquel helper (`_dangerConfirm`)
+  /// es privado de esa pantalla.
+  Future<void> _borrarTodosMovs(int cantidad) async {
+    final ctrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Borrar todos los movimientos'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text('Se borrarán los $cantidad movimientos de esta obra.\n'
+              'Esta acción es IRREVERSIBLE.\n\n'
+              'Escribe "BORRAR" para confirmar.'),
+          const SizedBox(height: 12),
+          TextField(
+            controller: ctrl,
+            autofocus: true,
+            decoration: const InputDecoration(hintText: 'BORRAR'),
+          ),
+        ]),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancelar')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Confirmar')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    if (ctrl.text.trim().toUpperCase() != 'BORRAR') {
+      if (mounted) showAppSnack(context, 'La palabra no coincide. Cancelado.');
+      return;
+    }
+    final n =
+        await ref.read(movimientoRepositoryProvider).deleteAllByObra(_obraId);
+    if (mounted) showAppSnack(context, '$n movimiento(s) eliminados.');
   }
 
   // ============ ESTADO DE CUENTA (Caja) ============
@@ -1180,6 +1292,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     final costo = e.costoTotal;
     final progreso = costo > 0 ? (e.recibido / costo).clamp(0.0, 1.0) : 0.0;
     final cs = Theme.of(context).colorScheme;
+    final c = context.colores;
     // Totales por sección (solo si la obra vino de una cotización con secciones).
     final porSeccion = <String, double>{};
     for (final p in partidas) {
@@ -1201,9 +1314,9 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _kpi('Costo total', costo, cs.onSurface),
-                _kpi('Recibido', e.recibido, Colors.green),
+                _kpi('Recibido', e.recibido, c.success),
                 _kpi('Pendiente', e.pendiente,
-                    e.pendiente > 0 ? Colors.red : Colors.green),
+                    e.pendiente > 0 ? c.danger : c.success),
               ],
             ),
             const SizedBox(height: 10),
@@ -1212,8 +1325,8 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
               child: LinearProgressIndicator(
                 value: progreso.toDouble(),
                 minHeight: 8,
-                backgroundColor: cs.surfaceContainerHighest,
-                valueColor: const AlwaysStoppedAnimation(Colors.green),
+                backgroundColor: c.surfaceMuted,
+                valueColor: AlwaysStoppedAnimation(c.success),
               ),
             ),
             const SizedBox(height: 4),
@@ -1299,30 +1412,37 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
   Widget _kpi(String label, double value, Color color) => Column(
         children: [
           Text(label, style: Theme.of(context).textTheme.labelMedium),
-          Text(Fmt.money(value),
-              style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 2),
+          MoneyText(
+            value,
+            color: color,
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.w700),
+          ),
         ],
       );
 
   Widget _totalBar(String label, double value) => Container(
         width: double.infinity,
-        color: Theme.of(context).colorScheme.primaryContainer,
+        decoration: BoxDecoration(
+          color: context.colores.surfaceMuted,
+          border: Border(top: BorderSide(color: context.colores.border)),
+        ),
         padding: const EdgeInsets.all(16),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text(Fmt.money(value),
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold, fontSize: 18)),
+            Text(label, style: Theme.of(context).textTheme.titleSmall),
+            MoneyText(value, style: Theme.of(context).textTheme.titleLarge),
           ],
         ),
       );
 
   String _ini(String n) => n.isNotEmpty ? n[0].toUpperCase() : '?';
 
-  void _snack(String msg) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  void _snack(String msg) => showAppSnack(context, msg);
 
   Future<bool> _confirm(String msg, String accion) async {
     return await showDialog<bool>(
@@ -1341,5 +1461,89 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
           ),
         ) ??
         false;
+  }
+}
+
+/// Tarjeta editable de la nota de conciliación de caja de una obra.
+///
+/// Se aísla en su propio widget con State por el ciclo de vida del
+/// [TextEditingController]: el detalle de obra se reconstruye seguido (streams
+/// de caja), y crear el controller en cada rebuild perdería el cursor y el
+/// texto a medio escribir. Aquí el controller se crea UNA vez y se libera en
+/// [dispose]. Guarda al perder el foco: escribir en cada tecla dispararía un
+/// `pending` de sync por pulsación.
+class _NotaConciliacionCard extends ConsumerStatefulWidget {
+  final String obraId;
+  const _NotaConciliacionCard({required this.obraId});
+
+  @override
+  ConsumerState<_NotaConciliacionCard> createState() =>
+      _NotaConciliacionCardState();
+}
+
+class _NotaConciliacionCardState extends ConsumerState<_NotaConciliacionCard> {
+  final _controller = TextEditingController();
+  final _focus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    // Guardar al salir del campo, no en cada tecla.
+    _focus.addListener(() {
+      if (!_focus.hasFocus) _guardar();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  void _guardar() {
+    ref
+        .read(obraCajaNotaRepositoryProvider)
+        .upsert(widget.obraId, _controller.text);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final notaAsync = ref.watch(obraCajaNotaProvider(widget.obraId));
+    final nota = notaAsync.asData?.value?.nota ?? '';
+    // Refleja el valor del store (carga inicial o llegada por sync) SIN pisar lo
+    // que el usuario está escribiendo: solo si el campo no tiene el foco y el
+    // texto realmente cambió (evita un bucle de rebuild al reasignar igual).
+    if (!_focus.hasFocus && _controller.text != nota) {
+      _controller.text = nota;
+    }
+    final c = context.colores;
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionHeader(
+            title: 'Nota de conciliación',
+            description: 'Aclara el porqué del saldo (uso interno).',
+          ),
+          TextField(
+            controller: _controller,
+            focusNode: _focus,
+            minLines: 2,
+            maxLines: null,
+            keyboardType: TextInputType.multiline,
+            textCapitalization: TextCapitalization.sentences,
+            onEditingComplete: _guardar,
+            style: Theme.of(context).textTheme.bodyMedium,
+            decoration: InputDecoration(
+              hintText: 'Ej. DIFERENCIA A FAVOR \$20,957 CON…',
+              hintStyle: TextStyle(color: c.textFaint),
+              border: const OutlineInputBorder(),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -30,6 +30,7 @@ part 'app_database.g.dart';
   CatalogoConceptos,
   ArchivosCotizacion,
   ObraPresupuesto,
+  ObraCajaNota,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -40,7 +41,7 @@ class AppDatabase extends _$AppDatabase {
   static const _uuid = Uuid();
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -203,6 +204,40 @@ class AppDatabase extends _$AppDatabase {
               await m.addColumn(destajos, destajos.cuadrillaId);
             }
             // Recrea los triggers para cubrir las tablas/columnas nuevas
+            // (createTable NO instala el trigger mark_pending).
+            await _instalarTriggersSync();
+          }
+          // v7 → v8 (capa de tesorería, paridad web 0017/0023/0024):
+          //   · cotizaciones.iva_porcentaje  → IVA congelado por cotización.
+          //   · movimientos.comprobante_uri  → ruta del comprobante en Storage.
+          //   · obra_caja_nota (tabla nueva) → nota de conciliación por obra.
+          // Todo ADITIVO: addColumn con default/nullable + createTable → sin
+          // backfill; las filas previas quedan intactas (iva_porcentaje = 16,
+          // comprobante_uri = NULL). Idempotente: verifica existencia primero.
+          if (from < 8) {
+            Future<bool> columnaExiste(String tabla, String col) => m.database
+                .customSelect(
+                  "SELECT 1 FROM pragma_table_info('$tabla') WHERE name='$col'",
+                )
+                .get()
+                .then((rows) => rows.isNotEmpty);
+            Future<bool> tablaExiste(String name) => m.database
+                .customSelect(
+                  "SELECT 1 FROM sqlite_master WHERE type='table' AND name='$name'",
+                )
+                .get()
+                .then((rows) => rows.isNotEmpty);
+
+            if (!await columnaExiste('cotizaciones', 'iva_porcentaje')) {
+              await m.addColumn(cotizaciones, cotizaciones.ivaPorcentaje);
+            }
+            if (!await columnaExiste('movimientos', 'comprobante_uri')) {
+              await m.addColumn(movimientos, movimientos.comprobanteUri);
+            }
+            if (!await tablaExiste('obra_caja_nota')) {
+              await m.createTable(obraCajaNota);
+            }
+            // Recrea los triggers para cubrir la tabla/columnas nuevas
             // (createTable NO instala el trigger mark_pending).
             await _instalarTriggersSync();
           }

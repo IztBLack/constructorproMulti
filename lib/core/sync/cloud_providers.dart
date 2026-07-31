@@ -8,6 +8,7 @@ import 'supabase_config.dart';
 import 'sync_controller.dart';
 import 'sync_metadata.dart';
 import 'sync_service.dart';
+import 'sync_status.dart';
 
 /// Estado de auth de Supabase (emite en login/logout/refresh de sesión).
 final authStateProvider = StreamProvider<AuthState>(
@@ -33,6 +34,12 @@ final syncMetadataProvider = Provider<SyncMetadata>(
 final syncServiceProvider = Provider<SyncService>((ref) => SyncService(
       db: ref.watch(databaseProvider),
       metadata: ref.watch(syncMetadataProvider),
+      // Refleja "hay un sync corriendo" en un provider observable por la UI. Se
+      // difiere con microtask para no mutar estado de Riverpod en medio de la
+      // construcción de otro provider (lo prohíbe) cuando el sync arranca
+      // sincrónicamente al inicio.
+      onActividad: (activo) => Future.microtask(
+          () => ref.read(syncEnCursoProvider.notifier).state = activo),
     ));
 
 /// Orquestador del sync automático (arranque, reconexión, post-escritura).

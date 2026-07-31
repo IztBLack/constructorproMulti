@@ -13,6 +13,7 @@ import '../../data/demo_data.dart';
 import '../../data/providers.dart';
 import '../onboarding/tutorial_screen.dart';
 import 'catalogo_screen.dart';
+import '../common/sync_status_action.dart';
 import 'cloud_sync_screen.dart';
 import 'pdf_config_screen.dart';
 import 'puestos_screen.dart';
@@ -25,7 +26,10 @@ class ConfigScreen extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Configuración')),
+      appBar: AppBar(
+        title: const Text('Configuración'),
+        actions: const [SyncStatusAction()],
+      ),
       body: ListView(
         children: [
           const _Header('Apariencia'),
@@ -71,8 +75,11 @@ class ConfigScreen extends ConsumerWidget {
           ),
           ListTile(
             leading: const Icon(Icons.percent),
-            title: const Text('IVA por defecto'),
-            subtitle: Text('${ref.watch(ivaPorcentajeProvider).toStringAsFixed(0)}%'),
+            title: const Text('IVA por defecto (nuevas cotizaciones)'),
+            // Cada cotización congela su tasa al crearse; cambiar este valor
+            // solo afecta a las que se creen de aquí en adelante.
+            subtitle: Text(
+                '${ref.watch(ivaPorcentajeProvider).toStringAsFixed(0)}% · no recalcula cotizaciones existentes'),
             onTap: () => _editarIva(context, ref),
           ),
           const Divider(),

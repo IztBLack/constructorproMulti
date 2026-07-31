@@ -7,8 +7,10 @@ import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
 import '../../core/sync/cloud_providers.dart';
 import '../../domain/logic/salario_periodo.dart';
+import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
 import '../common/async_action_button.dart';
+import '../common/sync_status_action.dart';
 import '../common/confirm_dialog.dart';
 import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
@@ -42,6 +44,7 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
       appBar: AppBar(
         title: const Text('Colaboradores'),
         actions: [
+          const SyncStatusAction(),
           IconButton(
             tooltip: 'Cuadrillas',
             icon: const Icon(Icons.groups),
@@ -141,7 +144,7 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
               return ListTile(
                 isThreeLine: true,
                 leading: CircleAvatar(
-                  backgroundColor: c.activo ? null : Colors.grey,
+                  backgroundColor: c.activo ? null : context.colores.neutralSoft,
                   child: Text(c.nombre.isNotEmpty ? c.nombre[0].toUpperCase() : '?'),
                 ),
                 title: Text(c.nombre,

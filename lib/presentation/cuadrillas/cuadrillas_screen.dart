@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/db/app_database.dart';
 import '../../core/sync/cloud_providers.dart';
+import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
 import '../common/async_action_button.dart';
 import '../common/confirm_dialog.dart';
@@ -104,7 +105,8 @@ class _CuadrillasScreenState extends ConsumerState<CuadrillasScreen> {
                     : colabNombre[c.jefeColaboradorId];
                 return ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: c.activa ? null : Colors.grey,
+                    backgroundColor:
+                        c.activa ? null : context.colores.neutralSoft,
                     child: const Icon(Icons.groups),
                   ),
                   title: Text(c.nombre,
@@ -363,10 +365,10 @@ class CuadrillaDetailScreen extends ConsumerWidget {
           builder: (_, controller) => ListView(
             controller: controller,
             children: [
-              const Padding(
-                padding: EdgeInsets.all(16),
+              Padding(
+                padding: const EdgeInsets.all(16),
                 child: Text('Agregar miembro',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    style: Theme.of(context).textTheme.titleMedium),
               ),
               const Divider(height: 1),
               if (disponibles.isEmpty)

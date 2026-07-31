@@ -57,6 +57,25 @@ class ObraRepository {
               syncStatus: const Value('pending')));
     });
   }
+
+  /// Archiva (archivada=true → activa=false) o reactiva (archivada=false →
+  /// activa=true) una obra. Espejo del "archivar" de la web.
+  ///
+  /// A diferencia de [delete] NO es una baja lógica ni arrastra el historial:
+  /// solo cambia el estado de la obra —es reversible—, por eso no hay cascada
+  /// ni tombstone, solo se toca `activa`. Marca las mismas columnas de sync que
+  /// [delete] (`updatedAt`, `syncStatus`) para que el push suba el cambio como
+  /// cualquier otra edición.
+  Future<void> setArchivada(String id, bool archivada) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return (db.update(db.obras)..where((t) => t.id.equals(id))).write(
+      ObrasCompanion(
+        activa: Value(!archivada),
+        updatedAt: Value(now),
+        syncStatus: const Value('pending'),
+      ),
+    );
+  }
 }
 
 class PuestoRepository {

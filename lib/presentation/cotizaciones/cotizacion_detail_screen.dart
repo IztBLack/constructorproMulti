@@ -15,6 +15,7 @@ import 'package:printing/printing.dart';
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
 import '../../core/pdf/pdf_config.dart';
+import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
 import '../../data/repositories_cotizacion.dart';
 import '../../domain/clave_generator.dart';
@@ -25,6 +26,7 @@ import '../../pdf/pdf_service.dart';
 import '../common/async_action_button.dart';
 import '../common/confirm_dialog.dart';
 import '../common/empty_state_view.dart';
+import '../common/money_text.dart';
 import '../common/error_state_view.dart';
 import '../pdf_pre_dialog.dart';
 
@@ -94,7 +96,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
             itemBuilder: (_) => [
               const PopupMenuItem(value: 'enviar', child: Text('Enviar al cliente')),
               CheckedPopupMenuItem(
-                  value: 'iva', checked: _ivaEnabled, child: Text('Aplicar IVA ${ref.read(ivaPorcentajeProvider).toStringAsFixed(0)}%')),
+                  value: 'iva', checked: _ivaEnabled, child: Text('Aplicar IVA ${widget.cotizacion.ivaPorcentaje.toStringAsFixed(0)}%')),
               const PopupMenuItem(value: 'estado', child: Text('Cambiar estado')),
               const PopupMenuItem(value: 'ajuste', child: Text('Ajuste global de precios')),
               const PopupMenuItem(value: 'duplicar', child: Text('Duplicar')),
@@ -254,11 +256,12 @@ class _State extends ConsumerState<CotizacionDetailScreen>
     final movs = ref.read(movimientosDeCotizacionProvider(_cotId)).asData?.value ?? [];
     final totalPagado = pagos.fold<double>(0, (a, p) => a + p.monto);
     final aportadoPorPartida = _aportadoPorPartida(movs);
-    final ivaPct = ref.read(ivaPorcentajeProvider);
+    // IVA congelado en la cotización: el total no se recotiza si cambia el
+    // valor global por defecto.
     final totales = const PresupuestoCalculator().calcular(
       partidas: partidas.map(partidaToDomain).toList(),
       ivaEnabled: _ivaEnabled,
-      ivaPercentage: ivaPct,
+      ivaPercentage: widget.cotizacion.ivaPorcentaje,
       descuentoPorcentaje: widget.cotizacion.descuento,
       totalPagado: totalPagado,
     );
@@ -299,11 +302,12 @@ class _State extends ConsumerState<CotizacionDetailScreen>
           final totalPagado = pagos.fold<double>(0, (a, p) => a + p.monto);
           final aportadoPorPartida = _aportadoPorPartida(movs);
 
-          final ivaPct = ref.watch(ivaPorcentajeProvider);
+          // IVA congelado en la cotización: el total no se recotiza si cambia
+          // el valor global por defecto.
           final totales = const PresupuestoCalculator().calcular(
             partidas: partidas.map(partidaToDomain).toList(),
             ivaEnabled: _ivaEnabled,
-            ivaPercentage: ivaPct,
+            ivaPercentage: widget.cotizacion.ivaPorcentaje,
             descuentoPorcentaje: widget.cotizacion.descuento,
             totalPagado: totalPagado,
           );
@@ -425,7 +429,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
         if (t.descuento > 0)
           row('Descuento (${widget.cotizacion.descuento.toStringAsFixed(0)}%)', -t.descuento),
         if (_ivaEnabled)
-          row('IVA (${ref.watch(ivaPorcentajeProvider).toStringAsFixed(0)}%)', t.iva),
+          row('IVA (${widget.cotizacion.ivaPorcentaje.toStringAsFixed(0)}%)', t.iva),
         row('TOTAL', t.total, bold: true),
         if (t.total != t.saldoRestante)
           row('Saldo por cobrar', t.saldoRestante, bold: true, color: cs.primary),
@@ -688,9 +692,9 @@ class _State extends ConsumerState<CotizacionDetailScreen>
                       leading: const Icon(Icons.menu_book, size: 18),
                       title: Text('${c.clave} · ${c.descripcion}',
                           maxLines: 1, overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12)),
+                          style: Theme.of(context).textTheme.bodySmall),
                       subtitle: Text('${c.unidad} · ${Fmt.money(c.precioUnitarioDefault)}',
-                          style: const TextStyle(fontSize: 12)),
+                          style: Theme.of(context).textTheme.bodySmall),
                       onTap: () {
                         claveCtrl.text = c.clave;
                         descCtrl.text = c.descripcion;
@@ -785,10 +789,11 @@ class _State extends ConsumerState<CotizacionDetailScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Total cobrado', style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text(Fmt.money(total),
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, color: Colors.green)),
+                  Text('Total cobrado',
+                      style: Theme.of(context).textTheme.titleSmall),
+                  MoneyText(total,
+                      color: context.colores.success,
+                      style: Theme.of(context).textTheme.titleSmall),
                 ],
               ),
             ),
@@ -805,17 +810,18 @@ class _State extends ConsumerState<CotizacionDetailScreen>
                           .map((p) => ListTile(
                                 leading: Icon(
                                     p.esPagoManual ? Icons.payments : Icons.south_west,
-                                    color: Colors.green),
+                                    color: context.colores.success),
                                 title: Text(p.concepto),
                                 subtitle: Text(
                                     '${Fmt.date(p.fecha)} · ${p.metodo} · ${p.esPagoManual ? 'Pago' : 'Caja'}'),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text(Fmt.money(p.monto),
-                                        style: const TextStyle(
-                                            color: Colors.green,
-                                            fontWeight: FontWeight.bold)),
+                                    MoneyText(p.monto,
+                                        color: context.colores.success,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleSmall),
                                     if (p.esPagoManual)
                                       IconButton(
                                         icon: const Icon(Icons.delete_outline),
@@ -941,13 +947,14 @@ class _State extends ConsumerState<CotizacionDetailScreen>
                           Expanded(
                             child: esImagen && File(a.uri).existsSync()
                                 ? Image.file(File(a.uri), fit: BoxFit.cover, width: double.infinity)
-                                : const Icon(Icons.picture_as_pdf, size: 48, color: Colors.red),
+                                : Icon(Icons.picture_as_pdf,
+                                    size: 48, color: context.colores.danger),
                           ),
                           Padding(
                             padding: const EdgeInsets.all(4),
                             child: Text(a.nombre,
                                 maxLines: 1, overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 12)),
+                                style: Theme.of(context).textTheme.bodySmall),
                           ),
                         ],
                       ),
