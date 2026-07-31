@@ -46,6 +46,30 @@ class AsistenciaRepository {
         .watch();
   }
 
+  /// Suma de las fracciones que el colaborador ya tiene registradas ese [fecha]
+  /// en TODAS las obras EXCEPTO [exceptObraId] (ignora bajas lógicas).
+  ///
+  /// Espeja el trigger 0016 del servidor, que RECHAZA que un colaborador acumule
+  /// más de 1 jornada (suma de `fraccion`) en una misma fecha contando todas las
+  /// obras. El móvil llama a esto ANTES de escribir para no crear una fila que la
+  /// nube va a rechazar (quedaría en `sync_status='error'`). Se excluye la obra
+  /// en curso porque su fracción se va a REEMPLAZAR por el valor nuevo, no a
+  /// sumar sobre el anterior.
+  Future<double> fraccionOtrasObras(
+    String colaboradorId,
+    int fecha,
+    String exceptObraId,
+  ) async {
+    final filas = await (db.select(db.asistencias)
+          ..where((t) =>
+              t.colaboradorId.equals(colaboradorId) &
+              t.fecha.equals(fecha) &
+              t.obraId.equals(exceptObraId).not() &
+              t.deletedAt.isNull()))
+        .get();
+    return filas.fold<double>(0.0, (suma, a) => suma + a.fraccion);
+  }
+
   /// Registra/actualiza la fracción de un colaborador en un día (índice único).
   /// [cuadrillaId] es opcional y solo ETIQUETA la fila (agrupa el pase de lista
   /// para reportes); no afecta el cálculo de nómina. Se sella con la cuadrilla

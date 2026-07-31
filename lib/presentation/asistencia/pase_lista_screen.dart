@@ -5,6 +5,7 @@ import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
+import '../common/app_snackbar.dart';
 import '../common/app_spacing.dart';
 import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
@@ -252,6 +253,30 @@ class _PaseListaRowState extends ConsumerState<_PaseListaRow> {
 
   Future<void> _guardar(double nueva) async {
     final previa = _fraccion;
+    // Guarda de jornada: el servidor (trigger de la migración 0016) RECHAZA que
+    // un colaborador acumule más de 1 jornada (suma de `fraccion`) en una misma
+    // fecha contando TODAS las obras. Espejamos esa regla aquí, ANTES de
+    // escribir: si no, la fila se guardaría local y el push a la nube la
+    // rechazaría, dejándola en `sync_status='error'`. Excluimos la obra en curso
+    // porque su fracción se reemplaza por [nueva], no se suma sobre la previa.
+    final otras = await ref
+        .read(asistenciaRepositoryProvider)
+        .fraccionOtrasObras(widget.colaboradorId, widget.diaMillis, widget.obraId);
+    // Tolerancia pequeña para no rechazar por ruido de punto flotante.
+    if (nueva + otras > 1.0 + 1e-9) {
+      if (mounted) {
+        showAppSnack(
+          context,
+          '${widget.nombre} ya tiene jornada registrada ese día en otra(s) '
+          'obra(s). El total del día no puede pasar de 1.',
+          tone: SnackTone.warning,
+        );
+        // Revierte el control visual a su valor previo: no dejamos el segmento
+        // marcado en la fracción rechazada.
+        setState(() => _fraccion = previa);
+      }
+      return;
+    }
     setState(() {
       _fraccion = nueva;
       _save = _SaveState.saving;
@@ -310,6 +335,51 @@ class _PaseListaRowState extends ConsumerState<_PaseListaRow> {
       ),
     );
     if (destino == null) return;
+    if (!mounted) return;
+
+    // Antes de ejecutar el movimiento, si la obra DESTINO tiene cuadrilla(s)
+    // asignada(s), ofrece además meter al colaborador en una de ellas. Leemos la
+    // lista vigente una sola vez (no necesitamos el stream aquí).
+    final cuadrillas = await ref
+        .read(cuadrillaRepositoryProvider)
+        .watchCuadrillasPorObra(destino)
+        .first;
+    if (!mounted) return;
+
+    Cuadrilla? cuadrillaElegida;
+    if (cuadrillas.isNotEmpty) {
+      cuadrillaElegida = await showModalBottomSheet<Cuadrilla>(
+        context: context,
+        builder: (ctx) => SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              Padding(
+                padding: AppSpacing.allLg,
+                child: Text(
+                    '¿Agregar a ${widget.nombre} a una cuadrilla de esta obra?',
+                    style: Theme.of(ctx).textTheme.titleMedium),
+              ),
+              const Divider(height: 1),
+              ...cuadrillas.map((q) => ListTile(
+                    leading: const Icon(Icons.groups),
+                    title: Text(q.nombre),
+                    subtitle: Text(especialidadLabel(q.especialidad)),
+                    onTap: () => Navigator.pop(ctx, q),
+                  )),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.arrow_forward),
+                title: const Text('No, solo mover'),
+                onTap: () => Navigator.pop(ctx),
+              ),
+            ],
+          ),
+        ),
+      );
+      if (!mounted) return;
+    }
+
     try {
       await ref.read(movimientoColaboradorServiceProvider).moverAObra(
             obraDestinoId: destino,
@@ -317,9 +387,20 @@ class _PaseListaRowState extends ConsumerState<_PaseListaRow> {
             fechaHoy: widget.diaMillis,
             fraccionHoy: _fraccion == 0.0 ? 1.0 : _fraccion,
           );
+      // Si el usuario eligió una cuadrilla, agrégalo también (reactiva la
+      // membresía si ya existía).
+      if (cuadrillaElegida != null) {
+        await ref.read(cuadrillaRepositoryProvider).agregarMiembro(
+              cuadrillaId: cuadrillaElegida.id,
+              colaboradorId: widget.colaboradorId,
+            );
+      }
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${widget.nombre} movido a la otra obra.')));
+        final extra = cuadrillaElegida != null
+            ? ' y se unió a la cuadrilla ${cuadrillaElegida.nombre}'
+            : '';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('${widget.nombre} movido a la otra obra$extra.')));
       }
     } catch (e) {
       if (mounted) {
