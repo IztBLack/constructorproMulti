@@ -243,6 +243,27 @@ relaciona con T4 (a futuro solo oficina lo genera; en móvil T4-mínimo basta co
 sea acción de admin). Ver [[mobile-desactualizacion-vs-web]] (el móvil va ADELANTE
 en PDF; esta fase es estética + un documento nuevo, NO recortar capacidad).
 
+**C. Es para AMBAS plataformas, no solo móvil (dueño, 2026-07-28).** La oficina debe
+poder generar el PDF de cliente y MANDARLO (WhatsApp u otro medio), sobre todo para
+clientes que NO están registrados en la plataforma (no pueden verlo en el portal).
+Estado real hallado en el código:
+  - **Web YA tiene el builder** `web/src/lib/pdf/estado-cuenta-pdf.ts` (entradas-only)
+    pero SOLO expuesto al **cliente registrado**
+    (`app/cliente/obras/[id]/estado-cuenta/descargar/route.ts`). El PDF de obra del
+    **admin** (`app/admin/obras/[id]/pdf`) usa el documento de caja INTERNO
+    (`construirCajaDocumentoHtml`, con salidas) — no sirve para el cliente.
+  - **Tarea web (baja):** exponer el builder existente en el lado admin — una acción
+    "descargar/enviar estado de cuenta del cliente" en `admin/obras/[id]`, gated a
+    admin/oficina. Reusa `estado-cuenta-pdf.ts`; NO hay que escribir el documento de
+    nuevo. Cierra el hueco para clientes no registrados.
+  - **Tarea móvil:** el `PdfService.estadoCuentaCliente` de (B).
+  - **Compartir:** el móvil ya comparte con `Printing.sharePdf`/share_plus (llega a
+    WhatsApp, correo, etc.) — sale gratis. En web es descargar y enviar a mano; un
+    enlace público compartible sería una mejora aparte, más grande.
+Nota de paridad: casi todo lo demás del lote (IVA, nota, archivar, borrado…) la web
+YA lo tenía; el móvil venía alcanzando. Este PDF de cliente-desde-admin es el único
+ítem que falta en AMBAS.
+
 ## Qué NO se hace (y por qué)
 
 - **Replicar RLS en el móvil** — el servidor es la autoridad; duplicarla es
