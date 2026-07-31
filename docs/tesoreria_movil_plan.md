@@ -207,6 +207,42 @@ fragmentar la migración en tres saltos:
 Cada fase: `flutter analyze` limpio + suite en verde + APK release probado, y su
 commit por separado.
 
+## Anexo — PDF estilo web + estado de cuenta del cliente *(fase aparte, notas)*
+
+Peticiones del dueño (2026-07-28), registradas para la fase de PDF. No implementadas.
+
+**A. Motores DISTINTOS (dato duro, define el alcance).** La **web** genera PDF
+armando **HTML + CSS** y renderizándolo con **Chromium headless** (puppeteer,
+`web/src/lib/pdf/render-html-to-pdf.ts`); el esqueleto/estilo común vive en
+`web/src/lib/pdf/documento-base.ts` (`BASE_CSS`, `@page` Letter, `--accent`,
+clases `.doc/.doc-header/.totales/.stat-box/...`). El **móvil** usa el paquete
+`pdf` de Dart (`lib/pdf/pdf_service.dart`), que construye el PDF con **widgets**,
+no con HTML/CSS. No se puede compartir código ni correr Chromium en el teléfono, y
+el móvil genera **offline** (su ventaja). Por eso "que el móvil use el estándar de
+la web" = **re-implementar la estética** de la web con los widgets del paquete
+`pdf`: header con color de acento, tipografía, estilo de tablas, cajas de totales,
+pie. Queda estéticamente igual (lo que el dueño aceptó como mínimo), pero es una
+reconstrucción visual, no un copiar-pegar. Es la pieza más grande del lote.
+
+**B. PDF con vista de CLIENTE (solo entradas).** El dueño quiere que la oficina
+(admin) pueda generar el PDF que ve el cliente — p. ej. de la caja, mostrando
+**solo ENTRADAS** (pagos recibidos), nunca salidas/gastos/nómina. Espeja la regla
+del portal del cliente en la web (el cliente NUNCA ve SALIDA; RLS 0010, ver
+[[portal-cliente-estado-cuenta-obra]]). El dato ya existe en móvil
+(`EstadoCuentaCalculator`: `costoTotal`, `recibido`, `pendiente`, `porTipo` =
+entradas agrupadas). **Principio de seguridad:** construirlo con un método
+DEDICADO `PdfService.estadoCuentaCliente(...)` alimentado SOLO con entradas +
+presupuesto, NO reusar `flujoCaja` con un flag "ocultar salidas" (un cambio futuro
+filtraría gastos al cliente). Contenido: encabezado, total del contrato, lista de
+pagos recibidos (entradas), saldo por cobrar. Nada más.
+
+**Cómo combinan:** B se implementa DENTRO de A. Al reescribir el estilo, todos los
+documentos comparten la misma base visual (como `documento-base.ts`), y de un solo
+esfuerzo salen los documentos internos restilizados + el nuevo de cliente. Se
+relaciona con T4 (a futuro solo oficina lo genera; en móvil T4-mínimo basta con que
+sea acción de admin). Ver [[mobile-desactualizacion-vs-web]] (el móvil va ADELANTE
+en PDF; esta fase es estética + un documento nuevo, NO recortar capacidad).
+
 ## Qué NO se hace (y por qué)
 
 - **Replicar RLS en el móvil** — el servidor es la autoridad; duplicarla es
