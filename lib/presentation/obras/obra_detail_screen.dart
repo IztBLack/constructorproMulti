@@ -184,6 +184,39 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     }
   }
 
+  /// Genera y comparte el PDF "Estado de cuenta del cliente": SOLO entradas
+  /// (pagos recibidos) + total del contrato + saldo por cobrar. Es el documento
+  /// que la oficina manda al cliente por WhatsApp/correo.
+  ///
+  /// El filtrado a `tipo == 'ENTRADA'` sucede AQUÍ, antes de mapear a la lista
+  /// que recibe `PdfService.estadoCuentaCliente`. Ese método nunca ve las
+  /// salidas: se le pasan los totales del [EstadoCuentaSummary] (cuyo `recibido`
+  /// / `pendiente` ya vienen calculados) y solo los renglones de entrada. Así un
+  /// error futuro no puede colar un gasto al cliente.
+  Future<void> _exportarEstadoCuentaCliente(
+      EstadoCuentaSummary estado, List<Movimiento> movs) async {
+    final base = await PdfPrefs.load();
+    if (!mounted) return;
+    final config = await showPdfPreDialog(context, base);
+    if (config == null) return;
+    // Filtro explícito: solo entradas, y solo los campos que el cliente debe
+    // ver (fecha · concepto · monto). No se pasa `tipo` ni nada de salidas.
+    final pagos = movs
+        .where((m) => m.tipo == 'ENTRADA')
+        .map((m) => (fecha: m.fecha, concepto: m.concepto, monto: m.monto))
+        .toList();
+    final bytes = await PdfService.estadoCuentaCliente(
+      obraNombre: widget.obra.nombre,
+      cliente: widget.obra.cliente,
+      costoTotal: estado.costoTotal,
+      recibido: estado.recibido,
+      pendiente: estado.pendiente,
+      pagos: pagos,
+      config: config,
+    );
+    await Printing.sharePdf(bytes: bytes, filename: 'estado_cuenta_cliente.pdf');
+  }
+
   // ============ EQUIPO ============
   Widget _equipoTab() {
     final asignadosAsync = ref.watch(colaboradoresPorObraProvider(_obraId));
@@ -899,6 +932,19 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                     _kpi('Salidas', resumen.totalSalidas, c.danger),
                     _kpi('Saldo', resumen.saldo, c.montoTone(resumen.saldo)),
                   ],
+                ),
+              ),
+              // Acción para generar el PDF que se manda AL CLIENTE (solo
+              // entradas + saldo). Distinto del PDF de caja interno del AppBar,
+              // que sí incluye salidas. Va aquí arriba, junto al presupuesto, no
+              // entre los FABs de captura, para no confundirlo con registrar un
+              // movimiento.
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+                child: OutlinedButton.icon(
+                  onPressed: () => _exportarEstadoCuentaCliente(estado, movs),
+                  icon: const Icon(Icons.receipt_long),
+                  label: const Text('Estado de cuenta del cliente (PDF)'),
                 ),
               ),
               if (partidas.isNotEmpty) _presupuestoCard(estado, partidas),
