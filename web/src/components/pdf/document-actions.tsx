@@ -8,13 +8,18 @@ import Link from 'next/link';
  *   attachment).
  * - "Imprimir" abre el MISMO PDF en otra pestaña (`?disp=inline`), listo para
  *   imprimir desde el visor — así se imprime exactamente lo que se ve.
+ * - `estadoCuentaClienteHref` (opcional): descarga un SEGUNDO documento pensado
+ *   PARA EL CLIENTE (solo pagos recibidos, sin salidas), distinto del PDF de
+ *   caja interno. Se muestra como acción secundaria cuando se provee.
  */
 export function DocumentActions({
   volverHref,
   descargarHref,
+  estadoCuentaClienteHref,
 }: {
   volverHref: string;
   descargarHref: string;
+  estadoCuentaClienteHref?: string;
 }) {
   // Añade disp=inline respetando si la URL ya trae query params (p. ej. ?inicio=).
   const imprimirHref = `${descargarHref}${descargarHref.includes('?') ? '&' : '?'}disp=inline`;
@@ -29,6 +34,19 @@ export function DocumentActions({
       </Link>
 
       <div className="flex-1" />
+
+      {/* Documento PARA EL CLIENTE: solo pagos recibidos (ENTRADAS), sin caja
+          interna ni salidas. Sirve para mandárselo a clientes no registrados.
+          Se distingue visualmente del "Descargar PDF" (caja interna) por ser un
+          botón secundario con etiqueta explícita. */}
+      {estadoCuentaClienteHref && (
+        <a
+          href={estadoCuentaClienteHref}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50"
+        >
+          Estado de cuenta del cliente (PDF)
+        </a>
+      )}
 
       {/* `siempre-oscuro/claro` NO se invierten con el tema: el botón queda
           negro con texto blanco en claro, oscuro y dentro de `tema-papel`. Con

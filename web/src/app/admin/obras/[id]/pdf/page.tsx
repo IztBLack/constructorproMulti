@@ -53,6 +53,9 @@ export default async function CajaPdfPage({ params }: Props) {
       <DocumentActions
         volverHref={`/admin/obras/${obra.id}`}
         descargarHref={`/admin/obras/${obra.id}/pdf/descargar`}
+        // Documento del CLIENTE (solo pagos), para enviarlo a clientes no
+        // registrados. Distinto del PDF de caja interno de arriba (con salidas).
+        estadoCuentaClienteHref={`/admin/obras/${obra.id}/estado-cuenta-cliente/descargar`}
       />
       <PreviewFrame html={html} />
     </DocumentShell>
