@@ -31,6 +31,12 @@ const nextConfig: NextConfig = {
     '/admin/obras/\\[id\\]/nomina/pdf/descargar': [
       './node_modules/@sparticuz/chromium/**/*',
     ],
+    // PDF de estado de cuenta del cliente generado desde el lado admin/oficina:
+    // también renderiza con Chromium, así que necesita empaquetar el binario o
+    // da 500 en producción (Vercel).
+    '/admin/obras/\\[id\\]/estado-cuenta-cliente/descargar': [
+      './node_modules/@sparticuz/chromium/**/*',
+    ],
   },
 
   async headers() {
