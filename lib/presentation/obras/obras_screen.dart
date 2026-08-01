@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/db/app_database.dart';
 import '../../core/sync/cloud_providers.dart';
+import '../../core/sync/rol_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
 import '../common/app_badge.dart';
@@ -108,6 +109,9 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
   Widget build(BuildContext context) {
     final obrasAsync = ref.watch(obrasProvider);
     final catalogoAsync = ref.watch(catalogoCountProvider);
+    // Gate de rol: un contador (o colaborador) no puede crear/editar/archivar/
+    // borrar obras (solo lectura). Conservador: desconocido/carga → puede editar.
+    final puedeEditar = ref.watch(puedeEditarOperacionProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -183,7 +187,7 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
             if (visibles.isEmpty) {
               return ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                children: [_vacio(obras.isEmpty)],
+                children: [_vacio(obras.isEmpty, puedeEditar)],
               );
             }
             return Column(
@@ -211,7 +215,7 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
                     physics: const AlwaysScrollableScrollPhysics(),
                     itemCount: visibles.length,
                     separatorBuilder: (_, _) => const Divider(height: 1),
-                    itemBuilder: (context, i) => _tile(visibles[i]),
+                    itemBuilder: (context, i) => _tile(visibles[i], puedeEditar),
                   ),
                 ),
               ],
@@ -219,11 +223,14 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
           },
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showObraDialog(null),
-        icon: const Icon(Icons.add),
-        label: const Text('Nueva obra'),
-      ),
+      // Sin permiso de edición (contador/colaborador) no se ofrece crear obra.
+      floatingActionButton: puedeEditar
+          ? FloatingActionButton.extended(
+              onPressed: () => _showObraDialog(null),
+              icon: const Icon(Icons.add),
+              label: const Text('Nueva obra'),
+            )
+          : null,
     );
   }
 
@@ -231,17 +238,22 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
   /// su propia salida: no hay nada que ver (crear), la búsqueda no pegó
   /// (limpiarla) o el filtro dejó fuera todo (quitarlo). Un solo mensaje
   /// genérico obligaría al usuario a adivinar cuál de los tres le tocó.
-  Widget _vacio(bool sinObras) {
+  Widget _vacio(bool sinObras, bool puedeEditar) {
     if (sinObras) {
       return EmptyStateView(
         icon: Icons.foundation,
         title: 'No hay obras registradas.',
-        hint: 'Crea la primera obra para empezar a llevar su gasto.',
-        action: FilledButton.icon(
-          onPressed: () => _showObraDialog(null),
-          icon: const Icon(Icons.add),
-          label: const Text('Nueva obra'),
-        ),
+        hint: puedeEditar
+            ? 'Crea la primera obra para empezar a llevar su gasto.'
+            : 'Aún no hay obras que consultar.',
+        // Sin permiso de edición no se ofrece crear (sería un botón muerto).
+        action: puedeEditar
+            ? FilledButton.icon(
+                onPressed: () => _showObraDialog(null),
+                icon: const Icon(Icons.add),
+                label: const Text('Nueva obra'),
+              )
+            : null,
       );
     }
 
@@ -274,7 +286,7 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
     );
   }
 
-  Widget _tile(Obra obra) {
+  Widget _tile(Obra obra, bool puedeEditar) {
     final detalle = [obra.cliente, obra.ubicacion]
         .where((s) => s.isNotEmpty)
         .join(' · ');
@@ -301,7 +313,11 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
                   ),
               ],
             ),
-      trailing: PopupMenuButton<String>(
+      // Sin permiso de edición se oculta el menú entero: la fila queda de solo
+      // lectura (se puede abrir la obra, pero no editarla/archivarla/borrarla).
+      trailing: !puedeEditar
+          ? null
+          : PopupMenuButton<String>(
         onSelected: (v) {
           if (v == 'editar') _showObraDialog(obra);
           if (v == 'archivar') _setArchivada(obra, true);
