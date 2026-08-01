@@ -7,9 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pdfx/pdfx.dart';
-import 'package:printing/printing.dart';
 import 'package:uuid/uuid.dart';
 
+import '../pdf_preview_screen.dart';
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
 import '../../core/pdf/pdf_config.dart';
@@ -178,7 +178,10 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
         summary: summary,
         config: config,
       );
-      await Printing.sharePdf(bytes: bytes, filename: 'nomina.pdf');
+      if (!mounted) return;
+      await Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => PdfPreviewScreen(
+              bytes: bytes, titulo: 'Nómina', filename: 'nomina.pdf')));
     } else if (idx == 3) {
       // Flujo de caja
       final movs = ref.read(movimientosPorObraProvider(_obraId)).asData?.value ?? [];
@@ -186,7 +189,10 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
           const FlujoCalculator().resumen(movs.map(movimientoToDomain).toList());
       final bytes = await PdfService.flujoCaja(
           obraNombre: widget.obra.nombre, movimientos: movs, resumen: resumen, config: config);
-      await Printing.sharePdf(bytes: bytes, filename: 'flujo_caja.pdf');
+      if (!mounted) return;
+      await Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => PdfPreviewScreen(
+              bytes: bytes, titulo: 'Flujo de caja', filename: 'flujo_caja.pdf')));
     } else {
       _snack('Cambia a la pestaña Nómina o Caja para exportar su PDF.');
     }
@@ -222,7 +228,10 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
       pagos: pagos,
       config: config,
     );
-    await Printing.sharePdf(bytes: bytes, filename: 'estado_cuenta_cliente.pdf');
+    if (!mounted) return;
+    await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => PdfPreviewScreen(
+            bytes: bytes, titulo: 'Estado de cuenta del cliente', filename: 'estado_cuenta_cliente.pdf')));
   }
 
   // ============ EQUIPO ============

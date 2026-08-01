@@ -14,8 +14,18 @@ import '../domain/models/models.dart' as dom;
 /// Genera los reportes PDF (equivalente a PdfGenerator.kt, con el paquete `pdf`),
 /// con personalización (empresa, color, logo, marca de agua, pie).
 class PdfService {
-  static const _verde = PdfColor.fromInt(0xFF2E7D32);
-  static const _rojo = PdfColor.fromInt(0xFFC62828);
+  // Paleta portada 1:1 del PDF de la web (`web/src/lib/pdf/documento-base.ts`):
+  // pizarra casi-negra para texto fuerte, grises para etiquetas/bordes, y verde/
+  // rojo con los MISMOS hex que la web para que ambos documentos se vean iguales.
+  static const _slate = PdfColor.fromInt(0xFF0F172A); // texto fuerte
+  static const _gris700 = PdfColor.fromInt(0xFF404040); // texto normal
+  static const _gris500 = PdfColor.fromInt(0xFF737373); // etiquetas
+  static const _gris400 = PdfColor.fromInt(0xFFA3A3A3); // apagado
+  static const _gris200 = PdfColor.fromInt(0xFFE5E5E5); // bordes
+  static const _gris100 = PdfColor.fromInt(0xFFF1F1F1); // borde de fila
+  static const _grisFondo = PdfColor.fromInt(0xFFFAFAFA); // relleno tenue
+  static const _verde = PdfColor.fromInt(0xFF16A34A);
+  static const _rojo = PdfColor.fromInt(0xFFDC2626);
 
   static PdfColor _hex(String hex) {
     var h = hex.replaceAll('#', '').trim();
@@ -26,47 +36,94 @@ class PdfService {
   static String _u(String s, PdfConfig c) => c.mayusculas ? s.toUpperCase() : s;
 
   // ---------------- Encabezado / tema / pie ----------------
-  static pw.Widget _header(String titulo, String subtitulo, PdfConfig cfg, PdfColor color) {
+  /// Encabezado estilo web (`.doc-header`): a la izquierda el "kicker" (tipo de
+  /// documento, en el color de acento), el nombre de la empresa grande y su
+  /// contacto; a la derecha el subtítulo (obra/cliente/rango). Cierra con una
+  /// línea gruesa pizarra, no una banda de color — es el look de la web.
+  static pw.Widget _header(
+      String titulo, String subtitulo, PdfConfig cfg, PdfColor color) {
     final logo = cfg.logoBytes;
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         pw.Container(
-          width: double.infinity,
-          padding: const pw.EdgeInsets.all(12),
-          color: color,
+          padding: const pw.EdgeInsets.only(bottom: 12),
+          decoration: const pw.BoxDecoration(
+            border: pw.Border(bottom: pw.BorderSide(color: _slate, width: 2)),
+          ),
           child: pw.Row(
-            crossAxisAlignment: pw.CrossAxisAlignment.center,
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              if (logo != null)
-                pw.Container(
-                    height: 42, margin: const pw.EdgeInsets.only(right: 12),
-                    child: pw.Image(pw.MemoryImage(logo)))
-              else
-                pw.Text(_u(cfg.empresaNombre, cfg),
-                    style: pw.TextStyle(
-                        color: PdfColors.white, fontSize: 18, fontWeight: pw.FontWeight.bold)),
-              pw.Spacer(),
-              pw.Text(_u(titulo, cfg),
-                  style: const pw.TextStyle(color: PdfColors.white, fontSize: 12)),
+              // Bloque emisor: kicker (acento) + empresa + contacto (o logo).
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(_u(titulo, cfg).toUpperCase(),
+                        style: pw.TextStyle(
+                            color: color,
+                            fontSize: 9,
+                            fontWeight: pw.FontWeight.bold,
+                            letterSpacing: 1.2)),
+                    pw.SizedBox(height: 3),
+                    if (logo != null)
+                      pw.Container(
+                          height: 38, child: pw.Image(pw.MemoryImage(logo)))
+                    else
+                      pw.Text(_u(cfg.empresaNombre, cfg),
+                          style: pw.TextStyle(
+                              color: _slate,
+                              fontSize: 18,
+                              fontWeight: pw.FontWeight.bold)),
+                    if (cfg.empresaContacto.isNotEmpty)
+                      pw.Padding(
+                        padding: const pw.EdgeInsets.only(top: 2),
+                        child: pw.Text(cfg.empresaContacto,
+                            style: const pw.TextStyle(
+                                fontSize: 9, color: _gris500)),
+                      ),
+                  ],
+                ),
+              ),
+              // Subtítulo a la derecha (obra / cliente / semana).
+              if (subtitulo.isNotEmpty)
+                pw.Padding(
+                  padding: const pw.EdgeInsets.only(left: 16),
+                  child: pw.Text(subtitulo,
+                      textAlign: pw.TextAlign.right,
+                      style: const pw.TextStyle(fontSize: 10, color: _gris700)),
+                ),
             ],
           ),
         ),
-        if (cfg.empresaContacto.isNotEmpty)
-          pw.Padding(
-            padding: const pw.EdgeInsets.only(top: 4),
-            child: pw.Text(cfg.empresaContacto, style: const pw.TextStyle(fontSize: 9)),
-          ),
-        pw.SizedBox(height: 6),
-        pw.Text(subtitulo, style: const pw.TextStyle(fontSize: 11)),
-        pw.Divider(),
+        pw.SizedBox(height: 16),
       ],
     );
   }
 
+  /// Título de sección estilo web (`.seccion-titulo`): barra de acento a la
+  /// izquierda + texto en mayúsculas. Disponible para los documentos que quieran
+  /// separar bloques con el mismo lenguaje visual de la web.
+  static pw.Widget _sectionTitle(String texto, PdfColor color) => pw.Container(
+        margin: const pw.EdgeInsets.only(bottom: 6),
+        padding: const pw.EdgeInsets.only(left: 8),
+        decoration: pw.BoxDecoration(
+          border: pw.Border(left: pw.BorderSide(color: color, width: 3)),
+        ),
+        child: pw.Text(texto.toUpperCase(),
+            style: pw.TextStyle(
+                fontSize: 10,
+                fontWeight: pw.FontWeight.bold,
+                color: _slate,
+                letterSpacing: 0.5)),
+      );
+
   static pw.PageTheme _pageTheme(PdfConfig cfg) => pw.PageTheme(
         pageFormat: PdfPageFormat.letter,
-        margin: pw.EdgeInsets.all(cfg.modoCompacto ? 24 : 40),
+        // Márgenes ~16mm/18mm como el `@page` de la web (en puntos: 1mm≈2.835pt).
+        margin: cfg.modoCompacto
+            ? const pw.EdgeInsets.all(28)
+            : const pw.EdgeInsets.symmetric(horizontal: 51, vertical: 45),
         buildBackground: cfg.watermark.isEmpty
             ? null
             : (ctx) => pw.FullPage(
@@ -85,14 +142,19 @@ class PdfService {
                 ),
       );
 
-  static pw.Widget Function(pw.Context) _footer(PdfConfig cfg) => (ctx) => cfg.pieDePagina.isEmpty
-      ? pw.SizedBox()
-      : pw.Container(
-          alignment: pw.Alignment.center,
-          margin: const pw.EdgeInsets.only(top: 8),
-          child: pw.Text(cfg.pieDePagina,
-              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey)),
-        );
+  static pw.Widget Function(pw.Context) _footer(PdfConfig cfg) =>
+      (ctx) => cfg.pieDePagina.isEmpty
+          ? pw.SizedBox()
+          : pw.Container(
+              alignment: pw.Alignment.center,
+              margin: const pw.EdgeInsets.only(top: 10),
+              padding: const pw.EdgeInsets.only(top: 8),
+              decoration: const pw.BoxDecoration(
+                border: pw.Border(top: pw.BorderSide(color: _gris200)),
+              ),
+              child: pw.Text(cfg.pieDePagina,
+                  style: const pw.TextStyle(fontSize: 9, color: _gris400)),
+            );
 
   static pw.Widget _firmas(PdfConfig cfg) {
     final firma = cfg.firmaBytes;
@@ -118,26 +180,38 @@ class PdfService {
     );
   }
 
+  /// Renglón de totales alineado a la derecha, estilo web (`.tot-fila` /
+  /// `.tot-total`). Las líneas normales van en gris con separador tenue; la línea
+  /// [bold] es el gran total, con borde superior pizarra y texto grande.
   static pw.Widget _totalLinea(String label, double value,
-          {bool bold = false, PdfColor? color}) =>
-      pw.Padding(
-        padding: const pw.EdgeInsets.symmetric(vertical: 2),
-        child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.end, children: [
-          pw.Text('$label:  ',
+      {bool bold = false, PdfColor? color}) {
+    final fila = pw.Container(
+      width: 300,
+      padding: const pw.EdgeInsets.symmetric(vertical: 6),
+      decoration: pw.BoxDecoration(
+        border: bold
+            ? const pw.Border(top: pw.BorderSide(color: _slate, width: 2))
+            : const pw.Border(bottom: pw.BorderSide(color: _gris100)),
+      ),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Text(label,
               style: pw.TextStyle(
+                  fontSize: bold ? 13 : 11,
                   fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
-                  fontSize: bold ? 12 : 10)),
-          pw.SizedBox(
-            width: 120,
-            child: pw.Text(Fmt.money(value),
-                textAlign: pw.TextAlign.right,
-                style: pw.TextStyle(
-                    fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
-                    fontSize: bold ? 12 : 10,
-                    color: color)),
-          ),
-        ]),
-      );
+                  color: bold ? _slate : _gris500)),
+          pw.Text(Fmt.money(value),
+              style: pw.TextStyle(
+                  fontSize: bold ? 13 : 11,
+                  fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
+                  color: color ?? _slate)),
+        ],
+      ),
+    );
+    // El bloque de totales se alinea a la derecha, como en la web.
+    return pw.Align(alignment: pw.Alignment.centerRight, child: fila);
+  }
 
   // ---------------- Nómina ----------------
   static Future<Uint8List> nomina({
@@ -154,9 +228,14 @@ class PdfService {
       build: (context) => [
         _header('Reporte de nómina semanal', 'Obra: $obraNombre\nSemana: $rango', config, color),
         pw.TableHelper.fromTextArray(
-          headerDecoration: pw.BoxDecoration(color: color),
-          headerStyle: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 9),
-          cellStyle: const pw.TextStyle(fontSize: 9),
+          border: null,
+          headerDecoration: const pw.BoxDecoration(
+              border: pw.Border(bottom: pw.BorderSide(color: _gris200))),
+          headerStyle: pw.TextStyle(
+              fontWeight: pw.FontWeight.bold, fontSize: 8, color: _gris500),
+          cellStyle: pw.TextStyle(fontSize: 9, color: _gris700),
+          oddRowDecoration: const pw.BoxDecoration(color: _grisFondo),
+          cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           cellAlignments: {4: pw.Alignment.centerRight},
           headers: ['Trabajador', 'Puesto', 'Tipo', 'Detalle', 'Total'],
           data: summary.items.map((it) {
@@ -207,12 +286,17 @@ class PdfService {
           if (pts.isEmpty) continue;
           widgets.add(pw.Padding(
             padding: const pw.EdgeInsets.only(top: 8, bottom: 4),
-            child: pw.Text(s.nombre, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11)),
+            child: _sectionTitle(s.nombre, color),
           ));
           widgets.add(pw.TableHelper.fromTextArray(
-            headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
-            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8),
-            cellStyle: const pw.TextStyle(fontSize: 8),
+            border: null,
+            headerDecoration: const pw.BoxDecoration(
+                border: pw.Border(bottom: pw.BorderSide(color: _gris200))),
+            headerStyle: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold, fontSize: 8, color: _gris500),
+            cellStyle: pw.TextStyle(fontSize: 8, color: _gris700),
+            oddRowDecoration: const pw.BoxDecoration(color: _grisFondo),
+            cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             cellAlignments: {
               3: pw.Alignment.centerRight, 4: pw.Alignment.centerRight,
               5: pw.Alignment.centerRight, 6: pw.Alignment.centerRight, 7: pw.Alignment.centerRight,
@@ -261,9 +345,14 @@ class PdfService {
       build: (context) => [
         _header('Reporte de flujo de caja', 'Obra: $obraNombre', config, color),
         pw.TableHelper.fromTextArray(
-          headerDecoration: pw.BoxDecoration(color: color),
-          headerStyle: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 9),
-          cellStyle: const pw.TextStyle(fontSize: 9),
+          border: null,
+          headerDecoration: const pw.BoxDecoration(
+              border: pw.Border(bottom: pw.BorderSide(color: _gris200))),
+          headerStyle: pw.TextStyle(
+              fontWeight: pw.FontWeight.bold, fontSize: 8, color: _gris500),
+          cellStyle: pw.TextStyle(fontSize: 9, color: _gris700),
+          oddRowDecoration: const pw.BoxDecoration(color: _grisFondo),
+          cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           cellAlignments: {5: pw.Alignment.centerRight},
           headers: ['Fecha', 'Tipo', 'Categoría', 'Concepto', 'Método', 'Monto'],
           data: movimientos
@@ -325,10 +414,14 @@ class PdfService {
             style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11)),
         pw.SizedBox(height: 4),
         pw.TableHelper.fromTextArray(
-          headerDecoration: pw.BoxDecoration(color: color),
+          border: null,
+          headerDecoration: const pw.BoxDecoration(
+              border: pw.Border(bottom: pw.BorderSide(color: _gris200))),
           headerStyle: pw.TextStyle(
-              color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 9),
-          cellStyle: const pw.TextStyle(fontSize: 9),
+              fontWeight: pw.FontWeight.bold, fontSize: 8, color: _gris500),
+          cellStyle: pw.TextStyle(fontSize: 9, color: _gris700),
+          oddRowDecoration: const pw.BoxDecoration(color: _grisFondo),
+          cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           cellAlignments: {2: pw.Alignment.centerRight},
           headers: ['Fecha', 'Concepto', 'Monto'],
           data: pagos.isEmpty
@@ -385,9 +478,14 @@ class PdfService {
                 style: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 10)),
           ));
           w.add(pw.TableHelper.fromTextArray(
-            headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
-            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8),
-            cellStyle: const pw.TextStyle(fontSize: 8),
+            border: null,
+            headerDecoration: const pw.BoxDecoration(
+                border: pw.Border(bottom: pw.BorderSide(color: _gris200))),
+            headerStyle: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold, fontSize: 8, color: _gris500),
+            cellStyle: pw.TextStyle(fontSize: 8, color: _gris700),
+            oddRowDecoration: const pw.BoxDecoration(color: _grisFondo),
+            cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             cellAlignments: {3: pw.Alignment.centerRight},
             headers: ['Trabajador', 'Puesto', 'Tipo', 'Total'],
             data: d.summary.items
@@ -423,9 +521,14 @@ class PdfService {
       build: (context) => [
         _header('Concentrado global de presupuestos', 'Todas las cotizaciones', config, color),
         pw.TableHelper.fromTextArray(
-          headerDecoration: pw.BoxDecoration(color: color),
-          headerStyle: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 9),
-          cellStyle: const pw.TextStyle(fontSize: 8),
+          border: null,
+          headerDecoration: const pw.BoxDecoration(
+              border: pw.Border(bottom: pw.BorderSide(color: _gris200))),
+          headerStyle: pw.TextStyle(
+              fontWeight: pw.FontWeight.bold, fontSize: 8, color: _gris500),
+          cellStyle: pw.TextStyle(fontSize: 8, color: _gris700),
+          oddRowDecoration: const pw.BoxDecoration(color: _grisFondo),
+          cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           cellAlignments: {2: pw.Alignment.centerRight, 3: pw.Alignment.centerRight, 4: pw.Alignment.centerRight},
           headers: ['Proyecto', 'Cliente', 'Subtotal', 'IVA', 'Total'],
           data: datos
@@ -470,9 +573,14 @@ class PdfService {
                 style: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 10)),
           ));
           w.add(pw.TableHelper.fromTextArray(
-            headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
-            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8),
-            cellStyle: const pw.TextStyle(fontSize: 8),
+            border: null,
+            headerDecoration: const pw.BoxDecoration(
+                border: pw.Border(bottom: pw.BorderSide(color: _gris200))),
+            headerStyle: pw.TextStyle(
+                fontWeight: pw.FontWeight.bold, fontSize: 8, color: _gris500),
+            cellStyle: pw.TextStyle(fontSize: 8, color: _gris700),
+            oddRowDecoration: const pw.BoxDecoration(color: _grisFondo),
+            cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             cellAlignments: {1: pw.Alignment.centerRight},
             headers: ['Trabajador', 'Días trabajados'],
             data: d.filas.map((f) => [f.trabajador, f.dias.toStringAsFixed(2)]).toList(),
@@ -498,9 +606,14 @@ class PdfService {
       build: (context) => [
         _header('Concentrado global de flujo de caja', 'Todas las obras', config, color),
         pw.TableHelper.fromTextArray(
-          headerDecoration: pw.BoxDecoration(color: color),
-          headerStyle: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold, fontSize: 9),
-          cellStyle: const pw.TextStyle(fontSize: 9),
+          border: null,
+          headerDecoration: const pw.BoxDecoration(
+              border: pw.Border(bottom: pw.BorderSide(color: _gris200))),
+          headerStyle: pw.TextStyle(
+              fontWeight: pw.FontWeight.bold, fontSize: 8, color: _gris500),
+          cellStyle: pw.TextStyle(fontSize: 9, color: _gris700),
+          oddRowDecoration: const pw.BoxDecoration(color: _grisFondo),
+          cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           cellAlignments: {1: pw.Alignment.centerRight, 2: pw.Alignment.centerRight, 3: pw.Alignment.centerRight},
           headers: ['Obra', 'Ingresos', 'Egresos', 'Saldo'],
           data: porObra

@@ -8,9 +8,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
+import '../pdf_preview_screen.dart';
 import '../../core/storage/app_paths.dart';
 import 'package:pdfx/pdfx.dart';
-import 'package:printing/printing.dart';
 
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
@@ -278,7 +278,10 @@ class _State extends ConsumerState<CotizacionDetailScreen>
       aportadoPorPartida: aportadoPorPartida,
       config: config,
     );
-    await Printing.sharePdf(bytes: bytes, filename: 'presupuesto.pdf');
+    if (!mounted) return;
+    await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => PdfPreviewScreen(
+            bytes: bytes, titulo: 'Presupuesto', filename: 'presupuesto.pdf')));
   }
 
   // ============ PRESUPUESTO ============
