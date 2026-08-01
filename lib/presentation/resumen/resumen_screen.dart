@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:printing/printing.dart';
 
+import '../pdf_preview_screen.dart';
 import '../../core/format/format.dart';
 import '../../core/pdf/pdf_config.dart';
 import '../../core/theme/app_colors.dart';
@@ -390,7 +390,10 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
     final config = await showPdfPreDialog(context, base);
     if (config == null) return;
     final bytes = await PdfService.flujoCajaGlobal(porObra: porObra, global: global, config: config);
-    await Printing.sharePdf(bytes: bytes, filename: 'flujo_global.pdf');
+    if (!mounted) return;
+    await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => PdfPreviewScreen(
+            bytes: bytes, titulo: 'Flujo de caja global', filename: 'flujo_global.pdf')));
   }
 
   Future<void> _exportarNominaGlobal(WidgetRef ref) async {
@@ -429,7 +432,10 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
     if (config == null) return;
     final bytes = await PdfService.nominaGlobal(
         datos: datos, rango: '${Fmt.date(inicio)} – ${Fmt.date(fin)}', config: config);
-    await Printing.sharePdf(bytes: bytes, filename: 'nomina_global.pdf');
+    if (!mounted) return;
+    await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => PdfPreviewScreen(
+            bytes: bytes, titulo: 'Nómina global', filename: 'nomina_global.pdf')));
   }
 
   Future<void> _exportarAsistenciasGlobal(WidgetRef ref) async {
@@ -459,7 +465,10 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
     if (config == null) return;
     final bytes = await PdfService.asistenciasGlobal(
         datos: datos, rango: '${Fmt.date(inicio)} – ${Fmt.date(fin)}', config: config);
-    await Printing.sharePdf(bytes: bytes, filename: 'asistencias_global.pdf');
+    if (!mounted) return;
+    await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => PdfPreviewScreen(
+            bytes: bytes, titulo: 'Asistencias global', filename: 'asistencias_global.pdf')));
   }
 
   Future<void> _exportarPresupuestosGlobal(WidgetRef ref) async {
@@ -479,6 +488,9 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
     final config = await showPdfPreDialog(context, base);
     if (config == null) return;
     final bytes = await PdfService.presupuestosGlobal(datos: datos, config: config);
-    await Printing.sharePdf(bytes: bytes, filename: 'presupuestos_global.pdf');
+    if (!mounted) return;
+    await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => PdfPreviewScreen(
+            bytes: bytes, titulo: 'Presupuestos global', filename: 'presupuestos_global.pdf')));
   }
 }

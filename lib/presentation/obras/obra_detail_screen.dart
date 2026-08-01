@@ -1,13 +1,21 @@
+import 'dart:io';
+
 import 'package:collection/collection.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:printing/printing.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:pdfx/pdfx.dart';
 import 'package:uuid/uuid.dart';
 
+import '../pdf_preview_screen.dart';
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
 import '../../core/pdf/pdf_config.dart';
+import '../../core/storage/comprobante_storage.dart';
+import '../../core/sync/cloud_providers.dart';
+import '../../core/sync/supabase_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
 import '../../domain/logic/estado_cuenta_calculator.dart';
@@ -170,7 +178,10 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
         summary: summary,
         config: config,
       );
-      await Printing.sharePdf(bytes: bytes, filename: 'nomina.pdf');
+      if (!mounted) return;
+      await Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => PdfPreviewScreen(
+              bytes: bytes, titulo: 'Nómina', filename: 'nomina.pdf')));
     } else if (idx == 3) {
       // Flujo de caja
       final movs = ref.read(movimientosPorObraProvider(_obraId)).asData?.value ?? [];
@@ -178,10 +189,49 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
           const FlujoCalculator().resumen(movs.map(movimientoToDomain).toList());
       final bytes = await PdfService.flujoCaja(
           obraNombre: widget.obra.nombre, movimientos: movs, resumen: resumen, config: config);
-      await Printing.sharePdf(bytes: bytes, filename: 'flujo_caja.pdf');
+      if (!mounted) return;
+      await Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => PdfPreviewScreen(
+              bytes: bytes, titulo: 'Flujo de caja', filename: 'flujo_caja.pdf')));
     } else {
       _snack('Cambia a la pestaña Nómina o Caja para exportar su PDF.');
     }
+  }
+
+  /// Genera y comparte el PDF "Estado de cuenta del cliente": SOLO entradas
+  /// (pagos recibidos) + total del contrato + saldo por cobrar. Es el documento
+  /// que la oficina manda al cliente por WhatsApp/correo.
+  ///
+  /// El filtrado a `tipo == 'ENTRADA'` sucede AQUÍ, antes de mapear a la lista
+  /// que recibe `PdfService.estadoCuentaCliente`. Ese método nunca ve las
+  /// salidas: se le pasan los totales del [EstadoCuentaSummary] (cuyo `recibido`
+  /// / `pendiente` ya vienen calculados) y solo los renglones de entrada. Así un
+  /// error futuro no puede colar un gasto al cliente.
+  Future<void> _exportarEstadoCuentaCliente(
+      EstadoCuentaSummary estado, List<Movimiento> movs) async {
+    final base = await PdfPrefs.load();
+    if (!mounted) return;
+    final config = await showPdfPreDialog(context, base);
+    if (config == null) return;
+    // Filtro explícito: solo entradas, y solo los campos que el cliente debe
+    // ver (fecha · concepto · monto). No se pasa `tipo` ni nada de salidas.
+    final pagos = movs
+        .where((m) => m.tipo == 'ENTRADA')
+        .map((m) => (fecha: m.fecha, concepto: m.concepto, monto: m.monto))
+        .toList();
+    final bytes = await PdfService.estadoCuentaCliente(
+      obraNombre: widget.obra.nombre,
+      cliente: widget.obra.cliente,
+      costoTotal: estado.costoTotal,
+      recibido: estado.recibido,
+      pendiente: estado.pendiente,
+      pagos: pagos,
+      config: config,
+    );
+    if (!mounted) return;
+    await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => PdfPreviewScreen(
+            bytes: bytes, titulo: 'Estado de cuenta del cliente', filename: 'estado_cuenta_cliente.pdf')));
   }
 
   // ============ EQUIPO ============
@@ -233,6 +283,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     final disponibles = todos.where((c) => !asignadosIds.contains(c.id)).toList();
 
     await showModalBottomSheet<void>(
+      useSafeArea: true,
       context: context,
       builder: (ctx) => ListView(
         children: [
@@ -888,7 +939,10 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
           final estado = const EstadoCuentaCalculator()
               .calcular(movimientos: movs, partidas: partidas);
           return ListView(
-            padding: const EdgeInsets.only(bottom: 96),
+            // +inset inferior del sistema (barra de navegación) para que el
+            // último movimiento y "Borrar todos" no queden bajo la barra.
+            padding: EdgeInsets.only(
+                bottom: 96 + MediaQuery.viewPaddingOf(context).bottom),
             children: [
               Padding(
                 padding: const EdgeInsets.all(12),
@@ -899,6 +953,19 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                     _kpi('Salidas', resumen.totalSalidas, c.danger),
                     _kpi('Saldo', resumen.saldo, c.montoTone(resumen.saldo)),
                   ],
+                ),
+              ),
+              // Acción para generar el PDF que se manda AL CLIENTE (solo
+              // entradas + saldo). Distinto del PDF de caja interno del AppBar,
+              // que sí incluye salidas. Va aquí arriba, junto al presupuesto, no
+              // entre los FABs de captura, para no confundirlo con registrar un
+              // movimiento.
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+                child: OutlinedButton.icon(
+                  onPressed: () => _exportarEstadoCuentaCliente(estado, movs),
+                  icon: const Icon(Icons.receipt_long),
+                  label: const Text('Estado de cuenta del cliente (PDF)'),
                 ),
               ),
               if (partidas.isNotEmpty) _presupuestoCard(estado, partidas),
@@ -940,7 +1007,17 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                           entrada ? Icons.south_west : Icons.north_east,
                           color: entrada ? c.success : c.danger,
                         ),
-                        title: Text(m.concepto),
+                        title: Row(
+                          children: [
+                            Expanded(child: Text(m.concepto)),
+                            // Indicador visible de que la fila trae comprobante
+                            // adjunto; también es la pista de que se puede tocar
+                            // para verlo.
+                            if (m.comprobanteUri != null)
+                              Icon(Icons.attach_file,
+                                  size: 16, color: c.textMuted),
+                          ],
+                        ),
                         subtitle: Text(
                           '${Fmt.date(m.fecha)} · ${m.metodoPago}'
                           '${m.nombre.trim().isEmpty ? '' : ' · ${m.nombre}'}',
@@ -954,6 +1031,9 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                           mostrarSigno: true,
                           style: Theme.of(context).textTheme.titleSmall,
                         ),
+                        // Tocar la fila abre las acciones de comprobante
+                        // (adjuntar / ver); el borrado sigue en pulsación larga.
+                        onTap: () => _comprobanteSheet(m),
                         onLongPress: () => _eliminarMov(m),
                       ),
                       const Divider(height: 1),
@@ -1242,6 +1322,147 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     if (!ok) return;
     await ref.read(movimientoRepositoryProvider).delete(m.id);
     if (mounted) showAppSnack(context, 'Movimiento eliminado.');
+  }
+
+  /// Hoja de acciones de comprobante de un movimiento: ver el adjunto (si ya
+  /// tiene) y adjuntar/reemplazar desde cámara, galería o PDF.
+  Future<void> _comprobanteSheet(Movimiento m) async {
+    final tiene = m.comprobanteUri != null;
+    final opcion = await showModalBottomSheet<String>(
+      useSafeArea: true,
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          if (tiene)
+            ListTile(
+              leading: const Icon(Icons.visibility_outlined),
+              title: const Text('Ver comprobante'),
+              onTap: () => Navigator.pop(ctx, 'ver'),
+            ),
+          ListTile(
+            leading: const Icon(Icons.camera_alt_outlined),
+            title: Text(tiene ? 'Reemplazar con cámara' : 'Adjuntar con cámara'),
+            onTap: () => Navigator.pop(ctx, 'camara'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.photo_library_outlined),
+            title: Text(tiene ? 'Reemplazar con galería' : 'Adjuntar de galería'),
+            onTap: () => Navigator.pop(ctx, 'galeria'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.picture_as_pdf_outlined),
+            title: Text(tiene ? 'Reemplazar con PDF' : 'Adjuntar PDF'),
+            onTap: () => Navigator.pop(ctx, 'pdf'),
+          ),
+        ]),
+      ),
+    );
+    if (opcion == null) return;
+    if (opcion == 'ver') {
+      await _verComprobante(m);
+    } else {
+      await _adjuntarComprobante(m, opcion);
+    }
+  }
+
+  /// Adjunta (o reemplaza) el comprobante de un movimiento.
+  ///
+  /// ALCANCE v1 (online-only, deliberado): la subida ocurre EN EL MOMENTO y
+  /// requiere red + sesión + empresa. No hay cola offline: si no se puede subir
+  /// se avisa y se aborta, no se guarda nada pendiente. La cola offline (subir en
+  /// diferido al recuperar la red) queda como mejora futura.
+  Future<void> _adjuntarComprobante(Movimiento m, String opcion) async {
+    // El comprobante vive en `<empresa>/<obra>/…` dentro del bucket privado; sin
+    // empresa/sesión no hay ruta válida ni permiso, así que ni intentamos subir.
+    final empresaId = ref.read(empresaIdProvider);
+    final haySesion = SupabaseConfig.currentUser != null;
+    if (empresaId == null || empresaId.isEmpty || !haySesion) {
+      showAppSnack(
+        context,
+        'Necesitas conexión para adjuntar un comprobante.',
+        tone: SnackTone.warning,
+      );
+      return;
+    }
+
+    // Selección del archivo (fuera del try: cancelar no es un error).
+    String? src;
+    if (opcion == 'pdf') {
+      final res = await FilePicker.platform
+          .pickFiles(type: FileType.custom, allowedExtensions: ['pdf']);
+      src = res?.files.single.path;
+    } else {
+      final picked = await ImagePicker().pickImage(
+        source: opcion == 'camara' ? ImageSource.camera : ImageSource.gallery,
+      );
+      src = picked?.path;
+    }
+    if (src == null) return; // el usuario canceló
+
+    try {
+      final ruta = await ComprobanteStorage.subir(
+        empresaId: empresaId,
+        obraId: _obraId,
+        archivo: File(src),
+      );
+      await ref.read(movimientoRepositoryProvider).setComprobanteUri(m.id, ruta);
+      if (mounted) {
+        showAppSnack(context, 'Comprobante adjuntado.',
+            tone: SnackTone.success);
+      }
+    } catch (_) {
+      // Red caída / sin permiso / bucket: nunca crasheamos, solo avisamos.
+      if (mounted) {
+        showAppSnack(
+          context,
+          'No se pudo adjuntar el comprobante. Revisa tu conexión.',
+          tone: SnackTone.danger,
+        );
+      }
+    }
+  }
+
+  /// Abre el comprobante de un movimiento. El bucket es privado, así que se pide
+  /// una URL firmada de vida corta; la imagen se muestra con `Image.network` y el
+  /// PDF con `pdfx` a partir de sus bytes descargados.
+  Future<void> _verComprobante(Movimiento m) async {
+    final ruta = m.comprobanteUri;
+    if (ruta == null) return;
+    final esPdf = ruta.toLowerCase().endsWith('.pdf');
+
+    try {
+      if (esPdf) {
+        final bytes = await ComprobanteStorage.descargar(ruta);
+        if (!mounted) return;
+        await Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => Scaffold(
+            appBar: AppBar(title: const Text('Comprobante')),
+            body: PdfViewPinch(
+              controller: PdfControllerPinch(
+                document: PdfDocument.openData(bytes),
+              ),
+            ),
+          ),
+        ));
+      } else {
+        final url = await ComprobanteStorage.urlFirmada(ruta);
+        if (!mounted) return;
+        await showDialog<void>(
+          context: context,
+          builder: (ctx) => Dialog(
+            child: InteractiveViewer(child: Image.network(url)),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        showAppSnack(
+          context,
+          'No se pudo abrir el comprobante. Revisa tu conexión.',
+          tone: SnackTone.danger,
+        );
+      }
+    }
   }
 
   /// Borra TODOS los movimientos de la obra. Es mucho más destructivo que borrar

@@ -146,7 +146,20 @@ class _ObraPaseLista extends ConsumerWidget {
           count: miembros.length,
           onMarcarTodos: () async {
             final repo = ref.read(asistenciaRepositoryProvider);
+            // Se captura antes de los await: las escrituras de setFraccion hacen
+            // rebuild de la lista y dejarían este context inválido después.
+            final messenger = ScaffoldMessenger.of(context);
+            final warn = context.colores.warning;
+            // T0: espeja el trigger 0016. A cada miembro se le omite si marcar
+            // día completo aquí lo pasaría de 1 jornada ese día sumando todas las
+            // obras; así "marcar todos" no crea filas que la nube rechazaría.
+            final omitidos = <String>[];
             for (final c in miembros) {
+              final otras = await repo.fraccionOtrasObras(c.id, diaMillis, obraId);
+              if (1.0 + otras > 1.0 + 1e-9) {
+                omitidos.add(c.nombre);
+                continue;
+              }
               await repo.setFraccion(
                 obraId: obraId,
                 colaboradorId: c.id,
@@ -154,6 +167,22 @@ class _ObraPaseLista extends ConsumerWidget {
                 fraccion: 1.0,
                 cuadrillaId: cid,
               );
+            }
+            if (omitidos.isNotEmpty) {
+              messenger.hideCurrentSnackBar();
+              messenger.showSnackBar(SnackBar(
+                behavior: SnackBarBehavior.floating,
+                content: Row(children: [
+                  Icon(Icons.warning_amber_outlined, size: 20, color: warn),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'No se marcaron ${omitidos.length}: ya tienen jornada ese '
+                      'día en otra obra (${omitidos.join(', ')}).',
+                    ),
+                  ),
+                ]),
+              ));
             }
           },
         ));
@@ -313,6 +342,7 @@ class _PaseListaRowState extends ConsumerState<_PaseListaRow> {
       return;
     }
     final destino = await showModalBottomSheet<String>(
+      useSafeArea: true,
       context: context,
       builder: (ctx) => SafeArea(
         child: ListView(
@@ -349,6 +379,7 @@ class _PaseListaRowState extends ConsumerState<_PaseListaRow> {
     Cuadrilla? cuadrillaElegida;
     if (cuadrillas.isNotEmpty) {
       cuadrillaElegida = await showModalBottomSheet<Cuadrilla>(
+        useSafeArea: true,
         context: context,
         builder: (ctx) => SafeArea(
           child: ListView(

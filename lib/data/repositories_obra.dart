@@ -274,6 +274,23 @@ class MovimientoRepository {
     );
   }
 
+  /// Fija (o limpia, con [uri] null) la ruta del comprobante adjunto de un
+  /// movimiento. Escribe `comprobanteUri` + `updatedAt` + `syncStatus:'pending'`
+  /// —mismo estilo que [delete]— para que el push a la nube propague el adjunto
+  /// como una edición más. La [uri] es la RUTA dentro del bucket privado
+  /// `comprobantes` (ver ComprobanteStorage), no una URL; para verlo se pide una
+  /// URL firmada al vuelo.
+  Future<void> setComprobanteUri(String id, String? uri) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return (db.update(db.movimientos)..where((t) => t.id.equals(id))).write(
+      MovimientosCompanion(
+        comprobanteUri: Value(uri),
+        updatedAt: Value(now),
+        syncStatus: const Value('pending'),
+      ),
+    );
+  }
+
   /// SOFT-delete de TODOS los movimientos vivos (deletedAt nulo) de una obra.
   /// Marca las mismas tres columnas que [delete] —deletedAt, updatedAt y
   /// syncStatus 'pending'— para que el push a la nube propague el borrado como

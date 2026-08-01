@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
+import '../../core/sync/rol_provider.dart';
 import '../../data/providers.dart';
 import '../common/app_spacing.dart';
 import '../common/async_action_button.dart';
@@ -54,6 +55,9 @@ class _CotizacionesScreenState extends ConsumerState<CotizacionesScreen> {
   @override
   Widget build(BuildContext context) {
     final cotsAsync = ref.watch(cotizacionesProvider);
+    // Gate de rol: un contador (o colaborador) no crea/edita/borra cotizaciones
+    // (solo lectura). Conservador: desconocido/carga → puede editar.
+    final puedeEditar = ref.watch(puedeEditarOperacionProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Cotizaciones'),
@@ -114,18 +118,22 @@ class _CotizacionesScreenState extends ConsumerState<CotizacionesScreen> {
                     : ListView.separated(
                         itemCount: visibles.length,
                         separatorBuilder: (_, _) => const Divider(height: 1),
-                        itemBuilder: (context, i) => _fila(visibles[i]),
+                        itemBuilder: (context, i) =>
+                            _fila(visibles[i], puedeEditar),
                       ),
               ),
             ],
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _dialog(null),
-        icon: const Icon(Icons.add),
-        label: const Text('Nueva'),
-      ),
+      // Sin permiso de edición (contador/colaborador) no se ofrece crear.
+      floatingActionButton: puedeEditar
+          ? FloatingActionButton.extended(
+              onPressed: () => _dialog(null),
+              icon: const Icon(Icons.add),
+              label: const Text('Nueva'),
+            )
+          : null,
     );
   }
 
@@ -176,7 +184,7 @@ class _CotizacionesScreenState extends ConsumerState<CotizacionesScreen> {
     return 'Ningún proyecto ni cliente coincide con “$texto”.';
   }
 
-  Widget _fila(Cotizacion c) {
+  Widget _fila(Cotizacion c, bool puedeEditar) {
     return ListTile(
       title: Text(c.nombreProyecto),
       // El estado dejó de ser un círculo de color a la izquierda —que
@@ -197,7 +205,11 @@ class _CotizacionesScreenState extends ConsumerState<CotizacionesScreen> {
           ],
         ),
       ),
-      trailing: PopupMenuButton<String>(
+      // Sin permiso de edición se oculta el menú: la fila queda de solo lectura
+      // (se abre la cotización, pero no se edita ni borra).
+      trailing: !puedeEditar
+          ? null
+          : PopupMenuButton<String>(
         tooltip: 'Acciones de la cotización',
         onSelected: (v) {
           if (v == 'editar') _dialog(c);
