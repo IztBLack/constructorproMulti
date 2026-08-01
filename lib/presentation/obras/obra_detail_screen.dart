@@ -1651,7 +1651,12 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
           color: context.colores.surfaceMuted,
           border: Border(top: BorderSide(color: context.colores.border)),
         ),
-        padding: const EdgeInsets.all(16),
+        // Suma el inset inferior del sistema al padding: el fondo de la barra
+        // llega hasta el borde (se ve anclada) pero el texto queda POR ENCIMA de
+        // la barra de navegación de Android, no debajo. Esta pantalla se abre
+        // sobre el shell (sin el bottomNavigationBar que ya reservaba ese hueco).
+        padding: EdgeInsets.fromLTRB(
+            16, 16, 16, 16 + MediaQuery.viewPaddingOf(context).bottom),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
