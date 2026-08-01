@@ -241,6 +241,7 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
       return;
     }
     await showModalBottomSheet<void>(
+      useSafeArea: true,
       context: context,
       builder: (ctx) {
         return Consumer(builder: (ctx, ref2, _) {

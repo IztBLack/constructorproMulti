@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -20,6 +21,15 @@ import 'presentation/home_shell.dart';
 void main() {
   // Captura cualquier crash (Flutter + zona) en un log local offline.
   CrashLogger.runGuarded(() async {
+    // Edge-to-edge explícito. En Android 15 (targetSdk 35) el sistema dibuja sus
+    // barras SOBRE la app por defecto; sin declarar esto, en algunos equipos
+    // (p. ej. Samsung con barra de 3 botones) la barra de navegación tapa el
+    // contenido de abajo. Al activarlo, Flutter recibe los insets y el Scaffold
+    // reserva el espacio. En iOS es no-op (allí ya es edge-to-edge y lo maneja
+    // SafeArea). El color/contraste de las barras se define en ConstructorProApp.
+    // `runGuarded` ya llamó a WidgetsFlutterBinding.ensureInitialized().
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
     await initializeDateFormatting('es_MX', null);
     await NotificationService.init();
 
@@ -76,6 +86,28 @@ class ConstructorProApp extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      // Barras del sistema TRANSPARENTES y sin scrim forzado, con los íconos en
+      // el brillo correcto según el tema activo. `contrastEnforced: false` es la
+      // clave: sin él, Android vuelve a pintar una barra opaca encima. Va en el
+      // `builder` para leer el brillo del tema ya resuelto (incluye "sistema").
+      builder: (context, child) {
+        final brillo = Theme.of(context).brightness;
+        // Íconos oscuros sobre barra clara (tema claro) y viceversa.
+        final iconos =
+            brillo == Brightness.dark ? Brightness.light : Brightness.dark;
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: iconos, // Android
+            statusBarBrightness: brillo, // iOS
+            systemNavigationBarColor: Colors.transparent,
+            systemNavigationBarIconBrightness: iconos,
+            systemNavigationBarContrastEnforced: false,
+            systemStatusBarContrastEnforced: false,
+          ),
+          child: child!,
+        );
+      },
       home: const HomeShell(),
     );
   }

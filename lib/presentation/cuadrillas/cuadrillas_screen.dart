@@ -344,6 +344,7 @@ class CuadrillaDetailScreen extends ConsumerWidget {
 
   Future<void> _agregarMiembroSheet(BuildContext context, WidgetRef ref) async {
     await showModalBottomSheet<void>(
+      useSafeArea: true,
       context: context,
       isScrollControlled: true,
       builder: (ctx) => Consumer(builder: (ctx, ref2, _) {

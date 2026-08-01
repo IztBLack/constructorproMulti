@@ -283,6 +283,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     final disponibles = todos.where((c) => !asignadosIds.contains(c.id)).toList();
 
     await showModalBottomSheet<void>(
+      useSafeArea: true,
       context: context,
       builder: (ctx) => ListView(
         children: [
@@ -938,7 +939,10 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
           final estado = const EstadoCuentaCalculator()
               .calcular(movimientos: movs, partidas: partidas);
           return ListView(
-            padding: const EdgeInsets.only(bottom: 96),
+            // +inset inferior del sistema (barra de navegación) para que el
+            // último movimiento y "Borrar todos" no queden bajo la barra.
+            padding: EdgeInsets.only(
+                bottom: 96 + MediaQuery.viewPaddingOf(context).bottom),
             children: [
               Padding(
                 padding: const EdgeInsets.all(12),
@@ -1325,6 +1329,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
   Future<void> _comprobanteSheet(Movimiento m) async {
     final tiene = m.comprobanteUri != null;
     final opcion = await showModalBottomSheet<String>(
+      useSafeArea: true,
       context: context,
       builder: (ctx) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [

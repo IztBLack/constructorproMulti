@@ -544,6 +544,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
   /// Elige entre buscar en catálogo o capturar manual.
   Future<void> _agregarPartidaFlujo(String seccionId) async {
     final opcion = await showModalBottomSheet<String>(
+      useSafeArea: true,
       context: context,
       builder: (ctx) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -991,6 +992,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
 
   Future<void> _agregarArchivo() async {
     final opcion = await showModalBottomSheet<String>(
+      useSafeArea: true,
       context: context,
       builder: (ctx) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [

@@ -342,6 +342,7 @@ class _PaseListaRowState extends ConsumerState<_PaseListaRow> {
       return;
     }
     final destino = await showModalBottomSheet<String>(
+      useSafeArea: true,
       context: context,
       builder: (ctx) => SafeArea(
         child: ListView(
@@ -378,6 +379,7 @@ class _PaseListaRowState extends ConsumerState<_PaseListaRow> {
     Cuadrilla? cuadrillaElegida;
     if (cuadrillas.isNotEmpty) {
       cuadrillaElegida = await showModalBottomSheet<Cuadrilla>(
+        useSafeArea: true,
         context: context,
         builder: (ctx) => SafeArea(
           child: ListView(
