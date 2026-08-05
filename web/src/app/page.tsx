@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { ReactNode, SVGProps } from 'react';
 import { LinkButton } from '@/components/ui';
+import { enlaceApkAndroid, enlaceAppIos } from '@/lib/descargas';
+import { IconAndroid, IconApple } from '@/components/descargas/iconos';
 
 export const metadata: Metadata = {
   title: { absolute: 'ConstructorPro — Lleva tus obras en orden' },
@@ -128,32 +130,9 @@ function BrandMark({ className = '' }: { className?: string }) {
   );
 }
 
-// Íconos de marca (relleno, no trazo). Paths de Simple Icons.
-const IconAndroid = (p: IconProps) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...p}>
-    <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0223 3.5024C15.5902 8.2439 13.8533 7.8508 12 7.8508s-3.5902.3931-5.1367 1.0989L4.841 5.4467a.4161.4161 0 00-.5677-.1521.4157.4157 0 00-.1521.5676l1.9973 3.4592C2.6889 11.1867.3432 14.6589 0 18.761h24c-.3435-4.1021-2.6892-7.5743-6.0775-9.4396" />
-  </svg>
-);
-
-const IconApple = (p: IconProps) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...p}>
-    <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.043 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701" />
-  </svg>
-);
-
-// ---------------------------------------------------------------------------
-// Descargas de la app móvil.
-//
-// PENDIENTE: aún no hay versiones publicadas oficialmente. La idea es
-// distribuirlas como software independiente (fuera de las tiendas):
-//   - Android: subir el APK a Google Drive y pegar aquí el enlace público.
-//   - iOS: sin definir (ver sugerencias: TestFlight o PWA "Añadir a inicio").
-// Mientras el enlace esté vacío (''), la tarjeta se muestra como "Próximamente".
-// ---------------------------------------------------------------------------
-const DESCARGAS = {
-  android: '',
-  ios: '',
-};
+// Los íconos de marca Android/Apple y la configuración de descargas viven en
+// módulos compartidos (`@/components/descargas/iconos` y `@/lib/descargas`), la
+// misma fuente que usa el botón de descarga dentro del portal.
 
 // ---------------------------------------------------------------------------
 // Datos de las secciones. Lenguaje sencillo, del día a día de una obra.
@@ -226,6 +205,11 @@ const PASOS = [
 // ---------------------------------------------------------------------------
 
 export default function Home() {
+  // Enlaces de descarga (o `null` mientras no estén publicados). Fuente única en
+  // `@/lib/descargas`, compartida con el botón de descarga del portal.
+  const androidUrl = enlaceApkAndroid();
+  const iosUrl = enlaceAppIos();
+
   return (
     <div className="flex min-h-screen flex-col bg-neutral-50 text-neutral-900">
       {/* ---------------------------------------------------------------- Nav */}
@@ -516,7 +500,7 @@ export default function Home() {
                     <h3 className="text-lg font-semibold">Android</h3>
                     <p className="text-xs text-neutral-500">Celular o tablet</p>
                   </div>
-                  {!DESCARGAS.android && (
+                  {!androidUrl && (
                     // neutral-600 y no -500: sobre `bg-neutral-100` el -500 da
                     // 4.35:1 y WCAG AA pide 4.5:1 para texto normal.
                     <span className="inline-flex items-center rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium text-neutral-600">
@@ -525,12 +509,12 @@ export default function Home() {
                   )}
                 </div>
                 <p className="mt-4 flex-1 text-sm leading-relaxed text-neutral-600">
-                  Se instala como una app aparte, fuera de la Play Store. Cuando esté lista, la bajas
-                  desde el enlace de descarga y la instalas en tu teléfono.
+                  Se instala como una app aparte, fuera de la Play Store. La bajas desde el enlace de
+                  descarga y la instalas en tu teléfono.
                 </p>
                 <div className="mt-6">
-                  {DESCARGAS.android ? (
-                    <LinkButton href={DESCARGAS.android} target="_blank" rel="noopener noreferrer">
+                  {androidUrl ? (
+                    <LinkButton href={androidUrl} download>
                       Descargar para Android
                       <IconArrow className="h-4 w-4" />
                     </LinkButton>
@@ -559,7 +543,7 @@ export default function Home() {
                     <h3 className="text-lg font-semibold">iPhone (iOS)</h3>
                     <p className="text-xs text-neutral-500">Apple</p>
                   </div>
-                  {!DESCARGAS.ios && (
+                  {!iosUrl && (
                     // neutral-600 y no -500: sobre `bg-neutral-100` el -500 da
                     // 4.35:1 y WCAG AA pide 4.5:1 para texto normal.
                     <span className="inline-flex items-center rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium text-neutral-600">
@@ -572,8 +556,8 @@ export default function Home() {
                   noticias por aquí.
                 </p>
                 <div className="mt-6">
-                  {DESCARGAS.ios ? (
-                    <LinkButton href={DESCARGAS.ios} target="_blank" rel="noopener noreferrer">
+                  {iosUrl ? (
+                    <LinkButton href={iosUrl} target="_blank" rel="noopener noreferrer">
                       Descargar para iPhone
                       <IconArrow className="h-4 w-4" />
                     </LinkButton>
