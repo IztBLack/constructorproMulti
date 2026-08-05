@@ -6,33 +6,35 @@
  * cambia en un solo lugar y no queda desincronizado entre páginas.
  *
  * ─────────────────────────────────────────────────────────────────────────────
- * CÓMO PUBLICAR EL APK EN GOOGLE DRIVE (mientras no esté en tiendas)
+ * DÓNDE VIVE EL APK: GitHub Releases (repo público IztBLack/constructorproMulti)
  * ─────────────────────────────────────────────────────────────────────────────
- *  1. Compila el APK universal:  `.\build_release.ps1`
- *     Sale en: build\app\outputs\flutter-apk\app-release.apk
- *  2. Súbelo a Google Drive (idealmente a una carpeta "ConstructorPro / APKs").
- *     Sugerencia: renómbralo con versión, p.ej. constructorpro-1.0.0.apk
- *  3. Clic derecho → Compartir → Acceso general: "Cualquier persona con el
- *     enlace" → rol "Lector". (Sin esto, la descarga pedirá iniciar sesión.)
- *  4. Copia el enlace. Se ve así:
- *        https://drive.google.com/file/d/XXXXXXXXXXXXXXXXX/view?usp=sharing
- *     El ID es el trozo entre /d/ y /view  →  XXXXXXXXXXXXXXXXX
- *  5. Pega ese ID en `android.driveFileId` de abajo y rellena versión/tamaño.
+ * Se eligió GitHub Releases y NO Google Drive: Drive muestra una pantalla
+ * intermedia de advertencia ("este archivo es demasiado grande para analizarlo…
+ * podría dañar tu computadora / Descargar de todos modos") para ejecutables
+ * grandes como un APK, y no se puede saltar de forma fiable. GitHub sirve el
+ * asset directo (Content-Type application/vnd.android.package-archive), sin
+ * advertencia y desde un dominio de confianza. (Supabase Storage se descartó:
+ * el plan Free topa en 50 MB por archivo y el APK pesa ~79 MB.)
  *
- * Por qué guardamos el ID y no la URL: el enlace que da "Compartir" abre la
- * vista previa de Drive, no descarga. Con el ID construimos el enlace de
- * DESCARGA DIRECTA (ver `enlaceApkAndroid`), que además incluye `confirm=t`
- * para saltar la pantalla intermedia de "Google no analizó este archivo" que
- * aparece con archivos grandes como un APK.
+ * CÓMO PUBLICAR UNA VERSIÓN NUEVA:
+ *  1. Compila el APK:  `.\build_release.ps1`
+ *     Sale en: build\app\outputs\flutter-apk\app-release.apk
+ *  2. Renómbralo con versión, p.ej. constructorpro-1.0.3.apk
+ *  3. Crea el Release y sube el asset (necesita `gh` autenticado):
+ *        gh release create v1.0.3 constructorpro-1.0.3.apk `
+ *          --repo IztBLack/constructorproMulti --title "ConstructorPro 1.0.3 (Android)"
+ *  4. Actualiza `android` de abajo: `url`, `version` y `tamanoAprox`.
+ *     La URL de descarga directa de un asset tiene esta forma:
+ *        https://github.com/<owner>/<repo>/releases/download/<tag>/<archivo>.apk
  */
 
 interface ConfigDescargas {
   android: {
-    /** ID del archivo APK en Google Drive. Vacío ('') ⇒ se muestra "Próximamente". */
-    driveFileId: string;
-    /** Versión visible (informativa). p.ej. '1.0.0' */
+    /** URL de descarga directa del APK. Vacía ('') ⇒ se muestra "Próximamente". */
+    url: string;
+    /** Versión visible (informativa). p.ej. '1.0.2' */
     version: string;
-    /** Tamaño aproximado para avisar al usuario. p.ej. '48 MB' */
+    /** Tamaño aproximado para avisar al usuario. p.ej. '79 MB' */
     tamanoAprox: string;
   };
   ios: {
@@ -45,7 +47,7 @@ interface ConfigDescargas {
 
 export const DESCARGAS: ConfigDescargas = {
   android: {
-    driveFileId: '1iUt7B15ts0qcNu89yhA93hre_VBXzSnn',
+    url: 'https://github.com/IztBLack/constructorproMulti/releases/download/v1.0.2/constructorpro-1.0.2.apk',
     version: '1.0.2',
     tamanoAprox: '79 MB',
   },
@@ -55,18 +57,9 @@ export const DESCARGAS: ConfigDescargas = {
   },
 };
 
-/**
- * Enlace de DESCARGA DIRECTA del APK desde Google Drive, o `null` si aún no se
- * ha publicado (`driveFileId` vacío).
- *
- * Usa el host `drive.usercontent.google.com`, que es el que sirve el binario
- * (no la vista previa), y `confirm=t` para saltar el aviso de análisis de
- * archivos grandes.
- */
+/** Enlace de descarga del APK de Android, o `null` si aún no se ha publicado. */
 export function enlaceApkAndroid(): string | null {
-  const id = DESCARGAS.android.driveFileId;
-  if (!id) return null;
-  return `https://drive.usercontent.google.com/download?id=${id}&export=download&confirm=t`;
+  return DESCARGAS.android.url || null;
 }
 
 /** Enlace de la app de iPhone, o `null` mientras no esté disponible. */
