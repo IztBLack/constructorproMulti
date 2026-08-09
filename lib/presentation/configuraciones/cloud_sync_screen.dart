@@ -10,8 +10,10 @@ import '../../core/theme/app_colors.dart';
 import '../../core/sync/cloud_providers.dart';
 import '../../core/sync/supabase_config.dart';
 import '../../core/sync/sync_service.dart';
+import '../../core/sync/sync_status.dart';
 import '../../data/providers.dart';
 import '../common/error_state_view.dart';
+import 'conflictos_screen.dart';
 
 /// Pantalla de conexión a la nube (Fase 2). Sin sesión muestra el login; con
 /// sesión y empresa muestra el estado y el botón de sincronizar; con sesión pero
@@ -287,6 +289,9 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
     // no mezcle datos de dos empresas distintas.
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.remove('empresa_id');
+    // También el nombre en caché: si no, la siguiente cuenta que entre en este
+    // dispositivo vería el nombre de la empresa anterior mientras el suyo carga.
+    await prefs.remove('empresa_nombre');
 
     // Reinicia todos los cursores de sync: el próximo pull tras el login
     // traerá los datos completos de la empresa nueva.
@@ -371,6 +376,50 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
           ? const Duration(seconds: 8)
           : const Duration(seconds: 4),
     ));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Aviso de filas atoradas en `error`, con el MOTIVO real del servidor. Sin
+  // esto, el usuario solo veía un ícono rojo sin explicación y sin salida.
+  // ---------------------------------------------------------------------------
+  Widget _avisoErrores(int errores) {
+    final c = context.colores;
+    final detalle = ref.read(syncServiceProvider).ultimoErrorPush;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: c.dangerSoft,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.error_outline, color: c.danger),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$errores cambio(s) no se pudieron subir',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: c.danger, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  detalle != null && detalle.isNotEmpty
+                      ? 'Motivo: $detalle'
+                      : 'Toca "Sincronizar ahora" para reintentar. Si el error '
+                          'persiste, comparte esta pantalla con soporte.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -618,23 +667,54 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
   // Vista 3: Conectado con empresa
   // ---------------------------------------------------------------------------
   Widget _connectedView(User? user, String? empresaId) {
+    final estado = ref.watch(syncStatusProvider);
     return ListView(
       children: [
+        // Se encabeza con el NOMBRE de la persona y el correo baja a segundo
+        // plano: al abrir esta pantalla la pregunta es "¿con qué cuenta estoy?",
+        // y un nombre la responde antes que una dirección de correo.
         ListTile(
           leading:
               Icon(Icons.cloud_done_outlined, color: context.colores.success),
-          title: const Text('Conectado'),
+          title: Text(ref.watch(cuentaNombreProvider) ?? 'Conectado'),
           subtitle: Text(user?.email ?? user?.id ?? ''),
         ),
+        // Nombre, no UUID: el identificador solo servía para depurar y no le
+        // decía nada al usuario. Si aún no llega del servidor se usa el último
+        // conocido; el UUID queda como último recurso para poder dar soporte.
         ListTile(
           leading: const Icon(Icons.apartment_outlined),
           title: const Text('Empresa'),
-          subtitle: Text(empresaId ?? 'Sin empresa vinculada'),
+          subtitle: Text(
+            ref.watch(empresaNombreProvider).asData?.value ??
+                ref.watch(empresaNombreCacheProvider) ??
+                empresaId ??
+                'Sin empresa vinculada',
+          ),
         ),
         const Divider(),
+        // Diagnóstico: solo aparece si hay filas atoradas. Muestra el MOTIVO
+        // real del servidor (RLS, FK, columna…) para no dejar al usuario a
+        // ciegas con un ícono rojo. El botón de abajo ya reintenta estas filas.
+        if (estado.errores > 0) _avisoErrores(estado.errores),
+        // Conflictos de jornada: no son un fallo, esperan una decisión. Van
+        // antes que "Sincronizar ahora" porque sincronizar no los resuelve.
+        if (estado.conflictos > 0)
+          ListTile(
+            leading: Icon(Icons.rule, color: context.colores.warning),
+            title: Text('${estado.conflictos} conflicto(s) por resolver'),
+            subtitle: const Text('Doble jornada el mismo día: elige cuál se queda'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ConflictosScreen()),
+            ),
+          ),
         ListTile(
           leading: const Icon(Icons.sync),
           title: const Text('Sincronizar ahora'),
+          subtitle: estado.errores > 0
+              ? const Text('Reintenta también los cambios con error')
+              : null,
           enabled: !_loading,
           onTap: _loading ? null : _sincronizar,
         ),

@@ -25,7 +25,11 @@ mixin SyncCols on Table {
   /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
   IntColumn get deletedAt => integer().nullable()();
 
-  /// 'pending' | 'synced' | 'error'.
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
   TextColumn get syncStatus =>
       text().withDefault(const Constant('pending'))();
 }

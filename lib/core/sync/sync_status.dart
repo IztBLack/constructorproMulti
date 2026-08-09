@@ -17,6 +17,11 @@ enum SyncFase {
   /// algo no llegó al servidor y no se va a arreglar solo con esperar.
   error,
 
+  /// Hay filas que el servidor rechazó por una regla de negocio
+  /// (`sync_status='conflict'`, p. ej. "1 jornada/día"). No es un fallo de
+  /// sistema: necesita que una persona decida en la pantalla de conflictos.
+  conflicto,
+
   /// Un sync está corriendo ahora mismo.
   sincronizando,
 
@@ -34,9 +39,14 @@ class SyncStatus {
     required this.fase,
     required this.pendientes,
     required this.errores,
+    this.conflictos = 0,
   });
 
   final SyncFase fase;
+
+  /// Filas rechazadas por una regla de negocio del servidor
+  /// (`sync_status='conflict'`). Se resuelven a mano, no reintentando.
+  final int conflictos;
 
   /// Filas locales con cambios sin subir (`sync_status='pending'`). Cuenta las
   /// altas nuevas y las ediciones por igual.
@@ -59,7 +69,7 @@ final syncEnCursoProvider = StateProvider<bool>((_) => false);
 /// paralelo. Es un `.watch()` de Drift, así que el número baja al vuelo conforme
 /// el push vacía la cola, sin sondeo.
 final _conteoSinSyncProvider =
-    StreamProvider<({int pendientes, int errores})>((ref) {
+    StreamProvider<({int pendientes, int errores, int conflictos})>((ref) {
   final db = ref.watch(databaseProvider);
 
   // Un solo SELECT que suma, por tabla, cuántas filas hay en cada estado. Se
@@ -70,7 +80,11 @@ final _conteoSinSyncProvider =
   final piezasErr = SyncService.pushOrder
       .map((t) => "(SELECT COUNT(*) FROM $t WHERE sync_status='error')")
       .join(' + ');
-  final sql = 'SELECT ($piezasPend) AS pendientes, ($piezasErr) AS errores';
+  final piezasConf = SyncService.pushOrder
+      .map((t) => "(SELECT COUNT(*) FROM $t WHERE sync_status='conflict')")
+      .join(' + ');
+  final sql = 'SELECT ($piezasPend) AS pendientes, ($piezasErr) AS errores, '
+      '($piezasConf) AS conflictos';
 
   // `readsFrom` = todas las tablas del sync, para que el stream se re-emita
   // cuando cualquiera de ellas cambie (una escritura local o el fin de un pull).
@@ -83,6 +97,7 @@ final _conteoSinSyncProvider =
     return (
       pendientes: r.read<int>('pendientes'),
       errores: r.read<int>('errores'),
+      conflictos: r.read<int>('conflictos'),
     );
   });
 });
@@ -98,7 +113,7 @@ final syncStatusProvider = Provider<SyncStatus>((ref) {
   final empresaId = ref.watch(empresaIdProvider);
   final enCurso = ref.watch(syncEnCursoProvider);
   final conteo = ref.watch(_conteoSinSyncProvider).asData?.value ??
-      (pendientes: 0, errores: 0);
+      (pendientes: 0, errores: 0, conflictos: 0);
 
   // Sin sesión o sin empresa: la nube no aplica. No se mira la cuenta local
   // (que sería "todo pending" por el default de la columna) para no confundir
@@ -111,6 +126,10 @@ final syncStatusProvider = Provider<SyncStatus>((ref) {
   final SyncFase fase;
   if (conteo.errores > 0) {
     fase = SyncFase.error;
+  } else if (conteo.conflictos > 0) {
+    // Debajo de `error` (un fallo de sistema es más urgente) pero encima de
+    // `sincronizando`: un conflicto no se resuelve esperando, hay que decidirlo.
+    fase = SyncFase.conflicto;
   } else if (enCurso) {
     fase = SyncFase.sincronizando;
   } else if (conteo.pendientes > 0) {
@@ -123,5 +142,6 @@ final syncStatusProvider = Provider<SyncStatus>((ref) {
     fase: fase,
     pendientes: conteo.pendientes,
     errores: conteo.errores,
+    conflictos: conteo.conflictos,
   );
 });

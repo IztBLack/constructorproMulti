@@ -11,6 +11,7 @@ import '../../data/providers.dart';
 import '../common/app_badge.dart';
 import '../common/app_snackbar.dart';
 import '../common/app_spacing.dart';
+import '../common/cuenta_empresa_subtitulo.dart';
 import '../common/async_action_button.dart';
 import '../common/sync_status_action.dart';
 import '../common/confirm_dialog.dart';
@@ -115,7 +116,7 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mis Obras'),
+        title: const TituloConCuenta('Mis Obras'),
         actions: [
           const SyncStatusAction(),
           Center(

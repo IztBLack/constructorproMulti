@@ -8,6 +8,37 @@ const _uuid = Uuid();
 
 /// Repositorios de la operación por obra: asistencia, destajos y flujo de caja.
 
+/// Una asistencia que el servidor rechazó por la regla de "1 jornada/día",
+/// con los nombres ya resueltos para poder explicarla sin mostrar UUIDs.
+class ConflictoAsistencia {
+  const ConflictoAsistencia({
+    required this.id,
+    required this.colaboradorId,
+    required this.colaborador,
+    required this.obraLocal,
+    required this.obraId,
+    required this.fecha,
+    required this.fraccion,
+    this.obraRival,
+    this.fraccionRival,
+  });
+
+  final String id;
+  final String colaboradorId;
+  final String colaborador;
+
+  /// Obra del registro capturado en ESTE dispositivo (el que no pudo subir).
+  final String obraLocal;
+  final String obraId;
+  final DateTime fecha;
+  final double fraccion;
+
+  /// El registro que YA ocupa la jornada (el de la nube). Null si en esta base
+  /// no está —p. ej. aún no bajó—, caso en que la UI lo dice en vez de inventarlo.
+  final String? obraRival;
+  final double? fraccionRival;
+}
+
 class AsistenciaRepository {
   final AppDatabase db;
   AsistenciaRepository(this.db);
@@ -45,6 +76,127 @@ class AsistenciaRepository {
               t.deletedAt.isNull()))
         .watch();
   }
+
+  /// Asistencias que el servidor rechazó por la regla de "1 jornada/día"
+  /// (`sync_status='conflict'`), ya resueltas a nombres para la pantalla de
+  /// conflictos. Reactivo: al resolver una, la lista se actualiza sola.
+  ///
+  /// El `LEFT JOIN` sobre obras/colaboradores es deliberado: si el padre no
+  /// bajó todavía a este dispositivo, se muestra el conflicto con un nombre
+  /// provisional en vez de esconder la fila (esconderla dejaría al usuario con
+  /// un contador que no puede vaciar).
+  /// El registro RIVAL (el que ya ocupa la jornada, normalmente bajado del
+  /// servidor por el pull) se resuelve con subconsultas sobre la MISMA base
+  /// local: así la pantalla puede explicar "en la nube tienes X, aquí Y" sin
+  /// pedir red, que es justo lo que falta cuando el usuario está en obra.
+  Stream<List<ConflictoAsistencia>> watchConflictos() {
+    const rivalWhere = '''
+        FROM asistencias a2
+        LEFT JOIN obras o2 ON o2.id = a2.obra_id
+       WHERE a2.colaborador_id = a.colaborador_id
+         AND a2.fecha          = a.fecha
+         AND a2.obra_id       <> a.obra_id
+         AND a2.deleted_at IS NULL
+         AND a2.sync_status <> 'conflict'
+       ORDER BY a2.fraccion DESC
+       LIMIT 1''';
+    return db.customSelect(
+      '''
+      SELECT a.id, a.fecha, a.fraccion, a.obra_id, a.colaborador_id,
+             COALESCE(c.nombre, 'Colaborador desconocido') AS colaborador,
+             COALESCE(o.nombre, 'Obra desconocida')        AS obra,
+             (SELECT COALESCE(o2.nombre, 'otra obra') $rivalWhere) AS rival_obra,
+             (SELECT a2.fraccion $rivalWhere)                      AS rival_fraccion
+        FROM asistencias a
+        LEFT JOIN colaboradores c ON c.id = a.colaborador_id
+        LEFT JOIN obras o         ON o.id = a.obra_id
+       WHERE a.sync_status = 'conflict' AND a.deleted_at IS NULL
+       ORDER BY a.fecha DESC
+      ''',
+      readsFrom: {db.asistencias, db.colaboradores, db.obras},
+    ).watch().map((rows) => rows
+        .map((r) => ConflictoAsistencia(
+              id: r.read<String>('id'),
+              colaboradorId: r.read<String>('colaborador_id'),
+              colaborador: r.read<String>('colaborador'),
+              obraLocal: r.read<String>('obra'),
+              obraId: r.read<String>('obra_id'),
+              fecha: DateTime.fromMillisecondsSinceEpoch(r.read<int>('fecha')),
+              fraccion: r.read<double>('fraccion'),
+              obraRival: r.readNullable<String>('rival_obra'),
+              fraccionRival: r.readNullable<double>('rival_fraccion'),
+            ))
+        .toList());
+  }
+
+  /// "Subir": este registro gana y REEMPLAZA al que ocupa la jornada.
+  ///
+  /// No borra nada en el servidor a mano: da de baja al rival con el mismo
+  /// tombstone que usa toda la app (`deleted_at` + `pending`) y deja el propio
+  /// registro en `pending`. El push sube primero las bajas (ver
+  /// [SyncService.sqlCandidatosPush]), así el servidor ya tiene la jornada
+  /// libre cuando llega este registro. Ambas escrituras van en una transacción
+  /// para no dejar el día sin ninguna asistencia si algo falla en medio.
+  /// Se usa `customUpdate` (no `customStatement`) para que Drift notifique la
+  /// tabla y la pantalla de conflictos se vacíe al resolver: con
+  /// `customStatement` la escritura ocurre pero el `.watch()` no se re-emite y
+  /// la tarjeta resuelta se queda pegada en pantalla.
+  Future<void> reemplazarConConflicto(ConflictoAsistencia c) {
+    final ahora = DateTime.now().millisecondsSinceEpoch;
+    final fecha = c.fecha.millisecondsSinceEpoch;
+    return db.transaction(() async {
+      await db.customUpdate(
+        "UPDATE asistencias SET deleted_at = ?, sync_status = 'pending' "
+        "WHERE colaborador_id = ? AND fecha = ? AND obra_id <> ? "
+        "AND deleted_at IS NULL AND sync_status <> 'conflict'",
+        variables: [
+          Variable(ahora),
+          Variable(c.colaboradorId),
+          Variable(fecha),
+          Variable(c.obraId),
+        ],
+        updates: {db.asistencias},
+      );
+      await db.customUpdate(
+        "UPDATE asistencias SET sync_status = 'pending' WHERE id = ?",
+        variables: [Variable(c.id)],
+        updates: {db.asistencias},
+      );
+    });
+  }
+
+  /// "Eliminar": descarta el registro capturado aquí.
+  ///
+  /// Es la salida LIMPIA de un conflicto, y la diferencia con [omitirConflicto]
+  /// importa para la nómina: `omitir` deja la fila viva en local, así que el día
+  /// sigue sumando 2 jornadas EN ESTE DISPOSITIVO (la nube tiene 1) y el cálculo
+  /// local queda inflado. `eliminar` la tombstonea, con lo que desaparece de
+  /// todas las consultas de UI y de nómina (filtran `deleted_at IS NULL`) y el
+  /// día vuelve a cuadrar con la nube.
+  ///
+  /// Se marca `skipped` en vez de `pending` a propósito: el servidor nunca
+  /// aceptó esta fila, así que no hay nada que dar de baja allá; propagar el
+  /// tombstone solo crearía una fila borrada en el servidor y podría volver a
+  /// topar con la regla de jornada.
+  Future<void> eliminarConflicto(String asistenciaId) => db.customUpdate(
+        "UPDATE asistencias SET deleted_at = ?, sync_status = 'skipped' "
+        "WHERE id = ?",
+        variables: [
+          Variable(DateTime.now().millisecondsSinceEpoch),
+          Variable(asistenciaId),
+        ],
+        updates: {db.asistencias},
+      );
+
+  /// "Omitir": el registro de la nube se queda y este cambio local se descarta.
+  /// Se marca `skipped` (terminal) en vez de borrarse: la fila sigue visible en
+  /// los reportes locales, pero deja de pelear por subir y de contar como
+  /// conflicto. Es la salida no destructiva del diálogo.
+  Future<void> omitirConflicto(String asistenciaId) => db.customUpdate(
+        "UPDATE asistencias SET sync_status='skipped' WHERE id = ?",
+        variables: [Variable(asistenciaId)],
+        updates: {db.asistencias},
+      );
 
   /// Suma de las fracciones que el colaborador ya tiene registradas ese [fecha]
   /// en TODAS las obras EXCEPTO [exceptObraId] (ignora bajas lógicas).

@@ -66,8 +66,16 @@ class SyncService {
   bool _enCurso = false;
 
   /// Último error detallado de sync (para diagnóstico en la UI). Null si el
-  /// último intento fue exitoso.
+  /// último intento fue exitoso. Es un resumen ("N fila(s) no subieron…").
   String? ultimoError;
+
+  /// Motivo REAL del último fallo de PUSH a nivel fila: el mensaje que devolvió
+  /// Postgres/PostgREST (violación de RLS, de FK, columna inexistente, etc.).
+  /// Es lo único que de verdad explica *por qué* una fila no sube; [ultimoError]
+  /// solo dice *cuántas* fallaron. Se expone en la pantalla de nube para que el
+  /// usuario vea la causa sin depender de logs de un APK de release. Null si el
+  /// último ciclo de push no tuvo fallos de fila.
+  String? ultimoErrorPush;
 
   /// Orden topológico de push: padres antes que hijos (respeta las FK de
   /// `supabase/migrations/0002_schema.sql`).
@@ -95,6 +103,27 @@ class SyncService {
     'archivos_cotizacion',
   ];
 
+  /// SQL de los candidatos a subir de una tabla: filas con cambios locales sin
+  /// reconciliar. Incluye **`error`** además de `pending` —así un fallo previo
+  /// se REINTENTA en vez de quedar atorado para siempre (el bug del indicador
+  /// rojo permanente)—, y excluye `synced` (ya está) y `skipped` (terminal, no
+  /// reintentable). Extraído como estático para poder verificar el filtro en
+  /// test sin levantar Supabase (`test/data/sync_push_retry_test.dart`).
+  /// El `ORDER BY` empuja los TOMBSTONES (`deleted_at` no nulo) antes que las
+  /// filas vivas de la misma tabla. Importa cuando una baja libera el espacio
+  /// que un alta necesita para pasar una regla del servidor: al resolver un
+  /// conflicto de jornada, la baja del registro rival debe llegar ANTES del
+  /// registro que la reemplaza, o el servidor volvería a rechazarlo.
+  static String sqlCandidatosPush(String tabla) =>
+      "SELECT * FROM $tabla WHERE sync_status IN ('pending', 'error') "
+      "ORDER BY (deleted_at IS NULL) ASC";
+
+  /// True si el fallo de push es la regla de "1 jornada/día" del servidor
+  /// (CHECK, SQLSTATE 23514). PostgREST entrega el cuerpo del error como un JSON
+  /// dentro de `message`, con el `code` real adentro, así que se busca en ambos.
+  static bool _esConflictoJornada(PostgrestException e) =>
+      e.code == '23514' || e.message.contains('23514');
+
   bool get tieneSesion => SupabaseConfig.currentUser != null;
 
   Future<bool> get hayRed async {
@@ -119,6 +148,7 @@ class SyncService {
     _enCurso = true;
     onActividad?.call(true);
     var erroresPush = 0;
+    ultimoErrorPush = null; // se llena si alguna fila falla en este ciclo
     try {
       // 1) PUSH primero (padres→hijos) para no traer del server algo que aún
       //    no subimos y perder la edición local.
@@ -144,10 +174,14 @@ class SyncService {
         await _pullTabla(t);
       }
 
+      await _diagnosticoAsistencias();
+
       if (erroresPush > 0) {
+        final motivo =
+            ultimoErrorPush != null ? ' Motivo: $ultimoErrorPush.' : '';
         ultimoError = '$erroresPush fila(s) no se pudieron subir; '
             'el resto sincronizó correctamente. Se reintentará en el '
-            'próximo ciclo.';
+            'próximo ciclo.$motivo';
         return SyncOutcome.parcial;
       }
       ultimoError = null;
@@ -162,6 +196,32 @@ class SyncService {
       _enCurso = false;
       onActividad?.call(false);
     }
+  }
+
+  /// Traza el reparto de `sync_status` en asistencias al cerrar cada ciclo.
+  ///
+  /// Existe porque un conteo que no cuadra (filas marcadas `conflict` que luego
+  /// no aparecen en la pantalla de conflictos) no se puede diagnosticar desde la
+  /// UI: hay que ver el estado real de la tabla después del push Y del pull, que
+  /// es justo donde una fila puede cambiar de estado sin que nadie lo note.
+  Future<void> _diagnosticoAsistencias() async {
+    final filas = await db
+        .customSelect(
+            'SELECT sync_status, COUNT(*) AS n, '
+            'SUM(CASE WHEN deleted_at IS NULL THEN 0 ELSE 1 END) AS borradas '
+            'FROM asistencias GROUP BY sync_status')
+        .get();
+    // Solo se traza si hay algo que NO esté reconciliado: en régimen normal
+    // (todo 'synced') esta línea sería ruido cada 25 s y acabaría enterrando
+    // justo los ciclos en que sí pasó algo.
+    final interesantes =
+        filas.where((f) => f.data['sync_status'] != 'synced').toList();
+    if (interesantes.isEmpty) return;
+    final resumen = filas
+        .map((f) => '${f.data['sync_status']}=${f.data['n']}'
+            '(borradas:${f.data['borradas']})')
+        .join(' ');
+    debugPrint('[SyncService] ⓘ asistencias por estado: $resumen');
   }
 
   /// empresa_id del usuario (vía RLS). Null si no está vinculado.
@@ -205,20 +265,21 @@ class SyncService {
   }
 
   // ---------------- PUSH ----------------
-  /// Sube las filas `pending` de [name]. Devuelve la cantidad de filas que
-  /// fallaron (quedaron marcadas `sync_status='error'`); nunca lanza por un
-  /// fallo de fila individual para no abortar el resto del syncAll.
+  /// Sube las filas `pending` **y `error`** de [name] (las `error` se reintentan;
+  /// ver el SELECT abajo). Devuelve la cantidad de filas que volvieron a fallar
+  /// (quedaron marcadas `sync_status='error'`); nunca lanza por un fallo de fila
+  /// individual para no abortar el resto del syncAll. Las filas legacy sin UUID
+  /// válido pasan a `skipped` (terminal, no reintentable) y no suman al retorno.
   Future<int> _pushTabla(String name, String empresaId) async {
     final t = _info(name);
     final pk = _pk(t);
     final boolCols = _boolCols(t);
     final uuidCols = _uuidCols(t)..remove('empresa_id'); // la forzamos nosotros
 
-    final pendientes =
-        await db.customSelect("SELECT * FROM $name WHERE sync_status = 'pending'").get();
+    final pendientes = await db.customSelect(sqlCandidatosPush(name)).get();
 
     if (pendientes.isNotEmpty) {
-      debugPrint('[SyncService] PUSH $name: ${pendientes.length} pendientes');
+      debugPrint('[SyncService] PUSH $name: ${pendientes.length} por subir');
     }
 
     var erroresFila = 0;
@@ -248,11 +309,15 @@ class SyncService {
         debugPrint(
             '[SyncService] ⚠ SKIP $name ($pkVals): '
             '$colInvalida="${data[colInvalida]}" no es UUID válido');
-        // Marcar como error para no reintentar cada ciclo.
+        // Estado terminal 'skipped' (NO 'error'): el ID nunca será un UUID
+        // válido, así que reintentarlo es inútil. Distinto de 'error'
+        // (transitorio, se reintenta cada ciclo): 'skipped' no se re-selecciona
+        // arriba ni cuenta para el indicador rojo, que queda reservado a fallos
+        // que sí vale la pena reintentar.
         final whereSql = pk.map((c) => '$c = ?').join(' AND ');
         final whereArgs = pk.map((c) => r.data[c]).toList();
         await db.customStatement(
-          "UPDATE $name SET sync_status='error' WHERE $whereSql",
+          "UPDATE $name SET sync_status='skipped' WHERE $whereSql",
           whereArgs,
         );
         continue;
@@ -313,7 +378,29 @@ class SyncService {
             continue;
           }
         }
-        
+
+        // Conflicto de REGLA DE NEGOCIO del servidor (CHECK, SQLSTATE 23514):
+        // la regla de "1 jornada/día por persona". NO es un error de sistema ni
+        // se arregla reintentando —necesita que alguien decida qué registro se
+        // queda—, así que se marca 'conflict' (queda fuera de los candidatos de
+        // push: deja de reintentar en bucle) para listarlo en la pantalla de
+        // conflictos. Se resuelve al corregir/omitir/reemplazar en esa pantalla.
+        if (name == 'asistencias' && _esConflictoJornada(e)) {
+          final whereSqlC = pk.map((c) => '$c = ?').join(' AND ');
+          final whereArgsC = pk.map((c) => r.data[c]).toList();
+          // customUpdate (no customStatement) para que Drift notifique: así el
+          // contador del indicador y la lista de conflictos aparecen en cuanto
+          // el sync detecta el rechazo, sin esperar otra escritura.
+          await db.customUpdate(
+            "UPDATE $name SET sync_status='conflict' WHERE $whereSqlC",
+            variables: whereArgsC.map<Variable>((a) => Variable(a)).toList(),
+            updates: {t},
+          );
+          debugPrint('[SyncService] ⚑ CONFLICTO $name: ${e.message}');
+          continue;
+        }
+
+        ultimoErrorPush = '$name: ${e.message}';
         final pkVals = pk.map((c) => '$c=${r.data[c]}').join(', ');
         debugPrint('[SyncService] ✖ PUSH $name fallo en fila ($pkVals): $e');
         debugPrint('[SyncService]   data enviada: $data');
@@ -326,6 +413,7 @@ class SyncService {
         erroresFila++;
         continue;
       } catch (e) {
+        ultimoErrorPush = '$name: $e';
         final pkVals = pk.map((c) => '$c=${r.data[c]}').join(', ');
         debugPrint('[SyncService] ✖ PUSH $name fallo en fila ($pkVals): $e');
         debugPrint('[SyncService]   data enviada: $data');

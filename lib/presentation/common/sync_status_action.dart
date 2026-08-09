@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/sync/sync_status.dart';
 import '../../core/theme/app_colors.dart';
 import '../configuraciones/cloud_sync_screen.dart';
+import '../configuraciones/conflictos_screen.dart';
 
 /// Indicador de sincronización para el `actions:` de un `AppBar`.
 ///
@@ -38,6 +39,15 @@ class SyncStatusAction extends ConsumerWidget {
         '${estado.errores} cambio(s) no se pudieron subir. '
             'Toca para revisar la sincronización.',
       ),
+      // Ámbar, no rojo: no está roto, espera una decisión tuya. Lleva a la
+      // pantalla de conflictos, donde se elige qué registro se queda.
+      SyncFase.conflicto => (
+        Icons.rule,
+        c.warning,
+        '${estado.conflictos}',
+        '${estado.conflictos} asistencia(s) en conflicto. '
+            'Toca para elegir cuál se queda.',
+      ),
       SyncFase.sincronizando => (
         Icons.sync,
         c.info,
@@ -68,8 +78,14 @@ class SyncStatusAction extends ConsumerWidget {
       // El tooltip es el que le pone nombre al control para lectores de
       // pantalla: el icono solo no dice nada.
       tooltip: detalle,
+      // Un conflicto se resuelve en su propia pantalla; mandar al usuario a la
+      // de nube lo dejaría a un toque más de lo único que puede hacer.
       onPressed: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const CloudSyncScreen()),
+        MaterialPageRoute(
+          builder: (_) => estado.fase == SyncFase.conflicto
+              ? const ConflictosScreen()
+              : const CloudSyncScreen(),
+        ),
       ),
       icon: etiqueta.isEmpty
           ? hijo

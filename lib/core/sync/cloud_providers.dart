@@ -21,11 +21,66 @@ final currentUserProvider = Provider<User?>((ref) {
 });
 
 const _kEmpresaId = 'empresa_id';
+const _kEmpresaNombre = 'empresa_nombre';
 
 /// `empresa_id` del usuario, persistido tras el login. Null si no se ha resuelto.
 final empresaIdProvider = Provider<String?>((ref) {
   ref.watch(authStateProvider);
   return ref.watch(sharedPreferencesProvider).getString(_kEmpresaId);
+});
+
+/// Último nombre de empresa conocido, leído de prefs. Se usa para pintar algo
+/// de inmediato (y en modo avión) mientras [empresaNombreProvider] confirma
+/// contra el servidor: un UUID no le dice nada a nadie, pero un nombre viejo
+/// sigue siendo cierto casi siempre.
+final empresaNombreCacheProvider = Provider<String?>((ref) {
+  ref.watch(authStateProvider);
+  return ref.watch(sharedPreferencesProvider).getString(_kEmpresaNombre);
+});
+
+/// Nombre de la empresa del usuario, resuelto contra `empresas` (la tabla NO se
+/// sincroniza a Drift, así que se consulta directo; RLS ya limita la fila a la
+/// empresa propia).
+///
+/// El servidor es la única fuente de verdad: si un administrador renombra la
+/// empresa en la web, todos los dispositivos muestran el nombre nuevo la próxima
+/// vez que resuelven, sin tocar nada en cada teléfono. La copia en prefs es solo
+/// para no quedarse sin texto offline.
+final empresaNombreProvider = FutureProvider<String?>((ref) async {
+  final empresaId = ref.watch(empresaIdProvider);
+  final cache = ref.watch(empresaNombreCacheProvider);
+  if (empresaId == null) return null;
+  try {
+    final row = await SupabaseConfig.client
+        .from('empresas')
+        .select('nombre')
+        .eq('id', empresaId)
+        .maybeSingle();
+    final nombre = (row?['nombre'] as String?)?.trim();
+    if (nombre == null || nombre.isEmpty) return cache;
+    if (nombre != cache) {
+      await ref.read(sharedPreferencesProvider).setString(_kEmpresaNombre, nombre);
+    }
+    return nombre;
+  } catch (e) {
+    // Sin red o RLS negando: se conserva lo último conocido en vez de mostrar
+    // un hueco o el UUID.
+    debugPrint('[cloud_providers] empresaNombre error: $e');
+    return cache;
+  }
+});
+
+/// Nombre de la persona dueña de la sesión.
+///
+/// Vive en la metadata del usuario de Supabase (`nombre`), que es lo que llena
+/// el alta desde la web; si no está, se cae al correo, que siempre existe. Nunca
+/// devuelve el UUID: un identificador no ayuda a saber con qué cuenta trabajas.
+final cuentaNombreProvider = Provider<String?>((ref) {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return null;
+  final meta = user.userMetadata?['nombre'];
+  final nombre = meta is String ? meta.trim() : '';
+  return nombre.isNotEmpty ? nombre : user.email;
 });
 
 final syncMetadataProvider = Provider<SyncMetadata>(
@@ -101,6 +156,10 @@ Future<String?> resolverEmpresaYsellar(WidgetRef ref) async {
     await prefs.setString(_kEmpresaId, empresaId);
     await ref.read(databaseProvider).sellarEmpresaId(empresaId);
     ref.invalidate(empresaIdProvider);
+    // Y se refresca el NOMBRE: este método ya corre en el login y al abrir la
+    // pantalla de nube, así que es el punto natural para que un renombrado
+    // hecho en la web aparezca en el dispositivo sin acción del usuario.
+    ref.invalidate(empresaNombreProvider);
     return empresaId;
   } catch (e) {
     debugPrint('[cloud_providers] resolverEmpresaYsellar error: $e');
