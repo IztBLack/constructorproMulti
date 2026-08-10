@@ -71,12 +71,12 @@ export function BotonDescargas({ className = '' }: { className?: string }) {
               <p className="text-sm font-semibold text-neutral-900">Android</p>
               <p className="text-xs text-neutral-500">
                 {urlAndroid
-                  ? [
-                      DESCARGAS.android.version && `Versión ${DESCARGAS.android.version}`,
-                      DESCARGAS.android.tamanoAprox,
-                    ]
+                  ? // "Última versión" en vez de un número: el enlace apunta al
+                    // release más reciente, así que un número escrito aquí a mano
+                    // podría contradecir a lo que realmente se descarga.
+                    ['Última versión', DESCARGAS.android.tamanoAprox]
                       .filter(Boolean)
-                      .join(' · ') || 'Instalar fuera de la Play Store'
+                      .join(' · ')
                   : 'Celular o tablet'}
               </p>
             </div>

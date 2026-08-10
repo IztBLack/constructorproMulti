@@ -151,6 +151,29 @@ flutter run -d <android>           # correr en dispositivo
 flutter run --dart-define=LOAD_DEMO=true
 ```
 
+### Publicar una versión de Android (y con eso, el portal)
+
+El botón de descarga del portal apunta a
+`releases/latest/download/constructorpro.apk`, una ruta que GitHub resuelve al
+**release más reciente**. Publicar el release *es* actualizar el portal: no hay
+que editar código de la web ni volver a desplegarla.
+
+```powershell
+.\build_release.ps1        # deja build\app\outputs\flutter-apk\constructorpro.apk
+gh release create v1.0.7 build\app\outputs\flutter-apk\constructorpro.apk `
+  --repo IztBLack/constructorproMulti --title "ConstructorPro 1.0.7 (Android)"
+```
+
+⚠️ **El asset debe llamarse siempre `constructorpro.apk`**, sin la versión en el
+nombre: el enlace del portal lo busca por nombre exacto y un
+`constructorpro-1.0.7.apk` haría que devolviera 404. La versión va en el tag y en
+el título del release. `build_release.ps1` ya deja la copia con el nombre correcto
+y te imprime el comando; el enlace vive en `web/src/lib/descargas.ts`.
+
+Esto sustituye al flujo anterior, en el que la URL estaba clavada a un tag y había
+que actualizarla a mano: se olvidaba, y el portal siguió ofreciendo la 1.0.2
+mientras la app ya iba en la 1.0.6.
+
 **iOS sin Mac (app nativa):** GitHub Actions (`.github/workflows/ios-build.yml`) compila
 un IPA sin firmar en un runner macOS y lo publica en un Release rodante con tag
 `sidestore` + un `apps.json`. Se instala con **SideStore** agregando esa fuente una sola

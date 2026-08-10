@@ -61,8 +61,33 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "  ✓ APK: $apk" -ForegroundColor Green
 }
 
+# ── Copia con el nombre que espera el portal ────────────────────────────────
+# El portal descarga de `releases/latest/download/constructorpro.apk`, una ruta
+# que GitHub resuelve por nombre EXACTO de archivo. Si el asset se sube con la
+# versión en el nombre (constructorpro-1.0.7.apk), ese enlace da 404 aunque el
+# release exista. Dejar aquí la copia ya renombrada evita que el nombre dependa
+# de que alguien recuerde la regla en el momento de publicar.
+$apkPortal = "build\app\outputs\flutter-apk\constructorpro.apk"
+if (Test-Path "build\app\outputs\flutter-apk\app-release.apk") {
+    Copy-Item "build\app\outputs\flutter-apk\app-release.apk" $apkPortal -Force
+    Write-Host "  ✓ Copia para el portal: $apkPortal" -ForegroundColor Green
+}
+
+# Versión declarada en pubspec, para sugerir el tag sin que haya que buscarla.
+$versionLine = (Select-String -Path "pubspec.yaml" -Pattern '^version:\s*(.+)$').Matches.Groups[1].Value
+$versionName = ($versionLine -split '\+')[0].Trim()
+
 Write-Host "`n=== Build completado ===" -ForegroundColor Cyan
 Write-Host "App Bundle → build\app\outputs\bundle\release\app-release.aab"
 Write-Host "APK        → build\app\outputs\flutter-apk\app-release.apk"
+Write-Host "APK portal → $apkPortal"
 Write-Host ""
-Write-Host "Próximo paso: subir el .aab a Google Play Console." -ForegroundColor DarkGray
+Write-Host "Publica el release y el portal queda al dia solo (sirve 'latest'):" -ForegroundColor Yellow
+Write-Host "  gh release create v$versionName $apkPortal ``" -ForegroundColor White
+Write-Host "    --repo IztBLack/constructorproMulti ``" -ForegroundColor White
+Write-Host "    --title `"ConstructorPro $versionName (Android)`"" -ForegroundColor White
+Write-Host ""
+Write-Host "NO renombres el APK con la version: el enlace del portal lo busca" -ForegroundColor DarkGray
+Write-Host "por nombre exacto (web/src/lib/descargas.ts)." -ForegroundColor DarkGray
+Write-Host ""
+Write-Host "Próximo paso (Play Store): subir el .aab a Google Play Console." -ForegroundColor DarkGray

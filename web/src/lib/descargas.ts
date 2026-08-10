@@ -16,25 +16,48 @@
  * advertencia y desde un dominio de confianza. (Supabase Storage se descartó:
  * el plan Free topa en 50 MB por archivo y el APK pesa ~79 MB.)
  *
- * CÓMO PUBLICAR UNA VERSIÓN NUEVA:
- *  1. Compila el APK:  `.\build_release.ps1`
+ * ─────────────────────────────────────────────────────────────────────────────
+ * EL ENLACE NO SE ACTUALIZA A MANO — apunta a `releases/latest/download/…`
+ * ─────────────────────────────────────────────────────────────────────────────
+ * GitHub resuelve esa ruta al asset del release MÁS RECIENTE, así que publicar
+ * el release ES la actualización del portal: no hay que tocar este archivo ni
+ * desplegar la web para que la gente empiece a bajar la versión nueva.
+ *
+ * Antes la URL venía clavada a un tag (`…/download/v1.0.2/constructorpro-1.0.2.apk`)
+ * y actualizarla era un paso manual aparte; el portal se quedó sirviendo la 1.0.2
+ * mientras el móvil ya iba en la 1.0.6. Un paso que hay que acordarse de hacer
+ * acaba olvidándose, así que se eliminó el paso en vez de documentarlo mejor.
+ *
+ * ⚠️ LA ÚNICA REGLA: el asset debe llamarse SIEMPRE `constructorpro.apk`, sin el
+ * número de versión en el nombre. La ruta `latest/download/<archivo>` busca por
+ * nombre exacto: si un release lo sube como `constructorpro-1.0.7.apk`, este
+ * enlace devuelve 404 aunque el release exista. La versión va en el TAG y en el
+ * título del release, no en el nombre del archivo.
+ *
+ * CÓMO PUBLICAR UNA VERSIÓN NUEVA (y con eso el portal queda al día solo):
+ *  1. Sube `version:` en `pubspec.yaml` (nombre + build number).
+ *  2. Compila el APK:  `.\build_release.ps1`
  *     Sale en: build\app\outputs\flutter-apk\app-release.apk
- *  2. Renómbralo con versión, p.ej. constructorpro-1.0.3.apk
- *  3. Crea el Release y sube el asset (necesita `gh` autenticado):
- *        gh release create v1.0.3 constructorpro-1.0.3.apk `
- *          --repo IztBLack/constructorproMulti --title "ConstructorPro 1.0.3 (Android)"
- *  4. Actualiza `android` de abajo: `url`, `version` y `tamanoAprox`.
- *     La URL de descarga directa de un asset tiene esta forma:
- *        https://github.com/<owner>/<repo>/releases/download/<tag>/<archivo>.apk
+ *  3. Cópialo como `constructorpro.apk` (nombre estable, ver la regla de arriba).
+ *  4. Publica el release (necesita `gh` autenticado):
+ *        gh release create v1.0.7 constructorpro.apk `
+ *          --repo IztBLack/constructorproMulti --title "ConstructorPro 1.0.7 (Android)"
+ *  5. Listo: el portal ya sirve esa versión. Aquí solo se toca `tamanoAprox` si
+ *     el peso del APK cambió de forma notoria.
  */
 
 interface ConfigDescargas {
   android: {
     /** URL de descarga directa del APK. Vacía ('') ⇒ se muestra "Próximamente". */
     url: string;
-    /** Versión visible (informativa). p.ej. '1.0.2' */
-    version: string;
-    /** Tamaño aproximado para avisar al usuario. p.ej. '79 MB' */
+    /**
+     * Tamaño aproximado para avisar al usuario. p.ej. '79 MB'
+     *
+     * No hay campo `version` a propósito: sería un número escrito a mano que
+     * envejece en cuanto se publica un release (justamente lo que dejó al portal
+     * anunciando la 1.0.2 durante semanas). La versión exacta se ve en el
+     * release de GitHub y dentro de la app; el portal solo promete "la última".
+     */
     tamanoAprox: string;
   };
   ios: {
@@ -47,8 +70,7 @@ interface ConfigDescargas {
 
 export const DESCARGAS: ConfigDescargas = {
   android: {
-    url: 'https://github.com/IztBLack/constructorproMulti/releases/download/v1.0.2/constructorpro-1.0.2.apk',
-    version: '1.0.2',
+    url: 'https://github.com/IztBLack/constructorproMulti/releases/latest/download/constructorpro.apk',
     tamanoAprox: '79 MB',
   },
   ios: {
