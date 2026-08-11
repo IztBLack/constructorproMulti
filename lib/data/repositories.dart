@@ -11,7 +11,10 @@ class ObraRepository {
 
   Stream<List<Obra>> watchAll() => (db.select(db.obras)
         ..where((t) => t.deletedAt.isNull())
-        ..orderBy([(t) => OrderingTerm(expression: t.nombre)]))
+        ..orderBy([
+          (t) => OrderingTerm(expression: t.orden),
+          (t) => OrderingTerm(expression: t.nombre),
+        ]))
       .watch();
 
   Future<void> upsert(ObrasCompanion obra) =>
@@ -84,7 +87,10 @@ class PuestoRepository {
 
   Stream<List<Puesto>> watchAll() => (db.select(db.puestos)
         ..where((t) => t.deletedAt.isNull())
-        ..orderBy([(t) => OrderingTerm(expression: t.nombre)]))
+        ..orderBy([
+          (t) => OrderingTerm(expression: t.orden),
+          (t) => OrderingTerm(expression: t.nombre),
+        ]))
       .watch();
 
   Future<List<Puesto>> getAll() =>
@@ -112,7 +118,10 @@ class ColaboradorRepository {
   Stream<List<Colaborador>> watchAll() =>
       (db.select(db.colaboradores)
             ..where((t) => t.deletedAt.isNull())
-            ..orderBy([(t) => OrderingTerm(expression: t.nombre)]))
+            ..orderBy([
+              (t) => OrderingTerm(expression: t.orden),
+              (t) => OrderingTerm(expression: t.nombre),
+            ]))
           .watch();
 
   /// Colaboradores activos asignados a una obra (vía obra_colaborador sin fecha de salida).

@@ -6,11 +6,13 @@ import 'package:uuid/uuid.dart';
 import '../../core/db/app_database.dart';
 import '../../core/sync/cloud_providers.dart';
 import '../../core/theme/app_colors.dart';
+import '../../data/orden_personalizado.dart';
 import '../../data/providers.dart';
 import '../common/async_action_button.dart';
 import '../common/confirm_dialog.dart';
 import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
+import '../common/orden_modo_toggle.dart';
 import 'destajo_cuadrilla_screen.dart';
 
 /// Especialidades de cuadrilla (código en BD → etiqueta visible).
@@ -53,17 +55,27 @@ class _CuadrillasScreenState extends ConsumerState<CuadrillasScreen> {
       appBar: AppBar(
         title: const Text('Cuadrillas'),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
+          preferredSize: const Size.fromHeight(104),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-            child: TextField(
-              decoration: const InputDecoration(
-                hintText: 'Buscar cuadrilla…',
-                prefixIcon: Icon(Icons.search),
-                isDense: true,
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (v) => setState(() => _query = v.toLowerCase()),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  decoration: const InputDecoration(
+                    hintText: 'Buscar cuadrilla…',
+                    prefixIcon: Icon(Icons.search),
+                    isDense: true,
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (v) => setState(() => _query = v.toLowerCase()),
+                ),
+                const SizedBox(height: 6),
+                const Align(
+                  alignment: Alignment.centerRight,
+                  child: OrdenModoToggle(listKey: OrdenLista.cuadrillas),
+                ),
+              ],
             ),
           ),
         ),
@@ -77,10 +89,23 @@ class _CuadrillasScreenState extends ConsumerState<CuadrillasScreen> {
             onRetry: () => ref.invalidate(cuadrillasProvider),
           ),
           data: (todas) {
-            final lista = todas
+            final modo = ref.watch(ordenModoProvider)[OrdenLista.cuadrillas] ??
+                modoNombre;
+            final personalizado = esModoPersonalizado(modo);
+            // El repo ya entrega por `orden`; los demás modos reordenan aquí.
+            final filtradas = todas
                 .where((c) => c.nombre.toLowerCase().contains(_query))
-                .toList()
-              ..sort((a, b) => a.nombre.compareTo(b.nombre));
+                .toList();
+            final lista = ordenarPorModo(
+              items: filtradas,
+              modo: modo,
+              nombreDe: (c) => c.nombre,
+              creadoDe: (c) => c.createdAt,
+              modificadoDe: (c) => c.updatedAt,
+            );
+            // Arrastrar solo tiene sentido sobre la lista completa (sin filtro).
+            final puedeArrastrar = personalizado && _query.isEmpty;
+
             if (lista.isEmpty) {
               return ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -93,59 +118,85 @@ class _CuadrillasScreenState extends ConsumerState<CuadrillasScreen> {
                 ],
               );
             }
+
+            Widget tileFor(Cuadrilla c, {bool arrastrable = false}) {
+              final n = conteos[c.id] ?? 0;
+              final jefe = c.jefeColaboradorId == null
+                  ? null
+                  : colabNombre[c.jefeColaboradorId];
+              return ListTile(
+                key: ValueKey(c.id),
+                leading: CircleAvatar(
+                  backgroundColor:
+                      c.activa ? null : context.colores.neutralSoft,
+                  child: const Icon(Icons.groups),
+                ),
+                title: Text(c.nombre,
+                    style: TextStyle(
+                        decoration:
+                            c.activa ? null : TextDecoration.lineThrough)),
+                subtitle: Text(
+                  '${especialidadLabel(c.especialidad)} · $n ${n == 1 ? 'miembro' : 'miembros'}'
+                  '${jefe != null ? ' · Cabo: $jefe' : ''}'
+                  '${c.activa ? '' : ' · INACTIVA'}',
+                ),
+                trailing: arrastrable
+                    ? const Icon(Icons.drag_handle)
+                    : PopupMenuButton<String>(
+                        onSelected: (v) async {
+                          final repo = ref.read(cuadrillaRepositoryProvider);
+                          switch (v) {
+                            case 'editar':
+                              _showEditDialog(c);
+                            case 'toggle':
+                              await repo.setActiva(c.id, !c.activa);
+                            case 'eliminar':
+                              _confirmDelete(c);
+                          }
+                        },
+                        itemBuilder: (_) => [
+                          const PopupMenuItem(
+                              value: 'editar', child: Text('Editar')),
+                          PopupMenuItem(
+                              value: 'toggle',
+                              child: Text(c.activa
+                                  ? 'Marcar inactiva'
+                                  : 'Marcar activa')),
+                          const PopupMenuItem(
+                              value: 'eliminar', child: Text('Eliminar')),
+                        ],
+                      ),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => CuadrillaDetailScreen(cuadrillaId: c.id),
+                )),
+              );
+            }
+
+            if (puedeArrastrar) {
+              return ReorderableListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: lista.length,
+                onReorder: (oldIndex, newIndex) {
+                  if (newIndex > oldIndex) newIndex -= 1;
+                  final ids = lista.map((c) => c.id).toList();
+                  final movido = ids.removeAt(oldIndex);
+                  ids.insert(newIndex, movido);
+                  ref.read(ordenRepositoryProvider).reordenarPorId(
+                        'cuadrillas',
+                        esInvertido(modo)
+                            ? ids.reversed.toList()
+                            : ids,
+                      );
+                },
+                itemBuilder: (context, i) =>
+                    tileFor(lista[i], arrastrable: true),
+              );
+            }
             return ListView.separated(
               physics: const AlwaysScrollableScrollPhysics(),
               itemCount: lista.length,
               separatorBuilder: (_, _) => const Divider(height: 1),
-              itemBuilder: (context, i) {
-                final c = lista[i];
-                final n = conteos[c.id] ?? 0;
-                final jefe = c.jefeColaboradorId == null
-                    ? null
-                    : colabNombre[c.jefeColaboradorId];
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor:
-                        c.activa ? null : context.colores.neutralSoft,
-                    child: const Icon(Icons.groups),
-                  ),
-                  title: Text(c.nombre,
-                      style: TextStyle(
-                          decoration:
-                              c.activa ? null : TextDecoration.lineThrough)),
-                  subtitle: Text(
-                    '${especialidadLabel(c.especialidad)} · $n ${n == 1 ? 'miembro' : 'miembros'}'
-                    '${jefe != null ? ' · Cabo: $jefe' : ''}'
-                    '${c.activa ? '' : ' · INACTIVA'}',
-                  ),
-                  trailing: PopupMenuButton<String>(
-                    onSelected: (v) async {
-                      final repo = ref.read(cuadrillaRepositoryProvider);
-                      switch (v) {
-                        case 'editar':
-                          _showEditDialog(c);
-                        case 'toggle':
-                          await repo.setActiva(c.id, !c.activa);
-                        case 'eliminar':
-                          _confirmDelete(c);
-                      }
-                    },
-                    itemBuilder: (_) => [
-                      const PopupMenuItem(
-                          value: 'editar', child: Text('Editar')),
-                      PopupMenuItem(
-                          value: 'toggle',
-                          child: Text(
-                              c.activa ? 'Marcar inactiva' : 'Marcar activa')),
-                      const PopupMenuItem(
-                          value: 'eliminar', child: Text('Eliminar')),
-                    ],
-                  ),
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => CuadrillaDetailScreen(cuadrillaId: c.id),
-                  )),
-                );
-              },
+              itemBuilder: (context, i) => tileFor(lista[i]),
             );
           },
         ),
@@ -246,9 +297,19 @@ class CuadrillaDetailScreen extends ConsumerWidget {
     final cuadrilla = cuadrillasAsync.asData?.value
         .where((c) => c.id == cuadrillaId)
         .firstOrNull;
-    final miembros =
+    final miembrosRepo =
         ref.watch(miembrosDeCuadrillaProvider(cuadrillaId)).asData?.value ??
             const <Colaborador>[];
+    final modoMiembros =
+        ref.watch(ordenModoProvider)[OrdenLista.cuadrillaMiembro] ?? modoNombre;
+    final personalizado = esModoPersonalizado(modoMiembros);
+    final miembros = ordenarPorModo(
+      items: miembrosRepo,
+      modo: modoMiembros,
+      nombreDe: (c) => c.nombre,
+      creadoDe: (c) => c.createdAt,
+      modificadoDe: (c) => c.updatedAt,
+    );
 
     if (cuadrilla == null) {
       return Scaffold(
@@ -293,47 +354,55 @@ class CuadrillaDetailScreen extends ConsumerWidget {
               ],
             ),
           ),
+          if (miembros.length > 1)
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 4),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: OrdenModoToggle(listKey: OrdenLista.cuadrillaMiembro),
+              ),
+            ),
           if (miembros.isEmpty)
             const Padding(
               padding: EdgeInsets.all(16),
               child: Text('Aún no hay miembros. Toca “Agregar”.'),
             )
+          else if (personalizado)
+            ReorderableListView(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              onReorder: (oldIndex, newIndex) {
+                if (newIndex > oldIndex) newIndex -= 1;
+                final ids = miembros.map((m) => m.id).toList();
+                final movido = ids.removeAt(oldIndex);
+                ids.insert(newIndex, movido);
+                final finales = esInvertido(modoMiembros)
+                    ? ids.reversed.toList()
+                    : ids;
+                ref.read(ordenRepositoryProvider).reordenar(
+                      tabla: 'cuadrilla_miembro',
+                      pkCols: const ['cuadrilla_id', 'colaborador_id'],
+                      pksEnOrden:
+                          finales.map((cid) => [cuadrillaId, cid]).toList(),
+                    );
+              },
+              children: [
+                for (final m in miembros)
+                  _MiembroTile(
+                    key: ValueKey(m.id),
+                    m: m,
+                    esJefe: m.id == cuadrilla.jefeColaboradorId,
+                    cuadrillaId: cuadrillaId,
+                    arrastrable: true,
+                  ),
+              ],
+            )
           else
-            ...miembros.map((m) {
-              final esJefe = m.id == cuadrilla.jefeColaboradorId;
-              return ListTile(
-                leading: CircleAvatar(
-                  child: Text(
-                      m.nombre.isNotEmpty ? m.nombre[0].toUpperCase() : '?'),
-                ),
-                title: Text(m.nombre),
-                subtitle: esJefe ? const Text('Cabo / jefe de cuadrilla') : null,
-                trailing: PopupMenuButton<String>(
-                  onSelected: (v) async {
-                    final repo = ref.read(cuadrillaRepositoryProvider);
-                    switch (v) {
-                      case 'jefe':
-                        await repo.setJefe(cuadrillaId, esJefe ? null : m.id);
-                      case 'quitar':
-                        await repo.quitarMiembro(cuadrillaId, m.id);
-                        // Si era el jefe, deja la cuadrilla sin cabo.
-                        if (esJefe) await repo.setJefe(cuadrillaId, null);
-                    }
-                  },
-                  itemBuilder: (_) => [
-                    PopupMenuItem(
-                        value: 'jefe',
-                        child: Text(esJefe
-                            ? 'Quitar como cabo'
-                            : 'Marcar como cabo')),
-                    const PopupMenuItem(
-                        value: 'quitar', child: Text('Quitar de la cuadrilla')),
-                  ],
-                ),
-                leadingAndTrailingTextStyle:
-                    esJefe ? const TextStyle(fontWeight: FontWeight.bold) : null,
-              );
-            }),
+            ...miembros.map((m) => _MiembroTile(
+                  m: m,
+                  esJefe: m.id == cuadrilla.jefeColaboradorId,
+                  cuadrillaId: cuadrillaId,
+                )),
           const Divider(height: 24),
           // ── Obras asignadas ──
           _AsignacionesObra(cuadrillaId: cuadrillaId),
@@ -393,6 +462,58 @@ class CuadrillaDetailScreen extends ConsumerWidget {
           ),
         );
       }),
+    );
+  }
+}
+
+/// Fila de un miembro de la cuadrilla. Extraída para reutilizarla tanto en la
+/// lista normal como dentro del [ReorderableListView] (que exige Key por hijo).
+class _MiembroTile extends ConsumerWidget {
+  const _MiembroTile({
+    super.key,
+    required this.m,
+    required this.esJefe,
+    required this.cuadrillaId,
+    this.arrastrable = false,
+  });
+
+  final Colaborador m;
+  final bool esJefe;
+  final String cuadrillaId;
+  final bool arrastrable;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ListTile(
+      leading: CircleAvatar(
+        child: Text(m.nombre.isNotEmpty ? m.nombre[0].toUpperCase() : '?'),
+      ),
+      title: Text(m.nombre),
+      subtitle: esJefe ? const Text('Cabo / jefe de cuadrilla') : null,
+      trailing: arrastrable
+          ? const Icon(Icons.drag_handle)
+          : PopupMenuButton<String>(
+              onSelected: (v) async {
+                final repo = ref.read(cuadrillaRepositoryProvider);
+                switch (v) {
+                  case 'jefe':
+                    await repo.setJefe(cuadrillaId, esJefe ? null : m.id);
+                  case 'quitar':
+                    await repo.quitarMiembro(cuadrillaId, m.id);
+                    if (esJefe) await repo.setJefe(cuadrillaId, null);
+                }
+              },
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                    value: 'jefe',
+                    child: Text(
+                        esJefe ? 'Quitar como cabo' : 'Marcar como cabo')),
+                const PopupMenuItem(
+                    value: 'quitar', child: Text('Quitar de la cuadrilla')),
+              ],
+            ),
+      leadingAndTrailingTextStyle:
+          esJefe ? const TextStyle(fontWeight: FontWeight.bold) : null,
     );
   }
 }

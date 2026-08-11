@@ -7,6 +7,7 @@ import '../../core/db/app_database.dart';
 import '../../core/sync/cloud_providers.dart';
 import '../../core/sync/rol_provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../data/orden_personalizado.dart';
 import '../../data/providers.dart';
 import '../common/app_badge.dart';
 import '../common/app_snackbar.dart';
@@ -16,6 +17,7 @@ import '../common/sync_status_action.dart';
 import '../common/confirm_dialog.dart';
 import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
+import '../common/orden_modo_toggle.dart';
 import 'obra_detail_screen.dart';
 
 /// Filtro por estado de obra. En la BD el campo es `activa` (bool), pero en
@@ -147,27 +149,37 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
+          preferredSize: const Size.fromHeight(100),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(
                 AppSpacing.md, 0, AppSpacing.md, AppSpacing.sm),
-            child: TextField(
-              controller: _buscarCtrl,
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                hintText: 'Buscar por nombre, cliente o ubicación…',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _hayBusqueda
-                    ? IconButton(
-                        tooltip: 'Limpiar búsqueda',
-                        icon: const Icon(Icons.close),
-                        onPressed: _limpiarBusqueda,
-                      )
-                    : null,
-                isDense: true,
-                border: const OutlineInputBorder(),
-              ),
-              onChanged: (v) => setState(() => _query = v),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: _buscarCtrl,
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    hintText: 'Buscar por nombre, cliente o ubicación…',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _hayBusqueda
+                        ? IconButton(
+                            tooltip: 'Limpiar búsqueda',
+                            icon: const Icon(Icons.close),
+                            onPressed: _limpiarBusqueda,
+                          )
+                        : null,
+                    isDense: true,
+                    border: const OutlineInputBorder(),
+                  ),
+                  onChanged: (v) => setState(() => _query = v),
+                ),
+                const SizedBox(height: 6),
+                const Align(
+                  alignment: Alignment.centerRight,
+                  child: OrdenModoToggle(listKey: OrdenLista.obras),
+                ),
+              ],
             ),
           ),
         ),
@@ -183,13 +195,26 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
             onRetry: () => ref.invalidate(obrasProvider),
           ),
           data: (obras) {
-            final visibles = _filtrar(obras);
+            final modo =
+                ref.watch(ordenModoProvider)[OrdenLista.obras] ?? modoNombre;
+            final personalizado = esModoPersonalizado(modo);
+            final visibles = ordenarPorModo(
+              items: _filtrar(obras),
+              modo: modo,
+              nombreDe: (o) => o.nombre,
+              creadoDe: (o) => o.createdAt,
+              modificadoDe: (o) => o.updatedAt,
+            );
             if (visibles.isEmpty) {
               return ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 children: [_vacio(obras.isEmpty, puedeEditar)],
               );
             }
+            // Arrastrar solo con la lista completa (sin filtro ni búsqueda) y con
+            // permiso de edición: reordenar un subconjunto no tendría sentido.
+            final puedeArrastrar =
+                personalizado && puedeEditar && !_hayFiltro;
             return Column(
               children: [
                 // Cuenta visible solo cuando algo está recortando la lista: es
@@ -211,12 +236,37 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
                     ),
                   ),
                 Expanded(
-                  child: ListView.separated(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    itemCount: visibles.length,
-                    separatorBuilder: (_, _) => const Divider(height: 1),
-                    itemBuilder: (context, i) => _tile(visibles[i], puedeEditar),
-                  ),
+                  child: puedeArrastrar
+                      ? ReorderableListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: visibles.length,
+                          onReorder: (oldIndex, newIndex) {
+                            if (newIndex > oldIndex) newIndex -= 1;
+                            final ids = visibles.map((o) => o.id).toList();
+                            final movido = ids.removeAt(oldIndex);
+                            ids.insert(newIndex, movido);
+                            ref.read(ordenRepositoryProvider).reordenarPorId(
+                                  'obras',
+                                  // En modo invertido lo que se ve está al revés
+                                  // que lo guardado: se persiste al derecho.
+                                  esInvertido(modo)
+                                      ? ids.reversed.toList()
+                                      : ids,
+                                );
+                          },
+                          itemBuilder: (context, i) => _tile(
+                            visibles[i],
+                            puedeEditar,
+                            arrastrable: true,
+                          ),
+                        )
+                      : ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: visibles.length,
+                          separatorBuilder: (_, _) => const Divider(height: 1),
+                          itemBuilder: (context, i) =>
+                              _tile(visibles[i], puedeEditar),
+                        ),
                 ),
               ],
             );
@@ -286,12 +336,13 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
     );
   }
 
-  Widget _tile(Obra obra, bool puedeEditar) {
+  Widget _tile(Obra obra, bool puedeEditar, {bool arrastrable = false}) {
     final detalle = [obra.cliente, obra.ubicacion]
         .where((s) => s.isNotEmpty)
         .join(' · ');
 
     return ListTile(
+      key: ValueKey(obra.id),
       leading: CircleAvatar(
         backgroundColor: obra.activa ? null : context.colores.neutralSoft,
         child: Icon(obra.activa ? Icons.engineering : Icons.archive),
@@ -313,9 +364,12 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
                   ),
               ],
             ),
+      // En modo arrastrar se muestra el asa en vez del menú (como en cuadrillas).
       // Sin permiso de edición se oculta el menú entero: la fila queda de solo
       // lectura (se puede abrir la obra, pero no editarla/archivarla/borrarla).
-      trailing: !puedeEditar
+      trailing: arrastrable
+          ? const Icon(Icons.drag_handle)
+          : !puedeEditar
           ? null
           : PopupMenuButton<String>(
         onSelected: (v) {

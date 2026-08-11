@@ -8,6 +8,7 @@ export async function listObras(): Promise<{ data: Obra[]; error: string | null 
     .from('obras')
     .select('*')
     .is('deleted_at', null)
+    .order('orden')
     .order('nombre');
 
   if (error) return { data: [], error: error.message };

@@ -41,7 +41,7 @@ class AppDatabase extends _$AppDatabase {
   static const _uuid = Uuid();
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -239,6 +239,39 @@ class AppDatabase extends _$AppDatabase {
             }
             // Recrea los triggers para cubrir la tabla/columnas nuevas
             // (createTable NO instala el trigger mark_pending).
+            await _instalarTriggersSync();
+          }
+          // v8 → v9 (orden personalizado, paridad web 0026): columna `orden`
+          // (bigint, default 0) en las 7 tablas reordenables a mano. Aditivo con
+          // default → addColumn sin backfill; las filas previas quedan orden=0 y
+          // conservan su orden natural (nombre/fecha) hasta el primer arrastre.
+          // El MODO (nombre|personalizado) NO se guarda aquí: vive en
+          // empresa_config.ui_orden (Supabase), que el móvil lee directo + caché.
+          if (from < 9) {
+            Future<bool> columnaExiste(String tabla, String col) => m.database
+                .customSelect(
+                  "SELECT 1 FROM pragma_table_info('$tabla') WHERE name='$col'",
+                )
+                .get()
+                .then((rows) => rows.isNotEmpty);
+
+            final reordenables = <TableInfo>[
+              cuadrillas,
+              cuadrillaMiembro,
+              colaboradores,
+              obras,
+              cotizaciones,
+              puestos,
+              catalogoConceptos,
+            ];
+            for (final t in reordenables) {
+              if (!await columnaExiste(t.actualTableName, 'orden')) {
+                final col = t.$columns.firstWhere((c) => c.name == 'orden');
+                await m.addColumn(t, col);
+              }
+            }
+            // Recrea los triggers para que el UPDATE de `orden` marque pending y
+            // el sync propague la posición nueva.
             await _instalarTriggersSync();
           }
         },

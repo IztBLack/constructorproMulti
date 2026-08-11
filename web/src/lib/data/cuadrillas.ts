@@ -10,6 +10,9 @@ export interface CuadrillaResumen {
   cabo_nombre: string | null;
   miembros: string[];
   obras: string[];
+  /** Marcas de sync; alimentan los modos "agregados recientes"/"modificados". */
+  created_at: number | null;
+  updated_at: number | null;
 }
 
 export async function listCuadrillas(): Promise<{
@@ -20,12 +23,15 @@ export async function listCuadrillas(): Promise<{
   const { data, error } = await supabase
     .from('cuadrillas')
     .select(
-      `id, nombre, especialidad, activa,
+      `id, nombre, especialidad, activa, created_at, updated_at,
        cabo:colaboradores!fk_cuad_jefe(nombre),
        cuadrilla_miembro(fecha_salida, deleted_at, colaboradores(nombre)),
        asignacion_cuadrilla_obra(fecha_fin, deleted_at, obras(nombre))`,
     )
     .is('deleted_at', null)
+    // Orden personalizado primero (0 = sin fijar → desempata nombre, idéntico al
+    // orden natural previo). Espeja el repo del móvil.
+    .order('orden')
     .order('nombre');
 
   if (error) return { data: [], error: error.message };
@@ -35,6 +41,8 @@ export async function listCuadrillas(): Promise<{
     nombre: string;
     especialidad: string;
     activa: boolean;
+    created_at: number | null;
+    updated_at: number | null;
     cabo: { nombre: string } | null;
     cuadrilla_miembro: {
       fecha_salida: number | null;
@@ -54,6 +62,8 @@ export async function listCuadrillas(): Promise<{
     nombre: r.nombre,
     especialidad: r.especialidad,
     activa: r.activa,
+    created_at: r.created_at,
+    updated_at: r.updated_at,
     cabo_nombre: r.cabo?.nombre ?? null,
     miembros: (r.cuadrilla_miembro ?? [])
       .filter((m) => m.fecha_salida === null && m.deleted_at === null && m.colaboradores)

@@ -1,4 +1,6 @@
 import { listCuadrillas } from '@/lib/data/cuadrillas';
+import { getUiOrden } from '@/lib/data/empresa-config';
+import { leerModo } from '@/lib/data/orden-modos';
 import { PageHeader } from '@/components/ui';
 import TablaCuadrillas from './tabla-cuadrillas';
 import NuevaCuadrillaForm from './nueva-cuadrilla-form';
@@ -6,7 +8,13 @@ import NuevaCuadrillaForm from './nueva-cuadrilla-form';
 export const dynamic = 'force-dynamic';
 
 export default async function CuadrillasPage() {
-  const { data: cuadrillas, error } = await listCuadrillas();
+  const [{ data: cuadrillas, error }, ui] = await Promise.all([
+    listCuadrillas(),
+    getUiOrden(),
+  ]);
+  // leerModo acepta todos los modos válidos (criterio + su inverso). Un ternario
+  // a mano descartaba los demás y los devolvía siempre a 'nombre'.
+  const modo = leerModo(ui['cuadrillas']);
 
   return (
     <div className="space-y-6">
@@ -22,7 +30,7 @@ export default async function CuadrillasPage() {
         </p>
       )}
 
-      {!error && <TablaCuadrillas cuadrillas={cuadrillas} />}
+      {!error && <TablaCuadrillas cuadrillas={cuadrillas} modo={modo} />}
     </div>
   );
 }

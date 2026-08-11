@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import { Button, LinkButton, PageHeader } from '@/components/ui';
 import type { Obra } from '@/lib/data/types';
+import type { OrdenModo } from '@/lib/data/orden-modos';
 import NuevaObraForm from './nueva-obra-form';
 import BuscadorObras from './buscador-obras';
 
 interface ObrasClientProps {
   obras: Obra[];
   error?: string | null;
+  modo: OrdenModo;
 }
 
 /**
@@ -17,7 +19,7 @@ interface ObrasClientProps {
  * estado vacío del buscador abren el mismo modal en vez de duplicar lógica
  * o navegar a un sitio muerto.
  */
-export default function ObrasClient({ obras, error }: ObrasClientProps) {
+export default function ObrasClient({ obras, error, modo }: ObrasClientProps) {
   const [nuevaObraAbierta, setNuevaObraAbierta] = useState(false);
 
   return (
@@ -44,7 +46,7 @@ export default function ObrasClient({ obras, error }: ObrasClientProps) {
       )}
 
       {!error && (
-        <BuscadorObras obras={obras} onNuevaObra={() => setNuevaObraAbierta(true)} />
+        <BuscadorObras obras={obras} modo={modo} onNuevaObra={() => setNuevaObraAbierta(true)} />
       )}
     </div>
   );

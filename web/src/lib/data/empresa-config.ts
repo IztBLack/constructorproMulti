@@ -55,6 +55,36 @@ export interface EmpresaConfig {
   pdf: PdfConfig;
 }
 
+// Los modos y sus etiquetas viven en `orden-modos.ts` (módulo puro, importable
+// desde componentes cliente). Se re-exportan aquí por comodidad del servidor.
+export {
+  ORDEN_MODOS,
+  ORDEN_BASE_LABEL,
+  esModoPersonalizado,
+  etiquetaModo,
+  leerModo,
+  type OrdenModo,
+} from './orden-modos';
+import { ORDEN_MODOS, type OrdenModo } from './orden-modos';
+
+/**
+ * Modo de orden por lista, guardado en `empresa_config.ui_orden` (jsonb). Es
+ * GLOBAL por empresa: el modo elegido en cualquier dispositivo (web o móvil) se
+ * ve en todos. Las claves coinciden con `OrdenLista` del móvil
+ * (`lib/data/orden_personalizado.dart`).
+ */
+export type UiOrden = Record<string, OrdenModo>;
+
+/** Normaliza el jsonb: descarta claves/valores que no sean un modo válido. */
+function leerUiOrden(crudo: unknown): UiOrden {
+  if (!crudo || typeof crudo !== 'object') return {};
+  const out: UiOrden = {};
+  for (const [k, v] of Object.entries(crudo as Record<string, unknown>)) {
+    if (ORDEN_MODOS.includes(v as OrdenModo)) out[k] = v as OrdenModo;
+  }
+  return out;
+}
+
 /** Normaliza lo que venga del jsonb: puede ser null, incompleto o basura. */
 function leerPdfConfig(crudo: unknown): PdfConfig {
   if (!crudo || typeof crudo !== 'object') return PDF_CONFIG_POR_DEFECTO;
@@ -101,6 +131,40 @@ export async function getEmpresaConfig(): Promise<EmpresaConfig> {
     ivaPorcentaje: Number(data.iva_porcentaje ?? IVA_POR_DEFECTO),
     pdf: leerPdfConfig(data.pdf_config),
   };
+}
+
+/** Lee el modo de orden por lista (jsonb `ui_orden`). Cae a `{}` si falta. */
+export async function getUiOrden(): Promise<UiOrden> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('empresa_config')
+    .select('ui_orden')
+    .maybeSingle();
+  if (error || !data) return {};
+  return leerUiOrden(data.ui_orden);
+}
+
+/**
+ * Fija el modo de orden de UNA lista y devuelve el mapa resultante. Hace un
+ * merge (no pisa las otras claves). Solo admin/supervisor (policy de 0017).
+ */
+export async function setOrdenModo(
+  listKey: string,
+  modo: OrdenModo,
+): Promise<{ ok: boolean; error?: string; ui?: UiOrden }> {
+  const { empresaId } = await getEmpresaUsuario();
+  const supabase = await createClient();
+
+  const actual = await getUiOrden();
+  const ui: UiOrden = { ...actual, [listKey]: modo };
+
+  const { error } = await supabase
+    .from('empresa_config')
+    .update({ ui_orden: ui, updated_at: Date.now() })
+    .eq('empresa_id', empresaId);
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, ui };
 }
 
 /** Guarda la personalización del PDF. Admin y supervisor (policy de 0017). */

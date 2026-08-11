@@ -30,7 +30,16 @@ mixin SyncCols on Table {
       text().withDefault(const Constant('pending'))();
 }
 
-class Obras extends Table with SyncCols {
+/// Posición manual dentro de su lista (orden personalizado con drag). 0 = sin
+/// fijar; el desempate secundario es el orden natural de la lista (nombre/fecha).
+/// Espeja `orden bigint` de Supabase (migración 0026) y viaja en el sync normal
+/// (es una columna común, no jsonb). El MODO (nombre|personalizado) NO vive aquí:
+/// se guarda en `empresa_config.ui_orden` y se lee directo de Supabase + caché.
+mixin Orderable on Table {
+  IntColumn get orden => integer().withDefault(const Constant(0))();
+}
+
+class Obras extends Table with SyncCols, Orderable {
   TextColumn get id => text()();
   TextColumn get nombre => text()();
   TextColumn get cliente => text().withDefault(const Constant(''))();
@@ -44,7 +53,7 @@ class Obras extends Table with SyncCols {
   Set<Column> get primaryKey => {id};
 }
 
-class Puestos extends Table with SyncCols {
+class Puestos extends Table with SyncCols, Orderable {
   TextColumn get id => text()();
   TextColumn get nombre => text()();
   RealColumn get salarioDiaDefault => real().withDefault(const Constant(0.0))();
@@ -54,7 +63,7 @@ class Puestos extends Table with SyncCols {
 }
 
 @DataClassName('Colaborador')
-class Colaboradores extends Table with SyncCols {
+class Colaboradores extends Table with SyncCols, Orderable {
   TextColumn get id => text()();
   TextColumn get nombre => text()();
   TextColumn get puestoId => text()();
@@ -137,7 +146,7 @@ class Destajos extends Table with SyncCols {
 /// Es GLOBAL por empresa (identidad estable) y se asigna a obras vía
 /// [AsignacionCuadrillaObra], de modo que rota entre obras conservando historial.
 @DataClassName('Cuadrilla')
-class Cuadrillas extends Table with SyncCols {
+class Cuadrillas extends Table with SyncCols, Orderable {
   TextColumn get id => text()();
   TextColumn get nombre => text()();
 
@@ -161,7 +170,7 @@ class Cuadrillas extends Table with SyncCols {
 /// Membresía N:M colaborador ↔ cuadrilla CON HISTORIAL (clon de
 /// [ObraColaborador]). `fechaSalida` null = miembro vigente. Permite que un
 /// colaborador rote de cuadrilla entre proyectos sin perder el histórico.
-class CuadrillaMiembro extends Table with SyncCols {
+class CuadrillaMiembro extends Table with SyncCols, Orderable {
   TextColumn get cuadrillaId => text()();
   TextColumn get colaboradorId => text()();
   IntColumn get fechaIngreso => integer()();
@@ -188,7 +197,7 @@ class AsignacionCuadrillaObra extends Table with SyncCols {
 }
 
 @DataClassName('Cotizacion')
-class Cotizaciones extends Table with SyncCols {
+class Cotizaciones extends Table with SyncCols, Orderable {
   TextColumn get id => text()();
   TextColumn get cliente => text()();
   TextColumn get nombreProyecto => text()();
@@ -306,7 +315,7 @@ class ObraPresupuesto extends Table with SyncCols {
   Set<Column> get primaryKey => {id};
 }
 
-class CatalogoConceptos extends Table with SyncCols {
+class CatalogoConceptos extends Table with SyncCols, Orderable {
   TextColumn get id => text()();
   TextColumn get clave => text()();
   TextColumn get descripcion => text()();

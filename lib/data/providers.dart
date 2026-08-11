@@ -6,6 +6,7 @@ import '../core/settings/settings_provider.dart'; // sharedPreferencesProvider
 import '../domain/logic/movimiento_colaborador_service.dart';
 import 'backup/backup_service.dart';
 import 'maintenance_repository.dart';
+import 'orden_personalizado.dart';
 import 'repositories.dart';
 import 'repositories_obra.dart';
 import 'repositories_cuadrilla.dart';
@@ -39,6 +40,39 @@ final databaseProvider = Provider<AppDatabase>((ref) {
   throw UnimplementedError(
       'databaseProvider debe sobreescribirse en main() (ver main.dart).');
 });
+
+// ---------------- Orden personalizado ----------------
+/// Escribe la columna `orden` de las tablas reordenables (sync normal de Drift).
+final ordenRepositoryProvider = Provider<OrdenRepository>(
+    (ref) => OrdenRepository(ref.watch(databaseProvider)));
+
+/// Servicio del MODO de orden (Supabase `empresa_config.ui_orden` + caché).
+final ordenModoServiceProvider = Provider<OrdenModoService>(
+    (ref) => OrdenModoService(ref.watch(sharedPreferencesProvider)));
+
+/// Estado reactivo del modo por lista. Arranca del caché (síncrono) y refresca
+/// desde Supabase en segundo plano; `setModo` escribe caché + servidor.
+final ordenModoProvider =
+    NotifierProvider<OrdenModoNotifier, Map<String, String>>(
+        OrdenModoNotifier.new);
+
+class OrdenModoNotifier extends Notifier<Map<String, String>> {
+  @override
+  Map<String, String> build() {
+    Future.microtask(() async {
+      final m = await ref.read(ordenModoServiceProvider).refrescar();
+      state = m;
+    });
+    return ref.read(ordenModoServiceProvider).todos;
+  }
+
+  String modoDe(String listKey) => state[listKey] ?? modoNombre;
+  bool esPersonalizado(String listKey) => modoDe(listKey) == modoPersonalizado;
+
+  Future<void> setModo(String listKey, String modo) async {
+    state = await ref.read(ordenModoServiceProvider).setModo(listKey, modo);
+  }
+}
 
 // ---------------- Repositorios ----------------
 final obraRepositoryProvider = Provider<ObraRepository>(
@@ -175,6 +209,11 @@ final cuadrillasPorObraProvider =
 final cuadrillaPorColaboradorProvider = StreamProvider<Map<String, Cuadrilla>>(
     (ref) =>
         ref.watch(cuadrillaRepositoryProvider).watchCuadrillaPorColaborador());
+
+/// colaboradorId → `orden` de su membresía vigente (pase de lista personalizado).
+final ordenMiembroPorColaboradorProvider = StreamProvider<Map<String, int>>(
+    (ref) =>
+        ref.watch(cuadrillaRepositoryProvider).watchOrdenMiembroVigente());
 
 // ---------------- Cotizaciones / Presupuesto ----------------
 final cotizacionRepositoryProvider = Provider<CotizacionRepository>(

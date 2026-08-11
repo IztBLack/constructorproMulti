@@ -4,11 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
 import '../../core/theme/app_colors.dart';
+import '../../data/orden_personalizado.dart';
 import '../../data/providers.dart';
 import '../common/app_snackbar.dart';
 import '../common/app_spacing.dart';
 import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
+import '../common/orden_modo_toggle.dart';
 import '../cuadrillas/cuadrillas_screen.dart' show especialidadLabel;
 
 /// Pase de lista UNIFICADO: pasa lista de todas las obras activas en un día.
@@ -56,6 +58,19 @@ class _PaseListaScreenState extends ConsumerState<PaseListaScreen> {
             },
           ),
         ],
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(44),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(12, 0, 12, 8),
+            child: Align(
+              alignment: Alignment.centerRight,
+              // Mismo modo que el orden dentro de cada cuadrilla: al elegir
+              // "Orden" el pase de lista respeta las posiciones fijadas a mano
+              // (grupos y miembros); "Nombre" lo muestra alfabético.
+              child: OrdenModoToggle(listKey: OrdenLista.cuadrillaMiembro),
+            ),
+          ),
+        ),
       ),
       body: obrasAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -104,6 +119,16 @@ class _ObraPaseLista extends ConsumerWidget {
     final cuadrillaPorColab =
         ref.watch(cuadrillaPorColaboradorProvider).asData?.value ??
             const <String, Cuadrilla>{};
+    // Modo de orden sincronizado (mismo que el de miembros de cuadrilla).
+    final modo =
+        ref.watch(ordenModoProvider)[OrdenLista.cuadrillaMiembro] ?? modoNombre;
+    final personalizado = esModoPersonalizado(modo);
+    final invertido = esInvertido(modo);
+    // orden de la membresía por colaborador (solo relevante en personalizado).
+    final ordenMiembro = personalizado
+        ? (ref.watch(ordenMiembroPorColaboradorProvider).asData?.value ??
+            const <String, int>{})
+        : const <String, int>{};
     final dia = workers
         .where((c) => c.tipoPago == 'DIA')
         .where((c) => ultimaObra[c.id]?.id == obraId)
@@ -111,25 +136,40 @@ class _ObraPaseLista extends ConsumerWidget {
     if (dia.isEmpty) return const SizedBox.shrink();
     final frac = {for (final a in asistencias) a.colaboradorId: a.fraccion};
 
-    // Agrupa por cuadrilla vigente (preserva orden de aparición). Los que no
-    // tienen cuadrilla caen bajo la clave null ("Sin cuadrilla").
+    // Agrupa por cuadrilla vigente. Los que no tienen cuadrilla caen bajo la
+    // clave null ("Sin cuadrilla").
     final grupos = <String?, List<Colaborador>>{};
     for (final c in dia) {
       final cid = cuadrillaPorColab[c.id]?.id;
       (grupos[cid] ??= []).add(c);
     }
-    // Orden: cuadrillas primero (por nombre), "Sin cuadrilla" al final.
+    // Orden de miembros DENTRO de cada grupo: por `orden` de membresía en modo
+    // personalizado (desempata nombre); alfabético en modo nombre.
+    int ordenDe(Colaborador c) => ordenMiembro[c.id] ?? 0;
+    for (final lista in grupos.values) {
+      lista.sort((a, b) {
+        if (personalizado) {
+          final byOrden = ordenDe(a).compareTo(ordenDe(b));
+          if (byOrden != 0) return invertido ? -byOrden : byOrden;
+        }
+        return a.nombre.compareTo(b.nombre);
+      });
+    }
+    // Orden de los GRUPOS: cuadrillas primero, "Sin cuadrilla" al final. Entre
+    // cuadrillas: por `orden` de la cuadrilla en personalizado, por nombre si no.
+    Cuadrilla? cuadrillaDe(String? id) =>
+        id == null ? null : cuadrillaPorColab.values.firstWhere((q) => q.id == id);
     final claves = grupos.keys.toList()
       ..sort((a, b) {
         if (a == null) return 1;
         if (b == null) return -1;
-        final na = cuadrillaPorColab.values
-            .firstWhere((q) => q.id == a)
-            .nombre;
-        final nb = cuadrillaPorColab.values
-            .firstWhere((q) => q.id == b)
-            .nombre;
-        return na.compareTo(nb);
+        final qa = cuadrillaDe(a)!;
+        final qb = cuadrillaDe(b)!;
+        if (personalizado) {
+          final byOrden = qa.orden.compareTo(qb.orden);
+          if (byOrden != 0) return invertido ? -byOrden : byOrden;
+        }
+        return qa.nombre.compareTo(qb.nombre);
       });
 
     final children = <Widget>[];

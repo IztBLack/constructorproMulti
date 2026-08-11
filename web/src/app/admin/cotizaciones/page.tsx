@@ -1,11 +1,19 @@
 import { listCotizaciones } from '@/lib/data/cotizaciones';
+import { getUiOrden } from '@/lib/data/empresa-config';
+import { leerModo } from '@/lib/data/orden-modos';
 import { LinkButton, PageHeader } from '@/components/ui';
 import FiltroEstadoCotizaciones from './filtro-estado';
 
 export const dynamic = 'force-dynamic';
 
 export default async function CotizacionesPage() {
-  const { data: cotizaciones, error } = await listCotizaciones();
+  const [{ data: cotizaciones, error }, ui] = await Promise.all([
+    listCotizaciones(),
+    getUiOrden(),
+  ]);
+  // leerModo acepta todos los modos válidos (criterio + su inverso). Un ternario
+  // a mano descartaba los demás y los devolvía siempre a 'nombre'.
+  const modo = leerModo(ui['cotizaciones']);
 
   return (
     <div className="space-y-6">
@@ -21,7 +29,7 @@ export default async function CotizacionesPage() {
         </p>
       )}
 
-      {!error && <FiltroEstadoCotizaciones cotizaciones={cotizaciones} />}
+      {!error && <FiltroEstadoCotizaciones cotizaciones={cotizaciones} modo={modo} />}
     </div>
   );
 }

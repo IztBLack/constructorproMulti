@@ -14,7 +14,12 @@ class CotizacionRepository {
 
   Stream<List<Cotizacion>> watchAll() => (db.select(db.cotizaciones)
         ..where((t) => t.deletedAt.isNull())
-        ..orderBy([(t) => OrderingTerm(expression: t.fecha, mode: OrderingMode.desc)]))
+        // Orden personalizado primero; desempate por fecha desc (lo natural aquí),
+        // así que sin posiciones fijadas (orden=0) el aspecto es el de antes.
+        ..orderBy([
+          (t) => OrderingTerm(expression: t.orden),
+          (t) => OrderingTerm(expression: t.fecha, mode: OrderingMode.desc),
+        ]))
       .watch();
 
   Future<void> upsert(CotizacionesCompanion c) =>

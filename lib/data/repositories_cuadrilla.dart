@@ -19,7 +19,12 @@ class CuadrillaRepository {
   // ───────────────────────── Cuadrillas ─────────────────────────
   Stream<List<Cuadrilla>> watchAll() => (db.select(db.cuadrillas)
         ..where((t) => t.deletedAt.isNull())
-        ..orderBy([(t) => OrderingTerm(expression: t.nombre)]))
+        // Orden personalizado primero (0 = sin fijar → cae al desempate por
+        // nombre, idéntico al orden natural previo al primer arrastre).
+        ..orderBy([
+          (t) => OrderingTerm(expression: t.orden),
+          (t) => OrderingTerm(expression: t.nombre),
+        ]))
       .watch();
 
   Future<List<Cuadrilla>> getAll() =>
@@ -81,7 +86,11 @@ class CuadrillaRepository {
           db.cuadrillaMiembro.deletedAt.isNull() &
           db.colaboradores.deletedAt.isNull() &
           db.colaboradores.activo.equals(true))
-      ..orderBy([OrderingTerm(expression: db.colaboradores.nombre)]);
+      // Orden personalizado del miembro DENTRO de la cuadrilla; desempata nombre.
+      ..orderBy([
+        OrderingTerm(expression: db.cuadrillaMiembro.orden),
+        OrderingTerm(expression: db.colaboradores.nombre),
+      ]);
     return q.map((row) => row.readTable(db.colaboradores)).watch();
   }
 
@@ -129,6 +138,20 @@ class CuadrillaRepository {
       for (final r in rows) {
         final colId = r.readTable(db.cuadrillaMiembro).colaboradorId;
         map.putIfAbsent(colId, () => r.readTable(db.cuadrillas));
+      }
+      return map;
+    });
+  }
+
+  /// Mapa colaboradorId → `orden` de su membresía VIGENTE (para ordenar el pase
+  /// de lista en modo personalizado). Solo miembros vigentes y no borrados.
+  Stream<Map<String, int>> watchOrdenMiembroVigente() {
+    final q = db.select(db.cuadrillaMiembro)
+      ..where((t) => t.fechaSalida.isNull() & t.deletedAt.isNull());
+    return q.watch().map((rows) {
+      final map = <String, int>{};
+      for (final r in rows) {
+        map[r.colaboradorId] = r.orden;
       }
       return map;
     });
