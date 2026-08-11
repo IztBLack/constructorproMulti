@@ -3,12 +3,19 @@
 import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import type { Puesto } from '@/lib/data/types';
+import type { ObraResumen, Puesto } from '@/lib/data/types';
 import { Button, Field, Input, Modal } from '@/components/ui';
 import { crearColaborador } from './actions';
 import SueldoFields from './sueldo-fields';
 
-export default function NuevoColaboradorForm({ puestos }: { puestos: Puesto[] }) {
+export default function NuevoColaboradorForm({
+  puestos,
+  obras = [],
+}: {
+  puestos: Puesto[];
+  /** Obras activas para asignar en el mismo alta (opcional). */
+  obras?: ObraResumen[];
+}) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [open, setOpen] = useState(false);
@@ -82,6 +89,27 @@ export default function NuevoColaboradorForm({ puestos }: { puestos: Puesto[] })
 
           <Field label="Teléfono">
             <Input name="telefono" type="tel" />
+          </Field>
+
+          {/* Asignar a obra en el MISMO alta: el caso normal es dar de alta a
+              alguien porque ya va a entrar a una obra, y obligar a un segundo
+              paso hacía que se olvidara. Vacío = se asigna después. */}
+          <Field label="Asignar a obra" className="sm:col-span-2">
+            <select
+              name="obra_id"
+              defaultValue=""
+              className="w-full cursor-pointer rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-900/10"
+            >
+              <option value="">Asignar después</option>
+              {obras.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.nombre}
+                </option>
+              ))}
+            </select>
+            <span className="block text-xs text-neutral-400">
+              Opcional. Puedes dejarlo en “Asignar después” y hacerlo más adelante.
+            </span>
           </Field>
 
           <SueldoFields />

@@ -20,6 +20,7 @@ export async function listColaboradores(): Promise<{
     .from('colaboradores')
     .select('*')
     .is('deleted_at', null)
+    .order('orden')
     .order('nombre');
 
   if (error) return { data: [], error: error.message };
@@ -144,4 +145,41 @@ export async function listAsignacionesColaborador(
   }));
 
   return { data: mapped, error: null };
+}
+
+/// Obra(s) VIGENTE(S) por colaborador, para toda la empresa: `colaborador_id` →
+/// lista de `{ id, nombre }`. Alimenta el filtro por obra de la pantalla Equipo
+/// (el equivalente del `colaboradorObrasProvider` del móvil).
+///
+/// Solo asignaciones abiertas (`fecha_salida` nula) y no borradas: el filtro
+/// pregunta "quién está HOY en esta obra", no quién estuvo alguna vez.
+export async function listObrasPorColaborador(): Promise<{
+  data: Record<string, { id: string; nombre: string }[]>;
+  error: string | null;
+}> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('obra_colaborador')
+    .select('colaborador_id, obra_id, obras(nombre, activa, deleted_at)')
+    .is('fecha_salida', null)
+    .is('deleted_at', null);
+
+  if (error) return { data: {}, error: error.message };
+
+  type Row = {
+    colaborador_id: string;
+    obra_id: string;
+    obras: { nombre: string; activa: boolean; deleted_at: number | null } | null;
+  };
+
+  const out: Record<string, { id: string; nombre: string }[]> = {};
+  for (const r of (data ?? []) as unknown as Row[]) {
+    // Una obra archivada o borrada no debe generar un chip de filtro.
+    if (!r.obras || r.obras.deleted_at !== null || !r.obras.activa) continue;
+    (out[r.colaborador_id] ??= []).push({ id: r.obra_id, nombre: r.obras.nombre });
+  }
+  for (const lista of Object.values(out)) {
+    lista.sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }
+  return { data: out, error: null };
 }

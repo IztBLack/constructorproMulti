@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 
 /**
  * Definición de una columna para {@link DataTable}.
@@ -30,6 +30,11 @@ type DataTableProps<T> = {
   href?: (row: T) => string;
   /** Texto para lectores de pantalla del enlace de fila (ej. "Ver obra Torre Norte"). */
   rowLabel?: (row: T) => string;
+  /**
+   * Props extra por fila (escritorio). Lo usa el ORDEN PERSONALIZADO para montar
+   * los handlers de arrastrar-y-soltar sobre cada `<tr>`.
+   */
+  rowProps?: (row: T, index: number) => HTMLAttributes<HTMLTableRowElement>;
 };
 
 const stretchedLink =
@@ -44,7 +49,14 @@ const stretchedLink =
  * patrón "stretched link" accesible de `Table.tsx` (RowLink): un solo tab-stop
  * por fila/tarjeta, con foco visible.
  */
-export function DataTable<T>({ columns, rows, rowKey, href, rowLabel }: DataTableProps<T>) {
+export function DataTable<T>({
+  columns,
+  rows,
+  rowKey,
+  href,
+  rowLabel,
+  rowProps,
+}: DataTableProps<T>) {
   const primary = columns.find((c) => c.primary) ?? columns[0];
   const secundarias = columns.filter((c) => c !== primary);
 
@@ -66,10 +78,14 @@ export function DataTable<T>({ columns, rows, rowKey, href, rowLabel }: DataTabl
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {rows.map((row, fila) => {
+              const extra = rowProps?.(row, fila) ?? {};
+              const { className: extraClass = '', ...restoFila } = extra;
+              return (
               <tr
                 key={rowKey(row)}
-                className="relative border-b border-neutral-100 last:border-0 hover:bg-neutral-50"
+                className={`relative border-b border-neutral-100 last:border-0 hover:bg-neutral-50 ${extraClass}`}
+                {...restoFila}
               >
                 {columns.map((c, i) => (
                   <td
@@ -87,7 +103,8 @@ export function DataTable<T>({ columns, rows, rowKey, href, rowLabel }: DataTabl
                   </td>
                 ))}
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

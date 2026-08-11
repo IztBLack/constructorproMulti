@@ -8,12 +8,14 @@ import '../../core/format/format.dart';
 import '../../core/sync/cloud_providers.dart';
 import '../../domain/logic/salario_periodo.dart';
 import '../../core/theme/app_colors.dart';
+import '../../data/orden_personalizado.dart';
 import '../../data/providers.dart';
 import '../common/async_action_button.dart';
 import '../common/sync_status_action.dart';
 import '../common/confirm_dialog.dart';
 import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
+import '../common/orden_modo_toggle.dart';
 import '../cuadrillas/cuadrillas_screen.dart';
 
 enum _Sort { nombreAsc, nombreDesc, puesto, obra }
@@ -30,6 +32,18 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
   String _query = '';
   _Sort _sort = _Sort.nombreAsc;
   bool _mostrarInactivos = true;
+
+  /// Obra por la que se está filtrando (null = todas). Filtra en DURO: muestra
+  /// solo a los asignados a esa obra, igual que un filtro por género. Se eligió
+  /// sobre "priorizar y luego el resto" porque una lista mezclada no deja ver
+  /// dónde termina la obra. Para asignar a alguien nuevo se quita el filtro.
+  String? _obraId;
+
+  /// Con un filtro de obra puesto, muestra ADEMÁS al resto del equipo en una
+  /// segunda sección. Apagado por defecto: el filtro debe seguir respondiendo
+  /// "quién está en esta obra" de un vistazo; esto es para cuando hace falta
+  /// jalar a alguien de fuera sin perder el filtro.
+  bool _verResto = false;
 
   @override
   Widget build(BuildContext context) {
@@ -69,17 +83,40 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
+          preferredSize: const Size.fromHeight(150),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-            child: TextField(
-              decoration: const InputDecoration(
-                hintText: 'Buscar colaborador…',
-                prefixIcon: Icon(Icons.search),
-                isDense: true,
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (v) => setState(() => _query = v.toLowerCase()),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  decoration: const InputDecoration(
+                    hintText: 'Buscar colaborador…',
+                    prefixIcon: Icon(Icons.search),
+                    isDense: true,
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (v) => setState(() => _query = v.toLowerCase()),
+                ),
+                const SizedBox(height: 6),
+                // Filtro por obra: una fila de chips desplazable (como el filtro
+                // de estado de cotizaciones). Va FUERA del menú de orden a
+                // propósito: filtrar y ordenar son cosas distintas y mezclarlas
+                // haría que elegir una obra pareciera un criterio de orden.
+                _FiltroObra(
+                  seleccionada: _obraId,
+                  obrasPorColab: obrasPorColab,
+                  onSeleccionar: (id) => setState(() => _obraId = id),
+                ),
+                const SizedBox(height: 6),
+                // "Orden" (sincronizado) manda sobre el menú local de arriba: al
+                // elegirlo se ignora el sort por nombre/puesto/obra y se puede
+                // arrastrar.
+                const Align(
+                  alignment: Alignment.centerRight,
+                  child: OrdenModoToggle(listKey: OrdenLista.colaboradores),
+                ),
+              ],
             ),
           ),
         ),
@@ -95,10 +132,33 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
           onRetry: () => ref.invalidate(colaboradoresProvider),
         ),
         data: (todos) {
+          final modo = ref.watch(ordenModoProvider)[OrdenLista.colaboradores] ??
+              modoNombre;
+          final personalizado = esModoPersonalizado(modo);
           var lista = todos
               .where((c) => _mostrarInactivos || c.activo)
               .where((c) => c.nombre.toLowerCase().contains(_query))
               .toList();
+          bool enObra(Colaborador c) => (obrasPorColab[c.id] ?? const <Obra>[])
+              .any((o) => o.id == _obraId);
+          // Filtro por obra: la lista principal son los asignados; el resto
+          // queda aparte para la sección opcional "ver los demás".
+          final resto = _obraId == null
+              ? const <Colaborador>[]
+              : lista.where((c) => !enObra(c)).toList();
+          if (_obraId != null) lista = lista.where(enObra).toList();
+          // El botón de orden manda: solo si está "por nombre" se respeta el
+          // menú local (nombre/puesto/obra); los demás modos ordenan aquí.
+          if (modo != modoNombre) {
+            lista = ordenarPorModo(
+              items: lista,
+              modo: modo,
+              nombreDe: (c) => c.nombre,
+              creadoDe: (c) => c.createdAt,
+              modificadoDe: (c) => c.updatedAt,
+            );
+          }
+          if (modo == modoNombre) {
           switch (_sort) {
             case _Sort.nombreAsc:
               lista.sort((a, b) => a.nombre.compareTo(b.nombre));
@@ -121,27 +181,44 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
                 return cmp != 0 ? cmp : a.nombre.compareTo(b.nombre);
               });
           }
+          }
           if (lista.isEmpty) {
             return ListView(
               physics: const AlwaysScrollableScrollPhysics(),
-              children: const [
-                EmptyStateView(
-                  icon: Icons.groups_outlined,
-                  title: 'No hay colaboradores.',
-                  hint: 'Toca “Nuevo” para agregar uno.',
-                ),
+              children: [
+                if (_obraId != null)
+                  EmptyStateView(
+                    icon: Icons.engineering_outlined,
+                    title: 'Nadie asignado a esta obra.',
+                    hint: 'Quita el filtro para ver a todo el equipo y asignar.',
+                    action: TextButton.icon(
+                      onPressed: () => setState(() => _obraId = null),
+                      icon: const Icon(Icons.filter_alt_off),
+                      label: const Text('Ver todas las obras'),
+                    ),
+                  )
+                else
+                  const EmptyStateView(
+                    icon: Icons.groups_outlined,
+                    title: 'No hay colaboradores.',
+                    hint: 'Toca “Nuevo” para agregar uno.',
+                  ),
               ],
             );
           }
-          return ListView.separated(
-            physics: const AlwaysScrollableScrollPhysics(),
-            itemCount: lista.length,
-            separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (context, i) {
+          // Arrastrar solo sobre la lista completa (sin búsqueda ni filtro de
+          // obra y con inactivos visibles): reordenar un subconjunto mezclaría
+          // las posiciones del resto.
+          final puedeArrastrar = personalizado &&
+              _query.isEmpty &&
+              _mostrarInactivos &&
+              _obraId == null;
+          Widget itemAt(BuildContext context, int i) {
               final c = lista[i];
               final tipo = c.tipoPago == 'DIA' ? 'Por día' : 'Por destajo';
               final obras = obrasPorColab[c.id] ?? const <Obra>[];
               return ListTile(
+                key: ValueKey(c.id),
                 isThreeLine: true,
                 leading: CircleAvatar(
                   backgroundColor: c.activo ? null : context.colores.neutralSoft,
@@ -206,6 +283,65 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
                   ],
                 ),
                 onTap: () => _showDialog(c, puestos),
+              );
+          }
+          if (puedeArrastrar) {
+            return ReorderableListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
+              itemCount: lista.length,
+              onReorder: (oldIndex, newIndex) {
+                if (newIndex > oldIndex) newIndex -= 1;
+                final ids = lista.map((c) => c.id).toList();
+                final movido = ids.removeAt(oldIndex);
+                ids.insert(newIndex, movido);
+                ref.read(ordenRepositoryProvider).reordenarPorId(
+                      'colaboradores',
+                      esInvertido(modo)
+                          ? ids.reversed.toList()
+                          : ids,
+                    );
+              },
+              itemBuilder: itemAt,
+            );
+          }
+          // Sin filtro de obra: lista simple. Con filtro: se añade el pie que
+          // deja ver (u ocultar) al resto del equipo sin perder el filtro.
+          final hayResto = _obraId != null && resto.isNotEmpty;
+          return ListView.separated(
+            physics: const AlwaysScrollableScrollPhysics(),
+            itemCount: lista.length +
+                (hayResto ? 1 + (_verResto ? resto.length : 0) : 0),
+            separatorBuilder: (_, _) => const Divider(height: 1),
+            itemBuilder: (context, i) {
+              if (i < lista.length) return itemAt(context, i);
+              if (i == lista.length) {
+                return _PieVerResto(
+                  cantidad: resto.length,
+                  abierto: _verResto,
+                  onToggle: () => setState(() => _verResto = !_verResto),
+                );
+              }
+              // Filas del resto: se pintan atenuadas para que se lean como "no
+              // son de esta obra" aunque estén en la misma lista.
+              final c = resto[i - lista.length - 1];
+              return Opacity(
+                opacity: 0.75,
+                child: ListTile(
+                  key: ValueKey('resto_${c.id}'),
+                  leading: CircleAvatar(
+                    backgroundColor: context.colores.neutralSoft,
+                    child: Text(
+                        c.nombre.isNotEmpty ? c.nombre[0].toUpperCase() : '?'),
+                  ),
+                  title: Text(c.nombre),
+                  subtitle: Text(puestoNombre[c.puestoId] ?? 'Sin puesto'),
+                  trailing: TextButton.icon(
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Asignar'),
+                    onPressed: () => _asignarObraSheet(c),
+                  ),
+                  onTap: () => _showDialog(c, puestos),
+                ),
               );
             },
           );
@@ -343,6 +479,13 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
     PeriodoPago periodo = periodoPagoFromCode(colaborador?.periodoPago);
     int diasSemana = colaborador?.diasSemana ?? 6;
     bool activo = colaborador?.activo ?? true;
+    // Solo al DAR DE ALTA: obra opcional para crear y asignar en un paso.
+    // Vacía = "asignar después".
+    String? obraDestinoId;
+    final obrasActivas = (ref.read(obrasProvider).asData?.value ?? const <Obra>[])
+        .where((o) => o.activa)
+        .toList()
+      ..sort((a, b) => a.nombre.compareTo(b.nombre));
     final formKey = GlobalKey<FormState>();
 
     await showDialog<void>(
@@ -463,6 +606,27 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
                     value: activo,
                     onChanged: (v) => setLocal(() => activo = v),
                   ),
+                  // El alta normal es "entra alguien porque ya va a una obra":
+                  // pedirlo aquí evita el segundo paso que se olvidaba.
+                  if (colaborador == null && obrasActivas.isNotEmpty) ...[
+                    const Divider(height: 24),
+                    DropdownButtonFormField<String?>(
+                      initialValue: obraDestinoId,
+                      decoration: const InputDecoration(
+                        labelText: 'Asignar a obra',
+                        helperText: 'Opcional: puedes asignarlo después',
+                      ),
+                      items: [
+                        const DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('Asignar después'),
+                        ),
+                        ...obrasActivas.map((o) => DropdownMenuItem<String?>(
+                            value: o.id, child: Text(o.nombre))),
+                      ],
+                      onChanged: (v) => setLocal(() => obraDestinoId = v),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -472,6 +636,7 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
             AsyncActionButton(
               onPressed: () async {
                 if (!formKey.currentState!.validate()) return;
+                final nuevoId = colaborador?.id ?? _uuid.v4();
                 final montoText = montoCtrl.text.trim();
                 final montoPeriodo =
                     montoText.isEmpty ? null : double.tryParse(montoText);
@@ -480,7 +645,7 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
                     montoPeriodo, periodo, diasSemana);
                 await ref.read(colaboradorRepositoryProvider).upsert(
                       ColaboradoresCompanion(
-                        id: Value(colaborador?.id ?? _uuid.v4()),
+                        id: Value(nuevoId),
                         nombre: Value(nombreCtrl.text.trim()),
                         puestoId: Value(puestoId!),
                         tipoPago: Value(tipoPago),
@@ -495,6 +660,13 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
                         activo: Value(activo),
                       ),
                     );
+                // Alta + asignación en un solo gesto (si se eligió obra).
+                if (colaborador == null && obraDestinoId != null) {
+                  await ref.read(colaboradorRepositoryProvider).asignarObra(
+                        obraId: obraDestinoId!,
+                        colaboradorId: nuevoId,
+                      );
+                }
                 if (ctx.mounted) Navigator.pop(ctx);
               },
               child: const Text('Guardar'),
@@ -514,5 +686,121 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
       actionLabel: 'Eliminar',
     );
     if (ok) await ref.read(colaboradorRepositoryProvider).delete(c.id);
+  }
+}
+
+/// Fila de chips para filtrar el equipo POR OBRA (metáfora de "género": elegir
+/// una obra deja ver solo a quienes están asignados a ella).
+///
+/// Las obras salen del mapa colaborador→obras vigentes, no del catálogo
+/// completo: una obra sin nadie asignado no aporta un chip que solo llevaría a
+/// una lista vacía. Se desplaza en horizontal porque en un teléfono no caben
+/// varias obras en una fila (mismo criterio que el filtro de cotizaciones).
+class _FiltroObra extends StatelessWidget {
+  const _FiltroObra({
+    required this.seleccionada,
+    required this.obrasPorColab,
+    required this.onSeleccionar,
+  });
+
+  final String? seleccionada;
+  final Map<String, List<Obra>> obrasPorColab;
+  final ValueChanged<String?> onSeleccionar;
+
+  @override
+  Widget build(BuildContext context) {
+    // obraId → (nombre, nº de colaboradores asignados).
+    final conteo = <String, int>{};
+    final nombre = <String, String>{};
+    for (final obras in obrasPorColab.values) {
+      for (final o in obras) {
+        conteo[o.id] = (conteo[o.id] ?? 0) + 1;
+        nombre[o.id] = o.nombre;
+      }
+    }
+    if (conteo.isEmpty) return const SizedBox.shrink();
+
+    final ids = conteo.keys.toList()
+      ..sort((a, b) => (nombre[a] ?? '').compareTo(nombre[b] ?? ''));
+
+    return SizedBox(
+      height: 40,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 6),
+            child: FilterChip(
+              label: const Text('Todas'),
+              selected: seleccionada == null,
+              showCheckmark: false,
+              visualDensity: VisualDensity.compact,
+              tooltip: 'Ver a todo el equipo',
+              onSelected: (_) => onSeleccionar(null),
+            ),
+          ),
+          for (final id in ids)
+            Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: FilterChip(
+                // El conteo va en la etiqueta: dice cuánta gente hay ANTES de
+                // tocar el chip.
+                label: Text('${nombre[id]} (${conteo[id]})'),
+                selected: seleccionada == id,
+                showCheckmark: false,
+                visualDensity: VisualDensity.compact,
+                tooltip: 'Solo el equipo de ${nombre[id]}',
+                // Volver a tocar el chip activo regresa a "Todas": se filtra y
+                // desfiltra con el mismo pulgar, sin viajar al inicio de la fila.
+                onSelected: (_) =>
+                    onSeleccionar(seleccionada == id ? null : id),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Pie de la lista filtrada por obra: despliega (u oculta) a los colaboradores
+/// que NO están en esa obra, para poder jalar a alguien de fuera sin perder el
+/// filtro. Va apagado por defecto para que el filtro siga respondiendo "quién
+/// está en esta obra" de un vistazo.
+class _PieVerResto extends StatelessWidget {
+  const _PieVerResto({
+    required this.cantidad,
+    required this.abierto,
+    required this.onToggle,
+  });
+
+  final int cantidad;
+  final bool abierto;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          OutlinedButton.icon(
+            onPressed: onToggle,
+            icon: Icon(abierto ? Icons.expand_less : Icons.expand_more),
+            label: Text(abierto
+                ? 'Ocultar los demás colaboradores'
+                : 'Ver los demás colaboradores ($cantidad)'),
+          ),
+          if (abierto)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'No asignados a esta obra. Toca “Asignar” para agregarlos.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }

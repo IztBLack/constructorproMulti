@@ -16,6 +16,7 @@ export async function listCotizaciones(): Promise<{
     .from('cotizaciones')
     .select('*')
     .is('deleted_at', null)
+    .order('orden')
     .order('fecha', { ascending: false });
 
   if (error) return { data: [], error: error.message };

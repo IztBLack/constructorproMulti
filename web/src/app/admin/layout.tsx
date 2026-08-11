@@ -28,16 +28,23 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     // "imprimía toda la página" en vez del documento solo.
     <div className="min-h-screen flex flex-col bg-neutral-50 print:min-h-0 print:bg-white">
       <header className="border-b border-neutral-200 bg-white print:hidden">
+        {/* Fila 1: marca + acciones de cuenta.
+            El nav NO vive aquí. Con 10 secciones, la fila pedía ~1424px y el
+            contenedor tope mide 1152: a partir de `sm` los enlaces se comprimían
+            y el bar "se estiraba". Marca y acciones caben de sobra solas. */}
         <div className="mx-auto max-w-6xl flex items-center justify-between gap-4 px-4 py-3 sm:px-8">
-          <div className="flex items-center gap-6">
-            <Link href="/admin" className="text-base font-semibold text-neutral-900">
-              {marca}
-            </Link>
-            {/* Nav escritorio */}
-            <NavLinks className="hidden sm:flex items-center gap-1" />
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="hidden sm:inline text-sm text-neutral-500">{nombre}</span>
+          <Link
+            href="/admin"
+            className="min-w-0 truncate text-base font-semibold text-neutral-900"
+          >
+            {marca}
+          </Link>
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            {/* El nombre solo cuando hay espacio real: en tablet robaba el ancho
+                que necesitan los botones. */}
+            <span className="hidden max-w-[16ch] truncate text-sm text-neutral-500 lg:inline">
+              {nombre}
+            </span>
             <BotonDescargas />
             <EnlaceAjustes href="/admin/ajustes" />
             <ToggleTema />
@@ -48,8 +55,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </form>
           </div>
         </div>
-        {/* Nav móvil */}
-        <NavLinks className="flex sm:hidden gap-1 overflow-x-auto border-t border-neutral-100 px-4 py-2" itemClassName="shrink-0" />
+        {/* Fila 2: navegación, siempre en su propio renglón y en todos los
+            tamaños (una sola implementación = un solo comportamiento). Se
+            desplaza en horizontal solo cuando no cabe; en escritorio entra
+            completa sin scroll. */}
+        <NavLinks
+          className="flex gap-1 overflow-x-auto border-t border-neutral-100 px-4 py-2 sm:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden mx-auto max-w-6xl"
+          itemClassName="shrink-0"
+        />
       </header>
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-8 print:max-w-none print:p-0">

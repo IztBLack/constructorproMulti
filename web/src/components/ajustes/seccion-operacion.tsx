@@ -84,17 +84,58 @@ export function SeccionOperacion({ ivaActual }: { ivaActual: number }) {
         </Button>
       </form>
 
+      {/* Ajustes es la ÚNICA puerta a la configuración (la barra de navegación
+          solo lleva secciones de uso diario), así que estos dos tienen que
+          leerse como destinos, no como notas al pie: antes eran dos enlaces
+          subrayados debajo del formulario del IVA y se perdían. */}
       <div className="mt-6 border-t border-neutral-200 pt-4">
-        <p className="mb-2 text-sm font-medium text-neutral-900">Catálogos</p>
-        <div className="flex flex-wrap gap-3 text-sm">
-          <Link href="/admin/catalogo" className="text-neutral-600 underline hover:text-neutral-900">
-            Catálogo de conceptos
-          </Link>
-          <Link href="/admin/puestos" className="text-neutral-600 underline hover:text-neutral-900">
-            Puestos y salarios
-          </Link>
+        <p className="text-sm font-medium text-neutral-900">Catálogos</p>
+        <p className="mb-3 text-sm text-neutral-600">
+          Los datos base que alimentan cotizaciones y nómina.
+        </p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <EnlaceCatalogo
+            href="/admin/catalogo"
+            titulo="Catálogo de conceptos"
+            descripcion="Conceptos, unidades y precios base."
+          />
+          <EnlaceCatalogo
+            href="/admin/puestos"
+            titulo="Puestos y salarios"
+            descripcion="Salario por día de cada puesto."
+          />
         </div>
       </div>
     </Card>
+  );
+}
+
+/**
+ * Fila-destino de un catálogo. Toda la tarjeta es el área clicable (no solo el
+ * texto): con Ajustes como única entrada a la configuración, llegar aquí no
+ * puede depender de atinarle a un enlace de una línea.
+ */
+function EnlaceCatalogo({
+  href,
+  titulo,
+  descripcion,
+}: {
+  href: string;
+  titulo: string;
+  descripcion: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-neutral-200 px-3 py-2 transition hover:border-neutral-300 hover:bg-neutral-50"
+    >
+      <span>
+        <span className="block text-sm font-medium text-neutral-900">{titulo}</span>
+        <span className="block text-xs text-neutral-500">{descripcion}</span>
+      </span>
+      <span aria-hidden className="shrink-0 text-neutral-400">
+        →
+      </span>
+    </Link>
   );
 }

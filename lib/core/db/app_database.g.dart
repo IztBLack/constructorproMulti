@@ -78,6 +78,16 @@ class $ObrasTable extends Obras with TableInfo<$ObrasTable, Obra> {
     requiredDuringInsert: false,
     defaultValue: const Constant('pending'),
   );
+  static const VerificationMeta _ordenMeta = const VerificationMeta('orden');
+  @override
+  late final GeneratedColumn<int> orden = GeneratedColumn<int>(
+    'orden',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
@@ -174,6 +184,7 @@ class $ObrasTable extends Obras with TableInfo<$ObrasTable, Obra> {
     serverUpdatedAt,
     deletedAt,
     syncStatus,
+    orden,
     id,
     nombre,
     cliente,
@@ -232,6 +243,12 @@ class $ObrasTable extends Obras with TableInfo<$ObrasTable, Obra> {
       context.handle(
         _syncStatusMeta,
         syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('orden')) {
+      context.handle(
+        _ordenMeta,
+        orden.isAcceptableOrUnknown(data['orden']!, _ordenMeta),
       );
     }
     if (data.containsKey('id')) {
@@ -327,6 +344,10 @@ class $ObrasTable extends Obras with TableInfo<$ObrasTable, Obra> {
         DriftSqlType.string,
         data['${effectivePrefix}sync_status'],
       )!,
+      orden: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}orden'],
+      )!,
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
@@ -386,6 +407,7 @@ class Obra extends DataClass implements Insertable<Obra> {
 
   /// 'pending' | 'synced' | 'error'.
   final String syncStatus;
+  final int orden;
   final String id;
   final String nombre;
   final String cliente;
@@ -401,6 +423,7 @@ class Obra extends DataClass implements Insertable<Obra> {
     this.serverUpdatedAt,
     this.deletedAt,
     required this.syncStatus,
+    required this.orden,
     required this.id,
     required this.nombre,
     required this.cliente,
@@ -423,6 +446,7 @@ class Obra extends DataClass implements Insertable<Obra> {
       map['deleted_at'] = Variable<int>(deletedAt);
     }
     map['sync_status'] = Variable<String>(syncStatus);
+    map['orden'] = Variable<int>(orden);
     map['id'] = Variable<String>(id);
     map['nombre'] = Variable<String>(nombre);
     map['cliente'] = Variable<String>(cliente);
@@ -450,6 +474,7 @@ class Obra extends DataClass implements Insertable<Obra> {
           ? const Value.absent()
           : Value(deletedAt),
       syncStatus: Value(syncStatus),
+      orden: Value(orden),
       id: Value(id),
       nombre: Value(nombre),
       cliente: Value(cliente),
@@ -477,6 +502,7 @@ class Obra extends DataClass implements Insertable<Obra> {
       serverUpdatedAt: serializer.fromJson<int?>(json['serverUpdatedAt']),
       deletedAt: serializer.fromJson<int?>(json['deletedAt']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      orden: serializer.fromJson<int>(json['orden']),
       id: serializer.fromJson<String>(json['id']),
       nombre: serializer.fromJson<String>(json['nombre']),
       cliente: serializer.fromJson<String>(json['cliente']),
@@ -499,6 +525,7 @@ class Obra extends DataClass implements Insertable<Obra> {
       'serverUpdatedAt': serializer.toJson<int?>(serverUpdatedAt),
       'deletedAt': serializer.toJson<int?>(deletedAt),
       'syncStatus': serializer.toJson<String>(syncStatus),
+      'orden': serializer.toJson<int>(orden),
       'id': serializer.toJson<String>(id),
       'nombre': serializer.toJson<String>(nombre),
       'cliente': serializer.toJson<String>(cliente),
@@ -517,6 +544,7 @@ class Obra extends DataClass implements Insertable<Obra> {
     Value<int?> serverUpdatedAt = const Value.absent(),
     Value<int?> deletedAt = const Value.absent(),
     String? syncStatus,
+    int? orden,
     String? id,
     String? nombre,
     String? cliente,
@@ -534,6 +562,7 @@ class Obra extends DataClass implements Insertable<Obra> {
         : this.serverUpdatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     syncStatus: syncStatus ?? this.syncStatus,
+    orden: orden ?? this.orden,
     id: id ?? this.id,
     nombre: nombre ?? this.nombre,
     cliente: cliente ?? this.cliente,
@@ -559,6 +588,7 @@ class Obra extends DataClass implements Insertable<Obra> {
       syncStatus: data.syncStatus.present
           ? data.syncStatus.value
           : this.syncStatus,
+      orden: data.orden.present ? data.orden.value : this.orden,
       id: data.id.present ? data.id.value : this.id,
       nombre: data.nombre.present ? data.nombre.value : this.nombre,
       cliente: data.cliente.present ? data.cliente.value : this.cliente,
@@ -585,6 +615,7 @@ class Obra extends DataClass implements Insertable<Obra> {
           ..write('serverUpdatedAt: $serverUpdatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
           ..write('id: $id, ')
           ..write('nombre: $nombre, ')
           ..write('cliente: $cliente, ')
@@ -605,6 +636,7 @@ class Obra extends DataClass implements Insertable<Obra> {
     serverUpdatedAt,
     deletedAt,
     syncStatus,
+    orden,
     id,
     nombre,
     cliente,
@@ -624,6 +656,7 @@ class Obra extends DataClass implements Insertable<Obra> {
           other.serverUpdatedAt == this.serverUpdatedAt &&
           other.deletedAt == this.deletedAt &&
           other.syncStatus == this.syncStatus &&
+          other.orden == this.orden &&
           other.id == this.id &&
           other.nombre == this.nombre &&
           other.cliente == this.cliente &&
@@ -641,6 +674,7 @@ class ObrasCompanion extends UpdateCompanion<Obra> {
   final Value<int?> serverUpdatedAt;
   final Value<int?> deletedAt;
   final Value<String> syncStatus;
+  final Value<int> orden;
   final Value<String> id;
   final Value<String> nombre;
   final Value<String> cliente;
@@ -657,6 +691,7 @@ class ObrasCompanion extends UpdateCompanion<Obra> {
     this.serverUpdatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
     this.id = const Value.absent(),
     this.nombre = const Value.absent(),
     this.cliente = const Value.absent(),
@@ -674,6 +709,7 @@ class ObrasCompanion extends UpdateCompanion<Obra> {
     this.serverUpdatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
     required String id,
     required String nombre,
     this.cliente = const Value.absent(),
@@ -693,6 +729,7 @@ class ObrasCompanion extends UpdateCompanion<Obra> {
     Expression<int>? serverUpdatedAt,
     Expression<int>? deletedAt,
     Expression<String>? syncStatus,
+    Expression<int>? orden,
     Expression<String>? id,
     Expression<String>? nombre,
     Expression<String>? cliente,
@@ -710,6 +747,7 @@ class ObrasCompanion extends UpdateCompanion<Obra> {
       if (serverUpdatedAt != null) 'server_updated_at': serverUpdatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (syncStatus != null) 'sync_status': syncStatus,
+      if (orden != null) 'orden': orden,
       if (id != null) 'id': id,
       if (nombre != null) 'nombre': nombre,
       if (cliente != null) 'cliente': cliente,
@@ -730,6 +768,7 @@ class ObrasCompanion extends UpdateCompanion<Obra> {
     Value<int?>? serverUpdatedAt,
     Value<int?>? deletedAt,
     Value<String>? syncStatus,
+    Value<int>? orden,
     Value<String>? id,
     Value<String>? nombre,
     Value<String>? cliente,
@@ -747,6 +786,7 @@ class ObrasCompanion extends UpdateCompanion<Obra> {
       serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       syncStatus: syncStatus ?? this.syncStatus,
+      orden: orden ?? this.orden,
       id: id ?? this.id,
       nombre: nombre ?? this.nombre,
       cliente: cliente ?? this.cliente,
@@ -779,6 +819,9 @@ class ObrasCompanion extends UpdateCompanion<Obra> {
     }
     if (syncStatus.present) {
       map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (orden.present) {
+      map['orden'] = Variable<int>(orden.value);
     }
     if (id.present) {
       map['id'] = Variable<String>(id.value);
@@ -819,6 +862,7 @@ class ObrasCompanion extends UpdateCompanion<Obra> {
           ..write('serverUpdatedAt: $serverUpdatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
           ..write('id: $id, ')
           ..write('nombre: $nombre, ')
           ..write('cliente: $cliente, ')
@@ -908,6 +952,16 @@ class $PuestosTable extends Puestos with TableInfo<$PuestosTable, Puesto> {
     requiredDuringInsert: false,
     defaultValue: const Constant('pending'),
   );
+  static const VerificationMeta _ordenMeta = const VerificationMeta('orden');
+  @override
+  late final GeneratedColumn<int> orden = GeneratedColumn<int>(
+    'orden',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
@@ -947,6 +1001,7 @@ class $PuestosTable extends Puestos with TableInfo<$PuestosTable, Puesto> {
     serverUpdatedAt,
     deletedAt,
     syncStatus,
+    orden,
     id,
     nombre,
     salarioDiaDefault,
@@ -1000,6 +1055,12 @@ class $PuestosTable extends Puestos with TableInfo<$PuestosTable, Puesto> {
       context.handle(
         _syncStatusMeta,
         syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('orden')) {
+      context.handle(
+        _ordenMeta,
+        orden.isAcceptableOrUnknown(data['orden']!, _ordenMeta),
       );
     }
     if (data.containsKey('id')) {
@@ -1057,6 +1118,10 @@ class $PuestosTable extends Puestos with TableInfo<$PuestosTable, Puesto> {
         DriftSqlType.string,
         data['${effectivePrefix}sync_status'],
       )!,
+      orden: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}orden'],
+      )!,
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
@@ -1096,6 +1161,7 @@ class Puesto extends DataClass implements Insertable<Puesto> {
 
   /// 'pending' | 'synced' | 'error'.
   final String syncStatus;
+  final int orden;
   final String id;
   final String nombre;
   final double salarioDiaDefault;
@@ -1106,6 +1172,7 @@ class Puesto extends DataClass implements Insertable<Puesto> {
     this.serverUpdatedAt,
     this.deletedAt,
     required this.syncStatus,
+    required this.orden,
     required this.id,
     required this.nombre,
     required this.salarioDiaDefault,
@@ -1123,6 +1190,7 @@ class Puesto extends DataClass implements Insertable<Puesto> {
       map['deleted_at'] = Variable<int>(deletedAt);
     }
     map['sync_status'] = Variable<String>(syncStatus);
+    map['orden'] = Variable<int>(orden);
     map['id'] = Variable<String>(id);
     map['nombre'] = Variable<String>(nombre);
     map['salario_dia_default'] = Variable<double>(salarioDiaDefault);
@@ -1141,6 +1209,7 @@ class Puesto extends DataClass implements Insertable<Puesto> {
           ? const Value.absent()
           : Value(deletedAt),
       syncStatus: Value(syncStatus),
+      orden: Value(orden),
       id: Value(id),
       nombre: Value(nombre),
       salarioDiaDefault: Value(salarioDiaDefault),
@@ -1159,6 +1228,7 @@ class Puesto extends DataClass implements Insertable<Puesto> {
       serverUpdatedAt: serializer.fromJson<int?>(json['serverUpdatedAt']),
       deletedAt: serializer.fromJson<int?>(json['deletedAt']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      orden: serializer.fromJson<int>(json['orden']),
       id: serializer.fromJson<String>(json['id']),
       nombre: serializer.fromJson<String>(json['nombre']),
       salarioDiaDefault: serializer.fromJson<double>(json['salarioDiaDefault']),
@@ -1174,6 +1244,7 @@ class Puesto extends DataClass implements Insertable<Puesto> {
       'serverUpdatedAt': serializer.toJson<int?>(serverUpdatedAt),
       'deletedAt': serializer.toJson<int?>(deletedAt),
       'syncStatus': serializer.toJson<String>(syncStatus),
+      'orden': serializer.toJson<int>(orden),
       'id': serializer.toJson<String>(id),
       'nombre': serializer.toJson<String>(nombre),
       'salarioDiaDefault': serializer.toJson<double>(salarioDiaDefault),
@@ -1187,6 +1258,7 @@ class Puesto extends DataClass implements Insertable<Puesto> {
     Value<int?> serverUpdatedAt = const Value.absent(),
     Value<int?> deletedAt = const Value.absent(),
     String? syncStatus,
+    int? orden,
     String? id,
     String? nombre,
     double? salarioDiaDefault,
@@ -1199,6 +1271,7 @@ class Puesto extends DataClass implements Insertable<Puesto> {
         : this.serverUpdatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     syncStatus: syncStatus ?? this.syncStatus,
+    orden: orden ?? this.orden,
     id: id ?? this.id,
     nombre: nombre ?? this.nombre,
     salarioDiaDefault: salarioDiaDefault ?? this.salarioDiaDefault,
@@ -1215,6 +1288,7 @@ class Puesto extends DataClass implements Insertable<Puesto> {
       syncStatus: data.syncStatus.present
           ? data.syncStatus.value
           : this.syncStatus,
+      orden: data.orden.present ? data.orden.value : this.orden,
       id: data.id.present ? data.id.value : this.id,
       nombre: data.nombre.present ? data.nombre.value : this.nombre,
       salarioDiaDefault: data.salarioDiaDefault.present
@@ -1232,6 +1306,7 @@ class Puesto extends DataClass implements Insertable<Puesto> {
           ..write('serverUpdatedAt: $serverUpdatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
           ..write('id: $id, ')
           ..write('nombre: $nombre, ')
           ..write('salarioDiaDefault: $salarioDiaDefault')
@@ -1247,6 +1322,7 @@ class Puesto extends DataClass implements Insertable<Puesto> {
     serverUpdatedAt,
     deletedAt,
     syncStatus,
+    orden,
     id,
     nombre,
     salarioDiaDefault,
@@ -1261,6 +1337,7 @@ class Puesto extends DataClass implements Insertable<Puesto> {
           other.serverUpdatedAt == this.serverUpdatedAt &&
           other.deletedAt == this.deletedAt &&
           other.syncStatus == this.syncStatus &&
+          other.orden == this.orden &&
           other.id == this.id &&
           other.nombre == this.nombre &&
           other.salarioDiaDefault == this.salarioDiaDefault);
@@ -1273,6 +1350,7 @@ class PuestosCompanion extends UpdateCompanion<Puesto> {
   final Value<int?> serverUpdatedAt;
   final Value<int?> deletedAt;
   final Value<String> syncStatus;
+  final Value<int> orden;
   final Value<String> id;
   final Value<String> nombre;
   final Value<double> salarioDiaDefault;
@@ -1284,6 +1362,7 @@ class PuestosCompanion extends UpdateCompanion<Puesto> {
     this.serverUpdatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
     this.id = const Value.absent(),
     this.nombre = const Value.absent(),
     this.salarioDiaDefault = const Value.absent(),
@@ -1296,6 +1375,7 @@ class PuestosCompanion extends UpdateCompanion<Puesto> {
     this.serverUpdatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
     required String id,
     required String nombre,
     this.salarioDiaDefault = const Value.absent(),
@@ -1309,6 +1389,7 @@ class PuestosCompanion extends UpdateCompanion<Puesto> {
     Expression<int>? serverUpdatedAt,
     Expression<int>? deletedAt,
     Expression<String>? syncStatus,
+    Expression<int>? orden,
     Expression<String>? id,
     Expression<String>? nombre,
     Expression<double>? salarioDiaDefault,
@@ -1321,6 +1402,7 @@ class PuestosCompanion extends UpdateCompanion<Puesto> {
       if (serverUpdatedAt != null) 'server_updated_at': serverUpdatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (syncStatus != null) 'sync_status': syncStatus,
+      if (orden != null) 'orden': orden,
       if (id != null) 'id': id,
       if (nombre != null) 'nombre': nombre,
       if (salarioDiaDefault != null) 'salario_dia_default': salarioDiaDefault,
@@ -1335,6 +1417,7 @@ class PuestosCompanion extends UpdateCompanion<Puesto> {
     Value<int?>? serverUpdatedAt,
     Value<int?>? deletedAt,
     Value<String>? syncStatus,
+    Value<int>? orden,
     Value<String>? id,
     Value<String>? nombre,
     Value<double>? salarioDiaDefault,
@@ -1347,6 +1430,7 @@ class PuestosCompanion extends UpdateCompanion<Puesto> {
       serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       syncStatus: syncStatus ?? this.syncStatus,
+      orden: orden ?? this.orden,
       id: id ?? this.id,
       nombre: nombre ?? this.nombre,
       salarioDiaDefault: salarioDiaDefault ?? this.salarioDiaDefault,
@@ -1375,6 +1459,9 @@ class PuestosCompanion extends UpdateCompanion<Puesto> {
     if (syncStatus.present) {
       map['sync_status'] = Variable<String>(syncStatus.value);
     }
+    if (orden.present) {
+      map['orden'] = Variable<int>(orden.value);
+    }
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
@@ -1399,6 +1486,7 @@ class PuestosCompanion extends UpdateCompanion<Puesto> {
           ..write('serverUpdatedAt: $serverUpdatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
           ..write('id: $id, ')
           ..write('nombre: $nombre, ')
           ..write('salarioDiaDefault: $salarioDiaDefault, ')
@@ -1483,6 +1571,16 @@ class $ColaboradoresTable extends Colaboradores
     type: DriftSqlType.string,
     requiredDuringInsert: false,
     defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _ordenMeta = const VerificationMeta('orden');
+  @override
+  late final GeneratedColumn<int> orden = GeneratedColumn<int>(
+    'orden',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
   );
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
@@ -1639,6 +1737,7 @@ class $ColaboradoresTable extends Colaboradores
     serverUpdatedAt,
     deletedAt,
     syncStatus,
+    orden,
     id,
     nombre,
     puestoId,
@@ -1702,6 +1801,12 @@ class $ColaboradoresTable extends Colaboradores
       context.handle(
         _syncStatusMeta,
         syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('orden')) {
+      context.handle(
+        _ordenMeta,
+        orden.isAcceptableOrUnknown(data['orden']!, _ordenMeta),
       );
     }
     if (data.containsKey('id')) {
@@ -1838,6 +1943,10 @@ class $ColaboradoresTable extends Colaboradores
         DriftSqlType.string,
         data['${effectivePrefix}sync_status'],
       )!,
+      orden: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}orden'],
+      )!,
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
@@ -1917,6 +2026,7 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
 
   /// 'pending' | 'synced' | 'error'.
   final String syncStatus;
+  final int orden;
   final String id;
   final String nombre;
   final String puestoId;
@@ -1947,6 +2057,7 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
     this.serverUpdatedAt,
     this.deletedAt,
     required this.syncStatus,
+    required this.orden,
     required this.id,
     required this.nombre,
     required this.puestoId,
@@ -1974,6 +2085,7 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
       map['deleted_at'] = Variable<int>(deletedAt);
     }
     map['sync_status'] = Variable<String>(syncStatus);
+    map['orden'] = Variable<int>(orden);
     map['id'] = Variable<String>(id);
     map['nombre'] = Variable<String>(nombre);
     map['puesto_id'] = Variable<String>(puestoId);
@@ -2006,6 +2118,7 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
           ? const Value.absent()
           : Value(deletedAt),
       syncStatus: Value(syncStatus),
+      orden: Value(orden),
       id: Value(id),
       nombre: Value(nombre),
       puestoId: Value(puestoId),
@@ -2038,6 +2151,7 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
       serverUpdatedAt: serializer.fromJson<int?>(json['serverUpdatedAt']),
       deletedAt: serializer.fromJson<int?>(json['deletedAt']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      orden: serializer.fromJson<int>(json['orden']),
       id: serializer.fromJson<String>(json['id']),
       nombre: serializer.fromJson<String>(json['nombre']),
       puestoId: serializer.fromJson<String>(json['puestoId']),
@@ -2067,6 +2181,7 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
       'serverUpdatedAt': serializer.toJson<int?>(serverUpdatedAt),
       'deletedAt': serializer.toJson<int?>(deletedAt),
       'syncStatus': serializer.toJson<String>(syncStatus),
+      'orden': serializer.toJson<int>(orden),
       'id': serializer.toJson<String>(id),
       'nombre': serializer.toJson<String>(nombre),
       'puestoId': serializer.toJson<String>(puestoId),
@@ -2090,6 +2205,7 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
     Value<int?> serverUpdatedAt = const Value.absent(),
     Value<int?> deletedAt = const Value.absent(),
     String? syncStatus,
+    int? orden,
     String? id,
     String? nombre,
     String? puestoId,
@@ -2112,6 +2228,7 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
         : this.serverUpdatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     syncStatus: syncStatus ?? this.syncStatus,
+    orden: orden ?? this.orden,
     id: id ?? this.id,
     nombre: nombre ?? this.nombre,
     puestoId: puestoId ?? this.puestoId,
@@ -2142,6 +2259,7 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
       syncStatus: data.syncStatus.present
           ? data.syncStatus.value
           : this.syncStatus,
+      orden: data.orden.present ? data.orden.value : this.orden,
       id: data.id.present ? data.id.value : this.id,
       nombre: data.nombre.present ? data.nombre.value : this.nombre,
       puestoId: data.puestoId.present ? data.puestoId.value : this.puestoId,
@@ -2181,6 +2299,7 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
           ..write('serverUpdatedAt: $serverUpdatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
           ..write('id: $id, ')
           ..write('nombre: $nombre, ')
           ..write('puestoId: $puestoId, ')
@@ -2206,6 +2325,7 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
     serverUpdatedAt,
     deletedAt,
     syncStatus,
+    orden,
     id,
     nombre,
     puestoId,
@@ -2230,6 +2350,7 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
           other.serverUpdatedAt == this.serverUpdatedAt &&
           other.deletedAt == this.deletedAt &&
           other.syncStatus == this.syncStatus &&
+          other.orden == this.orden &&
           other.id == this.id &&
           other.nombre == this.nombre &&
           other.puestoId == this.puestoId &&
@@ -2252,6 +2373,7 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
   final Value<int?> serverUpdatedAt;
   final Value<int?> deletedAt;
   final Value<String> syncStatus;
+  final Value<int> orden;
   final Value<String> id;
   final Value<String> nombre;
   final Value<String> puestoId;
@@ -2273,6 +2395,7 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
     this.serverUpdatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
     this.id = const Value.absent(),
     this.nombre = const Value.absent(),
     this.puestoId = const Value.absent(),
@@ -2295,6 +2418,7 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
     this.serverUpdatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
     required String id,
     required String nombre,
     required String puestoId,
@@ -2320,6 +2444,7 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
     Expression<int>? serverUpdatedAt,
     Expression<int>? deletedAt,
     Expression<String>? syncStatus,
+    Expression<int>? orden,
     Expression<String>? id,
     Expression<String>? nombre,
     Expression<String>? puestoId,
@@ -2342,6 +2467,7 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
       if (serverUpdatedAt != null) 'server_updated_at': serverUpdatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (syncStatus != null) 'sync_status': syncStatus,
+      if (orden != null) 'orden': orden,
       if (id != null) 'id': id,
       if (nombre != null) 'nombre': nombre,
       if (puestoId != null) 'puesto_id': puestoId,
@@ -2367,6 +2493,7 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
     Value<int?>? serverUpdatedAt,
     Value<int?>? deletedAt,
     Value<String>? syncStatus,
+    Value<int>? orden,
     Value<String>? id,
     Value<String>? nombre,
     Value<String>? puestoId,
@@ -2389,6 +2516,7 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
       serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       syncStatus: syncStatus ?? this.syncStatus,
+      orden: orden ?? this.orden,
       id: id ?? this.id,
       nombre: nombre ?? this.nombre,
       puestoId: puestoId ?? this.puestoId,
@@ -2426,6 +2554,9 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
     }
     if (syncStatus.present) {
       map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (orden.present) {
+      map['orden'] = Variable<int>(orden.value);
     }
     if (id.present) {
       map['id'] = Variable<String>(id.value);
@@ -2483,6 +2614,7 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
           ..write('serverUpdatedAt: $serverUpdatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
           ..write('id: $id, ')
           ..write('nombre: $nombre, ')
           ..write('puestoId: $puestoId, ')
@@ -4786,6 +4918,16 @@ class $CuadrillasTable extends Cuadrillas
     requiredDuringInsert: false,
     defaultValue: const Constant('pending'),
   );
+  static const VerificationMeta _ordenMeta = const VerificationMeta('orden');
+  @override
+  late final GeneratedColumn<int> orden = GeneratedColumn<int>(
+    'orden',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
@@ -4849,6 +4991,7 @@ class $CuadrillasTable extends Cuadrillas
     serverUpdatedAt,
     deletedAt,
     syncStatus,
+    orden,
     id,
     nombre,
     especialidad,
@@ -4904,6 +5047,12 @@ class $CuadrillasTable extends Cuadrillas
       context.handle(
         _syncStatusMeta,
         syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('orden')) {
+      context.handle(
+        _ordenMeta,
+        orden.isAcceptableOrUnknown(data['orden']!, _ordenMeta),
       );
     }
     if (data.containsKey('id')) {
@@ -4976,6 +5125,10 @@ class $CuadrillasTable extends Cuadrillas
         DriftSqlType.string,
         data['${effectivePrefix}sync_status'],
       )!,
+      orden: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}orden'],
+      )!,
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
@@ -5023,6 +5176,7 @@ class Cuadrilla extends DataClass implements Insertable<Cuadrilla> {
 
   /// 'pending' | 'synced' | 'error'.
   final String syncStatus;
+  final int orden;
   final String id;
   final String nombre;
 
@@ -5043,6 +5197,7 @@ class Cuadrilla extends DataClass implements Insertable<Cuadrilla> {
     this.serverUpdatedAt,
     this.deletedAt,
     required this.syncStatus,
+    required this.orden,
     required this.id,
     required this.nombre,
     required this.especialidad,
@@ -5062,6 +5217,7 @@ class Cuadrilla extends DataClass implements Insertable<Cuadrilla> {
       map['deleted_at'] = Variable<int>(deletedAt);
     }
     map['sync_status'] = Variable<String>(syncStatus);
+    map['orden'] = Variable<int>(orden);
     map['id'] = Variable<String>(id);
     map['nombre'] = Variable<String>(nombre);
     map['especialidad'] = Variable<String>(especialidad);
@@ -5084,6 +5240,7 @@ class Cuadrilla extends DataClass implements Insertable<Cuadrilla> {
           ? const Value.absent()
           : Value(deletedAt),
       syncStatus: Value(syncStatus),
+      orden: Value(orden),
       id: Value(id),
       nombre: Value(nombre),
       especialidad: Value(especialidad),
@@ -5106,6 +5263,7 @@ class Cuadrilla extends DataClass implements Insertable<Cuadrilla> {
       serverUpdatedAt: serializer.fromJson<int?>(json['serverUpdatedAt']),
       deletedAt: serializer.fromJson<int?>(json['deletedAt']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      orden: serializer.fromJson<int>(json['orden']),
       id: serializer.fromJson<String>(json['id']),
       nombre: serializer.fromJson<String>(json['nombre']),
       especialidad: serializer.fromJson<String>(json['especialidad']),
@@ -5125,6 +5283,7 @@ class Cuadrilla extends DataClass implements Insertable<Cuadrilla> {
       'serverUpdatedAt': serializer.toJson<int?>(serverUpdatedAt),
       'deletedAt': serializer.toJson<int?>(deletedAt),
       'syncStatus': serializer.toJson<String>(syncStatus),
+      'orden': serializer.toJson<int>(orden),
       'id': serializer.toJson<String>(id),
       'nombre': serializer.toJson<String>(nombre),
       'especialidad': serializer.toJson<String>(especialidad),
@@ -5140,6 +5299,7 @@ class Cuadrilla extends DataClass implements Insertable<Cuadrilla> {
     Value<int?> serverUpdatedAt = const Value.absent(),
     Value<int?> deletedAt = const Value.absent(),
     String? syncStatus,
+    int? orden,
     String? id,
     String? nombre,
     String? especialidad,
@@ -5154,6 +5314,7 @@ class Cuadrilla extends DataClass implements Insertable<Cuadrilla> {
         : this.serverUpdatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     syncStatus: syncStatus ?? this.syncStatus,
+    orden: orden ?? this.orden,
     id: id ?? this.id,
     nombre: nombre ?? this.nombre,
     especialidad: especialidad ?? this.especialidad,
@@ -5174,6 +5335,7 @@ class Cuadrilla extends DataClass implements Insertable<Cuadrilla> {
       syncStatus: data.syncStatus.present
           ? data.syncStatus.value
           : this.syncStatus,
+      orden: data.orden.present ? data.orden.value : this.orden,
       id: data.id.present ? data.id.value : this.id,
       nombre: data.nombre.present ? data.nombre.value : this.nombre,
       especialidad: data.especialidad.present
@@ -5195,6 +5357,7 @@ class Cuadrilla extends DataClass implements Insertable<Cuadrilla> {
           ..write('serverUpdatedAt: $serverUpdatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
           ..write('id: $id, ')
           ..write('nombre: $nombre, ')
           ..write('especialidad: $especialidad, ')
@@ -5212,6 +5375,7 @@ class Cuadrilla extends DataClass implements Insertable<Cuadrilla> {
     serverUpdatedAt,
     deletedAt,
     syncStatus,
+    orden,
     id,
     nombre,
     especialidad,
@@ -5228,6 +5392,7 @@ class Cuadrilla extends DataClass implements Insertable<Cuadrilla> {
           other.serverUpdatedAt == this.serverUpdatedAt &&
           other.deletedAt == this.deletedAt &&
           other.syncStatus == this.syncStatus &&
+          other.orden == this.orden &&
           other.id == this.id &&
           other.nombre == this.nombre &&
           other.especialidad == this.especialidad &&
@@ -5242,6 +5407,7 @@ class CuadrillasCompanion extends UpdateCompanion<Cuadrilla> {
   final Value<int?> serverUpdatedAt;
   final Value<int?> deletedAt;
   final Value<String> syncStatus;
+  final Value<int> orden;
   final Value<String> id;
   final Value<String> nombre;
   final Value<String> especialidad;
@@ -5255,6 +5421,7 @@ class CuadrillasCompanion extends UpdateCompanion<Cuadrilla> {
     this.serverUpdatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
     this.id = const Value.absent(),
     this.nombre = const Value.absent(),
     this.especialidad = const Value.absent(),
@@ -5269,6 +5436,7 @@ class CuadrillasCompanion extends UpdateCompanion<Cuadrilla> {
     this.serverUpdatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
     required String id,
     required String nombre,
     this.especialidad = const Value.absent(),
@@ -5284,6 +5452,7 @@ class CuadrillasCompanion extends UpdateCompanion<Cuadrilla> {
     Expression<int>? serverUpdatedAt,
     Expression<int>? deletedAt,
     Expression<String>? syncStatus,
+    Expression<int>? orden,
     Expression<String>? id,
     Expression<String>? nombre,
     Expression<String>? especialidad,
@@ -5298,6 +5467,7 @@ class CuadrillasCompanion extends UpdateCompanion<Cuadrilla> {
       if (serverUpdatedAt != null) 'server_updated_at': serverUpdatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (syncStatus != null) 'sync_status': syncStatus,
+      if (orden != null) 'orden': orden,
       if (id != null) 'id': id,
       if (nombre != null) 'nombre': nombre,
       if (especialidad != null) 'especialidad': especialidad,
@@ -5314,6 +5484,7 @@ class CuadrillasCompanion extends UpdateCompanion<Cuadrilla> {
     Value<int?>? serverUpdatedAt,
     Value<int?>? deletedAt,
     Value<String>? syncStatus,
+    Value<int>? orden,
     Value<String>? id,
     Value<String>? nombre,
     Value<String>? especialidad,
@@ -5328,6 +5499,7 @@ class CuadrillasCompanion extends UpdateCompanion<Cuadrilla> {
       serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       syncStatus: syncStatus ?? this.syncStatus,
+      orden: orden ?? this.orden,
       id: id ?? this.id,
       nombre: nombre ?? this.nombre,
       especialidad: especialidad ?? this.especialidad,
@@ -5357,6 +5529,9 @@ class CuadrillasCompanion extends UpdateCompanion<Cuadrilla> {
     }
     if (syncStatus.present) {
       map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (orden.present) {
+      map['orden'] = Variable<int>(orden.value);
     }
     if (id.present) {
       map['id'] = Variable<String>(id.value);
@@ -5388,6 +5563,7 @@ class CuadrillasCompanion extends UpdateCompanion<Cuadrilla> {
           ..write('serverUpdatedAt: $serverUpdatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
           ..write('id: $id, ')
           ..write('nombre: $nombre, ')
           ..write('especialidad: $especialidad, ')
@@ -5475,6 +5651,16 @@ class $CuadrillaMiembroTable extends CuadrillaMiembro
     requiredDuringInsert: false,
     defaultValue: const Constant('pending'),
   );
+  static const VerificationMeta _ordenMeta = const VerificationMeta('orden');
+  @override
+  late final GeneratedColumn<int> orden = GeneratedColumn<int>(
+    'orden',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _cuadrillaIdMeta = const VerificationMeta(
     'cuadrillaId',
   );
@@ -5527,6 +5713,7 @@ class $CuadrillaMiembroTable extends CuadrillaMiembro
     serverUpdatedAt,
     deletedAt,
     syncStatus,
+    orden,
     cuadrillaId,
     colaboradorId,
     fechaIngreso,
@@ -5581,6 +5768,12 @@ class $CuadrillaMiembroTable extends CuadrillaMiembro
       context.handle(
         _syncStatusMeta,
         syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('orden')) {
+      context.handle(
+        _ordenMeta,
+        orden.isAcceptableOrUnknown(data['orden']!, _ordenMeta),
       );
     }
     if (data.containsKey('cuadrilla_id')) {
@@ -5658,6 +5851,10 @@ class $CuadrillaMiembroTable extends CuadrillaMiembro
         DriftSqlType.string,
         data['${effectivePrefix}sync_status'],
       )!,
+      orden: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}orden'],
+      )!,
       cuadrillaId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}cuadrilla_id'],
@@ -5702,6 +5899,7 @@ class CuadrillaMiembroData extends DataClass
 
   /// 'pending' | 'synced' | 'error'.
   final String syncStatus;
+  final int orden;
   final String cuadrillaId;
   final String colaboradorId;
   final int fechaIngreso;
@@ -5713,6 +5911,7 @@ class CuadrillaMiembroData extends DataClass
     this.serverUpdatedAt,
     this.deletedAt,
     required this.syncStatus,
+    required this.orden,
     required this.cuadrillaId,
     required this.colaboradorId,
     required this.fechaIngreso,
@@ -5731,6 +5930,7 @@ class CuadrillaMiembroData extends DataClass
       map['deleted_at'] = Variable<int>(deletedAt);
     }
     map['sync_status'] = Variable<String>(syncStatus);
+    map['orden'] = Variable<int>(orden);
     map['cuadrilla_id'] = Variable<String>(cuadrillaId);
     map['colaborador_id'] = Variable<String>(colaboradorId);
     map['fecha_ingreso'] = Variable<int>(fechaIngreso);
@@ -5752,6 +5952,7 @@ class CuadrillaMiembroData extends DataClass
           ? const Value.absent()
           : Value(deletedAt),
       syncStatus: Value(syncStatus),
+      orden: Value(orden),
       cuadrillaId: Value(cuadrillaId),
       colaboradorId: Value(colaboradorId),
       fechaIngreso: Value(fechaIngreso),
@@ -5773,6 +5974,7 @@ class CuadrillaMiembroData extends DataClass
       serverUpdatedAt: serializer.fromJson<int?>(json['serverUpdatedAt']),
       deletedAt: serializer.fromJson<int?>(json['deletedAt']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      orden: serializer.fromJson<int>(json['orden']),
       cuadrillaId: serializer.fromJson<String>(json['cuadrillaId']),
       colaboradorId: serializer.fromJson<String>(json['colaboradorId']),
       fechaIngreso: serializer.fromJson<int>(json['fechaIngreso']),
@@ -5789,6 +5991,7 @@ class CuadrillaMiembroData extends DataClass
       'serverUpdatedAt': serializer.toJson<int?>(serverUpdatedAt),
       'deletedAt': serializer.toJson<int?>(deletedAt),
       'syncStatus': serializer.toJson<String>(syncStatus),
+      'orden': serializer.toJson<int>(orden),
       'cuadrillaId': serializer.toJson<String>(cuadrillaId),
       'colaboradorId': serializer.toJson<String>(colaboradorId),
       'fechaIngreso': serializer.toJson<int>(fechaIngreso),
@@ -5803,6 +6006,7 @@ class CuadrillaMiembroData extends DataClass
     Value<int?> serverUpdatedAt = const Value.absent(),
     Value<int?> deletedAt = const Value.absent(),
     String? syncStatus,
+    int? orden,
     String? cuadrillaId,
     String? colaboradorId,
     int? fechaIngreso,
@@ -5816,6 +6020,7 @@ class CuadrillaMiembroData extends DataClass
         : this.serverUpdatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     syncStatus: syncStatus ?? this.syncStatus,
+    orden: orden ?? this.orden,
     cuadrillaId: cuadrillaId ?? this.cuadrillaId,
     colaboradorId: colaboradorId ?? this.colaboradorId,
     fechaIngreso: fechaIngreso ?? this.fechaIngreso,
@@ -5833,6 +6038,7 @@ class CuadrillaMiembroData extends DataClass
       syncStatus: data.syncStatus.present
           ? data.syncStatus.value
           : this.syncStatus,
+      orden: data.orden.present ? data.orden.value : this.orden,
       cuadrillaId: data.cuadrillaId.present
           ? data.cuadrillaId.value
           : this.cuadrillaId,
@@ -5857,6 +6063,7 @@ class CuadrillaMiembroData extends DataClass
           ..write('serverUpdatedAt: $serverUpdatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
           ..write('cuadrillaId: $cuadrillaId, ')
           ..write('colaboradorId: $colaboradorId, ')
           ..write('fechaIngreso: $fechaIngreso, ')
@@ -5873,6 +6080,7 @@ class CuadrillaMiembroData extends DataClass
     serverUpdatedAt,
     deletedAt,
     syncStatus,
+    orden,
     cuadrillaId,
     colaboradorId,
     fechaIngreso,
@@ -5888,6 +6096,7 @@ class CuadrillaMiembroData extends DataClass
           other.serverUpdatedAt == this.serverUpdatedAt &&
           other.deletedAt == this.deletedAt &&
           other.syncStatus == this.syncStatus &&
+          other.orden == this.orden &&
           other.cuadrillaId == this.cuadrillaId &&
           other.colaboradorId == this.colaboradorId &&
           other.fechaIngreso == this.fechaIngreso &&
@@ -5901,6 +6110,7 @@ class CuadrillaMiembroCompanion extends UpdateCompanion<CuadrillaMiembroData> {
   final Value<int?> serverUpdatedAt;
   final Value<int?> deletedAt;
   final Value<String> syncStatus;
+  final Value<int> orden;
   final Value<String> cuadrillaId;
   final Value<String> colaboradorId;
   final Value<int> fechaIngreso;
@@ -5913,6 +6123,7 @@ class CuadrillaMiembroCompanion extends UpdateCompanion<CuadrillaMiembroData> {
     this.serverUpdatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
     this.cuadrillaId = const Value.absent(),
     this.colaboradorId = const Value.absent(),
     this.fechaIngreso = const Value.absent(),
@@ -5926,6 +6137,7 @@ class CuadrillaMiembroCompanion extends UpdateCompanion<CuadrillaMiembroData> {
     this.serverUpdatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
     required String cuadrillaId,
     required String colaboradorId,
     required int fechaIngreso,
@@ -5941,6 +6153,7 @@ class CuadrillaMiembroCompanion extends UpdateCompanion<CuadrillaMiembroData> {
     Expression<int>? serverUpdatedAt,
     Expression<int>? deletedAt,
     Expression<String>? syncStatus,
+    Expression<int>? orden,
     Expression<String>? cuadrillaId,
     Expression<String>? colaboradorId,
     Expression<int>? fechaIngreso,
@@ -5954,6 +6167,7 @@ class CuadrillaMiembroCompanion extends UpdateCompanion<CuadrillaMiembroData> {
       if (serverUpdatedAt != null) 'server_updated_at': serverUpdatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (syncStatus != null) 'sync_status': syncStatus,
+      if (orden != null) 'orden': orden,
       if (cuadrillaId != null) 'cuadrilla_id': cuadrillaId,
       if (colaboradorId != null) 'colaborador_id': colaboradorId,
       if (fechaIngreso != null) 'fecha_ingreso': fechaIngreso,
@@ -5969,6 +6183,7 @@ class CuadrillaMiembroCompanion extends UpdateCompanion<CuadrillaMiembroData> {
     Value<int?>? serverUpdatedAt,
     Value<int?>? deletedAt,
     Value<String>? syncStatus,
+    Value<int>? orden,
     Value<String>? cuadrillaId,
     Value<String>? colaboradorId,
     Value<int>? fechaIngreso,
@@ -5982,6 +6197,7 @@ class CuadrillaMiembroCompanion extends UpdateCompanion<CuadrillaMiembroData> {
       serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       syncStatus: syncStatus ?? this.syncStatus,
+      orden: orden ?? this.orden,
       cuadrillaId: cuadrillaId ?? this.cuadrillaId,
       colaboradorId: colaboradorId ?? this.colaboradorId,
       fechaIngreso: fechaIngreso ?? this.fechaIngreso,
@@ -6011,6 +6227,9 @@ class CuadrillaMiembroCompanion extends UpdateCompanion<CuadrillaMiembroData> {
     if (syncStatus.present) {
       map['sync_status'] = Variable<String>(syncStatus.value);
     }
+    if (orden.present) {
+      map['orden'] = Variable<int>(orden.value);
+    }
     if (cuadrillaId.present) {
       map['cuadrilla_id'] = Variable<String>(cuadrillaId.value);
     }
@@ -6038,6 +6257,7 @@ class CuadrillaMiembroCompanion extends UpdateCompanion<CuadrillaMiembroData> {
           ..write('serverUpdatedAt: $serverUpdatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
           ..write('cuadrillaId: $cuadrillaId, ')
           ..write('colaboradorId: $colaboradorId, ')
           ..write('fechaIngreso: $fechaIngreso, ')
@@ -6856,6 +7076,16 @@ class $CotizacionesTable extends Cotizaciones
     requiredDuringInsert: false,
     defaultValue: const Constant('pending'),
   );
+  static const VerificationMeta _ordenMeta = const VerificationMeta('orden');
+  @override
+  late final GeneratedColumn<int> orden = GeneratedColumn<int>(
+    'orden',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
@@ -6995,6 +7225,7 @@ class $CotizacionesTable extends Cotizaciones
     serverUpdatedAt,
     deletedAt,
     syncStatus,
+    orden,
     id,
     cliente,
     nombreProyecto,
@@ -7057,6 +7288,12 @@ class $CotizacionesTable extends Cotizaciones
       context.handle(
         _syncStatusMeta,
         syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('orden')) {
+      context.handle(
+        _ordenMeta,
+        orden.isAcceptableOrUnknown(data['orden']!, _ordenMeta),
       );
     }
     if (data.containsKey('id')) {
@@ -7178,6 +7415,10 @@ class $CotizacionesTable extends Cotizaciones
         DriftSqlType.string,
         data['${effectivePrefix}sync_status'],
       )!,
+      orden: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}orden'],
+      )!,
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
@@ -7253,6 +7494,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
 
   /// 'pending' | 'synced' | 'error'.
   final String syncStatus;
+  final int orden;
   final String id;
   final String cliente;
   final String nombreProyecto;
@@ -7282,6 +7524,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
     this.serverUpdatedAt,
     this.deletedAt,
     required this.syncStatus,
+    required this.orden,
     required this.id,
     required this.cliente,
     required this.nombreProyecto,
@@ -7308,6 +7551,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
       map['deleted_at'] = Variable<int>(deletedAt);
     }
     map['sync_status'] = Variable<String>(syncStatus);
+    map['orden'] = Variable<int>(orden);
     map['id'] = Variable<String>(id);
     map['cliente'] = Variable<String>(cliente);
     map['nombre_proyecto'] = Variable<String>(nombreProyecto);
@@ -7339,6 +7583,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
           ? const Value.absent()
           : Value(deletedAt),
       syncStatus: Value(syncStatus),
+      orden: Value(orden),
       id: Value(id),
       cliente: Value(cliente),
       nombreProyecto: Value(nombreProyecto),
@@ -7370,6 +7615,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
       serverUpdatedAt: serializer.fromJson<int?>(json['serverUpdatedAt']),
       deletedAt: serializer.fromJson<int?>(json['deletedAt']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      orden: serializer.fromJson<int>(json['orden']),
       id: serializer.fromJson<String>(json['id']),
       cliente: serializer.fromJson<String>(json['cliente']),
       nombreProyecto: serializer.fromJson<String>(json['nombreProyecto']),
@@ -7394,6 +7640,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
       'serverUpdatedAt': serializer.toJson<int?>(serverUpdatedAt),
       'deletedAt': serializer.toJson<int?>(deletedAt),
       'syncStatus': serializer.toJson<String>(syncStatus),
+      'orden': serializer.toJson<int>(orden),
       'id': serializer.toJson<String>(id),
       'cliente': serializer.toJson<String>(cliente),
       'nombreProyecto': serializer.toJson<String>(nombreProyecto),
@@ -7416,6 +7663,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
     Value<int?> serverUpdatedAt = const Value.absent(),
     Value<int?> deletedAt = const Value.absent(),
     String? syncStatus,
+    int? orden,
     String? id,
     String? cliente,
     String? nombreProyecto,
@@ -7437,6 +7685,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
         : this.serverUpdatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     syncStatus: syncStatus ?? this.syncStatus,
+    orden: orden ?? this.orden,
     id: id ?? this.id,
     cliente: cliente ?? this.cliente,
     nombreProyecto: nombreProyecto ?? this.nombreProyecto,
@@ -7464,6 +7713,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
       syncStatus: data.syncStatus.present
           ? data.syncStatus.value
           : this.syncStatus,
+      orden: data.orden.present ? data.orden.value : this.orden,
       id: data.id.present ? data.id.value : this.id,
       cliente: data.cliente.present ? data.cliente.value : this.cliente,
       nombreProyecto: data.nombreProyecto.present
@@ -7496,6 +7746,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
           ..write('serverUpdatedAt: $serverUpdatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
           ..write('id: $id, ')
           ..write('cliente: $cliente, ')
           ..write('nombreProyecto: $nombreProyecto, ')
@@ -7520,6 +7771,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
     serverUpdatedAt,
     deletedAt,
     syncStatus,
+    orden,
     id,
     cliente,
     nombreProyecto,
@@ -7543,6 +7795,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
           other.serverUpdatedAt == this.serverUpdatedAt &&
           other.deletedAt == this.deletedAt &&
           other.syncStatus == this.syncStatus &&
+          other.orden == this.orden &&
           other.id == this.id &&
           other.cliente == this.cliente &&
           other.nombreProyecto == this.nombreProyecto &&
@@ -7564,6 +7817,7 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
   final Value<int?> serverUpdatedAt;
   final Value<int?> deletedAt;
   final Value<String> syncStatus;
+  final Value<int> orden;
   final Value<String> id;
   final Value<String> cliente;
   final Value<String> nombreProyecto;
@@ -7584,6 +7838,7 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
     this.serverUpdatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
     this.id = const Value.absent(),
     this.cliente = const Value.absent(),
     this.nombreProyecto = const Value.absent(),
@@ -7605,6 +7860,7 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
     this.serverUpdatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
     required String id,
     required String cliente,
     required String nombreProyecto,
@@ -7629,6 +7885,7 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
     Expression<int>? serverUpdatedAt,
     Expression<int>? deletedAt,
     Expression<String>? syncStatus,
+    Expression<int>? orden,
     Expression<String>? id,
     Expression<String>? cliente,
     Expression<String>? nombreProyecto,
@@ -7650,6 +7907,7 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
       if (serverUpdatedAt != null) 'server_updated_at': serverUpdatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (syncStatus != null) 'sync_status': syncStatus,
+      if (orden != null) 'orden': orden,
       if (id != null) 'id': id,
       if (cliente != null) 'cliente': cliente,
       if (nombreProyecto != null) 'nombre_proyecto': nombreProyecto,
@@ -7673,6 +7931,7 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
     Value<int?>? serverUpdatedAt,
     Value<int?>? deletedAt,
     Value<String>? syncStatus,
+    Value<int>? orden,
     Value<String>? id,
     Value<String>? cliente,
     Value<String>? nombreProyecto,
@@ -7694,6 +7953,7 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
       serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       syncStatus: syncStatus ?? this.syncStatus,
+      orden: orden ?? this.orden,
       id: id ?? this.id,
       cliente: cliente ?? this.cliente,
       nombreProyecto: nombreProyecto ?? this.nombreProyecto,
@@ -7730,6 +7990,9 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
     }
     if (syncStatus.present) {
       map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (orden.present) {
+      map['orden'] = Variable<int>(orden.value);
     }
     if (id.present) {
       map['id'] = Variable<String>(id.value);
@@ -7782,6 +8045,7 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
           ..write('serverUpdatedAt: $serverUpdatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
           ..write('id: $id, ')
           ..write('cliente: $cliente, ')
           ..write('nombreProyecto: $nombreProyecto, ')
@@ -11241,6 +11505,16 @@ class $CatalogoConceptosTable extends CatalogoConceptos
     requiredDuringInsert: false,
     defaultValue: const Constant('pending'),
   );
+  static const VerificationMeta _ordenMeta = const VerificationMeta('orden');
+  @override
+  late final GeneratedColumn<int> orden = GeneratedColumn<int>(
+    'orden',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
@@ -11325,6 +11599,7 @@ class $CatalogoConceptosTable extends CatalogoConceptos
     serverUpdatedAt,
     deletedAt,
     syncStatus,
+    orden,
     id,
     clave,
     descripcion,
@@ -11382,6 +11657,12 @@ class $CatalogoConceptosTable extends CatalogoConceptos
       context.handle(
         _syncStatusMeta,
         syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('orden')) {
+      context.handle(
+        _ordenMeta,
+        orden.isAcceptableOrUnknown(data['orden']!, _ordenMeta),
       );
     }
     if (data.containsKey('id')) {
@@ -11475,6 +11756,10 @@ class $CatalogoConceptosTable extends CatalogoConceptos
         DriftSqlType.string,
         data['${effectivePrefix}sync_status'],
       )!,
+      orden: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}orden'],
+      )!,
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
@@ -11531,6 +11816,7 @@ class CatalogoConcepto extends DataClass
 
   /// 'pending' | 'synced' | 'error'.
   final String syncStatus;
+  final int orden;
   final String id;
   final String clave;
   final String descripcion;
@@ -11545,6 +11831,7 @@ class CatalogoConcepto extends DataClass
     this.serverUpdatedAt,
     this.deletedAt,
     required this.syncStatus,
+    required this.orden,
     required this.id,
     required this.clave,
     required this.descripcion,
@@ -11566,6 +11853,7 @@ class CatalogoConcepto extends DataClass
       map['deleted_at'] = Variable<int>(deletedAt);
     }
     map['sync_status'] = Variable<String>(syncStatus);
+    map['orden'] = Variable<int>(orden);
     map['id'] = Variable<String>(id);
     map['clave'] = Variable<String>(clave);
     map['descripcion'] = Variable<String>(descripcion);
@@ -11588,6 +11876,7 @@ class CatalogoConcepto extends DataClass
           ? const Value.absent()
           : Value(deletedAt),
       syncStatus: Value(syncStatus),
+      orden: Value(orden),
       id: Value(id),
       clave: Value(clave),
       descripcion: Value(descripcion),
@@ -11610,6 +11899,7 @@ class CatalogoConcepto extends DataClass
       serverUpdatedAt: serializer.fromJson<int?>(json['serverUpdatedAt']),
       deletedAt: serializer.fromJson<int?>(json['deletedAt']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      orden: serializer.fromJson<int>(json['orden']),
       id: serializer.fromJson<String>(json['id']),
       clave: serializer.fromJson<String>(json['clave']),
       descripcion: serializer.fromJson<String>(json['descripcion']),
@@ -11631,6 +11921,7 @@ class CatalogoConcepto extends DataClass
       'serverUpdatedAt': serializer.toJson<int?>(serverUpdatedAt),
       'deletedAt': serializer.toJson<int?>(deletedAt),
       'syncStatus': serializer.toJson<String>(syncStatus),
+      'orden': serializer.toJson<int>(orden),
       'id': serializer.toJson<String>(id),
       'clave': serializer.toJson<String>(clave),
       'descripcion': serializer.toJson<String>(descripcion),
@@ -11648,6 +11939,7 @@ class CatalogoConcepto extends DataClass
     Value<int?> serverUpdatedAt = const Value.absent(),
     Value<int?> deletedAt = const Value.absent(),
     String? syncStatus,
+    int? orden,
     String? id,
     String? clave,
     String? descripcion,
@@ -11664,6 +11956,7 @@ class CatalogoConcepto extends DataClass
         : this.serverUpdatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     syncStatus: syncStatus ?? this.syncStatus,
+    orden: orden ?? this.orden,
     id: id ?? this.id,
     clave: clave ?? this.clave,
     descripcion: descripcion ?? this.descripcion,
@@ -11684,6 +11977,7 @@ class CatalogoConcepto extends DataClass
       syncStatus: data.syncStatus.present
           ? data.syncStatus.value
           : this.syncStatus,
+      orden: data.orden.present ? data.orden.value : this.orden,
       id: data.id.present ? data.id.value : this.id,
       clave: data.clave.present ? data.clave.value : this.clave,
       descripcion: data.descripcion.present
@@ -11709,6 +12003,7 @@ class CatalogoConcepto extends DataClass
           ..write('serverUpdatedAt: $serverUpdatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
           ..write('id: $id, ')
           ..write('clave: $clave, ')
           ..write('descripcion: $descripcion, ')
@@ -11728,6 +12023,7 @@ class CatalogoConcepto extends DataClass
     serverUpdatedAt,
     deletedAt,
     syncStatus,
+    orden,
     id,
     clave,
     descripcion,
@@ -11746,6 +12042,7 @@ class CatalogoConcepto extends DataClass
           other.serverUpdatedAt == this.serverUpdatedAt &&
           other.deletedAt == this.deletedAt &&
           other.syncStatus == this.syncStatus &&
+          other.orden == this.orden &&
           other.id == this.id &&
           other.clave == this.clave &&
           other.descripcion == this.descripcion &&
@@ -11762,6 +12059,7 @@ class CatalogoConceptosCompanion extends UpdateCompanion<CatalogoConcepto> {
   final Value<int?> serverUpdatedAt;
   final Value<int?> deletedAt;
   final Value<String> syncStatus;
+  final Value<int> orden;
   final Value<String> id;
   final Value<String> clave;
   final Value<String> descripcion;
@@ -11777,6 +12075,7 @@ class CatalogoConceptosCompanion extends UpdateCompanion<CatalogoConcepto> {
     this.serverUpdatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
     this.id = const Value.absent(),
     this.clave = const Value.absent(),
     this.descripcion = const Value.absent(),
@@ -11793,6 +12092,7 @@ class CatalogoConceptosCompanion extends UpdateCompanion<CatalogoConcepto> {
     this.serverUpdatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
     required String id,
     required String clave,
     required String descripcion,
@@ -11813,6 +12113,7 @@ class CatalogoConceptosCompanion extends UpdateCompanion<CatalogoConcepto> {
     Expression<int>? serverUpdatedAt,
     Expression<int>? deletedAt,
     Expression<String>? syncStatus,
+    Expression<int>? orden,
     Expression<String>? id,
     Expression<String>? clave,
     Expression<String>? descripcion,
@@ -11829,6 +12130,7 @@ class CatalogoConceptosCompanion extends UpdateCompanion<CatalogoConcepto> {
       if (serverUpdatedAt != null) 'server_updated_at': serverUpdatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (syncStatus != null) 'sync_status': syncStatus,
+      if (orden != null) 'orden': orden,
       if (id != null) 'id': id,
       if (clave != null) 'clave': clave,
       if (descripcion != null) 'descripcion': descripcion,
@@ -11848,6 +12150,7 @@ class CatalogoConceptosCompanion extends UpdateCompanion<CatalogoConcepto> {
     Value<int?>? serverUpdatedAt,
     Value<int?>? deletedAt,
     Value<String>? syncStatus,
+    Value<int>? orden,
     Value<String>? id,
     Value<String>? clave,
     Value<String>? descripcion,
@@ -11864,6 +12167,7 @@ class CatalogoConceptosCompanion extends UpdateCompanion<CatalogoConcepto> {
       serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       syncStatus: syncStatus ?? this.syncStatus,
+      orden: orden ?? this.orden,
       id: id ?? this.id,
       clave: clave ?? this.clave,
       descripcion: descripcion ?? this.descripcion,
@@ -11896,6 +12200,9 @@ class CatalogoConceptosCompanion extends UpdateCompanion<CatalogoConcepto> {
     }
     if (syncStatus.present) {
       map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (orden.present) {
+      map['orden'] = Variable<int>(orden.value);
     }
     if (id.present) {
       map['id'] = Variable<String>(id.value);
@@ -11935,6 +12242,7 @@ class CatalogoConceptosCompanion extends UpdateCompanion<CatalogoConcepto> {
           ..write('serverUpdatedAt: $serverUpdatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
           ..write('id: $id, ')
           ..write('clave: $clave, ')
           ..write('descripcion: $descripcion, ')
@@ -14065,6 +14373,7 @@ typedef $$ObrasTableCreateCompanionBuilder =
       Value<int?> serverUpdatedAt,
       Value<int?> deletedAt,
       Value<String> syncStatus,
+      Value<int> orden,
       required String id,
       required String nombre,
       Value<String> cliente,
@@ -14083,6 +14392,7 @@ typedef $$ObrasTableUpdateCompanionBuilder =
       Value<int?> serverUpdatedAt,
       Value<int?> deletedAt,
       Value<String> syncStatus,
+      Value<int> orden,
       Value<String> id,
       Value<String> nombre,
       Value<String> cliente,
@@ -14129,6 +14439,11 @@ class $$ObrasTableFilterComposer extends Composer<_$AppDatabase, $ObrasTable> {
 
   ColumnFilters<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get orden => $composableBuilder(
+    column: $table.orden,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -14212,6 +14527,11 @@ class $$ObrasTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
@@ -14284,6 +14604,9 @@ class $$ObrasTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get orden =>
+      $composableBuilder(column: $table.orden, builder: (column) => column);
+
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
@@ -14349,6 +14672,7 @@ class $$ObrasTableTableManager
                 Value<int?> serverUpdatedAt = const Value.absent(),
                 Value<int?> deletedAt = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
                 Value<String> id = const Value.absent(),
                 Value<String> nombre = const Value.absent(),
                 Value<String> cliente = const Value.absent(),
@@ -14365,6 +14689,7 @@ class $$ObrasTableTableManager
                 serverUpdatedAt: serverUpdatedAt,
                 deletedAt: deletedAt,
                 syncStatus: syncStatus,
+                orden: orden,
                 id: id,
                 nombre: nombre,
                 cliente: cliente,
@@ -14383,6 +14708,7 @@ class $$ObrasTableTableManager
                 Value<int?> serverUpdatedAt = const Value.absent(),
                 Value<int?> deletedAt = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
                 required String id,
                 required String nombre,
                 Value<String> cliente = const Value.absent(),
@@ -14399,6 +14725,7 @@ class $$ObrasTableTableManager
                 serverUpdatedAt: serverUpdatedAt,
                 deletedAt: deletedAt,
                 syncStatus: syncStatus,
+                orden: orden,
                 id: id,
                 nombre: nombre,
                 cliente: cliente,
@@ -14439,6 +14766,7 @@ typedef $$PuestosTableCreateCompanionBuilder =
       Value<int?> serverUpdatedAt,
       Value<int?> deletedAt,
       Value<String> syncStatus,
+      Value<int> orden,
       required String id,
       required String nombre,
       Value<double> salarioDiaDefault,
@@ -14452,6 +14780,7 @@ typedef $$PuestosTableUpdateCompanionBuilder =
       Value<int?> serverUpdatedAt,
       Value<int?> deletedAt,
       Value<String> syncStatus,
+      Value<int> orden,
       Value<String> id,
       Value<String> nombre,
       Value<double> salarioDiaDefault,
@@ -14494,6 +14823,11 @@ class $$PuestosTableFilterComposer
 
   ColumnFilters<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get orden => $composableBuilder(
+    column: $table.orden,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -14552,6 +14886,11 @@ class $$PuestosTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
@@ -14599,6 +14938,9 @@ class $$PuestosTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get orden =>
+      $composableBuilder(column: $table.orden, builder: (column) => column);
+
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
@@ -14645,6 +14987,7 @@ class $$PuestosTableTableManager
                 Value<int?> serverUpdatedAt = const Value.absent(),
                 Value<int?> deletedAt = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
                 Value<String> id = const Value.absent(),
                 Value<String> nombre = const Value.absent(),
                 Value<double> salarioDiaDefault = const Value.absent(),
@@ -14656,6 +14999,7 @@ class $$PuestosTableTableManager
                 serverUpdatedAt: serverUpdatedAt,
                 deletedAt: deletedAt,
                 syncStatus: syncStatus,
+                orden: orden,
                 id: id,
                 nombre: nombre,
                 salarioDiaDefault: salarioDiaDefault,
@@ -14669,6 +15013,7 @@ class $$PuestosTableTableManager
                 Value<int?> serverUpdatedAt = const Value.absent(),
                 Value<int?> deletedAt = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
                 required String id,
                 required String nombre,
                 Value<double> salarioDiaDefault = const Value.absent(),
@@ -14680,6 +15025,7 @@ class $$PuestosTableTableManager
                 serverUpdatedAt: serverUpdatedAt,
                 deletedAt: deletedAt,
                 syncStatus: syncStatus,
+                orden: orden,
                 id: id,
                 nombre: nombre,
                 salarioDiaDefault: salarioDiaDefault,
@@ -14715,6 +15061,7 @@ typedef $$ColaboradoresTableCreateCompanionBuilder =
       Value<int?> serverUpdatedAt,
       Value<int?> deletedAt,
       Value<String> syncStatus,
+      Value<int> orden,
       required String id,
       required String nombre,
       required String puestoId,
@@ -14738,6 +15085,7 @@ typedef $$ColaboradoresTableUpdateCompanionBuilder =
       Value<int?> serverUpdatedAt,
       Value<int?> deletedAt,
       Value<String> syncStatus,
+      Value<int> orden,
       Value<String> id,
       Value<String> nombre,
       Value<String> puestoId,
@@ -14790,6 +15138,11 @@ class $$ColaboradoresTableFilterComposer
 
   ColumnFilters<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get orden => $composableBuilder(
+    column: $table.orden,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -14898,6 +15251,11 @@ class $$ColaboradoresTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
@@ -14995,6 +15353,9 @@ class $$ColaboradoresTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get orden =>
+      $composableBuilder(column: $table.orden, builder: (column) => column);
+
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
@@ -15086,6 +15447,7 @@ class $$ColaboradoresTableTableManager
                 Value<int?> serverUpdatedAt = const Value.absent(),
                 Value<int?> deletedAt = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
                 Value<String> id = const Value.absent(),
                 Value<String> nombre = const Value.absent(),
                 Value<String> puestoId = const Value.absent(),
@@ -15107,6 +15469,7 @@ class $$ColaboradoresTableTableManager
                 serverUpdatedAt: serverUpdatedAt,
                 deletedAt: deletedAt,
                 syncStatus: syncStatus,
+                orden: orden,
                 id: id,
                 nombre: nombre,
                 puestoId: puestoId,
@@ -15130,6 +15493,7 @@ class $$ColaboradoresTableTableManager
                 Value<int?> serverUpdatedAt = const Value.absent(),
                 Value<int?> deletedAt = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
                 required String id,
                 required String nombre,
                 required String puestoId,
@@ -15151,6 +15515,7 @@ class $$ColaboradoresTableTableManager
                 serverUpdatedAt: serverUpdatedAt,
                 deletedAt: deletedAt,
                 syncStatus: syncStatus,
+                orden: orden,
                 id: id,
                 nombre: nombre,
                 puestoId: puestoId,
@@ -16230,6 +16595,7 @@ typedef $$CuadrillasTableCreateCompanionBuilder =
       Value<int?> serverUpdatedAt,
       Value<int?> deletedAt,
       Value<String> syncStatus,
+      Value<int> orden,
       required String id,
       required String nombre,
       Value<String> especialidad,
@@ -16245,6 +16611,7 @@ typedef $$CuadrillasTableUpdateCompanionBuilder =
       Value<int?> serverUpdatedAt,
       Value<int?> deletedAt,
       Value<String> syncStatus,
+      Value<int> orden,
       Value<String> id,
       Value<String> nombre,
       Value<String> especialidad,
@@ -16289,6 +16656,11 @@ class $$CuadrillasTableFilterComposer
 
   ColumnFilters<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get orden => $composableBuilder(
+    column: $table.orden,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -16357,6 +16729,11 @@ class $$CuadrillasTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
@@ -16413,6 +16790,9 @@ class $$CuadrillasTableAnnotationComposer
     column: $table.syncStatus,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get orden =>
+      $composableBuilder(column: $table.orden, builder: (column) => column);
 
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
@@ -16471,6 +16851,7 @@ class $$CuadrillasTableTableManager
                 Value<int?> serverUpdatedAt = const Value.absent(),
                 Value<int?> deletedAt = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
                 Value<String> id = const Value.absent(),
                 Value<String> nombre = const Value.absent(),
                 Value<String> especialidad = const Value.absent(),
@@ -16484,6 +16865,7 @@ class $$CuadrillasTableTableManager
                 serverUpdatedAt: serverUpdatedAt,
                 deletedAt: deletedAt,
                 syncStatus: syncStatus,
+                orden: orden,
                 id: id,
                 nombre: nombre,
                 especialidad: especialidad,
@@ -16499,6 +16881,7 @@ class $$CuadrillasTableTableManager
                 Value<int?> serverUpdatedAt = const Value.absent(),
                 Value<int?> deletedAt = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
                 required String id,
                 required String nombre,
                 Value<String> especialidad = const Value.absent(),
@@ -16512,6 +16895,7 @@ class $$CuadrillasTableTableManager
                 serverUpdatedAt: serverUpdatedAt,
                 deletedAt: deletedAt,
                 syncStatus: syncStatus,
+                orden: orden,
                 id: id,
                 nombre: nombre,
                 especialidad: especialidad,
@@ -16549,6 +16933,7 @@ typedef $$CuadrillaMiembroTableCreateCompanionBuilder =
       Value<int?> serverUpdatedAt,
       Value<int?> deletedAt,
       Value<String> syncStatus,
+      Value<int> orden,
       required String cuadrillaId,
       required String colaboradorId,
       required int fechaIngreso,
@@ -16563,6 +16948,7 @@ typedef $$CuadrillaMiembroTableUpdateCompanionBuilder =
       Value<int?> serverUpdatedAt,
       Value<int?> deletedAt,
       Value<String> syncStatus,
+      Value<int> orden,
       Value<String> cuadrillaId,
       Value<String> colaboradorId,
       Value<int> fechaIngreso,
@@ -16606,6 +16992,11 @@ class $$CuadrillaMiembroTableFilterComposer
 
   ColumnFilters<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get orden => $composableBuilder(
+    column: $table.orden,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -16669,6 +17060,11 @@ class $$CuadrillaMiembroTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get cuadrillaId => $composableBuilder(
     column: $table.cuadrillaId,
     builder: (column) => ColumnOrderings(column),
@@ -16720,6 +17116,9 @@ class $$CuadrillaMiembroTableAnnotationComposer
     column: $table.syncStatus,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get orden =>
+      $composableBuilder(column: $table.orden, builder: (column) => column);
 
   GeneratedColumn<String> get cuadrillaId => $composableBuilder(
     column: $table.cuadrillaId,
@@ -16785,6 +17184,7 @@ class $$CuadrillaMiembroTableTableManager
                 Value<int?> serverUpdatedAt = const Value.absent(),
                 Value<int?> deletedAt = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
                 Value<String> cuadrillaId = const Value.absent(),
                 Value<String> colaboradorId = const Value.absent(),
                 Value<int> fechaIngreso = const Value.absent(),
@@ -16797,6 +17197,7 @@ class $$CuadrillaMiembroTableTableManager
                 serverUpdatedAt: serverUpdatedAt,
                 deletedAt: deletedAt,
                 syncStatus: syncStatus,
+                orden: orden,
                 cuadrillaId: cuadrillaId,
                 colaboradorId: colaboradorId,
                 fechaIngreso: fechaIngreso,
@@ -16811,6 +17212,7 @@ class $$CuadrillaMiembroTableTableManager
                 Value<int?> serverUpdatedAt = const Value.absent(),
                 Value<int?> deletedAt = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
                 required String cuadrillaId,
                 required String colaboradorId,
                 required int fechaIngreso,
@@ -16823,6 +17225,7 @@ class $$CuadrillaMiembroTableTableManager
                 serverUpdatedAt: serverUpdatedAt,
                 deletedAt: deletedAt,
                 syncStatus: syncStatus,
+                orden: orden,
                 cuadrillaId: cuadrillaId,
                 colaboradorId: colaboradorId,
                 fechaIngreso: fechaIngreso,
@@ -17226,6 +17629,7 @@ typedef $$CotizacionesTableCreateCompanionBuilder =
       Value<int?> serverUpdatedAt,
       Value<int?> deletedAt,
       Value<String> syncStatus,
+      Value<int> orden,
       required String id,
       required String cliente,
       required String nombreProyecto,
@@ -17248,6 +17652,7 @@ typedef $$CotizacionesTableUpdateCompanionBuilder =
       Value<int?> serverUpdatedAt,
       Value<int?> deletedAt,
       Value<String> syncStatus,
+      Value<int> orden,
       Value<String> id,
       Value<String> cliente,
       Value<String> nombreProyecto,
@@ -17299,6 +17704,11 @@ class $$CotizacionesTableFilterComposer
 
   ColumnFilters<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get orden => $composableBuilder(
+    column: $table.orden,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -17402,6 +17812,11 @@ class $$CotizacionesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
@@ -17494,6 +17909,9 @@ class $$CotizacionesTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get orden =>
+      $composableBuilder(column: $table.orden, builder: (column) => column);
+
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
@@ -17576,6 +17994,7 @@ class $$CotizacionesTableTableManager
                 Value<int?> serverUpdatedAt = const Value.absent(),
                 Value<int?> deletedAt = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
                 Value<String> id = const Value.absent(),
                 Value<String> cliente = const Value.absent(),
                 Value<String> nombreProyecto = const Value.absent(),
@@ -17596,6 +18015,7 @@ class $$CotizacionesTableTableManager
                 serverUpdatedAt: serverUpdatedAt,
                 deletedAt: deletedAt,
                 syncStatus: syncStatus,
+                orden: orden,
                 id: id,
                 cliente: cliente,
                 nombreProyecto: nombreProyecto,
@@ -17618,6 +18038,7 @@ class $$CotizacionesTableTableManager
                 Value<int?> serverUpdatedAt = const Value.absent(),
                 Value<int?> deletedAt = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
                 required String id,
                 required String cliente,
                 required String nombreProyecto,
@@ -17638,6 +18059,7 @@ class $$CotizacionesTableTableManager
                 serverUpdatedAt: serverUpdatedAt,
                 deletedAt: deletedAt,
                 syncStatus: syncStatus,
+                orden: orden,
                 id: id,
                 cliente: cliente,
                 nombreProyecto: nombreProyecto,
@@ -19222,6 +19644,7 @@ typedef $$CatalogoConceptosTableCreateCompanionBuilder =
       Value<int?> serverUpdatedAt,
       Value<int?> deletedAt,
       Value<String> syncStatus,
+      Value<int> orden,
       required String id,
       required String clave,
       required String descripcion,
@@ -19239,6 +19662,7 @@ typedef $$CatalogoConceptosTableUpdateCompanionBuilder =
       Value<int?> serverUpdatedAt,
       Value<int?> deletedAt,
       Value<String> syncStatus,
+      Value<int> orden,
       Value<String> id,
       Value<String> clave,
       Value<String> descripcion,
@@ -19285,6 +19709,11 @@ class $$CatalogoConceptosTableFilterComposer
 
   ColumnFilters<String> get syncStatus => $composableBuilder(
     column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get orden => $composableBuilder(
+    column: $table.orden,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -19363,6 +19792,11 @@ class $$CatalogoConceptosTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
@@ -19429,6 +19863,9 @@ class $$CatalogoConceptosTableAnnotationComposer
     column: $table.syncStatus,
     builder: (column) => column,
   );
+
+  GeneratedColumn<int> get orden =>
+      $composableBuilder(column: $table.orden, builder: (column) => column);
 
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
@@ -19504,6 +19941,7 @@ class $$CatalogoConceptosTableTableManager
                 Value<int?> serverUpdatedAt = const Value.absent(),
                 Value<int?> deletedAt = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
                 Value<String> id = const Value.absent(),
                 Value<String> clave = const Value.absent(),
                 Value<String> descripcion = const Value.absent(),
@@ -19519,6 +19957,7 @@ class $$CatalogoConceptosTableTableManager
                 serverUpdatedAt: serverUpdatedAt,
                 deletedAt: deletedAt,
                 syncStatus: syncStatus,
+                orden: orden,
                 id: id,
                 clave: clave,
                 descripcion: descripcion,
@@ -19536,6 +19975,7 @@ class $$CatalogoConceptosTableTableManager
                 Value<int?> serverUpdatedAt = const Value.absent(),
                 Value<int?> deletedAt = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
                 required String id,
                 required String clave,
                 required String descripcion,
@@ -19551,6 +19991,7 @@ class $$CatalogoConceptosTableTableManager
                 serverUpdatedAt: serverUpdatedAt,
                 deletedAt: deletedAt,
                 syncStatus: syncStatus,
+                orden: orden,
                 id: id,
                 clave: clave,
                 descripcion: descripcion,

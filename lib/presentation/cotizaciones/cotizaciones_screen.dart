@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
 import '../../core/sync/rol_provider.dart';
+import '../../data/orden_personalizado.dart';
 import '../../data/providers.dart';
 import '../common/app_spacing.dart';
 import '../common/async_action_button.dart';
@@ -13,6 +14,7 @@ import '../common/sync_status_action.dart';
 import '../common/confirm_dialog.dart';
 import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
+import '../common/orden_modo_toggle.dart';
 import 'cotizacion_detail_screen.dart';
 import 'estado_cotizacion_badge.dart';
 
@@ -63,31 +65,41 @@ class _CotizacionesScreenState extends ConsumerState<CotizacionesScreen> {
         title: const Text('Cotizaciones'),
         actions: const [SyncStatusAction()],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
+          preferredSize: const Size.fromHeight(100),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-            child: TextField(
-              controller: _buscadorCtrl,
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                hintText: 'Buscar proyecto o cliente…',
-                prefixIcon: const Icon(Icons.search),
-                isDense: true,
-                border: const OutlineInputBorder(),
-                // Borrar la búsqueda a mano en un teclado de teléfono es
-                // tedioso; el botón la deja vacía de un toque.
-                suffixIcon: _query.isEmpty
-                    ? null
-                    : IconButton(
-                        tooltip: 'Borrar búsqueda',
-                        icon: const Icon(Icons.close),
-                        onPressed: () {
-                          _buscadorCtrl.clear();
-                          setState(() => _query = '');
-                        },
-                      ),
-              ),
-              onChanged: (v) => setState(() => _query = v),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: _buscadorCtrl,
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    hintText: 'Buscar proyecto o cliente…',
+                    prefixIcon: const Icon(Icons.search),
+                    isDense: true,
+                    border: const OutlineInputBorder(),
+                    // Borrar la búsqueda a mano en un teclado de teléfono es
+                    // tedioso; el botón la deja vacía de un toque.
+                    suffixIcon: _query.isEmpty
+                        ? null
+                        : IconButton(
+                            tooltip: 'Borrar búsqueda',
+                            icon: const Icon(Icons.close),
+                            onPressed: () {
+                              _buscadorCtrl.clear();
+                              setState(() => _query = '');
+                            },
+                          ),
+                  ),
+                  onChanged: (v) => setState(() => _query = v),
+                ),
+                const SizedBox(height: 6),
+                const Align(
+                  alignment: Alignment.centerRight,
+                  child: OrdenModoToggle(listKey: OrdenLista.cotizaciones),
+                ),
+              ],
             ),
           ),
         ),
@@ -99,7 +111,22 @@ class _CotizacionesScreenState extends ConsumerState<CotizacionesScreen> {
           onRetry: () => ref.invalidate(cotizacionesProvider),
         ),
         data: (cots) {
-          final visibles = _filtrar(cots);
+          final modo = ref.watch(ordenModoProvider)[OrdenLista.cotizaciones] ??
+              modoNombre;
+          final personalizado = esModoPersonalizado(modo);
+          final visibles = ordenarPorModo(
+            items: _filtrar(cots),
+            modo: modo,
+            nombreDe: (c) => c.nombreProyecto,
+            creadoDe: (c) => c.createdAt,
+            modificadoDe: (c) => c.updatedAt,
+          );
+          // Arrastrar solo sobre la lista completa (sin filtro de estado ni
+          // búsqueda) y con permiso de edición.
+          final puedeArrastrar = personalizado &&
+              puedeEditar &&
+              _estado == null &&
+              _query.trim().isEmpty;
           return Column(
             children: [
               // Los chips solo aparecen cuando hay algo que filtrar: una fila de
@@ -115,12 +142,35 @@ class _CotizacionesScreenState extends ConsumerState<CotizacionesScreen> {
               Expanded(
                 child: visibles.isEmpty
                     ? _vacio(cots.isEmpty)
-                    : ListView.separated(
-                        itemCount: visibles.length,
-                        separatorBuilder: (_, _) => const Divider(height: 1),
-                        itemBuilder: (context, i) =>
-                            _fila(visibles[i], puedeEditar),
-                      ),
+                    : puedeArrastrar
+                        ? ReorderableListView.builder(
+                            itemCount: visibles.length,
+                            onReorder: (oldIndex, newIndex) {
+                              if (newIndex > oldIndex) newIndex -= 1;
+                              final ids =
+                                  visibles.map((c) => c.id).toList();
+                              final movido = ids.removeAt(oldIndex);
+                              ids.insert(newIndex, movido);
+                              ref
+                                  .read(ordenRepositoryProvider)
+                                  .reordenarPorId(
+                                    'cotizaciones',
+                                    esInvertido(modo)
+                                        ? ids.reversed.toList()
+                                        : ids,
+                                  );
+                            },
+                            itemBuilder: (context, i) => _fila(
+                                visibles[i], puedeEditar,
+                                arrastrable: true),
+                          )
+                        : ListView.separated(
+                            itemCount: visibles.length,
+                            separatorBuilder: (_, _) =>
+                                const Divider(height: 1),
+                            itemBuilder: (context, i) =>
+                                _fila(visibles[i], puedeEditar),
+                          ),
               ),
             ],
           );
@@ -184,8 +234,9 @@ class _CotizacionesScreenState extends ConsumerState<CotizacionesScreen> {
     return 'Ningún proyecto ni cliente coincide con “$texto”.';
   }
 
-  Widget _fila(Cotizacion c, bool puedeEditar) {
+  Widget _fila(Cotizacion c, bool puedeEditar, {bool arrastrable = false}) {
     return ListTile(
+      key: ValueKey(c.id),
       title: Text(c.nombreProyecto),
       // El estado dejó de ser un círculo de color a la izquierda —que
       // obligaba a memorizar qué significaba cada tono— y pasó a ser
@@ -205,9 +256,12 @@ class _CotizacionesScreenState extends ConsumerState<CotizacionesScreen> {
           ],
         ),
       ),
+      // En modo arrastrar se muestra el asa en vez del menú.
       // Sin permiso de edición se oculta el menú: la fila queda de solo lectura
       // (se abre la cotización, pero no se edita ni borra).
-      trailing: !puedeEditar
+      trailing: arrastrable
+          ? const Icon(Icons.drag_handle)
+          : !puedeEditar
           ? null
           : PopupMenuButton<String>(
         tooltip: 'Acciones de la cotización',

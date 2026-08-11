@@ -66,14 +66,11 @@ export function TablaUsuarios({
   return (
     <>
       <TableContainer>
-        <table className="w-full text-sm">
-          <THead>
-            <tr>
-              <Th>Persona</Th>
-              <Th>Rol</Th>
-              <Th className="text-right">Acciones</Th>
-            </tr>
-          </THead>
+        <THead>
+          <Th>Persona</Th>
+          <Th>Rol</Th>
+          <Th className="text-right">Acciones</Th>
+        </THead>
           <TBody>
             {usuarios.map((u) => {
               const soyYo = u.user_id === miUserId;
@@ -120,8 +117,7 @@ export function TablaUsuarios({
                 </Tr>
               );
             })}
-          </TBody>
-        </table>
+        </TBody>
       </TableContainer>
 
       {/* ── Cambiar rol ── */}

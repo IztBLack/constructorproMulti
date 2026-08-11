@@ -48,6 +48,9 @@ export async function crearColaborador(formData: FormData): Promise<ActionResult
   const puestoId = String(formData.get('puesto_id') ?? '').trim();
   const tipoPago = String(formData.get('tipo_pago') ?? 'DIA').trim() as TipoPago;
   const telefono = String(formData.get('telefono') ?? '').trim();
+  // Obra opcional elegida en el propio formulario: permite dar de alta y asignar
+  // en un solo paso (vacío = "asignar después").
+  const obraId = String(formData.get('obra_id') ?? '').trim();
   const { periodoPago, salarioPeriodo, diasSemana, salarioDiario } = derivarSueldo(formData);
 
   if (!nombre) {
@@ -62,10 +65,11 @@ export async function crearColaborador(formData: FormData): Promise<ActionResult
   }
 
   const now = Date.now();
+  const colaboradorId = crypto.randomUUID();
 
   const supabase = await createClient();
   const { error } = await supabase.from('colaboradores').insert({
-    id: crypto.randomUUID(),
+    id: colaboradorId,
     empresa_id: empresaId,
     nombre,
     puesto_id: puestoId || null,
@@ -85,6 +89,21 @@ export async function crearColaborador(formData: FormData): Promise<ActionResult
 
   if (error) {
     return { ok: false, error: error.message };
+  }
+
+  // Si se eligió obra, se asigna enseguida. El colaborador YA quedó creado: si
+  // la asignación fallara, se avisa sin fingir que todo el alta falló (volver a
+  // enviar el formulario crearía un duplicado).
+  if (obraId) {
+    const r = await asignarColaboradorAObra(supabase, empresaId, colaboradorId, obraId);
+    if (!r.ok) {
+      revalidatePath('/admin/equipo');
+      return {
+        ok: false,
+        error: `Se creó a ${nombre}, pero no se pudo asignar a la obra: ${r.error ?? 'error desconocido'}`,
+      };
+    }
+    revalidatePath('/admin/obras');
   }
 
   revalidatePath('/admin/equipo');

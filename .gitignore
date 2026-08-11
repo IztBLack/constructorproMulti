@@ -76,3 +76,6 @@ tools/backup_temp*/
 
 # Configuración local de Claude Code (launch.json, worktrees)
 .claude/
+
+.vercel
+.env*
