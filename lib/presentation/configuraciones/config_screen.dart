@@ -31,115 +31,136 @@ class ConfigScreen extends ConsumerWidget {
         actions: const [SyncStatusAction()],
       ),
       body: ListView(
+        padding: const EdgeInsets.only(top: 4, bottom: 28),
         children: [
-          const _Header('Apariencia'),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: SegmentedButton<ThemeMode>(
-              segments: const [
-                ButtonSegment(value: ThemeMode.system, label: Text('Auto'), icon: Icon(Icons.brightness_auto)),
-                ButtonSegment(value: ThemeMode.light, label: Text('Claro'), icon: Icon(Icons.light_mode)),
-                ButtonSegment(value: ThemeMode.dark, label: Text('Oscuro'), icon: Icon(Icons.dark_mode)),
-              ],
-              selected: {themeMode},
-              onSelectionChanged: (s) =>
-                  ref.read(themeModeProvider.notifier).set(s.first),
-            ),
+          _Seccion(
+            titulo: 'Apariencia',
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: SegmentedButton<ThemeMode>(
+                  segments: const [
+                    ButtonSegment(value: ThemeMode.system, label: Text('Auto'), icon: Icon(Icons.brightness_auto)),
+                    ButtonSegment(value: ThemeMode.light, label: Text('Claro'), icon: Icon(Icons.light_mode)),
+                    ButtonSegment(value: ThemeMode.dark, label: Text('Oscuro'), icon: Icon(Icons.dark_mode)),
+                  ],
+                  selected: {themeMode},
+                  onSelectionChanged: (s) =>
+                      ref.read(themeModeProvider.notifier).set(s.first),
+                ),
+              ),
+            ],
           ),
-          const Divider(),
-          const _Header('Recordatorios'),
-          _reminderTiles(context, ref),
-          const Divider(),
-          const _Header('Catálogos'),
-          ListTile(
-            leading: const Icon(Icons.badge_outlined),
-            title: const Text('Puestos y salarios'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const PuestosScreen())),
+          _Seccion(
+            titulo: 'Recordatorios',
+            children: [_reminderTiles(context, ref)],
           ),
-          ListTile(
-            leading: const Icon(Icons.menu_book_outlined),
-            title: const Text('Catálogo de conceptos'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const CatalogoScreen())),
+          _Seccion(
+            titulo: 'Catálogos',
+            children: [
+              ListTile(
+                leading: const Icon(Icons.badge_outlined),
+                title: const Text('Puestos y salarios'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const PuestosScreen())),
+              ),
+              ListTile(
+                leading: const Icon(Icons.menu_book_outlined),
+                title: const Text('Catálogo de conceptos'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const CatalogoScreen())),
+              ),
+              ListTile(
+                leading: const Icon(Icons.picture_as_pdf_outlined),
+                title: const Text('Personalizar PDF'),
+                subtitle: const Text('Logo, color, marca de agua, empresa'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const PdfConfigScreen())),
+              ),
+              ListTile(
+                leading: const Icon(Icons.percent),
+                title: const Text('IVA por defecto'),
+                // Cada cotización congela su tasa al crearse; cambiar este valor
+                // solo afecta a las que se creen de aquí en adelante.
+                subtitle: Text(
+                    '${ref.watch(ivaPorcentajeProvider).toStringAsFixed(0)}% · no recalcula cotizaciones existentes'),
+                onTap: () => _editarIva(context, ref),
+              ),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.picture_as_pdf_outlined),
-            title: const Text('Personalizar PDF'),
-            subtitle: const Text('Logo, color, marca de agua, empresa'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const PdfConfigScreen())),
+          _Seccion(
+            titulo: 'Nube',
+            children: [
+              ListTile(
+                leading: const Icon(Icons.cloud_sync_outlined),
+                title: const Text('Sincronización en la nube'),
+                subtitle: const Text('Conecta tu cuenta para sincronizar con la web'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const CloudSyncScreen())),
+              ),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.percent),
-            title: const Text('IVA por defecto (nuevas cotizaciones)'),
-            // Cada cotización congela su tasa al crearse; cambiar este valor
-            // solo afecta a las que se creen de aquí en adelante.
-            subtitle: Text(
-                '${ref.watch(ivaPorcentajeProvider).toStringAsFixed(0)}% · no recalcula cotizaciones existentes'),
-            onTap: () => _editarIva(context, ref),
+          _Seccion(
+            titulo: 'Datos',
+            children: [
+              ListTile(
+                leading: const Icon(Icons.science_outlined),
+                title: const Text('Cargar datos de prueba'),
+                subtitle: const Text('Reemplaza con un demo completo (4 obras, equipo, cotizaciones)'),
+                onTap: () => _cargarDemo(context, ref),
+              ),
+              ListTile(
+                leading: const Icon(Icons.upload_file),
+                title: const Text('Exportar respaldo (JSON)'),
+                onTap: () => _exportarRespaldo(context, ref),
+              ),
+              ListTile(
+                leading: const Icon(Icons.restore_page_outlined),
+                title: const Text('Restaurar respaldo (JSON)'),
+                subtitle: const Text('Reemplaza TODOS los datos actuales'),
+                onTap: () => _importarRespaldo(context, ref),
+              ),
+            ],
           ),
-          const Divider(),
-          const _Header('Nube'),
-          ListTile(
-            leading: const Icon(Icons.cloud_sync_outlined),
-            title: const Text('Sincronización en la nube'),
-            subtitle: const Text('Conecta tu cuenta para sincronizar con la web'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const CloudSyncScreen())),
+          _Seccion(
+            titulo: 'Soporte',
+            children: [
+              ListTile(
+                leading: const Icon(Icons.school_outlined),
+                title: const Text('Ver tutorial de uso'),
+                subtitle: const Text('Repasa cómo funciona cada módulo'),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  fullscreenDialog: true,
+                  builder: (_) => const TutorialScreen(),
+                )),
+              ),
+              ListTile(
+                leading: const Icon(Icons.bug_report_outlined),
+                title: const Text('Compartir reporte de errores'),
+                onTap: () => _compartirCrash(context),
+              ),
+            ],
           ),
-          const Divider(),
-          const _Header('Datos'),
-          ListTile(
-            leading: const Icon(Icons.science_outlined),
-            title: const Text('Cargar datos de prueba'),
-            subtitle: const Text('Reemplaza con un demo completo (4 obras, equipo, cotizaciones)'),
-            onTap: () => _cargarDemo(context, ref),
+          _Seccion(
+            titulo: 'Zona de peligro',
+            peligro: true,
+            children: [
+              _danger(context, ref, 'Eliminar todas las obras', 'ELIMINAR',
+                  () => ref.read(maintenanceRepositoryProvider).deleteAllObras()),
+              _danger(context, ref, 'Eliminar todos los colaboradores', 'ELIMINAR',
+                  () => ref.read(maintenanceRepositoryProvider).deleteAllColaboradores()),
+              _danger(context, ref, 'Eliminar todas las cotizaciones', 'ELIMINAR',
+                  () => ref.read(maintenanceRepositoryProvider).deleteAllCotizaciones()),
+              _danger(context, ref, 'Vaciar catálogo de conceptos', 'VACIAR',
+                  () => ref.read(maintenanceRepositoryProvider).vaciarCatalogo()),
+              _danger(context, ref, 'Restablecer TODO', 'RESTABLECER',
+                  () => ref.read(maintenanceRepositoryProvider).restablecerTodo()),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.upload_file),
-            title: const Text('Exportar respaldo (JSON)'),
-            onTap: () => _exportarRespaldo(context, ref),
-          ),
-          ListTile(
-            leading: const Icon(Icons.restore_page_outlined),
-            title: const Text('Restaurar respaldo (JSON)'),
-            subtitle: const Text('Reemplaza TODOS los datos actuales'),
-            onTap: () => _importarRespaldo(context, ref),
-          ),
-          const Divider(),
-          const _Header('Soporte'),
-          ListTile(
-            leading: const Icon(Icons.school_outlined),
-            title: const Text('Ver tutorial de uso'),
-            subtitle: const Text('Repasa cómo funciona cada módulo'),
-            onTap: () => Navigator.of(context).push(MaterialPageRoute(
-              fullscreenDialog: true,
-              builder: (_) => const TutorialScreen(),
-            )),
-          ),
-          ListTile(
-            leading: const Icon(Icons.bug_report_outlined),
-            title: const Text('Compartir reporte de errores'),
-            onTap: () => _compartirCrash(context),
-          ),
-          const Divider(),
-          _Header('Zona de peligro', color: Theme.of(context).colorScheme.error),
-          _danger(context, ref, 'Eliminar todas las obras', 'ELIMINAR',
-              () => ref.read(maintenanceRepositoryProvider).deleteAllObras()),
-          _danger(context, ref, 'Eliminar todos los colaboradores', 'ELIMINAR',
-              () => ref.read(maintenanceRepositoryProvider).deleteAllColaboradores()),
-          _danger(context, ref, 'Eliminar todas las cotizaciones', 'ELIMINAR',
-              () => ref.read(maintenanceRepositoryProvider).deleteAllCotizaciones()),
-          _danger(context, ref, 'Vaciar catálogo de conceptos', 'VACIAR',
-              () => ref.read(maintenanceRepositoryProvider).vaciarCatalogo()),
-          _danger(context, ref, 'Restablecer TODO', 'RESTABLECER',
-              () => ref.read(maintenanceRepositoryProvider).restablecerTodo()),
-          const SizedBox(height: 24),
         ],
       ),
     );
@@ -351,17 +372,66 @@ class ConfigScreen extends ConsumerWidget {
   }
 }
 
-class _Header extends StatelessWidget {
-  final String text;
-  final Color? color;
-  const _Header(this.text, {this.color});
+/// Sección de ajustes: un título tenue + una tarjeta con las filas dentro. Sube
+/// la config del móvil al mismo lenguaje visual que la web (grupos en tarjetas)
+/// en vez de una lista plana partida por divisores. Las filas se separan con un
+/// divisor sangrado DENTRO de la tarjeta, no a todo lo ancho de la pantalla.
+class _Seccion extends StatelessWidget {
+  const _Seccion({
+    required this.titulo,
+    required this.children,
+    this.peligro = false,
+  });
+
+  final String titulo;
+  final List<Widget> children;
+  final bool peligro;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-        child: Text(text,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: color ?? Theme.of(context).colorScheme.primary,
-                fontWeight: FontWeight.bold)),
-      );
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final acento = peligro ? scheme.error : scheme.onSurfaceVariant;
+
+    // Divisor sangrado entre filas (no después de la última).
+    final filas = <Widget>[];
+    for (var i = 0; i < children.length; i++) {
+      if (i > 0) filas.add(const Divider(height: 1, indent: 16, endIndent: 16));
+      filas.add(children[i]);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+            child: Text(
+              titulo.toUpperCase(),
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: acento,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.6,
+                  ),
+            ),
+          ),
+          Card(
+            margin: EdgeInsets.zero,
+            clipBehavior: Clip.antiAlias,
+            // La zona de peligro se delinea en rojo tenue para distinguirla sin
+            // gritar; el resto usa el contorno neutro del tema.
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: BorderSide(
+                color: peligro
+                    ? scheme.error.withValues(alpha: 0.4)
+                    : scheme.outlineVariant,
+              ),
+            ),
+            child: Column(children: filas),
+          ),
+        ],
+      ),
+    );
+  }
 }

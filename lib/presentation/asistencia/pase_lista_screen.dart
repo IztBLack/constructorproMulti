@@ -4,13 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
 import '../../core/theme/app_colors.dart';
-import '../../data/orden_personalizado.dart';
 import '../../data/providers.dart';
 import '../common/app_snackbar.dart';
 import '../common/app_spacing.dart';
 import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
-import '../common/orden_modo_toggle.dart';
 import '../cuadrillas/cuadrillas_screen.dart' show especialidadLabel;
 
 /// Pase de lista UNIFICADO: pasa lista de todas las obras activas en un día.
@@ -58,19 +56,6 @@ class _PaseListaScreenState extends ConsumerState<PaseListaScreen> {
             },
           ),
         ],
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(44),
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(12, 0, 12, 8),
-            child: Align(
-              alignment: Alignment.centerRight,
-              // Mismo modo que el orden dentro de cada cuadrilla: al elegir
-              // "Orden" el pase de lista respeta las posiciones fijadas a mano
-              // (grupos y miembros); "Nombre" lo muestra alfabético.
-              child: OrdenModoToggle(listKey: OrdenLista.cuadrillaMiembro),
-            ),
-          ),
-        ),
       ),
       body: obrasAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -119,16 +104,13 @@ class _ObraPaseLista extends ConsumerWidget {
     final cuadrillaPorColab =
         ref.watch(cuadrillaPorColaboradorProvider).asData?.value ??
             const <String, Cuadrilla>{};
-    // Modo de orden sincronizado (mismo que el de miembros de cuadrilla).
-    final modo =
-        ref.watch(ordenModoProvider)[OrdenLista.cuadrillaMiembro] ?? modoNombre;
-    final personalizado = esModoPersonalizado(modo);
-    final invertido = esInvertido(modo);
-    // orden de la membresía por colaborador (solo relevante en personalizado).
-    final ordenMiembro = personalizado
-        ? (ref.watch(ordenMiembroPorColaboradorProvider).asData?.value ??
-            const <String, int>{})
-        : const <String, int>{};
+    // Orden personalizado del pase de lista: SIEMPRE activo (no hay botón de
+    // modo). Cada colaborador se puede arrastrar dentro de su grupo; la posición
+    // se guarda en `cuadrilla_miembro.orden` (o `colaboradores.orden` para los
+    // que no traen cuadrilla) y se sincroniza como el resto de la app.
+    final ordenMiembro =
+        ref.watch(ordenMiembroPorColaboradorProvider).asData?.value ??
+            const <String, int>{};
     final dia = workers
         .where((c) => c.tipoPago == 'DIA')
         .where((c) => ultimaObra[c.id]?.id == obraId)
@@ -143,20 +125,20 @@ class _ObraPaseLista extends ConsumerWidget {
       final cid = cuadrillaPorColab[c.id]?.id;
       (grupos[cid] ??= []).add(c);
     }
-    // Orden de miembros DENTRO de cada grupo: por `orden` de membresía en modo
-    // personalizado (desempata nombre); alfabético en modo nombre.
-    int ordenDe(Colaborador c) => ordenMiembro[c.id] ?? 0;
-    for (final lista in grupos.values) {
-      lista.sort((a, b) {
-        if (personalizado) {
-          final byOrden = ordenDe(a).compareTo(ordenDe(b));
-          if (byOrden != 0) return invertido ? -byOrden : byOrden;
-        }
-        return a.nombre.compareTo(b.nombre);
+    // Orden de miembros DENTRO de cada grupo: por su posición manual. Los que
+    // pertenecen a una cuadrilla usan `cuadrilla_miembro.orden`; los "sin
+    // cuadrilla" usan `colaboradores.orden`. Desempata el nombre.
+    for (final entry in grupos.entries) {
+      final enCuadrilla = entry.key != null;
+      entry.value.sort((a, b) {
+        final oa = enCuadrilla ? (ordenMiembro[a.id] ?? 0) : a.orden;
+        final ob = enCuadrilla ? (ordenMiembro[b.id] ?? 0) : b.orden;
+        final byOrden = oa.compareTo(ob);
+        return byOrden != 0 ? byOrden : a.nombre.compareTo(b.nombre);
       });
     }
-    // Orden de los GRUPOS: cuadrillas primero, "Sin cuadrilla" al final. Entre
-    // cuadrillas: por `orden` de la cuadrilla en personalizado, por nombre si no.
+    // Orden de los GRUPOS: cuadrillas primero (por su `orden`), "Sin cuadrilla"
+    // al final; desempata el nombre.
     Cuadrilla? cuadrillaDe(String? id) =>
         id == null ? null : cuadrillaPorColab.values.firstWhere((q) => q.id == id);
     final claves = grupos.keys.toList()
@@ -165,11 +147,8 @@ class _ObraPaseLista extends ConsumerWidget {
         if (b == null) return -1;
         final qa = cuadrillaDe(a)!;
         final qb = cuadrillaDe(b)!;
-        if (personalizado) {
-          final byOrden = qa.orden.compareTo(qb.orden);
-          if (byOrden != 0) return invertido ? -byOrden : byOrden;
-        }
-        return qa.nombre.compareTo(qb.nombre);
+        final byOrden = qa.orden.compareTo(qb.orden);
+        return byOrden != 0 ? byOrden : qa.nombre.compareTo(qb.nombre);
       });
 
     final children = <Widget>[];
@@ -227,17 +206,46 @@ class _ObraPaseLista extends ConsumerWidget {
           },
         ));
       }
-      for (final c in miembros) {
-        children.add(_PaseListaRow(
-          key: ValueKey('${obraId}_${c.id}_$diaMillis'),
-          obraId: obraId,
-          colaboradorId: c.id,
-          nombre: c.nombre,
-          diaMillis: diaMillis,
-          fraccionInicial: frac[c.id] ?? 0.0,
-          cuadrillaId: cid,
-        ));
-      }
+      // Miembros ARRASTRABLES: mantén presionado un colaborador y suéltalo donde
+      // quieras. Reordena SOLO dentro de su grupo (arrastrar entre cuadrillas
+      // sería cambiar de cuadrilla, que se hace en otra pantalla). El arrastre
+      // solo escribe la columna `orden`; nunca toca la asistencia.
+      children.add(ReorderableListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        // Evita el "handle" de escritorio; en móvil el arrastre es por
+        // mantener presionado, que es justo lo que se pidió.
+        buildDefaultDragHandles: true,
+        itemCount: miembros.length,
+        onReorder: (oldIndex, newIndex) {
+          if (newIndex > oldIndex) newIndex -= 1;
+          final ids = miembros.map((m) => m.id).toList();
+          final movido = ids.removeAt(oldIndex);
+          ids.insert(newIndex, movido);
+          final repo = ref.read(ordenRepositoryProvider);
+          if (cid != null) {
+            repo.reordenar(
+              tabla: 'cuadrilla_miembro',
+              pkCols: const ['cuadrilla_id', 'colaborador_id'],
+              pksEnOrden: ids.map((id) => [cid, id]).toList(),
+            );
+          } else {
+            repo.reordenarPorId('colaboradores', ids);
+          }
+        },
+        itemBuilder: (context, i) {
+          final c = miembros[i];
+          return _PaseListaRow(
+            key: ValueKey('${obraId}_${c.id}_$diaMillis'),
+            obraId: obraId,
+            colaboradorId: c.id,
+            nombre: c.nombre,
+            diaMillis: diaMillis,
+            fraccionInicial: frac[c.id] ?? 0.0,
+            cuadrillaId: cid,
+          );
+        },
+      ));
     }
 
     return ExpansionTile(

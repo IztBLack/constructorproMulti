@@ -18,7 +18,9 @@ import '../common/error_state_view.dart';
 import '../common/orden_modo_toggle.dart';
 import '../cuadrillas/cuadrillas_screen.dart';
 
-enum _Sort { nombreAsc, nombreDesc, puesto, obra }
+/// Criterio de orden propio de esta lista: por puesto. Los otros (nombre,
+/// recientes, modificados, personalizado) los da el botón de orden compartido.
+const _modoPuesto = 'puesto';
 
 class ColaboradoresScreen extends ConsumerStatefulWidget {
   const ColaboradoresScreen({super.key});
@@ -30,7 +32,6 @@ class ColaboradoresScreen extends ConsumerStatefulWidget {
 class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
   static const _uuid = Uuid();
   String _query = '';
-  _Sort _sort = _Sort.nombreAsc;
   bool _mostrarInactivos = true;
 
   /// Obra por la que se está filtrando (null = todas). Filtra en DURO: muestra
@@ -66,16 +67,6 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
               builder: (_) => const CuadrillasScreen(),
             )),
           ),
-          PopupMenuButton<_Sort>(
-            icon: const Icon(Icons.sort),
-            onSelected: (s) => setState(() => _sort = s),
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: _Sort.nombreAsc, child: Text('Nombre (A-Z)')),
-              PopupMenuItem(value: _Sort.nombreDesc, child: Text('Nombre (Z-A)')),
-              PopupMenuItem(value: _Sort.puesto, child: Text('Por puesto')),
-              PopupMenuItem(value: _Sort.obra, child: Text('Por obra asignada')),
-            ],
-          ),
           IconButton(
             tooltip: _mostrarInactivos ? 'Ocultar inactivos' : 'Mostrar inactivos',
             icon: Icon(_mostrarInactivos ? Icons.visibility : Icons.visibility_off),
@@ -109,12 +100,20 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
                   onSeleccionar: (id) => setState(() => _obraId = id),
                 ),
                 const SizedBox(height: 6),
-                // "Orden" (sincronizado) manda sobre el menú local de arriba: al
-                // elegirlo se ignora el sort por nombre/puesto/obra y se puede
-                // arrastrar.
-                const Align(
+                // Un SOLO control de orden (antes había además un menú ⋮ que se
+                // pisaba con este). Incluye "Por puesto" como criterio extra.
+                Align(
                   alignment: Alignment.centerRight,
-                  child: OrdenModoToggle(listKey: OrdenLista.colaboradores),
+                  child: OrdenModoToggle(
+                    listKey: OrdenLista.colaboradores,
+                    extras: const [
+                      OrdenCriterioExtra(
+                        modo: _modoPuesto,
+                        etiqueta: 'Por puesto',
+                        icono: Icons.badge_outlined,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -147,9 +146,17 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
               ? const <Colaborador>[]
               : lista.where((c) => !enObra(c)).toList();
           if (_obraId != null) lista = lista.where(enObra).toList();
-          // El botón de orden manda: solo si está "por nombre" se respeta el
-          // menú local (nombre/puesto/obra); los demás modos ordenan aquí.
-          if (modo != modoNombre) {
+          // Un solo control de orden decide todo. "Por puesto" es propio de esta
+          // lista (necesita el nombre del puesto); el resto de criterios los
+          // resuelve el helper compartido.
+          if (baseDe(modo) == _modoPuesto) {
+            lista.sort((a, b) {
+              final cmp = (puestoNombre[a.puestoId] ?? '')
+                  .compareTo(puestoNombre[b.puestoId] ?? '');
+              return cmp != 0 ? cmp : a.nombre.compareTo(b.nombre);
+            });
+            if (esInvertido(modo)) lista = lista.reversed.toList();
+          } else {
             lista = ordenarPorModo(
               items: lista,
               modo: modo,
@@ -157,30 +164,6 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
               creadoDe: (c) => c.createdAt,
               modificadoDe: (c) => c.updatedAt,
             );
-          }
-          if (modo == modoNombre) {
-          switch (_sort) {
-            case _Sort.nombreAsc:
-              lista.sort((a, b) => a.nombre.compareTo(b.nombre));
-            case _Sort.nombreDesc:
-              lista.sort((a, b) => b.nombre.compareTo(a.nombre));
-            case _Sort.puesto:
-              lista.sort((a, b) => (puestoNombre[a.puestoId] ?? '')
-                  .compareTo(puestoNombre[b.puestoId] ?? ''));
-            case _Sort.obra:
-              String obraKey(Colaborador c) {
-                final obras = obrasPorColab[c.id] ?? const <Obra>[];
-                if (obras.isEmpty) return 'zzz';
-                return obras
-                    .map((o) => o.nombre.toLowerCase())
-                    .reduce((a, b) => a.compareTo(b) <= 0 ? a : b);
-              }
-
-              lista.sort((a, b) {
-                final cmp = obraKey(a).compareTo(obraKey(b));
-                return cmp != 0 ? cmp : a.nombre.compareTo(b.nombre);
-              });
-          }
           }
           if (lista.isEmpty) {
             return ListView(
