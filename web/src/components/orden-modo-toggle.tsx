@@ -139,7 +139,7 @@ export default function OrdenModoToggle({
                 }
                 onClick={() => elegir(b)}
                 className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-neutral-50 ${
-                  esActiva ? 'text-sky-700' : 'text-neutral-700'
+                  esActiva ? 'text-blue-700' : 'text-neutral-700'
                 }`}
               >
                 <IconoBase base={b} />

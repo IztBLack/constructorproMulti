@@ -10,19 +10,70 @@ import '../../data/providers.dart';
 ///
 /// Modos: por nombre · agregados recientes · últimos modificados · orden
 /// personalizado (arriba→abajo) · orden personalizado invertido.
+/// Criterio de orden ESPECÍFICO de una lista (no global), para agregarlo al menú
+/// junto a los cuatro criterios base. Ej.: "Por puesto" solo en Colaboradores.
+/// El sentido invertido (`${modo}_desc`) lo maneja la misma lógica genérica; la
+/// pantalla es la que aplica el orden real de este criterio.
+class OrdenCriterioExtra {
+  const OrdenCriterioExtra({
+    required this.modo,
+    required this.etiqueta,
+    required this.icono,
+    this.direcciones = const ['A → Z', 'Z → A'],
+  });
+
+  final String modo; // p. ej. 'puesto'
+  final String etiqueta; // 'Por puesto'
+  final IconData icono;
+  final List<String> direcciones; // [natural, invertido]
+}
+
 class OrdenModoToggle extends ConsumerWidget {
-  const OrdenModoToggle({super.key, required this.listKey, this.dense = true});
+  const OrdenModoToggle({
+    super.key,
+    required this.listKey,
+    this.dense = true,
+    this.extras = const [],
+  });
 
   /// Clave de la lista (ver [OrdenLista]).
   final String listKey;
   final bool dense;
 
-  IconData _icono(String base) => switch (base) {
-        modoRecientes => Icons.schedule,
-        modoModificados => Icons.edit_calendar_outlined,
-        modoPersonalizado => Icons.drag_indicator,
-        _ => Icons.sort_by_alpha,
-      };
+  /// Criterios extra propios de esta lista (además de los cuatro base).
+  final List<OrdenCriterioExtra> extras;
+
+  IconData _icono(String base) {
+    for (final e in extras) {
+      if (e.modo == base) return e.icono;
+    }
+    return switch (base) {
+      modoRecientes => Icons.schedule,
+      modoModificados => Icons.edit_calendar_outlined,
+      modoPersonalizado => Icons.drag_indicator,
+      _ => Icons.sort_by_alpha,
+    };
+  }
+
+  String _etiquetaBase(String base) {
+    for (final e in extras) {
+      if (e.modo == base) return e.etiqueta;
+    }
+    return etiquetaBase(base);
+  }
+
+  List<String> _direcciones(String base) {
+    for (final e in extras) {
+      if (e.modo == base) return e.direcciones;
+    }
+    return direccionesDe(base);
+  }
+
+  String _etiquetaModo(String modo) {
+    final b = baseDe(modo);
+    final dirs = _direcciones(b);
+    return '${_etiquetaBase(b)} · ${esInvertido(modo) ? dirs[1] : dirs[0]}';
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -33,6 +84,7 @@ class OrdenModoToggle extends ConsumerWidget {
     final activa = baseDe(modo);
     final invertido = esInvertido(modo);
     final scheme = Theme.of(context).colorScheme;
+    final criterios = [...ordenBases, ...extras.map((e) => e.modo)];
 
     return PopupMenuButton<String>(
       tooltip: 'Cambiar el orden de la lista',
@@ -41,12 +93,12 @@ class OrdenModoToggle extends ConsumerWidget {
       onSelected: (base) =>
           notifier.setModo(listKey, alternarModo(modo, base)),
       itemBuilder: (_) => [
-        for (final b in ordenBases)
+        for (final b in criterios)
           PopupMenuItem(
             value: b,
             child: Builder(builder: (_) {
               final esActiva = b == activa;
-              final dirs = direccionesDe(b);
+              final dirs = _direcciones(b);
               // La activa anuncia su sentido actual; las demás, con el que
               // entrarían.
               final detalle =
@@ -64,7 +116,7 @@ class OrdenModoToggle extends ConsumerWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          etiquetaBase(b),
+                          _etiquetaBase(b),
                           style: TextStyle(
                             fontWeight: esActiva
                                 ? FontWeight.bold
@@ -101,7 +153,7 @@ class OrdenModoToggle extends ConsumerWidget {
           children: [
             Icon(_icono(activa), size: 18, color: scheme.primary),
             const SizedBox(width: 6),
-            Text(etiquetaModo(modo),
+            Text(_etiquetaModo(modo),
                 style: TextStyle(
                     fontSize: dense ? 13 : 14,
                     fontWeight: FontWeight.w500,
