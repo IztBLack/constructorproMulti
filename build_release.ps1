@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # ConstructorPro — Script de build release (Android)
 # Ejecutar desde PowerShell en la raíz del proyecto:
 #   .\build_release.ps1
@@ -73,6 +73,34 @@ if (Test-Path "build\app\outputs\flutter-apk\app-release.apk") {
     Write-Host "  ✓ Copia para el portal: $apkPortal" -ForegroundColor Green
 }
 
+# ── Copia al Escritorio ─────────────────────────────────────────────────────
+# Al terminar el build, el APK aparece solo en el Escritorio: es donde se va a
+# buscar para instalarlo en la tableta o mandarlo por WhatsApp, y tener que
+# acordarse de la ruta `build\app\outputs\flutter-apk\` cada vez es fricción
+# innecesaria.
+#
+# La ruta se PREGUNTA al sistema en vez de escribirse a mano: con OneDrive el
+# Escritorio no está en `%USERPROFILE%\Desktop` sino redirigido a
+# `%USERPROFILE%\OneDrive\Escritorio` (y en una máquina en inglés sería
+# `\OneDrive\Desktop`). `GetFolderPath` devuelve la buena en los tres casos.
+#
+# Se copia con el nombre `constructorpro.apk` —el mismo del portal— para que el
+# archivo que quede a la mano sea exactamente el que se publica.
+$escritorio = [Environment]::GetFolderPath('Desktop')
+if ([string]::IsNullOrWhiteSpace($escritorio)) {
+    Write-Host "  ! No se pudo resolver el Escritorio; se omite la copia." -ForegroundColor Yellow
+} elseif (Test-Path $apkPortal) {
+    $destinoEscritorio = Join-Path $escritorio "constructorpro.apk"
+    try {
+        Copy-Item $apkPortal $destinoEscritorio -Force -ErrorAction Stop
+        Write-Host "  * Copia en el Escritorio: $destinoEscritorio" -ForegroundColor Green
+    } catch {
+        # Un fallo aqui NO debe tumbar el build: el APK ya existe en build\.
+        # OneDrive a veces tiene el archivo bloqueado mientras sincroniza.
+        Write-Host "  ! No se pudo copiar al Escritorio: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+}
+
 # Versión declarada en pubspec, para sugerir el tag sin que haya que buscarla.
 $versionLine = (Select-String -Path "pubspec.yaml" -Pattern '^version:\s*(.+)$').Matches.Groups[1].Value
 $versionName = ($versionLine -split '\+')[0].Trim()
@@ -81,6 +109,9 @@ Write-Host "`n=== Build completado ===" -ForegroundColor Cyan
 Write-Host "App Bundle → build\app\outputs\bundle\release\app-release.aab"
 Write-Host "APK        → build\app\outputs\flutter-apk\app-release.apk"
 Write-Host "APK portal → $apkPortal"
+if ($destinoEscritorio -and (Test-Path $destinoEscritorio)) {
+    Write-Host "Escritorio → $destinoEscritorio"
+}
 Write-Host ""
 Write-Host "Publica el release y el portal queda al dia solo (sirve 'latest'):" -ForegroundColor Yellow
 Write-Host "  gh release create v$versionName $apkPortal ``" -ForegroundColor White
