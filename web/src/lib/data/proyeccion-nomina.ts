@@ -138,6 +138,25 @@ export interface ProyeccionEstado {
   /// reasignarla de verdad. Un préstamo NO cambia el total global —la persona
   /// trabaja los mismos días— pero sí mueve el total de cada obra.
   obraPorDia: Record<string, Record<number, string>>;
+
+  /// `colaboradorId → obraId`: obra asignada SOLO dentro del escenario.
+  ///
+  /// Para meter a alguien que todavía no está asignado a ninguna obra en el
+  /// sistema — el peón nuevo, el que se acaba de contratar. Sin esto sus días no
+  /// pertenecerían a ninguna parte y no sumarían a la raya de ninguna obra.
+  /// No escribe nada en `obra_colaborador`: es del escenario y muere con él.
+  obraBase: Record<string, string>;
+}
+
+/// La obra base de cada quien, con lo que el escenario haya asignado encima.
+///
+/// Un solo lugar para resolverlo, porque tanto el cálculo como el filtro y la
+/// lista de participantes tienen que estar de acuerdo en dónde trabaja alguien.
+export function obraBaseEfectiva(
+  estado: ProyeccionEstado,
+  obraPorColaborador: Record<string, string>,
+): Record<string, string> {
+  return { ...obraPorColaborador, ...estado.obraBase };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

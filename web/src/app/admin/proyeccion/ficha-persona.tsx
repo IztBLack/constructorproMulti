@@ -153,7 +153,7 @@ export function FichaPersona(props: Props) {
                 step={100}
                 onChange={(e) => setDestajo(e.target.value)}
                 onBlur={() => props.onDestajo(Math.abs(Number(destajo) || 0))}
-                className="w-44 rounded-lg border border-purple-400 px-3 py-2 text-right tabular-nums text-purple-700"
+                className="w-44 rounded-lg border border-purple-700 px-3 py-2 text-right tabular-nums text-purple-700"
                 aria-label={`Destajo estimado de ${r.colaborador.nombre}`}
               />
               <p className="text-xs text-neutral-500">
@@ -323,7 +323,7 @@ function PrestamosPorDia(props: {
             {cuantos} {cuantos === 1 ? 'día movido' : 'días movidos'}
           </span>
         )}
-        <span aria-hidden="true" className="text-neutral-400">
+        <span aria-hidden="true" className="text-neutral-500">
           {abierto ? '▴' : '▾'}
         </span>
       </button>
@@ -370,7 +370,7 @@ function PrestamosPorDia(props: {
                   ))}
                 </select>
                 {bloqueado && (
-                  <span className="shrink-0 text-xs text-neutral-400">ya capturado</span>
+                  <span className="shrink-0 text-xs text-neutral-500">ya capturado</span>
                 )}
               </div>
             );
@@ -391,7 +391,7 @@ function ChipDia(props: {
   const { celda, nombre, onClick } = props;
   const capturado = celda.origen === 'REAL';
 
-  let clase = 'border border-dashed border-neutral-300 text-neutral-400';
+  let clase = 'border border-dashed border-neutral-400 text-neutral-500';
   let simbolo = '+';
   let descripcion = 'no cuenta, toca para prenderlo';
 
@@ -404,7 +404,7 @@ function ChipDia(props: {
     simbolo = '–';
     descripcion = 'faltó, ya capturado';
   } else if (celda.origen === 'PROYECTADA') {
-    clase = 'border-2 border-dashed border-indigo-500 bg-indigo-50 text-indigo-700';
+    clase = 'border-2 border-dashed border-indigo-500 bg-blue-50 text-blue-800';
     simbolo = '✓';
     descripcion = 'se espera que asista';
   }

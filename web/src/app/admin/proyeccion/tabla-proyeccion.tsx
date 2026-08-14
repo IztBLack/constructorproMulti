@@ -9,6 +9,7 @@ import {
   calcularProyeccion,
   fechaDelDia,
   indiceDiaSemana,
+  obraBaseEfectiva,
   participantesDeObra,
   type AjusteProyeccion,
   type DestinoAjuste,
@@ -17,6 +18,7 @@ import {
 import type { Asistencia, Colaborador, Destajo, Puesto } from '@/lib/data/types';
 import { medianocheMx, partesTz, sumarDiasCalendario } from '@/lib/data/tz';
 import { FichaPersona } from './ficha-persona';
+import { GestorParticipantes } from './gestor-participantes';
 import { ModalAjuste } from './modal-ajuste';
 
 const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -54,6 +56,7 @@ export function TablaProyeccion(props: Props) {
   const [obraFiltro, setObraFiltro] = useState('');
   const [agrupar, setAgrupar] = useState<Agrupar>('cuadrilla');
   const [fichaAbierta, setFichaAbierta] = useState<string | null>(null);
+  const [gestorAbierto, setGestorAbierto] = useState(false);
   const [confirmarSemana, setConfirmarSemana] = useState<number | null>(null);
   const [ajusteAbierto, setAjusteAbierto] = useState<{
     destino: DestinoAjuste;
@@ -85,10 +88,18 @@ export function TablaProyeccion(props: Props) {
       ajustes: [],
       simularCompleta: false,
       obraPorDia: {},
+      obraBase: {},
     };
   }, [colaboradores, obraPorColaborador, destajos, lunesMs]);
 
   const [estado, setEstado] = useState<ProyeccionEstado>(estadoInicial);
+
+  /// Dónde trabaja cada quien, ya con lo que el escenario haya asignado encima
+  /// (para quien no tenía obra en el sistema). Todo lo demás parte de aquí.
+  const obraDe = useMemo(
+    () => obraBaseEfectiva(estado, obraPorColaborador),
+    [estado, obraPorColaborador],
+  );
 
   /// ¿El usuario ya invirtió trabajo aquí? Decide si se le pregunta antes de
   /// tirarlo. Comparar el estado completo es suficiente y no necesita banderas
@@ -99,8 +110,8 @@ export function TablaProyeccion(props: Props) {
   );
 
   const participantesVisibles = useMemo(
-    () => participantesDeObra(estado, obraPorColaborador, obraFiltro || null),
-    [estado, obraFiltro, obraPorColaborador],
+    () => participantesDeObra(estado, obraDe, obraFiltro || null),
+    [estado, obraFiltro, obraDe],
   );
 
   const resultado = useMemo(
@@ -112,7 +123,7 @@ export function TablaProyeccion(props: Props) {
         asistenciasReales: asistencias,
         destajosReales: destajos,
         cuadrillaPorColaborador,
-        obraPorColaborador,
+        obraPorColaborador: obraDe,
         obraFiltro: obraFiltro || null,
       }),
     [
@@ -123,7 +134,7 @@ export function TablaProyeccion(props: Props) {
       asistencias,
       destajos,
       cuadrillaPorColaborador,
-      obraPorColaborador,
+      obraDe,
       obraFiltro,
     ],
   );
@@ -151,16 +162,6 @@ export function TablaProyeccion(props: Props) {
     }
     return mapa;
   }, [asistencias, lunesMs, estado.simularCompleta]);
-
-  const candidatos = useMemo(
-    () =>
-      colaboradores.filter(
-        (c) =>
-          !estado.participantes.includes(c.id) &&
-          (!obraFiltro || obraPorColaborador[c.id] === obraFiltro),
-      ),
-    [colaboradores, estado.participantes, obraFiltro, obraPorColaborador],
-  );
 
   // ── Mutaciones ───────────────────────────────────────────────────────────
   function alternarDia(colaboradorId: string, dia: number) {
@@ -233,16 +234,24 @@ export function TablaProyeccion(props: Props) {
     }));
   }
 
-  function agregar(c: Colaborador) {
+  /// Mete a alguien al escenario. `obraAsignada` solo se usa para quien no
+  /// tiene obra en el sistema: sin ella sus días no pertenecerían a ninguna y no
+  /// sumarían a la raya de nadie.
+  function agregar(colaboradorId: string, obraAsignada: string | null) {
+    const c = colaboradores.find((x) => x.id === colaboradorId);
+    if (!c) return;
     const hoy = hoyIndice ?? 0;
     const hasta = Math.min(Math.max(c.dias_semana ?? 6, 1), 7);
     setEstado((e) => ({
       ...e,
       participantes: [...e.participantes, c.id],
+      // Quien entra a media semana arranca proyectado de hoy en adelante: no
+      // tiene sentido proponerle días que ya pasaron sin que estuviera.
       diasProyectados: {
         ...e.diasProyectados,
         [c.id]: Array.from({ length: Math.max(hasta - hoy, 0) }, (_, i) => hoy + i),
       },
+      obraBase: obraAsignada ? { ...e.obraBase, [c.id]: obraAsignada } : e.obraBase,
     }));
   }
 
@@ -348,7 +357,7 @@ export function TablaProyeccion(props: Props) {
     const mapa = new Map<string, typeof resultado.renglones>();
     for (const r of resultado.renglones) {
       const clave =
-        agrupar === 'obra' ? obraPorColaborador[r.colaborador.id] ?? '' : r.cuadrillaId ?? '';
+        agrupar === 'obra' ? obraDe[r.colaborador.id] ?? '' : r.cuadrillaId ?? '';
       if (!mapa.has(clave)) {
         mapa.set(clave, []);
         orden.push(clave);
@@ -363,7 +372,7 @@ export function TablaProyeccion(props: Props) {
           : nombreCuadrilla[clave] ?? 'Sin cuadrilla',
       items: mapa.get(clave)!,
     }));
-  }, [agrupar, resultado, obraPorColaborador, nombreObra, nombreCuadrilla]);
+  }, [agrupar, resultado, obraDe, nombreObra, nombreCuadrilla]);
 
   const rangoTexto = useMemo(() => {
     const l = partesTz(lunesMs);
@@ -413,6 +422,10 @@ export function TablaProyeccion(props: Props) {
           <option value="ninguno">Sin agrupar</option>
         </select>
 
+        <Button variant="secondary" size="sm" onClick={() => setGestorAbierto(true)}>
+          Participantes · {estado.participantes.length}
+        </Button>
+
         <span className="ml-auto flex flex-wrap gap-2">
           <Button variant="secondary" size="sm" onClick={() => rellenar('lunesASabado')}>
             Completa L–S
@@ -461,14 +474,14 @@ export function TablaProyeccion(props: Props) {
                       }
                       className={`w-full rounded-lg border px-1 py-1 text-xs font-semibold ${
                         llena
-                          ? 'border-indigo-600 bg-indigo-600 text-white'
-                          : 'border-neutral-200 bg-white text-neutral-700 hover:border-indigo-400 hover:text-indigo-700'
-                      } ${i === hoyIndice ? 'ring-1 ring-indigo-300' : ''}`}
+                          ? 'border-blue-700 bg-blue-700 text-white'
+                          : 'border-neutral-200 bg-white text-neutral-700 hover:border-indigo-500 hover:text-blue-800'
+                      } ${i === hoyIndice ? 'ring-1 ring-indigo-500' : ''}`}
                     >
                       {d}
                       <span
                         className={`block text-[10px] font-normal ${
-                          llena ? 'text-indigo-100' : 'text-neutral-400'
+                          llena ? 'text-blue-100' : 'text-neutral-500'
                         }`}
                       >
                         {partesTz(fechaDelDia(lunesMs, i)).day}
@@ -519,7 +532,7 @@ export function TablaProyeccion(props: Props) {
                       }
                       className="text-left"
                     >
-                      <span className="block text-sm font-medium text-purple-700 underline decoration-purple-200 underline-offset-2">
+                      <span className="block text-sm font-medium text-purple-700 underline decoration-purple-700/40 underline-offset-2">
                         {ETIQUETA_AJUSTE[l.ajuste.tipo]} ·{' '}
                         {nombreCuadrilla[l.cuadrillaId] ?? 'Cuadrilla'}
                       </span>
@@ -567,34 +580,17 @@ export function TablaProyeccion(props: Props) {
         </table>
       </div>
 
-      {candidatos.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-            Agregar a la proyección
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {candidatos.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => agregar(c)}
-                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-dashed border-neutral-300 px-4 text-sm text-neutral-700 hover:border-blue-500 hover:text-blue-700"
-              >
-                + {c.nombre}
-                <span className="text-xs text-neutral-400">
-                  {c.tipo_pago === 'DESTAJO' ? 'destajo' : `${c.dias_semana ?? 6} días`}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      <p className="text-xs text-neutral-500">
+        La proyección trae a todos los colaboradores asignados a una obra activa.
+        Con <strong>Participantes</strong> puedes sacar o meter gente solo para esta
+        cuenta — incluidos los que todavía no están asignados a ninguna obra.
+      </p>
 
       {/* ── Capas ────────────────────────────────────────────────────────── */}
       {renglonAbierto && (
         <FichaPersona
           renglon={renglonAbierto}
-          obraNombre={nombreObra[obraPorColaborador[renglonAbierto.colaborador.id] ?? ''] ?? ''}
+          obraNombre={nombreObra[obraDe[renglonAbierto.colaborador.id] ?? ''] ?? ''}
           cuadrillaNombre={
             renglonAbierto.cuadrillaId ? nombreCuadrilla[renglonAbierto.cuadrillaId] ?? null : null
           }
@@ -605,7 +601,7 @@ export function TablaProyeccion(props: Props) {
             estado.salarioOverride[renglonAbierto.colaborador.id] !== undefined
           }
           simularCompleta={estado.simularCompleta}
-          obraBaseId={obraPorColaborador[renglonAbierto.colaborador.id] ?? ''}
+          obraBaseId={obraDe[renglonAbierto.colaborador.id] ?? ''}
           obras={Object.entries(nombreObra).map(([id, nombre]) => ({ id, nombre }))}
           prestamos={estado.obraPorDia[renglonAbierto.colaborador.id] ?? {}}
           onMoverDia={(d, obra) => moverDia(renglonAbierto.colaborador.id, d, obra)}
@@ -633,6 +629,19 @@ export function TablaProyeccion(props: Props) {
             setFichaAbierta(null);
           }}
           onCerrar={() => setFichaAbierta(null)}
+        />
+      )}
+
+      {gestorAbierto && (
+        <GestorParticipantes
+          colaboradores={colaboradores}
+          participantes={estado.participantes}
+          obraDe={obraDe}
+          obras={Object.entries(nombreObra).map(([id, nombre]) => ({ id, nombre }))}
+          obraSugerida={obraFiltro || null}
+          onAgregar={agregar}
+          onQuitar={quitar}
+          onCerrar={() => setGestorAbierto(false)}
         />
       )}
 
@@ -761,7 +770,7 @@ function TarjetaEscenario(props: {
         {r.personas === 1 ? 'persona' : 'personas'}
         {/* El hueco se reserva SIEMPRE para que meter el primer ajuste no
             reacomode la tarjeta justo cuando se quiere leer su efecto. */}
-        <span className={r.totalAjustes === 0 ? 'text-neutral-400' : 'font-medium text-neutral-700'}>
+        <span className={r.totalAjustes === 0 ? 'text-neutral-500' : 'font-medium text-neutral-700'}>
           {' · '}
           {formatCurrency(r.totalAjustes)} de ajustes
         </span>
@@ -777,8 +786,8 @@ function TarjetaEscenario(props: {
         >
           <Muestra clase="bg-green-100 text-green-800 border border-green-200" simbolo="✓" texto="capturado" />
           <Muestra clase="bg-red-100 text-red-800 border border-red-200" simbolo="–" texto="faltó" />
-          <Muestra clase="border-2 border-dashed border-indigo-500 text-indigo-700" simbolo="✓" texto="estimado" />
-          <Muestra clase="border border-dashed border-neutral-300 text-neutral-400" simbolo="+" texto="no cuenta" />
+          <Muestra clase="border-2 border-dashed border-indigo-500 text-blue-800" simbolo="✓" texto="estimado" />
+          <Muestra clase="border border-dashed border-neutral-400 text-neutral-500" simbolo="+" texto="no cuenta" />
           <span className="ml-auto underline">{leyendaAbierta ? 'Ocultar' : '¿Qué significan?'}</span>
         </button>
 
@@ -886,7 +895,7 @@ function GrupoFilas(props: {
                   )}
                 </span>
               </span>
-              <span aria-hidden="true" className="shrink-0 text-neutral-400">
+              <span aria-hidden="true" className="shrink-0 text-neutral-500">
                 ›
               </span>
             </button>
@@ -960,7 +969,7 @@ function CeldaDiaBoton(props: {
     );
   }
 
-  let clase = 'border border-dashed border-neutral-300 text-neutral-300 hover:border-indigo-500 hover:text-indigo-500';
+  let clase = 'border border-dashed border-neutral-400 text-neutral-500 hover:border-indigo-500 hover:text-blue-700';
   let simbolo = '+';
   let descripcion = 'no cuenta, toca para prenderlo';
 
@@ -973,7 +982,7 @@ function CeldaDiaBoton(props: {
     simbolo = '–';
     descripcion = 'faltó, ya capturado';
   } else if (celda.origen === 'PROYECTADA') {
-    clase = 'border-2 border-dashed border-indigo-500 bg-indigo-50 text-indigo-700 hover:bg-indigo-100';
+    clase = 'border-2 border-dashed border-indigo-500 bg-blue-50 text-blue-800 hover:bg-blue-100';
     simbolo = '✓';
     descripcion = 'se espera que asista';
   }
