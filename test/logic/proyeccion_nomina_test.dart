@@ -37,6 +37,7 @@ void main() {
     Map<String, double> salarios = const {},
     List<AjusteProyeccion> ajustes = const [],
     bool simular = false,
+    Map<String, Map<int, String>> obraPorDia = const {},
   }) =>
       ProyeccionEstado(
         lunesMillis: lunes,
@@ -46,6 +47,7 @@ void main() {
         salarioOverride: salarios,
         ajustes: ajustes,
         simularCompleta: simular,
+        obraPorDia: obraPorDia,
       );
 
   // ═════════════════════════════════════════════════════════════════════════
@@ -495,6 +497,131 @@ void main() {
 
       expect(estado.participantes, ['c2']);
       expect(estado.ajustes, isEmpty);
+    });
+  });
+
+  // ═════════════════════════════════════════════════════════════════════════
+  group('Préstamos de un día a otra obra', () {
+    // Dos obras: c1 (700/día) vive en o1 y c2 (500/día) en o2. Los dos trabajan
+    // de lunes a sábado, así que sin préstamos o1 vale 4,200, o2 vale 3,000 y el
+    // global 7,200. El jueves (día 3) c1 se va prestado a o2.
+    const obras = {'c1': 'o1', 'c2': 'o2'};
+    const semanaCompleta = {
+      'c1': {0, 1, 2, 3, 4, 5},
+      'c2': {0, 1, 2, 3, 4, 5},
+    };
+
+    ProyeccionResultado conFiltro(String? obra, {bool prestando = true}) =>
+        calc.calcular(
+          estado: escenario(
+            participantes: const ['c1', 'c2'],
+            dias: semanaCompleta,
+            obraPorDia: prestando ? const {'c1': {3: 'o2'}} : const {},
+          ),
+          colaboradores: colaboradores,
+          puestos: puestos,
+          obraPorColaborador: obras,
+          obraFiltro: obra,
+        );
+
+    test('el día prestado suma en la obra DESTINO', () {
+      final r = conFiltro('o2');
+
+      expect(r.total, 3700.0, reason: '3,000 de c2 + los 700 del jueves de c1');
+      // El jueves de la obra destino sube con quien llegó ese día.
+      expect(r.totalPorDia[3], 1200.0); // 500 de c2 + 700 de c1
+      expect(r.personasPorDia[3], 2);
+      // Los demás días de c1 se ven —para saber a dónde se fue— pero no suman.
+      expect(r.totalPorDia[0], 500.0);
+      expect(r.personasPorDia[0], 1);
+    });
+
+    test('el día prestado NO suma en la obra base', () {
+      final r = conFiltro('o1');
+
+      expect(r.total, 3500.0, reason: '4,200 menos el jueves que se fue');
+      expect(r.totalPorDia[3], 0.0);
+      expect(r.personasPorDia[3], 0);
+
+      final c1 = r.renglones.firstWhere((x) => x.colaborador.id == 'c1');
+      expect(c1.diasProyectados, 5, reason: 'el jueves ya no es de esta obra');
+      expect(c1.celdas[3].prestado, isTrue);
+      expect(c1.celdas[3].obraId, 'o2');
+      expect(c1.celdas[2].prestado, isFalse);
+      expect(c1.celdas[2].obraId, 'o1');
+    });
+
+    test('un préstamo NO mueve el total global', () {
+      final sinPrestar = conFiltro(null, prestando: false);
+      final prestando = conFiltro(null);
+
+      expect(sinPrestar.total, 7200.0);
+      expect(prestando.total, 7200.0,
+          reason: 'la persona trabaja los mismos días, solo que en otro lado');
+      // Y las dos mitades cuadran con el global.
+      expect(conFiltro('o1').total + conFiltro('o2').total, 7200.0);
+      // Sin filtro no hay nada «prestado»: el global las cuenta todas.
+      expect(
+        prestando.renglones.expand((x) => x.celdas).every((x) => !x.prestado),
+        isTrue,
+      );
+    });
+
+    test('mover un día lo marca como asistido, y devolverlo limpia el préstamo',
+        () {
+      // Sin días palomeados: el préstamo tiene que prender el jueves solo, o
+      // decir «se va a Alfaro» no cambiaría ninguna cifra.
+      var e = escenario(participantes: const ['c1', 'c2'])
+          .conDiaEnObra('c1', 3, 'o2');
+      expect(e.tieneDia('c1', 3), isTrue);
+      expect(e.prestamosDe('c1')[3], 'o2');
+
+      final r = calc.calcular(
+        estado: e,
+        colaboradores: colaboradores,
+        puestos: puestos,
+        obraPorColaborador: obras,
+        obraFiltro: 'o2',
+      );
+      expect(r.total, 700.0);
+
+      // Al devolverlo no queda un mapa vacío colgando: eso haría que la persona
+      // siguiera apareciendo al filtrar la obra a la que ya no va.
+      e = e.conDiaEnObra('c1', 3, null);
+      expect(e.obraPorDia.containsKey('c1'), isFalse);
+      expect(e.tieneDia('c1', 3), isTrue,
+          reason: 'devolver el día no lo apaga; eso es otra decisión');
+    });
+
+    test('al filtrar una obra aparece quien llegó prestado, no solo los de casa',
+        () {
+      final e = escenario(
+        participantes: const ['c1', 'c2'],
+        obraPorDia: const {'c1': {3: 'o2'}},
+      );
+
+      expect(participantesDeObra(e, obras, 'o2'), ['c1', 'c2']);
+      expect(participantesDeObra(e, obras, 'o1'), ['c1']);
+      expect(participantesDeObra(e, obras, null), ['c1', 'c2'],
+          reason: 'sin filtro no se saca a nadie');
+    });
+
+    test('un destajista no se presta: su alzado es entero de su obra base', () {
+      final r = calc.calcular(
+        estado: escenario(
+          participantes: const ['c3'],
+          destajo: const {'c3': 9000},
+          // Aunque alguien le mueva días, un destajo no se parte por jornadas.
+          obraPorDia: const {'c3': {3: 'o2'}},
+        ),
+        colaboradores: colaboradores,
+        puestos: puestos,
+        obraPorColaborador: const {'c3': 'o1'},
+        obraFiltro: 'o2',
+      );
+
+      expect(r.total, 0.0, reason: 'su monto pertenece entero a o1');
+      expect(r.renglones.single.destajo, 0.0);
     });
   });
 

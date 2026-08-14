@@ -35,8 +35,14 @@ class ProyeccionCalculator {
   ///
   /// [cuadrillaPorColaborador] y [obraPorColaborador] son mapas
   /// `colaboradorId → id`. El primero reparte los ajustes dirigidos a una
-  /// cuadrilla; el segundo solo sella las asistencias sintéticas (el cálculo de
-  /// nómina ignora la obra, pero «Aplicar al pase de lista» la necesita).
+  /// cuadrilla; el segundo dice cuál es la obra BASE de cada persona: sella las
+  /// asistencias sintéticas (el cálculo de nómina ignora la obra, pero «Aplicar
+  /// al pase de lista» la necesita) y es el punto de partida de los préstamos.
+  ///
+  /// Si viene [obraFiltro], el resultado es la raya de ESA obra: solo cuentan
+  /// los días que le pertenecen, incluidos los que llegaron prestados desde
+  /// otra. Sin filtro el resultado es el global, y ahí un préstamo no lo mueve:
+  /// la persona trabaja los mismos días, nada más que en otro lado.
   ProyeccionResultado calcular({
     required ProyeccionEstado estado,
     required List<Colaborador> colaboradores,
@@ -45,7 +51,16 @@ class ProyeccionCalculator {
     List<Destajo> destajosReales = const [],
     Map<String, String> cuadrillaPorColaborador = const {},
     Map<String, String> obraPorColaborador = const {},
+    String? obraFiltro,
   }) {
+    /// A qué obra pertenece un día concreto de una persona.
+    String obraDelDia(String colaboradorId, int dia) => estado.obraDelDia(
+        colaboradorId, dia, obraPorColaborador[colaboradorId] ?? '');
+
+    /// ¿Ese día suma a la obra que se está viendo? Sin filtro, todo suma.
+    bool cuentaEnLaObra(String colaboradorId, int dia) =>
+        obraFiltro == null || obraDelDia(colaboradorId, dia) == obraFiltro;
+
     final porId = {for (final c in colaboradores) c.id: c};
     final puestoPorId = {for (final p in puestos) p.id: p};
 
@@ -95,19 +110,24 @@ class ProyeccionCalculator {
     final destajosSinteticos = <Destajo>[];
 
     for (final c in activos) {
-      final obraId = obraPorColaborador[c.id] ?? '';
+      final obraBase = obraPorColaborador[c.id] ?? '';
       final reales = realPorDia[c.id] ?? const <int, double>{};
 
       if (c.tipoPago == TipoPago.dia) {
+        // Cuando se ve UNA obra, solo entran al cálculo los días que le
+        // pertenecen: es lo que hace que el total sea «la raya de Alfaro» y no
+        // la de todos.
+        //
         // Lo capturado entra tal cual (con su fracción de ½ o ¾ si la trae),
         // salvo que el usuario haya pedido tratar la semana entera como
         // hipótesis limpia.
         if (!estado.simularCompleta) {
           reales.forEach((d, frac) {
             if (frac <= 0) return; // falta capturada: no paga, pero sí bloquea
+            if (!cuentaEnLaObra(c.id, d)) return;
             asistenciasSinteticas.add(Asistencia(
               colaboradorId: c.id,
-              obraId: obraId,
+              obraId: obraDelDia(c.id, d),
               fecha: fechaDelDia(estado.lunesMillis, d),
               fraccion: frac,
             ));
@@ -117,9 +137,10 @@ class ProyeccionCalculator {
         // palomita no puede pisar un día que ya se pasó a lista.
         for (final d in estado.diasDe(c.id)) {
           if (!estado.simularCompleta && reales.containsKey(d)) continue;
+          if (!cuentaEnLaObra(c.id, d)) continue;
           asistenciasSinteticas.add(Asistencia(
             colaboradorId: c.id,
-            obraId: obraId,
+            obraId: obraDelDia(c.id, d),
             fecha: fechaDelDia(estado.lunesMillis, d),
             fraccion: 1.0,
           ));
@@ -130,13 +151,17 @@ class ProyeccionCalculator {
         // usuario estima menos de lo ya registrado, el renglón lo expone en
         // [ProyeccionRenglon.destajoCapturado] para que la UI lo advierta en
         // vez de que el cálculo lo corrija a escondidas.
+        //
+        // Tampoco se presta por días: un alzado de la semana no es una jornada
+        // que se pueda partir, así que pertenece entero a su obra base.
+        if (obraFiltro != null && obraBase != obraFiltro) continue;
         final monto = estado.destajoEstimado[c.id] ??
             destajoRealPorColab[c.id] ??
             0.0;
         if (monto != 0) {
           destajosSinteticos.add(Destajo(
             colaboradorId: c.id,
-            obraId: obraId,
+            obraId: obraBase,
             fecha: estado.lunesMillis,
             monto: monto,
           ));
@@ -164,6 +189,7 @@ class ProyeccionCalculator {
     final renglones = <ProyeccionRenglon>[];
     for (final c in activos) {
       final item = itemPorId[c.id];
+      final obraBase = obraPorColaborador[c.id] ?? '';
       final reales = realPorDia[c.id] ?? const <int, double>{};
       final proyectados = estado.diasDe(c.id);
       final puesto = puestoPorId[c.puestoId];
@@ -182,21 +208,37 @@ class ProyeccionCalculator {
       // las asistencias). Si el escenario trae días palomeados de cuando esa
       // persona cobraba por día, se ignoran en vez de inflar los días-hombre.
       for (var d = 0; esDia && d < 7; d++) {
+        // Un día prestado se PINTA con su estado real —para que se vea a dónde
+        // se fue la persona— pero no engorda los contadores de esta obra.
+        final prestado = !cuentaEnLaObra(c.id, d);
+        final obraDia = obraDelDia(c.id, d);
         final real = reales[d];
         final tieneReal = real != null && !estado.simularCompleta;
         if (tieneReal) {
-          fraccionReal += real;
+          if (!prestado) fraccionReal += real;
           celdas.add(CeldaDia(
-              indice: d, origen: OrigenCelda.real, fraccion: real));
+              indice: d,
+              origen: OrigenCelda.real,
+              fraccion: real,
+              obraId: obraDia,
+              prestado: prestado));
         } else if (proyectados.contains(d)) {
-          diasProyectados++;
+          if (!prestado) diasProyectados++;
           celdas.add(CeldaDia(
-              indice: d, origen: OrigenCelda.proyectada, fraccion: 1.0));
+              indice: d,
+              origen: OrigenCelda.proyectada,
+              fraccion: 1.0,
+              obraId: obraDia,
+              prestado: prestado));
         } else {
           // Incluye el caso de `simularCompleta` con un día capturado que el
           // usuario dejó apagado en la hipótesis: no cuenta y no se bloquea.
-          celdas.add(
-              CeldaDia(indice: d, origen: OrigenCelda.vacia, fraccion: 0));
+          celdas.add(CeldaDia(
+              indice: d,
+              origen: OrigenCelda.vacia,
+              fraccion: 0,
+              obraId: obraDia,
+              prestado: prestado));
         }
       }
 
@@ -205,7 +247,11 @@ class ProyeccionCalculator {
       // que la UI no tenga que preguntar por el largo de la lista.
       if (!esDia) {
         for (var d = 0; d < 7; d++) {
-          celdas.add(CeldaDia(indice: d, origen: OrigenCelda.vacia, fraccion: 0));
+          celdas.add(CeldaDia(
+              indice: d,
+              origen: OrigenCelda.vacia,
+              fraccion: 0,
+              obraId: obraBase));
         }
       }
 
@@ -239,6 +285,10 @@ class ProyeccionCalculator {
       if (r.colaborador.tipoPago != TipoPago.dia) continue;
       for (final celda in r.celdas) {
         if (celda.fraccion <= 0) continue;
+        // El día prestado cuenta en la obra a la que se fue, no en esta. Es
+        // justo la cifra que se quiere leer: «el jueves, en Alfaro, ¿cuánto
+        // sale?».
+        if (celda.prestado) continue;
         totalPorDia[celda.indice] += celda.fraccion * r.salarioDia;
         personasPorDia[celda.indice]++;
       }

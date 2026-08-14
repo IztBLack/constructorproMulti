@@ -157,6 +157,17 @@ class ProyeccionEstado {
   /// todos los días. Para preguntarse «¿y si la semana hubiera sido así?».
   final bool simularCompleta;
 
+  /// `colaboradorId → {índice de día → obraId}`: préstamos de un día a otra
+  /// obra. Solo se guardan los días que se MUEVEN; el resto se queda en la obra
+  /// base de la persona.
+  ///
+  /// Existe porque en la obra real la gente se presta por días: «el jueves me
+  /// llevo a Fulanito a Alfaro». Sin esto, la obra es un atributo de la PERSONA
+  /// y no se puede preguntar «¿cuánto sale la raya de Alfaro ese día?» sin
+  /// reasignarla de verdad. Un préstamo NO cambia el total global —la persona
+  /// trabaja los mismos días— pero sí mueve el total de cada obra.
+  final Map<String, Map<int, String>> obraPorDia;
+
   const ProyeccionEstado({
     required this.lunesMillis,
     this.participantes = const [],
@@ -165,12 +176,21 @@ class ProyeccionEstado {
     this.salarioOverride = const {},
     this.ajustes = const [],
     this.simularCompleta = false,
+    this.obraPorDia = const {},
   });
 
   Set<int> diasDe(String colaboradorId) =>
       diasProyectados[colaboradorId] ?? const <int>{};
 
   bool tieneDia(String colaboradorId, int dia) => diasDe(colaboradorId).contains(dia);
+
+  /// Días que esta persona tiene prestados a otra obra: `día → obraId`.
+  Map<int, String> prestamosDe(String colaboradorId) =>
+      obraPorDia[colaboradorId] ?? const <int, String>{};
+
+  /// A qué obra pertenece ESE día: la del préstamo si lo hay, si no la base.
+  String obraDelDia(String colaboradorId, int dia, String obraBase) =>
+      prestamosDe(colaboradorId)[dia] ?? obraBase;
 
   /// Ajustes que apuntan a un colaborador concreto.
   List<AjusteProyeccion> ajustesDeColaborador(String colaboradorId) => ajustes
@@ -192,6 +212,7 @@ class ProyeccionEstado {
     Map<String, double>? salarioOverride,
     List<AjusteProyeccion>? ajustes,
     bool? simularCompleta,
+    Map<String, Map<int, String>>? obraPorDia,
   }) =>
       ProyeccionEstado(
         lunesMillis: lunesMillis ?? this.lunesMillis,
@@ -201,6 +222,7 @@ class ProyeccionEstado {
         salarioOverride: salarioOverride ?? this.salarioOverride,
         ajustes: ajustes ?? this.ajustes,
         simularCompleta: simularCompleta ?? this.simularCompleta,
+        obraPorDia: obraPorDia ?? this.obraPorDia,
       );
 
   // ── Mutaciones (devuelven copias) ────────────────────────────────────────
@@ -233,6 +255,7 @@ class ProyeccionEstado {
             .where((a) => !(a.destino == DestinoAjuste.colaborador &&
                 a.destinoId == colaboradorId))
             .toList(),
+        obraPorDia: {...obraPorDia}..remove(colaboradorId),
       );
 
   /// Prende o apaga un día de una persona.
@@ -263,6 +286,33 @@ class ProyeccionEstado {
     return copyWith(diasProyectados: mapa);
   }
 
+  /// Presta (o devuelve) UN día de una persona a otra obra.
+  /// [obraId] en `null` regresa ese día a su obra base.
+  ///
+  /// Mover un día lo marca además como proyectado: si el usuario dice «el
+  /// jueves se va a Alfaro» es porque va a trabajar allá, y obligarlo a prender
+  /// la celda aparte sería un segundo paso cuyo motivo nadie adivina. Es una
+  /// regla del dominio y no de la pantalla, por eso vive aquí: así el mismo
+  /// invariante lo cumplen la UI, el PDF y los tests.
+  ProyeccionEstado conDiaEnObra(String colaboradorId, int dia, String? obraId) {
+    final suyos = {...prestamosDe(colaboradorId)};
+    obraId == null ? suyos.remove(dia) : suyos[dia] = obraId;
+
+    final mapa = {...obraPorDia};
+    // Sin días movidos no se deja la llave vacía: un mapa `{c1: {}}` haría que
+    // el escenario se viera «tocado» y que la persona apareciera al filtrar una
+    // obra a la que en realidad ya no va.
+    suyos.isEmpty ? mapa.remove(colaboradorId) : mapa[colaboradorId] = suyos;
+
+    final dias = {...diasDe(colaboradorId)};
+    if (obraId != null) dias.add(dia);
+
+    return copyWith(
+      obraPorDia: mapa,
+      diasProyectados: {...diasProyectados, colaboradorId: dias},
+    );
+  }
+
   ProyeccionEstado conSalario(String colaboradorId, double? salario) {
     final mapa = {...salarioOverride};
     salario == null ? mapa.remove(colaboradorId) : mapa[colaboradorId] = salario;
@@ -283,6 +333,84 @@ class ProyeccionEstado {
 
   ProyeccionEstado sinAjuste(String ajusteId) =>
       copyWith(ajustes: ajustes.where((a) => a.id != ajusteId).toList());
+
+  /// ¿Este escenario es igual a [otro] en todo lo que el usuario puede mover?
+  ///
+  /// Se usa para saber si hay trabajo invertido antes de tirarlo (cambiar de
+  /// semana). Se compara el escenario COMPLETO contra el sembrado inicial en
+  /// vez de llevar una bandera «tocado»: una bandera hay que acordarse de
+  /// ponerla en cada mutación nueva, y la que se olvide hará que la pantalla
+  /// borre trabajo sin preguntar.
+  ///
+  /// No se implementa `==` porque un `ProyeccionEstado` con `==` de valor haría
+  /// que Riverpod se saltara notificaciones cuando dos escenarios distintos
+  /// coincidieran por casualidad, y aquí conviene que cada toque redibuje.
+  bool mismoEscenarioQue(ProyeccionEstado otro) {
+    if (lunesMillis != otro.lunesMillis ||
+        simularCompleta != otro.simularCompleta ||
+        ajustes.length != otro.ajustes.length ||
+        participantes.length != otro.participantes.length) {
+      return false;
+    }
+    for (var i = 0; i < participantes.length; i++) {
+      if (participantes[i] != otro.participantes[i]) return false;
+    }
+    for (var i = 0; i < ajustes.length; i++) {
+      final a = ajustes[i];
+      final b = otro.ajustes[i];
+      if (a.id != b.id ||
+          a.tipo != b.tipo ||
+          a.destino != b.destino ||
+          a.destinoId != b.destinoId ||
+          a.monto != b.monto ||
+          a.nota != b.nota ||
+          a.reparto != b.reparto) {
+        return false;
+      }
+    }
+    if (!_mismoMapa(destajoEstimado, otro.destajoEstimado)) return false;
+    if (!_mismoMapa(salarioOverride, otro.salarioOverride)) return false;
+
+    // Los días: un `{}` y una llave ausente significan lo mismo, así que se
+    // comparan por la unión de llaves en vez de por el tamaño de los mapas.
+    for (final id in {...diasProyectados.keys, ...otro.diasProyectados.keys}) {
+      final a = diasDe(id);
+      final b = otro.diasDe(id);
+      if (a.length != b.length || !a.containsAll(b)) return false;
+    }
+    for (final id in {...obraPorDia.keys, ...otro.obraPorDia.keys}) {
+      if (!_mismoMapa(prestamosDe(id), otro.prestamosDe(id))) return false;
+    }
+    return true;
+  }
+
+  static bool _mismoMapa<K, V>(Map<K, V> a, Map<K, V> b) {
+    if (a.length != b.length) return false;
+    for (final e in a.entries) {
+      if (!b.containsKey(e.key) || b[e.key] != e.value) return false;
+    }
+    return true;
+  }
+}
+
+/// Quién aparece cuando se está viendo UNA obra.
+///
+/// No basta con «los que tienen esa obra base»: si a alguien de Boticaria se le
+/// prestó el jueves a Alfaro, tiene que salir en Alfaro —con ese día contando y
+/// el resto marcado como prestado—, o la raya de Alfaro no incluiría a quien de
+/// verdad va a trabajar ahí. Y al revés: quien se fue TODA la semana sigue
+/// saliendo en su obra base, con todos sus días marcados, para que se vea a
+/// dónde se fue en vez de desaparecer sin explicación.
+List<String> participantesDeObra(
+  ProyeccionEstado estado,
+  Map<String, String> obraPorColaborador,
+  String? obraFiltro,
+) {
+  if (obraFiltro == null) return estado.participantes;
+  return estado.participantes.where((id) {
+    if (obraPorColaborador[id] == obraFiltro) return true;
+    return estado.prestamosDe(id).values.contains(obraFiltro);
+  }).toList();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -309,10 +437,21 @@ class CeldaDia {
   /// Real: 0 (faltó), 0.5, 0.75 o 1. Proyectada: siempre 1. Vacía: 0.
   final double fraccion;
 
+  /// Obra a la que pertenece ESTE día: la base de la persona, o la del préstamo
+  /// si ese día se movió.
+  final String obraId;
+
+  /// Cuando se está viendo UNA obra: este día es de otra. Se muestra —para que
+  /// se entienda por qué la persona aparece con menos días— pero NO suma a la
+  /// raya de la obra que se está viendo.
+  final bool prestado;
+
   const CeldaDia({
     required this.indice,
     required this.origen,
     required this.fraccion,
+    this.obraId = '',
+    this.prestado = false,
   });
 
   /// Capturada como falta: existe el registro pero no paga. Se distingue de

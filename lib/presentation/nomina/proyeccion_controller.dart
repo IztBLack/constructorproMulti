@@ -61,6 +61,10 @@ class ProyeccionNotifier extends Notifier<ProyeccionEstado> {
   /// estado porque no es parte del escenario: es un detalle del ciclo de vida.
   bool _sembrado = false;
 
+  /// El escenario tal como quedó al sembrarlo. Se guarda para poder decir si el
+  /// usuario invirtió trabajo aquí (ver [tocado]).
+  late ProyeccionEstado _inicial;
+
   @override
   ProyeccionEstado build() {
     // Cambiar de semana reinicia el escenario: un patrón de días de la semana 33
@@ -68,11 +72,17 @@ class ProyeccionNotifier extends Notifier<ProyeccionEstado> {
     // note.
     final lunes = ref.watch(semanaProyeccionProvider);
     _sembrado = false;
-    return ProyeccionEstado(lunesMillis: lunes);
+    return _inicial = ProyeccionEstado(lunesMillis: lunes);
   }
 
   /// ¿Falta sembrar? La pantalla lo consulta cuando ya tiene datos.
   bool get necesitaSiembra => !_sembrado;
+
+  /// ¿Hay trabajo invertido que se perdería al tirar el escenario?
+  ///
+  /// La pantalla lo usa para preguntar antes de cambiar de semana: los
+  /// chevrones hacen el mismo daño que «Reiniciar», que sí preguntaba.
+  bool get tocado => !state.mismoEscenarioQue(_inicial);
 
   /// Carga el escenario inicial. Idempotente: solo corre una vez por semana.
   ///
@@ -87,7 +97,7 @@ class ProyeccionNotifier extends Notifier<ProyeccionEstado> {
   }) {
     if (_sembrado) return;
     _sembrado = true;
-    state = ProyeccionEstado(
+    state = _inicial = ProyeccionEstado(
       lunesMillis: state.lunesMillis,
       participantes: participantes,
       diasProyectados: {
@@ -109,7 +119,7 @@ class ProyeccionNotifier extends Notifier<ProyeccionEstado> {
   /// Vuelve a sembrar desde cero, tirando lo que el usuario haya movido.
   void reiniciar() {
     _sembrado = false;
-    state = ProyeccionEstado(lunesMillis: state.lunesMillis);
+    state = _inicial = ProyeccionEstado(lunesMillis: state.lunesMillis);
   }
 
   // ── Días ─────────────────────────────────────────────────────────────────
@@ -169,6 +179,10 @@ class ProyeccionNotifier extends Notifier<ProyeccionEstado> {
     }
     state = state.copyWith(diasProyectados: mapa);
   }
+
+  /// Presta un día de alguien a otra obra, o lo devuelve con [obraId] en `null`.
+  void moverDia(String colaboradorId, int dia, String? obraId) =>
+      state = state.conDiaEnObra(colaboradorId, dia, obraId);
 
   // ── Participantes ────────────────────────────────────────────────────────
 
@@ -269,6 +283,12 @@ class ProyeccionVista {
   /// `colaboradorId → días ya capturados` (no se pueden mover).
   final Map<String, Set<int>> diasBloqueados;
 
+  /// Obra que se está viendo, o `null` si son todas. Cuando trae valor, el
+  /// [resultado] es PARCIAL —la raya de esa obra— y la pantalla tiene que
+  /// decirlo: leer una cifra parcial como si fuera la de toda la empresa es el
+  /// error caro de este módulo.
+  final String? obraFiltro;
+
   /// Está cargando algo de la base.
   final bool cargando;
 
@@ -280,8 +300,13 @@ class ProyeccionVista {
     required this.obraPorColaborador,
     required this.diasPorColaborador,
     required this.diasBloqueados,
+    required this.obraFiltro,
     required this.cargando,
   });
+
+  /// Nombre de la obra filtrada, vacío si son todas.
+  String get nombreObraFiltro =>
+      obraFiltro == null ? '' : (nombreObra[obraFiltro] ?? '');
 
   /// Ids de participantes en el orden en que se muestran.
   List<String> get participantes =>
@@ -346,14 +371,20 @@ final proyeccionVistaProvider = Provider<ProyeccionVista>((ref) {
     }
   }
 
+  // Al ver UNA obra, la lista no son «los que la tienen de base»: también entra
+  // quien llegó prestado algún día, o la raya de esa obra no incluiría a quien
+  // de verdad va a trabajar ahí.
+  final visibles = participantesDeObra(estado, obraPorColaborador, obraFiltro);
+
   final resultado = const ProyeccionCalculator().calcular(
-    estado: estado,
+    estado: estado.copyWith(participantes: visibles),
     colaboradores: colabs.map(colaboradorToDomain).toList(),
     puestos: puestos.map(puestoToDomain).toList(),
     asistenciasReales: asistencias.map(asistenciaToDomain).toList(),
     destajosReales: destajos.map(destajoToDomain).toList(),
     cuadrillaPorColaborador: cuadrillaPorColaborador,
     obraPorColaborador: obraPorColaborador,
+    obraFiltro: obraFiltro,
   );
 
   // Candidatos: los que caben en el filtro de obra y no están ya adentro.
@@ -373,6 +404,7 @@ final proyeccionVistaProvider = Provider<ProyeccionVista>((ref) {
     obraPorColaborador: obraPorColaborador,
     diasPorColaborador: diasPorColaborador,
     diasBloqueados: diasBloqueados,
+    obraFiltro: obraFiltro,
     cargando: colabsAsync.isLoading || puestosAsync.isLoading,
   );
 });

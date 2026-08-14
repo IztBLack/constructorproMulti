@@ -11,6 +11,7 @@ import '../../domain/models/models.dart' as dom;
 import '../common/app_snackbar.dart';
 import '../common/empty_state_view.dart';
 import 'ajuste_sheet.dart';
+import 'ficha_persona.dart';
 import 'proyeccion_controller.dart';
 import 'proyeccion_pdf.dart';
 import 'proyeccion_tabla.dart';
@@ -117,7 +118,13 @@ class _ProyeccionScreenState extends ConsumerState<ProyeccionScreen> {
       body: Column(
         children: [
           _BannerModo(),
-          _CintaTotales(resultado: vista.resultado),
+          _CintaTotales(
+              // La llave por semana descarta el total anterior al cambiar de
+              // semana: si no, el delta anunciaría como «cambio» el salto entre
+              // dos escenarios distintos.
+              key: ValueKey(ref.watch(semanaProyeccionProvider)),
+              resultado: vista.resultado,
+              obraNombre: vista.nombreObraFiltro),
           _Controles(vista: vista),
           Expanded(child: _cuerpo(context, vista)),
         ],
@@ -130,6 +137,11 @@ class _ProyeccionScreenState extends ConsumerState<ProyeccionScreen> {
 
   PreferredSizeWidget _appBar(BuildContext context) {
     final lunes = ref.watch(semanaProyeccionProvider);
+    // Se observa el escenario (no solo se lee) para que el punto de «hay
+    // cambios» aparezca en cuanto se mueve algo.
+    ref.watch(proyeccionEstadoProvider);
+    final tocado = ref.read(proyeccionEstadoProvider.notifier).tocado;
+
     return AppBar(
       title: const Text('Proyección de nómina'),
       actions: [
@@ -139,8 +151,29 @@ class _ProyeccionScreenState extends ConsumerState<ProyeccionScreen> {
           onPressed: () => _moverSemana(-1),
         ),
         Center(
-          child: Text(_rangoSemana(lunes),
-              style: Theme.of(context).textTheme.labelLarge),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(_rangoSemana(lunes),
+                  style: Theme.of(context).textTheme.labelLarge),
+              // Avisa que ESTA semana tiene trabajo invertido, antes de que el
+              // usuario toque un chevrón que lo borraría.
+              if (tocado)
+                Padding(
+                  padding: const EdgeInsets.only(left: 5),
+                  child: Tooltip(
+                    message: 'Tienes cambios en esta semana',
+                    child: Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                          color: context.colores.chartPayroll,
+                          shape: BoxShape.circle),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
         IconButton(
           icon: const Icon(Icons.chevron_right),
@@ -148,8 +181,10 @@ class _ProyeccionScreenState extends ConsumerState<ProyeccionScreen> {
           onPressed: () => _moverSemana(1),
         ),
         PopupMenuButton<String>(
-          onSelected: (v) {
-            if (v == 'hoy') {
+          onSelected: (v) async {
+            // «Ir a la semana actual» tira el escenario igual que un chevrón:
+            // pregunta lo mismo.
+            if (v == 'hoy' && await _confirmarCambioDeSemana()) {
               ref.read(semanaProyeccionProvider.notifier).state =
                   lunesDeLaSemana(DateTime.now());
             }
@@ -165,12 +200,43 @@ class _ProyeccionScreenState extends ConsumerState<ProyeccionScreen> {
     );
   }
 
-  void _moverSemana(int direccion) {
+  /// Cambia de semana, preguntando si hay trabajo que se perdería.
+  ///
+  /// El escenario vive en memoria y cambiar de semana lo borra: los chevrones
+  /// hacen el mismo daño que «Reiniciar», que sí confirmaba. Antes se llevaban
+  /// entera la semana armada sin decir nada.
+  Future<void> _moverSemana(int direccion) async {
+    if (!await _confirmarCambioDeSemana()) return;
+
     final actual = ref.read(semanaProyeccionProvider);
     final lunes = DateTime.fromMillisecondsSinceEpoch(actual);
     ref.read(semanaProyeccionProvider.notifier).state =
         DateTime(lunes.year, lunes.month, lunes.day + 7 * direccion)
             .millisecondsSinceEpoch;
+  }
+
+  /// `true` si se puede tirar el escenario: o no había nada armado, o el
+  /// usuario dijo que sí.
+  Future<bool> _confirmarCambioDeSemana() async {
+    if (!ref.read(proyeccionEstadoProvider.notifier).tocado) return true;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('¿Cambiar de semana?'),
+        content: const Text(
+            'Se pierde lo que armaste en esta semana: los días, los salarios, '
+            'los destajos y los ajustes. La proyección no se guarda.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Quedarme aquí')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Ir de todos modos')),
+        ],
+      ),
+    );
+    return ok == true && mounted;
   }
 
   Future<void> _confirmarReinicio() async {
@@ -356,13 +422,49 @@ class _BannerModo extends ConsumerWidget {
 // Cinta de totales
 // ═══════════════════════════════════════════════════════════════════════════
 
-class _CintaTotales extends StatelessWidget {
-  const _CintaTotales({required this.resultado});
+/// Cinta de totales.
+///
+/// Es `Stateful` solo por el delta: para decir QUÉ cambió hay que recordar
+/// cuánto valía el total antes del último toque, y eso no cabe en un valor
+/// derivado.
+class _CintaTotales extends StatefulWidget {
+  const _CintaTotales(
+      {super.key, required this.resultado, required this.obraNombre});
   final ProyeccionResultado resultado;
+
+  /// Nombre de la obra que se está viendo, vacío si son todas.
+  final String obraNombre;
+
+  @override
+  State<_CintaTotales> createState() => _CintaTotalesState();
+}
+
+class _CintaTotalesState extends State<_CintaTotales> {
+  double? _delta;
+  late double _totalPrevio = widget.resultado.total;
+  int _generacion = 0;
+
+  @override
+  void didUpdateWidget(_CintaTotales viejo) {
+    super.didUpdateWidget(viejo);
+    final diferencia = widget.resultado.total - _totalPrevio;
+    _totalPrevio = widget.resultado.total;
+    if (diferencia.abs() < 0.005) return;
+
+    // El aviso se borra solo. La generación evita que el temporizador de un
+    // cambio viejo apague el delta de uno nuevo cuando se toca dos veces
+    // seguidas.
+    final gen = ++_generacion;
+    setState(() => _delta = diferencia);
+    Future.delayed(const Duration(milliseconds: 2600), () {
+      if (mounted && gen == _generacion) setState(() => _delta = null);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final c = context.colores;
+    final resultado = widget.resultado;
     return Container(
       color: c.surface,
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
@@ -372,9 +474,15 @@ class _CintaTotales extends StatelessWidget {
           Expanded(
             flex: 3,
             child: _Metrica(
-              etiqueta: 'Raya proyectada',
+              // Con filtro el total NO es el global: es el de esa obra, con los
+              // días prestados que llegaron y sin los que se fueron. Decirlo
+              // evita leer una cifra parcial como si fuera la de la empresa.
+              etiqueta: widget.obraNombre.isEmpty
+                  ? 'Raya proyectada'
+                  : 'Raya de ${widget.obraNombre}',
               valor: Fmt.money(resultado.total),
               grande: true,
+              delta: _delta,
               detalle: '${Fmt.money(resultado.totalCapturado)} en firme + '
                   '${Fmt.money(resultado.totalProyectado)} estimado',
             ),
@@ -413,6 +521,7 @@ class _Metrica extends StatelessWidget {
     this.detalle,
     this.grande = false,
     this.color,
+    this.delta,
   });
 
   final String etiqueta;
@@ -420,6 +529,9 @@ class _Metrica extends StatelessWidget {
   final String? detalle;
   final bool grande;
   final Color? color;
+
+  /// Cuánto se movió el total con el último toque. Se muestra unos segundos.
+  final double? delta;
 
   @override
   Widget build(BuildContext context) {
@@ -430,16 +542,44 @@ class _Metrica extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(etiqueta.toUpperCase(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: t.labelSmall
                 ?.copyWith(color: c.textMuted, letterSpacing: 0.8, fontSize: 10)),
         const SizedBox(height: 2),
-        Text(valor,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: (grande ? t.headlineSmall : t.titleMedium)?.copyWith(
-                color: color ?? c.textStrong,
-                fontWeight: FontWeight.bold,
-                fontFeatures: const [FontFeature.tabularFigures()])),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Flexible(
+              child: Text(valor,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: (grande ? t.headlineSmall : t.titleMedium)?.copyWith(
+                      color: color ?? c.textStrong,
+                      fontWeight: FontWeight.bold,
+                      fontFeatures: const [FontFeature.tabularFigures()])),
+            ),
+            // Decir QUÉ cambió, no solo cambiar el número: sin esto, mover un
+            // día repinta un total distinto y toca adivinar cuánto se movió.
+            if (delta != null) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: delta! > 0 ? c.successSoft : c.dangerSoft,
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Text(
+                    '${delta! > 0 ? '+' : '−'}${Fmt.money(delta!.abs())}',
+                    style: t.labelMedium?.copyWith(
+                        color: delta! > 0 ? c.success : c.danger,
+                        fontWeight: FontWeight.bold,
+                        fontFeatures: const [FontFeature.tabularFigures()])),
+              ),
+            ],
+          ],
+        ),
         if (detalle != null)
           Text(detalle!,
               style: t.bodySmall?.copyWith(color: c.textMuted, fontSize: 11)),
@@ -708,7 +848,11 @@ class _SubtotalGrupo extends ConsumerWidget {
   }
 }
 
-/// Mitad congelada de un renglón: iniciales, nombre y puesto.
+/// Mitad congelada de un renglón: nombre, puesto y la puerta a su ficha.
+///
+/// El nombre es lo único que SIEMPRE se ve —no se va con el scroll horizontal—,
+/// así que de él cuelga todo lo de la persona: sus días, su $/día, sus ajustes y
+/// su salida de la proyección.
 class _CeldaNombre extends StatelessWidget {
   const _CeldaNombre({required this.renglon, required this.vista});
   final ProyeccionRenglon renglon;
@@ -721,38 +865,56 @@ class _CeldaNombre extends StatelessWidget {
     final obra = vista.nombreObra[
             vista.obraPorColaborador[renglon.colaborador.id] ?? ''] ??
         '';
+    // Quien llegó prestado a la obra que se está viendo: se dice de dónde es,
+    // para que no parezca de la casa con menos días.
+    final visitante = vista.obraFiltro != null &&
+        vista.obraPorColaborador[renglon.colaborador.id] != vista.obraFiltro;
 
     return Container(
       decoration: BoxDecoration(
         color: c.surface,
         border: Border(bottom: BorderSide(color: c.border)),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(renglon.colaborador.nombre,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: t.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: c.textStrong,
-                        fontSize: 13.5)),
-                Text(
-                    renglon.esDestajista
-                        ? 'A destajo · $obra'
-                        : '${renglon.puestoNombre} · ${Fmt.money(renglon.salarioDia)}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: t.bodySmall?.copyWith(color: c.textMuted, fontSize: 11)),
-              ],
-            ),
+      child: InkWell(
+        onTap: () => mostrarFichaPersona(context, renglon.colaborador.id),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(renglon.colaborador.nombre,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: t.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: c.textStrong,
+                            fontSize: 13.5)),
+                    Text(
+                        visitante
+                            ? 'prestado de $obra'
+                            : renglon.esDestajista
+                                ? 'A destajo · $obra'
+                                : '${renglon.puestoNombre} · ${Fmt.money(renglon.salarioDia)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: t.bodySmall?.copyWith(
+                            color: visitante ? c.warning : c.textMuted,
+                            fontWeight:
+                                visitante ? FontWeight.w600 : FontWeight.normal,
+                            fontSize: 11)),
+                  ],
+                ),
+              ),
+              // La pista de que el renglón se abre. Sin ella, el nombre se lee
+              // como una etiqueta y nadie descubre la ficha.
+              Icon(Icons.chevron_right, size: 16, color: c.textFaint),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -789,7 +951,11 @@ class _CeldaDatos extends ConsumerWidget {
             for (final celda in renglon.celdas)
               SizedBox(
                 width: _Col.dia,
-                child: _Celda(celda: celda, colaboradorId: renglon.colaborador.id),
+                child: _Celda(
+                  celda: celda,
+                  colaboradorId: renglon.colaborador.id,
+                  nombreObraDia: vista.nombreObra[celda.obraId] ?? '',
+                ),
               ),
           SizedBox(
             width: _Col.dias,
@@ -840,9 +1006,17 @@ class _CeldaDatos extends ConsumerWidget {
 /// punteado, palomita vs. guion vs. punto): el color solo no comunica, y esta
 /// tabla se lee a la intemperie con el sol pegando en la pantalla.
 class _Celda extends ConsumerWidget {
-  const _Celda({required this.celda, required this.colaboradorId});
+  const _Celda({
+    required this.celda,
+    required this.colaboradorId,
+    required this.nombreObraDia,
+  });
+
   final CeldaDia celda;
   final String colaboradorId;
+
+  /// Nombre de la obra de ESE día. Solo se usa cuando está prestado.
+  final String nombreObraDia;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -850,8 +1024,15 @@ class _Celda extends ConsumerWidget {
 
     late final Color fondo;
     late final Color tinta;
-    late final IconData? icono;
+    late final IconData icono;
     late final BoxBorder? borde;
+
+    // Un día prestado se ve pero no cuenta aquí: ámbar, con las iniciales de la
+    // obra a la que se fue. Va PRIMERO porque manda sobre cualquier otro estado
+    // —lo que hay que entender de esa celda es que está en otro lado.
+    if (celda.prestado) {
+      return _CeldaPrestada(celda: celda, nombreObra: nombreObraDia);
+    }
 
     if (celda.origen == OrigenCelda.real) {
       final asistio = celda.fraccion > 0;
@@ -865,9 +1046,12 @@ class _Celda extends ConsumerWidget {
       icono = Icons.check;
       borde = Border.all(color: c.chartPayroll);
     } else {
+      // Un «+» fantasma, no un punto: el punto se leía como «deshabilitado» y
+      // nadie descubría que la tabla se edita. Vacío y «toca aquí» tienen que
+      // verse distinto.
       fondo = Colors.transparent;
       tinta = c.textFaint;
-      icono = null;
+      icono = Icons.add;
       borde = Border.all(color: c.border);
     }
 
@@ -891,36 +1075,27 @@ class _Celda extends ConsumerWidget {
               border: borde,
               borderRadius: BorderRadius.circular(9),
             ),
-            child: icono == null
-                ? Center(
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Icon(icono, size: 18, color: tinta),
+                // Marca de «esto ya está capturado»: un punto en la esquina.
+                // Distingue lo real de lo proyectado sin depender del color de
+                // fondo.
+                if (bloqueada)
+                  Positioned(
+                    right: 3,
+                    bottom: 3,
                     child: Container(
-                      width: 5,
-                      height: 5,
-                      decoration:
-                          BoxDecoration(color: tinta, shape: BoxShape.circle),
+                      width: 4,
+                      height: 4,
+                      decoration: BoxDecoration(
+                          color: tinta.withValues(alpha: 0.6),
+                          shape: BoxShape.circle),
                     ),
-                  )
-                : Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Icon(icono, size: 18, color: tinta),
-                      // Marca de «esto ya está capturado»: un punto en la
-                      // esquina. Distingue lo real de lo proyectado sin
-                      // depender del color de fondo.
-                      if (bloqueada)
-                        Positioned(
-                          right: 3,
-                          bottom: 3,
-                          child: Container(
-                            width: 4,
-                            height: 4,
-                            decoration: BoxDecoration(
-                                color: tinta.withValues(alpha: 0.6),
-                                shape: BoxShape.circle),
-                          ),
-                        ),
-                    ],
                   ),
+              ],
+            ),
           ),
         ),
       ),
@@ -941,6 +1116,50 @@ class _Celda extends ConsumerWidget {
         'para moverlo aquí sin afectar lo real.',
         tone: SnackTone.warning,
       );
+}
+
+/// Un día que se fue prestado a otra obra.
+///
+/// Se pinta con las INICIALES de la obra destino, no con un hueco: quien mira la
+/// raya de Alfaro tiene que entender por qué esa persona trae menos días, y «se
+/// fue a Boticaria» contesta la pregunta que sigue.
+class _CeldaPrestada extends StatelessWidget {
+  const _CeldaPrestada({required this.celda, required this.nombreObra});
+  final CeldaDia celda;
+  final String nombreObra;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colores;
+    final obra = nombreObra.isEmpty ? 'otra obra' : nombreObra;
+    final iniciales = nombreObra.isEmpty
+        ? '?'
+        : nombreObra.substring(0, nombreObra.length < 2 ? 1 : 2).toUpperCase();
+
+    return Semantics(
+      label: '${_nombresDia[celda.indice]}: ese día se va a $obra',
+      child: Tooltip(
+        message: 'Ese día se va a $obra',
+        child: Center(
+          child: Container(
+            width: 34,
+            height: 34,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: c.warningSoft,
+              border: Border.all(color: c.warning),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: Text(iniciales,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: c.warning,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.bold)),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Campo de monto de un destajista.
@@ -1016,6 +1235,8 @@ class _MenuRenglon extends ConsumerWidget {
       onSelected: (v) async {
         final notifier = ref.read(proyeccionEstadoProvider.notifier);
         switch (v) {
+          case 'ficha':
+            await mostrarFichaPersona(context, renglon.colaborador.id);
           case 'ajuste':
             await mostrarAjusteSheet(
               context,
@@ -1049,6 +1270,10 @@ class _MenuRenglon extends ConsumerWidget {
         }
       },
       itemBuilder: (_) => [
+        // La ficha también cuelga del nombre; aquí queda como atajo para quien
+        // ya venía usando este menú.
+        const PopupMenuItem(
+            value: 'ficha', child: Text('Ver todo de esta persona…')),
         const PopupMenuItem(
             value: 'ajuste',
             child: Text('Agregar destajo, anticipo o descuento…')),
@@ -1062,13 +1287,13 @@ class _MenuRenglon extends ConsumerWidget {
   }
 }
 
-class _LineaCuadrillaNombre extends StatelessWidget {
+class _LineaCuadrillaNombre extends ConsumerWidget {
   const _LineaCuadrillaNombre({required this.nombre, required this.ajuste});
   final String nombre;
   final AjusteProyeccion ajuste;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colores;
     final t = Theme.of(context).textTheme;
     return Container(
@@ -1076,21 +1301,37 @@ class _LineaCuadrillaNombre extends StatelessWidget {
         color: c.surface,
         border: Border(bottom: BorderSide(color: c.border)),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('${ajuste.tipo.label} · $nombre',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: t.bodyMedium?.copyWith(
-                  color: c.accent, fontWeight: FontWeight.w600, fontSize: 13)),
-          Text(ajuste.nota.isEmpty ? 'a la cuadrilla' : ajuste.nota,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: t.bodySmall?.copyWith(color: c.textMuted, fontSize: 11)),
-        ],
+      child: InkWell(
+        // Un ajuste de cuadrilla también se corrige: se toca su renglón y se
+        // abre la misma hoja con «Quitar» dentro.
+        onTap: () => mostrarAjusteSheet(
+          context,
+          ref,
+          destino: DestinoAjuste.cuadrilla,
+          destinoId: ajuste.destinoId,
+          titulo: nombre,
+          existente: ajuste,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('${ajuste.tipo.label} · $nombre',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: t.bodyMedium?.copyWith(
+                      color: c.accent,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13)),
+              Text(ajuste.nota.isEmpty ? 'a la cuadrilla' : ajuste.nota,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: t.bodySmall?.copyWith(color: c.textMuted, fontSize: 11)),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1130,9 +1371,17 @@ class _LineaCuadrillaMonto extends ConsumerWidget {
               iconSize: 17,
               icon: Icon(Icons.close, color: c.textFaint),
               tooltip: 'Quitar el ajuste',
-              onPressed: () => ref
-                  .read(proyeccionEstadoProvider.notifier)
-                  .borrarAjuste(linea.ajuste.id),
+              onPressed: () {
+                final notifier = ref.read(proyeccionEstadoProvider.notifier);
+                final antes = ref.read(proyeccionEstadoProvider);
+                notifier.borrarAjuste(linea.ajuste.id);
+                showAppSnack(
+                  context,
+                  '${linea.ajuste.tipo.label} de '
+                  '${Fmt.money(linea.ajuste.monto)} quitado.',
+                  onUndo: () => notifier.restaurar(antes),
+                );
+              },
             ),
           ),
         ],
