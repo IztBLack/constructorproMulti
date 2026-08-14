@@ -62,7 +62,13 @@ class AsistenciaRepository {
   /// Asistencias de un conjunto de colaboradores en un rango, SIN filtrar obra.
   /// Permite a la tabla semanal detectar días en que el trabajador estuvo en
   /// OTRA obra distinta a la mostrada. SOLO para overlay visual de UI; no usar
-  /// para nómina (ver watchRango / asistenciasRangoProvider).
+  /// para la nómina de UNA obra (ver watchRango / asistenciasRangoProvider),
+  /// que debe contar únicamente lo de esa obra.
+  ///
+  /// La PROYECCIÓN de nómina sí la usa, y es correcto: es un total por persona
+  /// sobre todas las obras, y el trigger de la migración 0016 garantiza que la
+  /// suma de fracciones de un día natural no pase de 1 — así que sumar entre
+  /// obras no puede cobrar dos jornadas por un mismo día.
   Stream<List<Asistencia>> watchSemanaTodasObras(
     List<String> colaboradorIds,
     int start,
@@ -266,6 +272,20 @@ class DestajoRepository {
                 t.obraId.equals(obraId) &
                 t.fecha.isBetweenValues(start, end) &
                 t.deletedAt.isNull())
+            ..orderBy([(t) => OrderingTerm(expression: t.fecha)]))
+          .watch();
+
+  /// Destajos de un rango SIN filtrar obra, para la proyección de nómina
+  /// multi-obra.
+  ///
+  /// Sumar destajos de varias obras es legítimo (a diferencia de las
+  /// asistencias, que necesitan la regla de 0016): un destajo es un monto
+  /// pactado, no una jornada, y dos obras pueden pagarle a la misma persona la
+  /// misma semana sin que eso sea un duplicado.
+  Stream<List<Destajo>> watchRangoTodasObras(int start, int end) =>
+      (db.select(db.destajos)
+            ..where((t) =>
+                t.fecha.isBetweenValues(start, end) & t.deletedAt.isNull())
             ..orderBy([(t) => OrderingTerm(expression: t.fecha)]))
           .watch();
 

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../pdf_preview_screen.dart';
 import '../../core/format/format.dart';
 import '../../core/pdf/pdf_config.dart';
+import '../../core/sync/rol_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
 import '../../domain/logic/flujo_calculator.dart';
@@ -18,6 +19,7 @@ import '../common/error_state_view.dart';
 import '../common/sync_status_action.dart';
 import '../common/money_text.dart';
 import '../common/section_header.dart';
+import '../nomina/proyeccion_screen.dart';
 import '../obras/obra_detail_screen.dart';
 import '../pdf_pre_dialog.dart';
 
@@ -288,6 +290,13 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
         children: [
           _accion(Icons.fact_check, 'Pase lista',
               () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PaseListaScreen()))),
+          // La proyección enseña el salario de cada persona junto a su nombre,
+          // así que ni siquiera se ofrece a quien no puede verla: el gate de la
+          // pantalla es la segunda línea de defensa, no la primera.
+          if (ref.watch(puedeVerProyeccionNominaProvider))
+            _accion(Icons.calculate_outlined, 'Proyección',
+                () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => const ProyeccionScreen()))),
           _accion(Icons.note_add, 'Cotizar', () => ref.read(homeTabProvider.notifier).state = 1),
           _accion(Icons.person_add, 'Equipo', () => ref.read(homeTabProvider.notifier).state = 2),
           _accion(Icons.menu_book, 'Catálogo',

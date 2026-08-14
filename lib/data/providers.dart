@@ -187,6 +187,15 @@ final destajosRangoProvider =
     StreamProvider.family<List<Destajo>, RangoObra>((ref, r) =>
         ref.watch(destajoRepositoryProvider).watchRango(r.obraId, r.start, r.end));
 
+typedef Rango = ({int start, int end});
+
+/// Destajos de la semana en TODAS las obras. Para la proyección de nómina, que
+/// razona por persona y no por obra.
+final destajosRangoTodasObrasProvider =
+    StreamProvider.family<List<Destajo>, Rango>((ref, r) => ref
+        .watch(destajoRepositoryProvider)
+        .watchRangoTodasObras(r.start, r.end));
+
 // ---------------- Cuadrillas ----------------
 final cuadrillasProvider = StreamProvider<List<Cuadrilla>>(
     (ref) => ref.watch(cuadrillaRepositoryProvider).watchAll());

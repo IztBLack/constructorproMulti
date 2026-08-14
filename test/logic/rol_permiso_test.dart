@@ -24,4 +24,30 @@ void main() {
       expect(puedeEditarOperacionSegunRol('rol_que_no_existe'), isTrue);
     });
   });
+
+  /// La proyección de nómina va al revés: LISTA BLANCA. Aquí no se protege una
+  /// acción sino la exhibición del salario de cada persona, así que un rol nuevo
+  /// tiene que pedir el permiso en vez de heredarlo.
+  group('puedeVerProyeccionNominaSegunRol', () {
+    test('socio y supervisor sí', () {
+      expect(puedeVerProyeccionNominaSegunRol('admin'), isTrue);
+      expect(puedeVerProyeccionNominaSegunRol('supervisor'), isTrue);
+    });
+
+    test('colaborador, contador y cliente no', () {
+      expect(puedeVerProyeccionNominaSegunRol('colaborador'), isFalse);
+      expect(puedeVerProyeccionNominaSegunRol('contador'), isFalse);
+      expect(puedeVerProyeccionNominaSegunRol('cliente'), isFalse);
+    });
+
+    test('un rol que no existe todavía queda FUERA por omisión', () {
+      expect(puedeVerProyeccionNominaSegunRol('rol_que_no_existe'), isFalse);
+      expect(puedeVerProyeccionNominaSegunRol('auditor'), isFalse);
+    });
+
+    test('sin sesión (null/vacío) sí: es la instalación local del dueño', () {
+      expect(puedeVerProyeccionNominaSegunRol(null), isTrue);
+      expect(puedeVerProyeccionNominaSegunRol(''), isTrue);
+    });
+  });
 }

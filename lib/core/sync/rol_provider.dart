@@ -23,6 +23,42 @@ bool puedeEditarOperacionSegunRol(String? rol) {
   return rol != 'contador' && rol != 'colaborador';
 }
 
+/// Roles con acceso a la PROYECCIÓN DE NÓMINA.
+///
+/// Esta es una LISTA BLANCA, al revés que [puedeEditarOperacionSegunRol], y la
+/// diferencia es deliberada. Aquella protege una acción (editar); esta protege
+/// la EXHIBICIÓN del salario de cada persona junto a su nombre, más la raya
+/// completa de la semana. Un rol nuevo que se agregue mañana debe tener que
+/// pedir este permiso explícitamente en vez de heredarlo por omisión.
+///
+/// Quién entra y por qué, contra los roles que existen hoy:
+///   · `admin` (socio) — sí. Es su dinero.
+///   · `supervisor` — sí. Ya escribe nómina, obras y presupuesto (0014), así que
+///     no se le esconde nada que no pueda ver de todos modos.
+///   · `colaborador` — NO. Es staff de campo: captura asistencia y gasto. Aunque
+///     RLS le deja LEER `colaboradores`, no hay razón para ponerle enfrente la
+///     raya de sus compañeros.
+///   · `contador` — NO por ahora, y es el caso discutible: es quien necesita
+///     saber cuánto efectivo tener listo el sábado, y 0022 ya le da lectura de
+///     `asistencias`, `destajos` y `colaboradores`. Si se decide abrirle la
+///     pantalla en SOLO LECTURA, se agrega aquí y se combina con
+///     [puedeEditarOperacionSegunRol] para que no pueda mover el escenario.
+///   · `cliente` — NO, nunca. Ve su obra desde el portal y jamás la nómina.
+const _rolesProyeccionNomina = {'admin', 'supervisor'};
+
+/// ¿Este rol puede ver la proyección de nómina?
+///
+/// Un rol nulo o vacío CONCEDE acceso, igual que el resto del gate de roles,
+/// pero por una razón distinta a «no bloquear a un admin por un fallo de red»:
+/// la app funciona 100% offline y sin cuenta en la nube. Sin sesión no hay
+/// `usuarios_empresa` que consultar, y ese caso es la instalación local de un
+/// solo dueño — negarle su propia nómina dejaría la app inservible. En cuanto
+/// hay sesión, el rol es conocido y la lista blanca aplica.
+bool puedeVerProyeccionNominaSegunRol(String? rol) {
+  if (rol == null || rol.isEmpty) return true;
+  return _rolesProyeccionNomina.contains(rol);
+}
+
 /// Rol del usuario actual, resuelto desde Supabase (`usuarios_empresa`, igual
 /// que `resolverEmpresaYsellar`) y cacheado en SharedPreferences para funcionar
 /// offline.
@@ -66,5 +102,20 @@ final puedeEditarOperacionProvider = Provider<bool>((ref) {
   return ref.watch(rolUsuarioProvider).maybeWhen(
         data: puedeEditarOperacionSegunRol,
         orElse: () => true,
+      );
+});
+
+/// ¿Se le muestra la proyección de nómina a este usuario?
+///
+/// A diferencia de [puedeEditarOperacionProvider], mientras el rol CARGA se
+/// niega el acceso. Es un cambio de polaridad a propósito: ocultar un botón
+/// medio segundo de más no le rompe el trabajo a nadie, y enseñar la raya de la
+/// plantilla a un colaborador durante ese medio segundo sí sería una fuga. El
+/// caso «sin sesión» no pasa por aquí: ahí el provider resuelve a `null` con
+/// `data` y la lista blanca ya lo concede.
+final puedeVerProyeccionNominaProvider = Provider<bool>((ref) {
+  return ref.watch(rolUsuarioProvider).maybeWhen(
+        data: puedeVerProyeccionNominaSegunRol,
+        orElse: () => false,
       );
 });

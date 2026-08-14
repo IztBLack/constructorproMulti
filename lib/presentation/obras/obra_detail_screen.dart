@@ -15,9 +15,11 @@ import '../../core/format/format.dart';
 import '../../core/pdf/pdf_config.dart';
 import '../../core/storage/comprobante_storage.dart';
 import '../../core/sync/cloud_providers.dart';
+import '../../core/sync/rol_provider.dart';
 import '../../core/sync/supabase_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
+import '../nomina/proyeccion_screen.dart';
 import '../../domain/logic/estado_cuenta_calculator.dart';
 import '../../domain/logic/flujo_calculator.dart';
 import '../../domain/logic/nomina_calculator.dart';
@@ -75,9 +77,13 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
             tooltip: 'Más acciones',
             onSelected: (v) {
               if (v == 'importar') _importarMovimientos();
+              if (v == 'proyeccion') {
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => ProyeccionScreen(obraId: widget.obra.id)));
+              }
             },
-            itemBuilder: (ctx) => const [
-              PopupMenuItem(
+            itemBuilder: (ctx) => [
+              const PopupMenuItem(
                 value: 'importar',
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
@@ -85,6 +91,17 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                   title: Text('Importar movimientos'),
                 ),
               ),
+              // Entra ya filtrada a esta obra. Solo para quien puede ver
+              // salarios (ver `puedeVerProyeccionNominaSegunRol`).
+              if (ref.watch(puedeVerProyeccionNominaProvider))
+                const PopupMenuItem(
+                  value: 'proyeccion',
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.calculate_outlined),
+                    title: Text('Proyectar la nómina'),
+                  ),
+                ),
             ],
           ),
         ],
