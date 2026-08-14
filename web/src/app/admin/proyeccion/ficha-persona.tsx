@@ -1,0 +1,323 @@
+'use client';
+
+import { useState } from 'react';
+import { Button, Modal } from '@/components/ui';
+import { formatCurrency } from '@/lib/data/format';
+import {
+  ETIQUETA_AJUSTE,
+  signoAjuste,
+  type AjusteProyeccion,
+  type ProyeccionRenglon,
+} from '@/lib/data/proyeccion-nomina';
+
+const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+
+interface Props {
+  renglon: ProyeccionRenglon;
+  obraNombre: string;
+  cuadrillaNombre: string | null;
+  ajustes: AjusteProyeccion[];
+  tieneSalarioPropio: boolean;
+  simularCompleta: boolean;
+  onAlternarDia: (dia: number) => void;
+  /// `null` restablece el salario del puesto.
+  onSalario: (valor: number | null) => void;
+  onDestajo: (valor: number) => void;
+  onSimularCompleta: (valor: boolean) => void;
+  onNuevoAjuste: () => void;
+  onEditarAjuste: (ajuste: AjusteProyeccion) => void;
+  onQuitarPersona: () => void;
+  onCerrar: () => void;
+}
+
+/// Todo lo de una persona en un solo lugar, alcanzable desde lo único que
+/// SIEMPRE está en pantalla: su nombre en la columna congelada.
+///
+/// Antes, sus días vivían a la derecha del scroll horizontal, su salario y sus
+/// ajustes detrás de dos botones de un carácter, y los ajustes ya creados no se
+/// podían ni ver ni quitar. Aquí se ve y se deshace todo.
+export function FichaPersona(props: Props) {
+  const {
+    renglon: r,
+    obraNombre,
+    cuadrillaNombre,
+    ajustes,
+    tieneSalarioPropio,
+    simularCompleta,
+  } = props;
+
+  const [salario, setSalario] = useState(String(r.salarioDia));
+  const [destajo, setDestajo] = useState(String(r.destajo));
+  const [avisoBloqueado, setAvisoBloqueado] = useState<number[]>([]);
+
+  const diasCapturados = r.celdas.filter((c) => c.origen === 'REAL').map((c) => c.indice);
+
+  function tocarDia(indice: number) {
+    const celda = r.celdas[indice];
+    if (celda.origen === 'REAL') {
+      setAvisoBloqueado(diasCapturados);
+      return;
+    }
+    props.onAlternarDia(indice);
+  }
+
+  return (
+    <Modal open onClose={props.onCerrar} title={r.colaborador.nombre} size="lg">
+      <div className="space-y-6">
+        <p className="-mt-2 text-sm text-neutral-500">
+          {[r.esDestajista ? 'A destajo' : r.puestoNombre, obraNombre, cuadrillaNombre]
+            .filter(Boolean)
+            .join(' · ')}
+        </p>
+
+        {/* ── Días ─────────────────────────────────────────────────────── */}
+        {!r.esDestajista && (
+          <section className="space-y-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
+              Días de la semana
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {r.celdas.map((celda) => (
+                <ChipDia
+                  key={celda.indice}
+                  celda={celda}
+                  nombre={r.colaborador.nombre}
+                  onClick={() => tocarDia(celda.indice)}
+                />
+              ))}
+            </div>
+
+            {/* La salida del callejón vive JUNTO al problema, no en una barra de
+                controles que en un teléfono queda fuera de pantalla. */}
+            {avisoBloqueado.length > 0 && !simularCompleta && (
+              <div className="flex flex-wrap items-center gap-2 rounded-lg bg-neutral-100 px-3 py-2 text-sm text-neutral-700">
+                <span>
+                  {avisoBloqueado.map((d) => DIAS[d]).join(', ')}{' '}
+                  {avisoBloqueado.length === 1 ? 'ya está' : 'ya están'} en el pase de lista.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    props.onSimularCompleta(true);
+                    setAvisoBloqueado([]);
+                  }}
+                  className="min-h-9 rounded-lg border border-neutral-300 bg-white px-3 text-sm font-medium hover:border-blue-500 hover:text-blue-700"
+                >
+                  Simular semana completa
+                </button>
+              </div>
+            )}
+
+            <p className="text-sm text-neutral-600">
+              <span className="tabular-nums font-semibold text-neutral-900">
+                {r.diasTotales}
+              </span>{' '}
+              {r.diasTotales === 1 ? 'día' : 'días'} ×{' '}
+              <span className="tabular-nums">{formatCurrency(r.salarioDia)}</span> ={' '}
+              <span className="tabular-nums font-semibold text-neutral-900">
+                {formatCurrency(r.baseCapturada + r.baseProyectada)}
+              </span>
+            </p>
+          </section>
+        )}
+
+        {/* ── Dinero ───────────────────────────────────────────────────── */}
+        <section className="space-y-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
+            {r.esDestajista ? 'Destajo estimado de la semana' : 'Salario por día'}
+          </h3>
+
+          {r.esDestajista ? (
+            <>
+              <input
+                type="number"
+                value={destajo}
+                min={0}
+                step={100}
+                onChange={(e) => setDestajo(e.target.value)}
+                onBlur={() => props.onDestajo(Math.abs(Number(destajo) || 0))}
+                className="w-44 rounded-lg border border-purple-400 px-3 py-2 text-right tabular-nums text-purple-700"
+                aria-label={`Destajo estimado de ${r.colaborador.nombre}`}
+              />
+              <p className="text-xs text-neutral-500">
+                Es el TOTAL de la semana, no un extra sobre lo ya registrado. La asistencia
+                no lo mueve.
+              </p>
+              {r.destajoIncongruente && (
+                <p className="text-xs font-medium text-red-700">
+                  Estimaste menos que los {formatCurrency(r.destajoCapturado)} que ya están
+                  registrados esta semana.
+                </p>
+              )}
+            </>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="number"
+                value={salario}
+                min={0}
+                step={10}
+                onChange={(e) => setSalario(e.target.value)}
+                // Se guarda al SALIR del campo, no en cada tecla: al seleccionar
+                // todo y teclear, un `onChange` deja el salario en 0 por un
+                // instante y el gran total se desploma a media captura.
+                onBlur={() => props.onSalario(Math.abs(Number(salario) || 0))}
+                className="w-32 rounded-lg border border-neutral-300 px-3 py-2 text-right tabular-nums"
+                aria-label={`Salario por día de ${r.colaborador.nombre}`}
+              />
+              {tieneSalarioPropio && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    props.onSalario(null);
+                    props.onCerrar();
+                  }}
+                  className="min-h-9 rounded-lg px-2 text-sm text-neutral-500 underline hover:text-neutral-900"
+                >
+                  Restablecer el del puesto
+                </button>
+              )}
+            </div>
+          )}
+          {!r.esDestajista && (
+            <p className="text-xs text-neutral-500">
+              Solo dentro de esta proyección. No cambia su sueldo en el catálogo.
+            </p>
+          )}
+        </section>
+
+        {/* ── Ajustes ──────────────────────────────────────────────────── */}
+        <section className="space-y-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
+            Ajustes
+          </h3>
+
+          {ajustes.length === 0 ? (
+            <p className="text-sm text-neutral-500">
+              Sin ajustes. Aquí van los destajos extra, los anticipos que ya se
+              entregaron y los descuentos.
+            </p>
+          ) : (
+            <ul className="divide-y divide-neutral-100 rounded-lg border border-neutral-200">
+              {ajustes.map((a) => (
+                <li key={a.id} className="flex items-center gap-3 px-3 py-2">
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-medium text-neutral-900">
+                      {ETIQUETA_AJUSTE[a.tipo]}
+                    </span>
+                    {a.nota && (
+                      <span className="block truncate text-xs text-neutral-500">{a.nota}</span>
+                    )}
+                  </span>
+                  <span
+                    className={`shrink-0 text-sm font-semibold tabular-nums ${
+                      signoAjuste(a.tipo) < 0 ? 'text-red-700' : 'text-green-700'
+                    }`}
+                  >
+                    {signoAjuste(a.tipo) > 0 ? '+' : '−'}
+                    {formatCurrency(a.monto)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => props.onEditarAjuste(a)}
+                    className="min-h-9 shrink-0 rounded-lg px-2 text-sm text-blue-700 hover:bg-blue-50"
+                  >
+                    Editar
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <Button variant="secondary" size="sm" onClick={props.onNuevoAjuste}>
+            + Agregar destajo, anticipo o descuento
+          </Button>
+        </section>
+
+        {/* ── Total ────────────────────────────────────────────────────── */}
+        <section className="rounded-lg bg-neutral-50 px-4 py-3">
+          <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
+            Su raya de la semana
+          </span>
+          <span className="block text-2xl font-bold tabular-nums text-neutral-900">
+            {formatCurrency(r.total)}
+          </span>
+          {r.ajustes !== 0 && (
+            <span className="text-xs text-neutral-500">
+              incluye {formatCurrency(r.ajustes)} de ajustes
+            </span>
+          )}
+        </section>
+
+        {/* Destructivo, separado del resto (§destructive-emphasis). */}
+        <section className="border-t border-neutral-200 pt-4">
+          <button
+            type="button"
+            onClick={props.onQuitarPersona}
+            className="min-h-11 rounded-lg px-3 text-sm font-medium text-red-700 hover:bg-red-50"
+          >
+            Quitar de la proyección
+          </button>
+          <p className="mt-1 px-3 text-xs text-neutral-500">
+            Solo lo saca de esta cuenta. Sigue dado de alta en la app.
+          </p>
+        </section>
+      </div>
+    </Modal>
+  );
+}
+
+/// Un día, grande y tocable. Mismos cuatro estados que la tabla, distinguidos
+/// por FORMA además de por color.
+function ChipDia(props: {
+  celda: ProyeccionRenglon['celdas'][number];
+  nombre: string;
+  onClick: () => void;
+}) {
+  const { celda, nombre, onClick } = props;
+  const capturado = celda.origen === 'REAL';
+
+  let clase = 'border border-dashed border-neutral-300 text-neutral-400';
+  let simbolo = '+';
+  let descripcion = 'no cuenta, toca para prenderlo';
+
+  if (capturado && celda.fraccion > 0) {
+    clase = 'bg-green-100 text-green-800 border border-green-200';
+    simbolo = '✓';
+    descripcion = 'asistió, ya capturado';
+  } else if (capturado) {
+    clase = 'bg-red-100 text-red-800 border border-red-200';
+    simbolo = '–';
+    descripcion = 'faltó, ya capturado';
+  } else if (celda.origen === 'PROYECTADA') {
+    clase = 'border-2 border-dashed border-indigo-500 bg-indigo-50 text-indigo-700';
+    simbolo = '✓';
+    descripcion = 'se espera que asista';
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={`${nombre}, ${DIAS_LARGOS[celda.indice]}: ${descripcion}`}
+      className={`relative flex h-14 w-14 flex-col items-center justify-center rounded-xl text-lg font-bold ${clase} ${
+        capturado ? 'cursor-default' : 'hover:border-indigo-500'
+      }`}
+    >
+      <span className="text-[10px] font-semibold uppercase tracking-wide opacity-70">
+        {DIAS[celda.indice]}
+      </span>
+      <span aria-hidden="true">{simbolo}</span>
+      {capturado && (
+        <span
+          aria-hidden="true"
+          title="Ya está en el pase de lista"
+          className="absolute right-1 top-1 text-[9px] leading-none opacity-70"
+        >
+          🔒
+        </span>
+      )}
+    </button>
+  );
+}

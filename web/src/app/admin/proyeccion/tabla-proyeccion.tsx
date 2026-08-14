@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Modal } from '@/components/ui';
 import { formatCurrency } from '@/lib/data/format';
@@ -12,11 +12,11 @@ import {
   type AjusteProyeccion,
   type DestinoAjuste,
   type ProyeccionEstado,
-  type RepartoAjuste,
-  type TipoAjuste,
 } from '@/lib/data/proyeccion-nomina';
 import type { Asistencia, Colaborador, Destajo, Puesto } from '@/lib/data/types';
 import { medianocheMx, partesTz, sumarDiasCalendario } from '@/lib/data/tz';
+import { FichaPersona } from './ficha-persona';
+import { ModalAjuste } from './modal-ajuste';
 
 const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
@@ -24,8 +24,6 @@ type Agrupar = 'cuadrilla' | 'obra' | 'ninguno';
 
 interface Props {
   lunesMs: number;
-  /// Índice (0..6) del día de hoy dentro de la semana mostrada, o `null` si la
-  /// semana no es la actual. Lo calcula el servidor con el reloj de México.
   hoyIndice: number | null;
   colaboradores: Colaborador[];
   puestos: Puesto[];
@@ -37,12 +35,6 @@ interface Props {
   nombreCuadrilla: Record<string, string>;
 }
 
-/// La tabla editable de la proyección.
-///
-/// Todo el escenario vive en el estado de este componente y **nada se guarda**:
-/// es la misma decisión que en el móvil. Persistir escenarios son dos tablas y
-/// una migración, y todavía no sabemos si la gente los colecciona o solo hace la
-/// cuenta antes de ir al banco.
 export function TablaProyeccion(props: Props) {
   const {
     lunesMs,
@@ -58,17 +50,19 @@ export function TablaProyeccion(props: Props) {
   } = props;
 
   const router = useRouter();
-  const [obraFiltro, setObraFiltro] = useState<string>('');
+  const [obraFiltro, setObraFiltro] = useState('');
   const [agrupar, setAgrupar] = useState<Agrupar>('cuadrilla');
-  const [ajusteAbierto, setAjusteAbierto] = useState<
-    { destino: DestinoAjuste; destinoId: string; titulo: string } | null
-  >(null);
+  const [fichaAbierta, setFichaAbierta] = useState<string | null>(null);
+  const [confirmarSemana, setConfirmarSemana] = useState<number | null>(null);
+  const [ajusteAbierto, setAjusteAbierto] = useState<{
+    destino: DestinoAjuste;
+    destinoId: string;
+    titulo: string;
+    existente?: AjusteProyeccion;
+  } | null>(null);
 
-  // ── Escenario inicial ────────────────────────────────────────────────────
-  // Cada quien arranca con los días que de verdad trabaja (`dias_semana`), no
-  // con «todos de lunes a sábado»: así el número que se ve al abrir ya es
-  // defendible sin tocar nada.
-  const [estado, setEstado] = useState<ProyeccionEstado>(() => {
+  // ── Escenario ────────────────────────────────────────────────────────────
+  const estadoInicial = useMemo<ProyeccionEstado>(() => {
     const activos = colaboradores.filter((c) => obraPorColaborador[c.id]);
     const destajoCapturado: Record<string, number> = {};
     for (const d of destajos) {
@@ -77,6 +71,8 @@ export function TablaProyeccion(props: Props) {
     return {
       lunesMs,
       participantes: activos.map((c) => c.id),
+      // Cada quien arranca con los días que de verdad trabaja, no con «todos
+      // L–S»: así el número de la primera pantalla ya es defendible.
       diasProyectados: Object.fromEntries(
         activos.map((c) => [
           c.id,
@@ -88,14 +84,21 @@ export function TablaProyeccion(props: Props) {
       ajustes: [],
       simularCompleta: false,
     };
-  });
+  }, [colaboradores, obraPorColaborador, destajos, lunesMs]);
 
-  // ── Cálculo ──────────────────────────────────────────────────────────────
+  const [estado, setEstado] = useState<ProyeccionEstado>(estadoInicial);
+
+  /// ¿El usuario ya invirtió trabajo aquí? Decide si se le pregunta antes de
+  /// tirarlo. Comparar el estado completo es suficiente y no necesita banderas
+  /// que alguien olvide poner al agregar una mutación nueva.
+  const tocado = useMemo(
+    () => JSON.stringify(estado) !== JSON.stringify(estadoInicial),
+    [estado, estadoInicial],
+  );
+
   const participantesVisibles = useMemo(
     () =>
-      estado.participantes.filter(
-        (id) => !obraFiltro || obraPorColaborador[id] === obraFiltro,
-      ),
+      estado.participantes.filter((id) => !obraFiltro || obraPorColaborador[id] === obraFiltro),
     [estado.participantes, obraFiltro, obraPorColaborador],
   );
 
@@ -122,7 +125,19 @@ export function TablaProyeccion(props: Props) {
     ],
   );
 
-  /// Días ya capturados por persona: la interfaz los bloquea.
+  // ── Delta: decir QUÉ cambió, no solo cambiar el número ───────────────────
+  const totalPrevio = useRef(resultado.total);
+  const [delta, setDelta] = useState<number | null>(null);
+
+  useEffect(() => {
+    const diferencia = resultado.total - totalPrevio.current;
+    totalPrevio.current = resultado.total;
+    if (Math.abs(diferencia) < 0.005) return;
+    setDelta(diferencia);
+    const t = setTimeout(() => setDelta(null), 2600);
+    return () => clearTimeout(t);
+  }, [resultado.total]);
+
   const diasBloqueados = useMemo(() => {
     const mapa: Record<string, Set<number>> = {};
     if (estado.simularCompleta) return mapa;
@@ -158,13 +173,29 @@ export function TablaProyeccion(props: Props) {
     });
   }
 
+  /// ¿Está la columna entera prendida? Sirve para que el encabezado ANUNCIE lo
+  /// que va a hacer en vez de que haya que tocarlo para averiguarlo.
+  function columnaLlena(dia: number): boolean {
+    const movibles = resultado.renglones.filter((r) => !r.esDestajista);
+    return (
+      movibles.length > 0 &&
+      movibles.every((r) => r.celdas[dia].fraccion > 0)
+    );
+  }
+
   function alternarColumna(dia: number) {
     const movibles = resultado.renglones
       .filter((r) => !r.esDestajista && !diasBloqueados[r.colaborador.id]?.has(dia))
       .map((r) => r.colaborador.id);
-    const todosPrendidos =
-      movibles.length > 0 &&
-      movibles.every((id) => (estado.diasProyectados[id] ?? []).includes(dia));
+
+    // Un control que no puede hacer nada tiene que decirlo, no quedarse callado.
+    if (movibles.length === 0) {
+      setAvisoColumna(`Todos ya tienen el ${DIAS[dia].toLowerCase()} en el pase de lista.`);
+      return;
+    }
+    const todosPrendidos = movibles.every((id) =>
+      (estado.diasProyectados[id] ?? []).includes(dia),
+    );
     setEstado((e) => {
       const mapa = { ...e.diasProyectados };
       for (const id of movibles) {
@@ -177,28 +208,29 @@ export function TablaProyeccion(props: Props) {
     });
   }
 
+  const [avisoColumna, setAvisoColumna] = useState<string | null>(null);
+  useEffect(() => {
+    if (!avisoColumna) return;
+    const t = setTimeout(() => setAvisoColumna(null), 3000);
+    return () => clearTimeout(t);
+  }, [avisoColumna]);
+
   function quitar(colaboradorId: string) {
-    setEstado((e) => {
-      return {
-        ...e,
-        participantes: e.participantes.filter((id) => id !== colaboradorId),
-        diasProyectados: sinClave(e.diasProyectados, colaboradorId),
-        destajoEstimado: sinClave(e.destajoEstimado, colaboradorId),
-        salarioOverride: sinClave(e.salarioOverride, colaboradorId),
-        // Dejar un anticipo colgando de alguien que ya no está sumaría al total
-        // sin que se vea de dónde sale.
-        ajustes: e.ajustes.filter(
-          (a) => !(a.destino === 'COLABORADOR' && a.destinoId === colaboradorId),
-        ),
-      };
-    });
+    setEstado((e) => ({
+      ...e,
+      participantes: e.participantes.filter((id) => id !== colaboradorId),
+      diasProyectados: sinClave(e.diasProyectados, colaboradorId),
+      destajoEstimado: sinClave(e.destajoEstimado, colaboradorId),
+      salarioOverride: sinClave(e.salarioOverride, colaboradorId),
+      // Un anticipo colgando de alguien que ya no está sumaría al total sin que
+      // se vea de dónde sale.
+      ajustes: e.ajustes.filter(
+        (a) => !(a.destino === 'COLABORADOR' && a.destinoId === colaboradorId),
+      ),
+    }));
   }
 
   function agregar(c: Colaborador) {
-    // Quien entra a media semana arranca proyectado de hoy en adelante.
-    // `hoyIndice` viene del servidor: leer el reloj aquí sería una llamada
-    // impura dentro del árbol de React, y además el reloj del navegador puede
-    // estar en otra zona que la de la obra.
     const hoy = hoyIndice ?? 0;
     const hasta = Math.min(Math.max(c.dias_semana ?? 6, 1), 7);
     setEstado((e) => ({
@@ -211,19 +243,32 @@ export function TablaProyeccion(props: Props) {
     }));
   }
 
-  function setMonto(
-    campo: 'destajoEstimado' | 'salarioOverride',
-    colaboradorId: string,
-    valor: number,
-  ) {
-    setEstado((e) => ({ ...e, [campo]: { ...e[campo], [colaboradorId]: valor } }));
-  }
-
-  function guardarAjuste(a: Omit<AjusteProyeccion, 'id'>) {
+  function setSalario(colaboradorId: string, valor: number | null) {
     setEstado((e) => ({
       ...e,
-      ajustes: [...e.ajustes, { ...a, id: crypto.randomUUID(), monto: Math.abs(a.monto) }],
+      salarioOverride:
+        valor === null
+          ? sinClave(e.salarioOverride, colaboradorId)
+          : { ...e.salarioOverride, [colaboradorId]: valor },
     }));
+  }
+
+  function setDestajo(colaboradorId: string, valor: number) {
+    setEstado((e) => ({
+      ...e,
+      destajoEstimado: { ...e.destajoEstimado, [colaboradorId]: valor },
+    }));
+  }
+
+  /// Alta Y edición: empareja por id, igual que el móvil.
+  function guardarAjuste(a: AjusteProyeccion) {
+    setEstado((e) => {
+      const i = e.ajustes.findIndex((x) => x.id === a.id);
+      const lista = [...e.ajustes];
+      if (i >= 0) lista[i] = a;
+      else lista.push(a);
+      return { ...e, ajustes: lista };
+    });
     setAjusteAbierto(null);
   }
 
@@ -254,16 +299,14 @@ export function TablaProyeccion(props: Props) {
     });
   }
 
-  function navegar(dir: number) {
-    // Se salta en CALENDARIO, no sumando 7×86 400 000 ms: si alguna vez vuelve
-    // el horario de verano, una semana no mide exactamente 168 horas y el salto
-    // caería en domingo o en martes. El servidor lo normaliza igual con
-    // `navegarSemana`, pero mandarle un lunes de verdad evita depender de eso.
+  function irASemana(dir: number) {
     const p = partesTz(lunesMs);
     const destino = sumarDiasCalendario(p.year, p.month, p.day, dir * 7);
-    router.push(
-      `/admin/proyeccion?semana=${medianocheMx(destino.y, destino.m0, destino.d)}`,
-    );
+    const ms = medianocheMx(destino.y, destino.m0, destino.d);
+    // El escenario vive en memoria: cambiar de semana lo borra. Si hay trabajo
+    // invertido, se pregunta — el mismo daño que «Reiniciar», que sí preguntaba.
+    if (tocado) setConfirmarSemana(ms);
+    else router.push(`/admin/proyeccion?semana=${ms}`);
   }
 
   // ── Agrupación ───────────────────────────────────────────────────────────
@@ -296,56 +339,26 @@ export function TablaProyeccion(props: Props) {
     return `${l.day}/${l.month} al ${d.day}/${d.month}`;
   }, [lunesMs]);
 
+  const renglonAbierto = resultado.renglones.find((r) => r.colaborador.id === fichaAbierta);
+
   return (
     <div className="space-y-4">
-      {/* Aviso permanente: el riesgo real es confundir un escenario con la raya. */}
-      <div className="flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-        <span aria-hidden="true">ⓘ</span>
-        <p>
-          {estado.simularCompleta
-            ? 'Hipótesis: se ignora lo capturado y puedes mover toda la semana. Nada de esto toca el pase de lista.'
-            : 'Estás proyectando. Las celdas con color ya están capturadas en el pase de lista; las punteadas son estimaciones tuyas.'}
-        </p>
-      </div>
-
-      {/* Totales */}
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-neutral-200 bg-neutral-200 sm:grid-cols-4">
-        <Metrica
-          etiqueta="Raya proyectada"
-          valor={formatCurrency(resultado.total)}
-          detalle={`${formatCurrency(resultado.totalCapturado)} en firme + ${formatCurrency(
-            resultado.totalProyectado,
-          )} estimado`}
-          grande
-        />
-        <Metrica
-          etiqueta="Días-hombre"
-          valor={sinCeros(resultado.diasHombre)}
-          detalle={`${resultado.personas} personas`}
-        />
-        <Metrica etiqueta="Pago por día" valor={formatCurrency(resultado.totalDia)} />
-        <Metrica
-          etiqueta="Ajustes"
-          valor={formatCurrency(resultado.totalAjustes)}
-          detalle="destajos, anticipos y descuentos"
-          tono={resultado.totalAjustes < 0 ? 'negativo' : 'positivo'}
-        />
-      </div>
+      <TarjetaEscenario
+        resultado={resultado}
+        delta={delta}
+        rangoTexto={rangoTexto}
+        tocado={tocado}
+        simularCompleta={estado.simularCompleta}
+        onSimularCompleta={(v) => setEstado((e) => ({ ...e, simularCompleta: v }))}
+        onSemana={irASemana}
+      />
 
       {/* Controles */}
       <div className="flex flex-wrap items-center gap-2">
-        <Button variant="secondary" size="sm" onClick={() => navegar(-1)}>
-          ‹ Semana anterior
-        </Button>
-        <span className="text-sm font-medium text-neutral-700">{rangoTexto}</span>
-        <Button variant="secondary" size="sm" onClick={() => navegar(1)}>
-          Semana siguiente ›
-        </Button>
-
         <select
           value={obraFiltro}
           onChange={(e) => setObraFiltro(e.target.value)}
-          className="ml-2 min-h-9 rounded-lg border border-neutral-300 px-2 text-sm"
+          className="min-h-11 rounded-lg border border-neutral-300 px-2 text-sm"
           aria-label="Filtrar por obra"
         >
           <option value="">Todas las obras</option>
@@ -359,7 +372,7 @@ export function TablaProyeccion(props: Props) {
         <select
           value={agrupar}
           onChange={(e) => setAgrupar(e.target.value as Agrupar)}
-          className="min-h-9 rounded-lg border border-neutral-300 px-2 text-sm"
+          className="min-h-11 rounded-lg border border-neutral-300 px-2 text-sm"
           aria-label="Agrupar por"
         >
           <option value="cuadrilla">Agrupar por cuadrilla</option>
@@ -367,35 +380,31 @@ export function TablaProyeccion(props: Props) {
           <option value="ninguno">Sin agrupar</option>
         </select>
 
-        <label className="flex items-center gap-2 text-sm text-neutral-700">
-          <input
-            type="checkbox"
-            checked={estado.simularCompleta}
-            onChange={(e) => setEstado((s) => ({ ...s, simularCompleta: e.target.checked }))}
-          />
-          Simular semana completa
-        </label>
+        <span className="ml-auto flex flex-wrap gap-2">
+          <Button variant="secondary" size="sm" onClick={() => rellenar('lunesASabado')}>
+            Completa L–S
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => rellenar('sinSabado')}>
+            Sin sábado
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => rellenar('conDomingo')}>
+            Con domingo
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => rellenar('limpiar')}>
+            Limpiar
+          </Button>
+        </span>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <Button variant="secondary" size="sm" onClick={() => rellenar('lunesASabado')}>
-          Completa L–S
-        </Button>
-        <Button variant="secondary" size="sm" onClick={() => rellenar('sinSabado')}>
-          Sin sábado
-        </Button>
-        <Button variant="secondary" size="sm" onClick={() => rellenar('conDomingo')}>
-          Con domingo
-        </Button>
-        <Button variant="secondary" size="sm" onClick={() => rellenar('limpiar')}>
-          Limpiar
-        </Button>
-      </div>
+      {avisoColumna && (
+        <p role="status" className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          {avisoColumna}
+        </p>
+      )}
 
-      {/* La tabla. La primera columna queda congelada con `sticky left-0`: sin
-          eso, al deslizar para ver el sábado se pierde de quién es el renglón. */}
+      {/* La tabla */}
       <div className="overflow-x-auto rounded-lg border border-neutral-200">
-        <table className="w-full min-w-[860px] border-collapse text-sm">
+        <table className="w-full min-w-[780px] border-collapse text-sm">
           <thead>
             <tr className="bg-neutral-50">
               <th className="sticky left-0 z-10 bg-neutral-50 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
@@ -404,28 +413,43 @@ export function TablaProyeccion(props: Props) {
               <th className="px-2 py-2 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500">
                 $/día
               </th>
-              {DIAS.map((d, i) => (
-                <th key={d} className="px-1 py-2 text-center">
-                  <button
-                    type="button"
-                    onClick={() => alternarColumna(i)}
-                    className="w-full rounded px-1 py-0.5 text-xs font-semibold text-neutral-700 hover:bg-blue-50 hover:text-blue-700"
-                    title="Prender o apagar toda la columna"
-                  >
-                    {d}
-                    <span className="block text-[10px] font-normal text-neutral-400">
-                      {partesTz(fechaDelDia(lunesMs, i)).day}
-                    </span>
-                  </button>
-                </th>
-              ))}
+              {DIAS.map((d, i) => {
+                const llena = columnaLlena(i);
+                return (
+                  <th key={d} className="px-1 py-1.5 text-center">
+                    <button
+                      type="button"
+                      onClick={() => alternarColumna(i)}
+                      aria-pressed={llena}
+                      title={
+                        llena
+                          ? `Apagar el ${d.toLowerCase()} para todos`
+                          : `Prender el ${d.toLowerCase()} para todos`
+                      }
+                      className={`w-full rounded-lg border px-1 py-1 text-xs font-semibold ${
+                        llena
+                          ? 'border-indigo-600 bg-indigo-600 text-white'
+                          : 'border-neutral-200 bg-white text-neutral-700 hover:border-indigo-400 hover:text-indigo-700'
+                      } ${i === hoyIndice ? 'ring-1 ring-indigo-300' : ''}`}
+                    >
+                      {d}
+                      <span
+                        className={`block text-[10px] font-normal ${
+                          llena ? 'text-indigo-100' : 'text-neutral-400'
+                        }`}
+                      >
+                        {partesTz(fechaDelDia(lunesMs, i)).day}
+                      </span>
+                    </button>
+                  </th>
+                );
+              })}
               <th className="px-2 py-2 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500">
                 Días
               </th>
               <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500">
                 Subtotal
               </th>
-              <th className="w-10 px-1 py-2" />
             </tr>
           </thead>
 
@@ -436,34 +460,39 @@ export function TablaProyeccion(props: Props) {
                 nombre={g.nombre}
                 items={g.items}
                 agrupar={agrupar}
-                nombreCuadrilla={nombreCuadrilla}
-                diasBloqueados={diasBloqueados}
                 onAlternarDia={alternarDia}
-                onQuitar={quitar}
-                onSalario={(id, v) => setMonto('salarioOverride', id, v)}
-                onDestajo={(id, v) => setMonto('destajoEstimado', id, v)}
-                onAjusteColaborador={(id, nombre) =>
-                  setAjusteAbierto({ destino: 'COLABORADOR', destinoId: id, titulo: nombre })
-                }
+                onAbrirFicha={setFichaAbierta}
                 onAjusteCuadrilla={(id, nombre) =>
                   setAjusteAbierto({ destino: 'CUADRILLA', destinoId: id, titulo: nombre })
                 }
               />
             ))}
 
-            {/* Ajustes de cuadrilla que NO se repartieron: son parte del total y
-                sin ellos la suma de los renglones no daría el gran total. */}
             {resultado.lineasCuadrilla
               .filter((l) => !l.repartido)
               .map((l) => (
                 <tr key={l.ajuste.id} className="border-t border-neutral-100">
                   <td className="sticky left-0 z-10 bg-white px-3 py-2">
-                    <span className="font-medium text-purple-700">
-                      {ETIQUETA_AJUSTE[l.ajuste.tipo]} · {nombreCuadrilla[l.cuadrillaId] ?? 'Cuadrilla'}
-                    </span>
-                    <span className="block text-xs text-neutral-500">
-                      {l.ajuste.nota || 'a la cuadrilla'}
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAjusteAbierto({
+                          destino: 'CUADRILLA',
+                          destinoId: l.cuadrillaId,
+                          titulo: nombreCuadrilla[l.cuadrillaId] ?? 'Cuadrilla',
+                          existente: l.ajuste,
+                        })
+                      }
+                      className="text-left"
+                    >
+                      <span className="block text-sm font-medium text-purple-700 underline decoration-purple-200 underline-offset-2">
+                        {ETIQUETA_AJUSTE[l.ajuste.tipo]} ·{' '}
+                        {nombreCuadrilla[l.cuadrillaId] ?? 'Cuadrilla'}
+                      </span>
+                      <span className="block text-xs text-neutral-500">
+                        {l.ajuste.nota || 'a la cuadrilla'}
+                      </span>
+                    </button>
                   </td>
                   <td colSpan={9} />
                   <td
@@ -472,16 +501,6 @@ export function TablaProyeccion(props: Props) {
                     }`}
                   >
                     {formatCurrency(l.montoConSigno)}
-                  </td>
-                  <td className="px-1 text-center">
-                    <button
-                      type="button"
-                      onClick={() => borrarAjuste(l.ajuste.id)}
-                      className="rounded px-1 text-neutral-400 hover:bg-red-50 hover:text-red-700"
-                      aria-label="Quitar el ajuste"
-                    >
-                      ×
-                    </button>
                   </td>
                 </tr>
               ))}
@@ -509,13 +528,11 @@ export function TablaProyeccion(props: Props) {
               <td className="px-3 py-2 text-right text-base font-bold tabular-nums text-neutral-900">
                 {formatCurrency(resultado.total)}
               </td>
-              <td />
             </tr>
           </tfoot>
         </table>
       </div>
 
-      {/* Agregar participantes */}
       {candidatos.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
@@ -527,7 +544,7 @@ export function TablaProyeccion(props: Props) {
                 key={c.id}
                 type="button"
                 onClick={() => agregar(c)}
-                className="inline-flex min-h-9 items-center gap-2 rounded-full border border-dashed border-neutral-300 px-3 text-sm text-neutral-700 hover:border-blue-500 hover:text-blue-700"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-dashed border-neutral-300 px-4 text-sm text-neutral-700 hover:border-blue-500 hover:text-blue-700"
               >
                 + {c.nombre}
                 <span className="text-xs text-neutral-400">
@@ -539,14 +556,82 @@ export function TablaProyeccion(props: Props) {
         </div>
       )}
 
+      {/* ── Capas ────────────────────────────────────────────────────────── */}
+      {renglonAbierto && (
+        <FichaPersona
+          renglon={renglonAbierto}
+          obraNombre={nombreObra[obraPorColaborador[renglonAbierto.colaborador.id] ?? ''] ?? ''}
+          cuadrillaNombre={
+            renglonAbierto.cuadrillaId ? nombreCuadrilla[renglonAbierto.cuadrillaId] ?? null : null
+          }
+          ajustes={estado.ajustes.filter(
+            (a) => a.destino === 'COLABORADOR' && a.destinoId === renglonAbierto.colaborador.id,
+          )}
+          tieneSalarioPropio={
+            estado.salarioOverride[renglonAbierto.colaborador.id] !== undefined
+          }
+          simularCompleta={estado.simularCompleta}
+          onAlternarDia={(d) => alternarDia(renglonAbierto.colaborador.id, d)}
+          onSalario={(v) => setSalario(renglonAbierto.colaborador.id, v)}
+          onDestajo={(v) => setDestajo(renglonAbierto.colaborador.id, v)}
+          onSimularCompleta={(v) => setEstado((e) => ({ ...e, simularCompleta: v }))}
+          onNuevoAjuste={() =>
+            setAjusteAbierto({
+              destino: 'COLABORADOR',
+              destinoId: renglonAbierto.colaborador.id,
+              titulo: renglonAbierto.colaborador.nombre,
+            })
+          }
+          onEditarAjuste={(a) =>
+            setAjusteAbierto({
+              destino: 'COLABORADOR',
+              destinoId: renglonAbierto.colaborador.id,
+              titulo: renglonAbierto.colaborador.nombre,
+              existente: a,
+            })
+          }
+          onQuitarPersona={() => {
+            quitar(renglonAbierto.colaborador.id);
+            setFichaAbierta(null);
+          }}
+          onCerrar={() => setFichaAbierta(null)}
+        />
+      )}
+
       {ajusteAbierto && (
         <ModalAjuste
           titulo={ajusteAbierto.titulo}
           destino={ajusteAbierto.destino}
           destinoId={ajusteAbierto.destinoId}
+          existente={ajusteAbierto.existente}
           onGuardar={guardarAjuste}
+          onQuitar={borrarAjuste}
           onCerrar={() => setAjusteAbierto(null)}
         />
+      )}
+
+      {confirmarSemana !== null && (
+        <Modal
+          open
+          onClose={() => setConfirmarSemana(null)}
+          title="¿Cambiar de semana?"
+          size="sm"
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setConfirmarSemana(null)}>
+                Quedarme aquí
+              </Button>
+              <Button onClick={() => router.push(`/admin/proyeccion?semana=${confirmarSemana}`)}>
+                Ir de todos modos
+              </Button>
+            </>
+          }
+        >
+          <p className="text-sm text-neutral-700">
+            Se pierde lo que armaste en esta semana: los días, los salarios y los ajustes. La
+            proyección no se guarda.
+          </p>
+        </Modal>
       )}
     </div>
   );
@@ -554,17 +639,152 @@ export function TablaProyeccion(props: Props) {
 
 // ═══════════════════════════════════════════════════════════════════════════
 
+/// Una sola tarjeta con lo que hay que entender en cinco segundos: qué es esto,
+/// cuánto da, y por qué unas celdas se ven distinto.
+///
+/// Antes eran tres bandas apiladas (aviso + totales + controles) que se comían
+/// la pantalla antes del primer renglón, y la leyenda no existía en ningún lado.
+function TarjetaEscenario(props: {
+  resultado: ReturnType<typeof calcularProyeccion>;
+  delta: number | null;
+  rangoTexto: string;
+  tocado: boolean;
+  simularCompleta: boolean;
+  onSimularCompleta: (v: boolean) => void;
+  onSemana: (dir: number) => void;
+}) {
+  const { resultado: r, delta, simularCompleta } = props;
+  const [leyendaAbierta, setLeyendaAbierta] = useState(false);
+
+  return (
+    <section className="rounded-xl border border-neutral-200 bg-white p-4 sm:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
+            simularCompleta ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800'
+          }`}
+        >
+          {simularCompleta ? '🧪 HIPÓTESIS' : '📋 ESCENARIO'}
+          <span className="font-normal">· no toca el pase de lista</span>
+        </span>
+
+        <div className="flex items-center gap-1">
+          <Button variant="secondary" size="sm" onClick={() => props.onSemana(-1)}>
+            ‹
+          </Button>
+          <span className="px-1 text-sm font-medium text-neutral-700">
+            {props.rangoTexto}
+            {props.tocado && (
+              <span
+                title="Tienes cambios sin guardar en esta semana"
+                className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-indigo-500 align-middle"
+              />
+            )}
+          </span>
+          <Button variant="secondary" size="sm" onClick={() => props.onSemana(1)}>
+            ›
+          </Button>
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
+          Raya proyectada
+        </span>
+        <span className="text-3xl font-bold tabular-nums text-neutral-900">
+          {formatCurrency(r.total)}
+        </span>
+        {/* Decir QUÉ cambió, no solo cambiar el número. */}
+        {delta !== null && (
+          <span
+            role="status"
+            className={`rounded-full px-2 py-0.5 text-sm font-bold tabular-nums ${
+              delta > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            }`}
+          >
+            {delta > 0 ? '+' : '−'}
+            {formatCurrency(Math.abs(delta))}
+          </span>
+        )}
+      </div>
+
+      <p className="mt-0.5 text-sm text-neutral-600">
+        <span className="tabular-nums">{formatCurrency(r.totalCapturado)}</span> en firme +{' '}
+        <span className="tabular-nums">{formatCurrency(r.totalProyectado)}</span> estimado
+      </p>
+      <p className="text-sm text-neutral-500">
+        <span className="tabular-nums">{sinCeros(r.diasHombre)}</span> días-hombre ·{' '}
+        <span className="tabular-nums">{r.personas}</span>{' '}
+        {r.personas === 1 ? 'persona' : 'personas'}
+        {/* El hueco se reserva SIEMPRE para que meter el primer ajuste no
+            reacomode la tarjeta justo cuando se quiere leer su efecto. */}
+        <span className={r.totalAjustes === 0 ? 'text-neutral-400' : 'font-medium text-neutral-700'}>
+          {' · '}
+          {formatCurrency(r.totalAjustes)} de ajustes
+        </span>
+      </p>
+
+      {/* Leyenda: las cuatro formas reales, sin tocar nada. */}
+      <div className="mt-3 border-t border-neutral-100 pt-3">
+        <button
+          type="button"
+          onClick={() => setLeyendaAbierta((v) => !v)}
+          aria-expanded={leyendaAbierta}
+          className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 text-left text-xs text-neutral-600 hover:text-neutral-900"
+        >
+          <Muestra clase="bg-green-100 text-green-800 border border-green-200" simbolo="✓" texto="capturado" />
+          <Muestra clase="bg-red-100 text-red-800 border border-red-200" simbolo="–" texto="faltó" />
+          <Muestra clase="border-2 border-dashed border-indigo-500 text-indigo-700" simbolo="✓" texto="estimado" />
+          <Muestra clase="border border-dashed border-neutral-300 text-neutral-400" simbolo="+" texto="no cuenta" />
+          <span className="ml-auto underline">{leyendaAbierta ? 'Ocultar' : '¿Qué significan?'}</span>
+        </button>
+
+        {leyendaAbierta && (
+          <div className="mt-2 space-y-2 text-sm text-neutral-600">
+            <p>
+              Las celdas <strong>verdes y rojas</strong> ya están en el pase de lista y no se
+              pueden mover desde aquí. Las <strong>punteadas</strong> son tu estimación: tócalas
+              para prenderlas y apagarlas. Toca el <strong>nombre</strong> de alguien para ver sus
+              días, su salario y sus ajustes.
+            </p>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={simularCompleta}
+                onChange={(e) => props.onSimularCompleta(e.target.checked)}
+              />
+              <span>
+                <strong>Simular semana completa</strong> — ignora lo ya capturado y deja mover
+                todos los días. Sigue sin tocar el pase de lista.
+              </span>
+            </label>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function Muestra(props: { clase: string; simbolo: string; texto: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span
+        aria-hidden="true"
+        className={`inline-flex h-5 w-5 items-center justify-center rounded text-[11px] font-bold ${props.clase}`}
+      >
+        {props.simbolo}
+      </span>
+      {props.texto}
+    </span>
+  );
+}
+
 function GrupoFilas(props: {
   nombre: string | null;
   items: ReturnType<typeof calcularProyeccion>['renglones'];
   agrupar: Agrupar;
-  nombreCuadrilla: Record<string, string>;
-  diasBloqueados: Record<string, Set<number>>;
   onAlternarDia: (id: string, dia: number) => void;
-  onQuitar: (id: string) => void;
-  onSalario: (id: string, v: number) => void;
-  onDestajo: (id: string, v: number) => void;
-  onAjusteColaborador: (id: string, nombre: string) => void;
+  onAbrirFicha: (id: string) => void;
   onAjusteCuadrilla: (id: string, nombre: string) => void;
 }) {
   const { nombre, items, agrupar } = props;
@@ -579,64 +799,64 @@ function GrupoFilas(props: {
             {nombre}
             <span className="ml-2 font-normal text-neutral-500">{items.length}</span>
           </td>
-          <td colSpan={9} className="px-2">
+          <td colSpan={8} className="px-2">
             {cuadrillaId && (
               <button
                 type="button"
                 onClick={() => props.onAjusteCuadrilla(cuadrillaId, nombre)}
-                className="rounded px-2 py-0.5 text-xs text-neutral-500 hover:bg-neutral-200 hover:text-neutral-900"
+                className="min-h-9 rounded-lg px-2 text-xs text-neutral-600 underline underline-offset-2 hover:text-blue-700"
               >
                 + ajuste a la cuadrilla
               </button>
             )}
           </td>
+          <td />
           <td className="px-3 py-1.5 text-right text-xs font-bold tabular-nums text-neutral-900">
             {formatCurrency(subtotal)}
           </td>
-          <td />
         </tr>
       )}
 
       {items.map((r) => (
-        <tr key={r.colaborador.id} className="border-t border-neutral-100">
-          <td className="sticky left-0 z-10 bg-white px-3 py-2">
-            <span className="block font-medium text-neutral-900">{r.colaborador.nombre}</span>
-            <span className="block text-xs text-neutral-500">
-              {r.esDestajista ? 'A destajo' : r.puestoNombre}
-            </span>
+        <tr key={r.colaborador.id} className="border-t border-neutral-100 hover:bg-neutral-50/60">
+          {/* El nombre es el control principal: es lo único que SIEMPRE se ve. */}
+          <td className="sticky left-0 z-10 bg-white px-1 py-1">
+            <button
+              type="button"
+              onClick={() => props.onAbrirFicha(r.colaborador.id)}
+              className="flex min-h-11 w-full items-center gap-2 rounded-lg px-2 text-left hover:bg-neutral-100"
+              aria-label={`Abrir la ficha de ${r.colaborador.nombre}`}
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium text-neutral-900">
+                  {r.colaborador.nombre}
+                </span>
+                <span className="block truncate text-xs text-neutral-500">
+                  {r.esDestajista ? 'A destajo' : r.puestoNombre}
+                  {r.ajustes !== 0 && (
+                    <span className={r.ajustes < 0 ? 'text-red-700' : 'text-green-700'}>
+                      {' · '}
+                      {r.ajustes > 0 ? '+' : ''}
+                      {formatCurrency(r.ajustes)}
+                    </span>
+                  )}
+                </span>
+              </span>
+              <span aria-hidden="true" className="shrink-0 text-neutral-400">
+                ›
+              </span>
+            </button>
           </td>
 
-          <td className="px-2 py-2 text-right">
-            {r.esDestajista ? (
-              <span className="text-neutral-400">—</span>
-            ) : (
-              <input
-                type="number"
-                value={r.salarioDia}
-                min={0}
-                step={10}
-                onChange={(e) => props.onSalario(r.colaborador.id, Number(e.target.value) || 0)}
-                className="w-20 rounded border border-transparent px-1 py-0.5 text-right tabular-nums hover:border-neutral-300 focus:border-blue-500 focus:outline-none"
-                aria-label={`Salario por día de ${r.colaborador.nombre}`}
-              />
-            )}
+          <td className="px-2 py-2 text-right tabular-nums text-neutral-700">
+            {r.esDestajista ? '—' : formatCurrency(r.salarioDia)}
           </td>
 
           {r.esDestajista ? (
-            <td colSpan={7} className="px-2 py-2">
-              <input
-                type="number"
-                value={r.destajo}
-                min={0}
-                step={100}
-                onChange={(e) => props.onDestajo(r.colaborador.id, Number(e.target.value) || 0)}
-                className="w-40 rounded border border-dashed border-purple-400 px-2 py-1 text-right tabular-nums text-purple-700 focus:outline-none"
-                aria-label={`Destajo estimado de ${r.colaborador.nombre}`}
-              />
+            <td colSpan={7} className="px-3 py-2 text-sm text-purple-700">
+              <span className="tabular-nums font-semibold">{formatCurrency(r.destajo)}</span>
               <span className="ml-2 text-xs text-neutral-500">
-                {r.destajoIncongruente
-                  ? `menos que los ${formatCurrency(r.destajoCapturado)} ya registrados`
-                  : 'estimado de la semana · la asistencia no lo mueve'}
+                estimado de la semana · la asistencia no lo mueve
               </span>
             </td>
           ) : (
@@ -644,8 +864,8 @@ function GrupoFilas(props: {
               <td key={celda.indice} className="px-1 py-1 text-center">
                 <CeldaDiaBoton
                   celda={celda}
-                  onClick={() => props.onAlternarDia(r.colaborador.id, celda.indice)}
                   nombre={r.colaborador.nombre}
+                  onClick={() => props.onAlternarDia(r.colaborador.id, celda.indice)}
                 />
               </td>
             ))
@@ -655,41 +875,8 @@ function GrupoFilas(props: {
             {r.esDestajista ? '—' : sinCeros(r.diasTotales)}
           </td>
 
-          <td className="px-3 py-2 text-right">
-            <span className="block font-semibold tabular-nums text-neutral-900">
-              {formatCurrency(r.total)}
-            </span>
-            {r.ajustes !== 0 && (
-              <span
-                className={`block text-xs tabular-nums ${
-                  r.ajustes < 0 ? 'text-red-700' : 'text-green-700'
-                }`}
-              >
-                {r.ajustes > 0 ? '+' : ''}
-                {formatCurrency(r.ajustes)}
-              </span>
-            )}
-          </td>
-
-          <td className="px-1 text-center">
-            <button
-              type="button"
-              onClick={() => props.onAjusteColaborador(r.colaborador.id, r.colaborador.nombre)}
-              className="rounded px-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900"
-              title="Agregar destajo, anticipo o descuento"
-              aria-label={`Ajuste para ${r.colaborador.nombre}`}
-            >
-              +
-            </button>
-            <button
-              type="button"
-              onClick={() => props.onQuitar(r.colaborador.id)}
-              className="rounded px-1 text-neutral-400 hover:bg-red-50 hover:text-red-700"
-              title="Quitar de la proyección (no lo da de baja)"
-              aria-label={`Quitar a ${r.colaborador.nombre} de la proyección`}
-            >
-              ×
-            </button>
+          <td className="px-3 py-2 text-right font-semibold tabular-nums text-neutral-900">
+            {formatCurrency(r.total)}
           </td>
         </tr>
       ))}
@@ -697,30 +884,32 @@ function GrupoFilas(props: {
   );
 }
 
-/// Los cuatro estados se distinguen por FORMA además de por color (relleno vs.
-/// punteado, palomita vs. guion vs. punto): el color solo no comunica.
+/// Los cuatro estados se distinguen por FORMA además de por color.
+///
+/// La celda vacía muestra un `+` fantasma y no un punto gris: «vacío» y «toca
+/// aquí» tienen que verse distinto, o nadie descubre que la tabla se edita.
 function CeldaDiaBoton(props: {
-  celda: { indice: number; origen: string; fraccion: number };
-  onClick: () => void;
+  celda: ReturnType<typeof calcularProyeccion>['renglones'][number]['celdas'][number];
   nombre: string;
+  onClick: () => void;
 }) {
-  const { celda, onClick, nombre } = props;
+  const { celda, nombre, onClick } = props;
   const bloqueada = celda.origen === 'REAL';
 
-  let clase = 'border border-dashed border-neutral-300 text-neutral-300';
-  let simbolo = '·';
-  let descripcion = 'no cuenta';
+  let clase = 'border border-dashed border-neutral-300 text-neutral-300 hover:border-indigo-500 hover:text-indigo-500';
+  let simbolo = '+';
+  let descripcion = 'no cuenta, toca para prenderlo';
 
-  if (celda.origen === 'REAL' && celda.fraccion > 0) {
-    clase = 'bg-green-100 text-green-700 border border-green-100';
+  if (bloqueada && celda.fraccion > 0) {
+    clase = 'bg-green-100 text-green-800 border border-green-200';
     simbolo = '✓';
-    descripcion = 'asistió (capturado)';
-  } else if (celda.origen === 'REAL') {
-    clase = 'bg-red-100 text-red-700 border border-red-100';
+    descripcion = 'asistió, ya capturado';
+  } else if (bloqueada) {
+    clase = 'bg-red-100 text-red-800 border border-red-200';
     simbolo = '–';
-    descripcion = 'faltó (capturado)';
+    descripcion = 'faltó, ya capturado';
   } else if (celda.origen === 'PROYECTADA') {
-    clase = 'border border-dashed border-indigo-500 text-indigo-600';
+    clase = 'border-2 border-dashed border-indigo-500 bg-indigo-50 text-indigo-700 hover:bg-indigo-100';
     simbolo = '✓';
     descripcion = 'se espera que asista';
   }
@@ -730,14 +919,10 @@ function CeldaDiaBoton(props: {
       type="button"
       onClick={onClick}
       disabled={bloqueada}
-      title={
-        bloqueada
-          ? 'Ya está en el pase de lista. Prende «Simular semana completa» para moverlo.'
-          : undefined
-      }
+      title={bloqueada ? 'Ya está en el pase de lista' : undefined}
       aria-label={`${nombre}, ${DIAS[celda.indice]}: ${descripcion}`}
-      className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold ${clase} ${
-        bloqueada ? 'cursor-default' : 'hover:bg-indigo-50'
+      className={`inline-flex h-9 w-9 items-center justify-center rounded-lg text-sm font-bold ${clase} ${
+        bloqueada ? 'cursor-default' : ''
       }`}
     >
       {simbolo}
@@ -745,171 +930,13 @@ function CeldaDiaBoton(props: {
   );
 }
 
-function ModalAjuste(props: {
-  titulo: string;
-  destino: DestinoAjuste;
-  destinoId: string;
-  onGuardar: (a: Omit<AjusteProyeccion, 'id'>) => void;
-  onCerrar: () => void;
-}) {
-  const [tipo, setTipo] = useState<TipoAjuste>('DESTAJO');
-  const [monto, setMonto] = useState('');
-  const [nota, setNota] = useState('');
-  const [reparto, setReparto] = useState<RepartoAjuste>('PARTES_IGUALES');
-  const valor = Math.abs(Number(monto) || 0);
-
-  const explicacion: Record<TipoAjuste, string> = {
-    DESTAJO: 'Trabajo a precio alzado que se paga ADEMÁS de los días.',
-    ANTICIPO: 'Dinero que ya se entregó a cuenta de esta raya.',
-    DESCUENTO: 'Préstamo, herramienta o material a descontar.',
-  };
-
-  return (
-    <Modal
-      open
-      onClose={props.onCerrar}
-      title="Nuevo ajuste"
-      footer={
-        <>
-          <Button variant="secondary" onClick={props.onCerrar}>
-            Cancelar
-          </Button>
-          <Button
-            disabled={valor <= 0}
-            onClick={() =>
-              props.onGuardar({
-                tipo,
-                destino: props.destino,
-                destinoId: props.destinoId,
-                monto: valor,
-                nota: nota.trim(),
-                reparto,
-              })
-            }
-          >
-            Guardar
-          </Button>
-        </>
-      }
-    >
-      <div className="space-y-4">
-        <p className="text-sm text-neutral-500">
-          {props.destino === 'CUADRILLA' ? `Cuadrilla ${props.titulo}` : props.titulo}
-        </p>
-
-        <div className="flex gap-2">
-          {(['DESTAJO', 'ANTICIPO', 'DESCUENTO'] as TipoAjuste[]).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTipo(t)}
-              className={`min-h-9 flex-1 rounded-lg border px-3 text-sm ${
-                tipo === t
-                  ? 'border-blue-500 bg-blue-50 font-semibold text-blue-700'
-                  : 'border-neutral-300 text-neutral-700'
-              }`}
-            >
-              {ETIQUETA_AJUSTE[t]}
-            </button>
-          ))}
-        </div>
-        <p className="text-xs text-neutral-500">{explicacion[tipo]}</p>
-
-        <label className="block space-y-1">
-          <span className="text-sm font-medium text-neutral-700">Monto</span>
-          <input
-            type="number"
-            value={monto}
-            min={0}
-            autoFocus
-            onChange={(e) => setMonto(e.target.value)}
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-right tabular-nums"
-          />
-          {valor > 0 && (
-            <span
-              className={`text-xs font-semibold ${
-                tipo === 'DESTAJO' ? 'text-green-700' : 'text-red-700'
-              }`}
-            >
-              {tipo === 'DESTAJO'
-                ? `Suma ${formatCurrency(valor)} a la raya`
-                : `Baja ${formatCurrency(valor)} de la raya`}
-            </span>
-          )}
-        </label>
-
-        <label className="block space-y-1">
-          <span className="text-sm font-medium text-neutral-700">Nota (opcional)</span>
-          <input
-            type="text"
-            value={nota}
-            onChange={(e) => setNota(e.target.value)}
-            placeholder="Colado de losa, préstamo, herramienta…"
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2"
-          />
-        </label>
-
-        {props.destino === 'CUADRILLA' && (
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-medium text-neutral-700">¿Cómo se reparte?</legend>
-            {(
-              [
-                ['PARTES_IGUALES', 'En partes iguales', 'Entre los miembros que están en la proyección.'],
-                ['A_LA_CUADRILLA', 'Como renglón de la cuadrilla', 'Para cuando el maestro cobra el alzado y él reparte.'],
-              ] as [RepartoAjuste, string, string][]
-            ).map(([valorOpt, titulo, ayuda]) => (
-              <label key={valorOpt} className="flex gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="reparto"
-                  checked={reparto === valorOpt}
-                  onChange={() => setReparto(valorOpt)}
-                />
-                <span>
-                  <span className="block text-neutral-900">{titulo}</span>
-                  <span className="block text-xs text-neutral-500">{ayuda}</span>
-                </span>
-              </label>
-            ))}
-          </fieldset>
-        )}
-      </div>
-    </Modal>
-  );
-}
-
-function Metrica(props: {
-  etiqueta: string;
-  valor: string;
-  detalle?: string;
-  grande?: boolean;
-  tono?: 'positivo' | 'negativo';
-}) {
-  const color =
-    props.tono === 'negativo'
-      ? 'text-red-700'
-      : props.tono === 'positivo'
-        ? 'text-green-700'
-        : 'text-neutral-900';
-  return (
-    <div className="bg-white px-4 py-3">
-      <span className="block text-[10px] font-semibold uppercase tracking-wider text-neutral-500">
-        {props.etiqueta}
-      </span>
-      <span
-        className={`block font-bold tabular-nums ${color} ${
-          props.grande ? 'text-2xl' : 'text-lg'
-        }`}
-      >
-        {props.valor}
-      </span>
-      {props.detalle && <span className="block text-xs text-neutral-500">{props.detalle}</span>}
-    </div>
-  );
-}
-
 function sinCeros(v: number): string {
   return Number.isInteger(v) ? v.toFixed(0) : v.toFixed(2);
+}
+
+/// Miles abreviados: en una celda de día no cabe «$12,120».
+function compacto(v: number): string {
+  return Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toFixed(0);
 }
 
 /// Copia del objeto sin una clave, sin dejar variables sueltas que el linter
@@ -918,9 +945,4 @@ function sinClave<T>(obj: Record<string, T>, clave: string): Record<string, T> {
   const copia = { ...obj };
   delete copia[clave];
   return copia;
-}
-
-/// Miles abreviados: en una celda de día no cabe «$12,120».
-function compacto(v: number): string {
-  return Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toFixed(0);
 }
