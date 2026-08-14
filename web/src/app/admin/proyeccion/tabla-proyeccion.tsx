@@ -9,6 +9,7 @@ import {
   calcularProyeccion,
   fechaDelDia,
   indiceDiaSemana,
+  participantesDeObra,
   type AjusteProyeccion,
   type DestinoAjuste,
   type ProyeccionEstado,
@@ -83,6 +84,7 @@ export function TablaProyeccion(props: Props) {
       salarioOverride: {},
       ajustes: [],
       simularCompleta: false,
+      obraPorDia: {},
     };
   }, [colaboradores, obraPorColaborador, destajos, lunesMs]);
 
@@ -97,9 +99,8 @@ export function TablaProyeccion(props: Props) {
   );
 
   const participantesVisibles = useMemo(
-    () =>
-      estado.participantes.filter((id) => !obraFiltro || obraPorColaborador[id] === obraFiltro),
-    [estado.participantes, obraFiltro, obraPorColaborador],
+    () => participantesDeObra(estado, obraPorColaborador, obraFiltro || null),
+    [estado, obraFiltro, obraPorColaborador],
   );
 
   const resultado = useMemo(
@@ -112,6 +113,7 @@ export function TablaProyeccion(props: Props) {
         destajosReales: destajos,
         cuadrillaPorColaborador,
         obraPorColaborador,
+        obraFiltro: obraFiltro || null,
       }),
     [
       estado,
@@ -122,6 +124,7 @@ export function TablaProyeccion(props: Props) {
       destajos,
       cuadrillaPorColaborador,
       obraPorColaborador,
+      obraFiltro,
     ],
   );
 
@@ -253,6 +256,35 @@ export function TablaProyeccion(props: Props) {
     }));
   }
 
+  /// Presta (o devuelve) un día de una persona a otra obra.
+  ///
+  /// Mover un día lo marca además como asistido: si dices «el jueves se va a
+  /// Alfaro» es porque va a trabajar allá, y tener que prenderlo aparte sería un
+  /// paso que nadie entiende para qué es.
+  function moverDia(colaboradorId: string, dia: number, obraDestino: string | null) {
+    setEstado((e) => {
+      const deLaPersona = { ...(e.obraPorDia[colaboradorId] ?? {}) };
+      if (obraDestino === null) delete deLaPersona[dia];
+      else deLaPersona[dia] = obraDestino;
+
+      const obraPorDia = { ...e.obraPorDia };
+      if (Object.keys(deLaPersona).length === 0) delete obraPorDia[colaboradorId];
+      else obraPorDia[colaboradorId] = deLaPersona;
+
+      const dias = new Set(e.diasProyectados[colaboradorId] ?? []);
+      if (obraDestino !== null) dias.add(dia);
+
+      return {
+        ...e,
+        obraPorDia,
+        diasProyectados: {
+          ...e.diasProyectados,
+          [colaboradorId]: [...dias].sort((a, b) => a - b),
+        },
+      };
+    });
+  }
+
   function setDestajo(colaboradorId: string, valor: number) {
     setEstado((e) => ({
       ...e,
@@ -347,6 +379,7 @@ export function TablaProyeccion(props: Props) {
         resultado={resultado}
         delta={delta}
         rangoTexto={rangoTexto}
+        obraNombre={obraFiltro ? nombreObra[obraFiltro] ?? '' : ''}
         tocado={tocado}
         simularCompleta={estado.simularCompleta}
         onSimularCompleta={(v) => setEstado((e) => ({ ...e, simularCompleta: v }))}
@@ -460,6 +493,7 @@ export function TablaProyeccion(props: Props) {
                 nombre={g.nombre}
                 items={g.items}
                 agrupar={agrupar}
+                nombreObra={nombreObra}
                 onAlternarDia={alternarDia}
                 onAbrirFicha={setFichaAbierta}
                 onAjusteCuadrilla={(id, nombre) =>
@@ -571,6 +605,10 @@ export function TablaProyeccion(props: Props) {
             estado.salarioOverride[renglonAbierto.colaborador.id] !== undefined
           }
           simularCompleta={estado.simularCompleta}
+          obraBaseId={obraPorColaborador[renglonAbierto.colaborador.id] ?? ''}
+          obras={Object.entries(nombreObra).map(([id, nombre]) => ({ id, nombre }))}
+          prestamos={estado.obraPorDia[renglonAbierto.colaborador.id] ?? {}}
+          onMoverDia={(d, obra) => moverDia(renglonAbierto.colaborador.id, d, obra)}
           onAlternarDia={(d) => alternarDia(renglonAbierto.colaborador.id, d)}
           onSalario={(v) => setSalario(renglonAbierto.colaborador.id, v)}
           onDestajo={(v) => setDestajo(renglonAbierto.colaborador.id, v)}
@@ -648,6 +686,8 @@ function TarjetaEscenario(props: {
   resultado: ReturnType<typeof calcularProyeccion>;
   delta: number | null;
   rangoTexto: string;
+  /// Nombre de la obra que se está viendo, o vacío si son todas.
+  obraNombre: string;
   tocado: boolean;
   simularCompleta: boolean;
   onSimularCompleta: (v: boolean) => void;
@@ -689,7 +729,10 @@ function TarjetaEscenario(props: {
 
       <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
-          Raya proyectada
+          {/* Con filtro, el total NO es el global: es el de esa obra, con los
+              días prestados que llegaron y sin los que se fueron. Decirlo evita
+              leer una cifra parcial como si fuera la de toda la empresa. */}
+          {props.obraNombre ? `Raya de ${props.obraNombre}` : 'Raya proyectada'}
         </span>
         <span className="text-3xl font-bold tabular-nums text-neutral-900">
           {formatCurrency(r.total)}
@@ -783,6 +826,7 @@ function GrupoFilas(props: {
   nombre: string | null;
   items: ReturnType<typeof calcularProyeccion>['renglones'];
   agrupar: Agrupar;
+  nombreObra: Record<string, string>;
   onAlternarDia: (id: string, dia: number) => void;
   onAbrirFicha: (id: string) => void;
   onAjusteCuadrilla: (id: string, nombre: string) => void;
@@ -865,6 +909,7 @@ function GrupoFilas(props: {
                 <CeldaDiaBoton
                   celda={celda}
                   nombre={r.colaborador.nombre}
+                  obraDestino={props.nombreObra[celda.obraId]}
                   onClick={() => props.onAlternarDia(r.colaborador.id, celda.indice)}
                 />
               </td>
@@ -891,10 +936,29 @@ function GrupoFilas(props: {
 function CeldaDiaBoton(props: {
   celda: ReturnType<typeof calcularProyeccion>['renglones'][number]['celdas'][number];
   nombre: string;
+  obraDestino?: string;
   onClick: () => void;
 }) {
-  const { celda, nombre, onClick } = props;
+  const { celda, nombre, onClick, obraDestino } = props;
   const bloqueada = celda.origen === 'REAL';
+
+  // Un día prestado se ve pero no cuenta aquí. Se pinta en ámbar —el color de
+  // «ojo con esto» en el sistema— con la inicial de la obra a la que se fue,
+  // para que se entienda de un vistazo por qué esa persona trae menos días.
+  if (celda.prestado) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        disabled
+        title={`Ese día se va a ${obraDestino ?? 'otra obra'}`}
+        aria-label={`${nombre}, ${DIAS[celda.indice]}: prestado a ${obraDestino ?? 'otra obra'}`}
+        className="inline-flex h-9 w-9 cursor-default items-center justify-center rounded-lg border border-dashed border-amber-400 bg-amber-50 text-[11px] font-bold text-amber-700"
+      >
+        {(obraDestino ?? '?').slice(0, 2).toUpperCase()}
+      </button>
+    );
+  }
 
   let clase = 'border border-dashed border-neutral-300 text-neutral-300 hover:border-indigo-500 hover:text-indigo-500';
   let simbolo = '+';

@@ -20,6 +20,13 @@ interface Props {
   ajustes: AjusteProyeccion[];
   tieneSalarioPropio: boolean;
   simularCompleta: boolean;
+  /// Obra base de la persona y catálogo de obras, para los préstamos por día.
+  obraBaseId: string;
+  obras: { id: string; nombre: string }[];
+  /// `día → obraId` de los días que hoy están prestados.
+  prestamos: Record<number, string>;
+  /// `obraId === null` devuelve el día a su obra base.
+  onMoverDia: (dia: number, obraId: string | null) => void;
   onAlternarDia: (dia: number) => void;
   /// `null` restablece el salario del puesto.
   onSalario: (valor: number | null) => void;
@@ -119,6 +126,15 @@ export function FichaPersona(props: Props) {
                 {formatCurrency(r.baseCapturada + r.baseProyectada)}
               </span>
             </p>
+
+            <PrestamosPorDia
+              celdas={r.celdas}
+              obraBaseId={props.obraBaseId}
+              obraBaseNombre={obraNombre}
+              obras={props.obras}
+              prestamos={props.prestamos}
+              onMoverDia={props.onMoverDia}
+            />
           </section>
         )}
 
@@ -265,6 +281,103 @@ export function FichaPersona(props: Props) {
         </section>
       </div>
     </Modal>
+  );
+}
+
+/// Préstamos por día: «el jueves me lo llevo a Alfaro».
+///
+/// Se muestra un renglón por día en vez de un selector global porque el
+/// préstamo es de DÍAS SUELTOS, no de la semana: en la obra se presta gente un
+/// jueves, no un mes. Cada renglón dice a qué obra pertenece ese día y deja
+/// cambiarlo; los que siguen en la obra base se ven en gris para que el ojo
+/// encuentre rápido los que sí se movieron.
+function PrestamosPorDia(props: {
+  celdas: ProyeccionRenglon['celdas'];
+  obraBaseId: string;
+  obraBaseNombre: string;
+  obras: { id: string; nombre: string }[];
+  prestamos: Record<number, string>;
+  onMoverDia: (dia: number, obraId: string | null) => void;
+}) {
+  const { celdas, obraBaseId, obraBaseNombre, obras, prestamos } = props;
+  const [abierto, setAbierto] = useState(Object.keys(prestamos).length > 0);
+  const cuantos = Object.keys(prestamos).length;
+
+  // Con una sola obra no hay a dónde mover a nadie.
+  const otras = obras.filter((o) => o.id !== obraBaseId);
+  if (otras.length === 0) return null;
+
+  return (
+    <div className="rounded-lg border border-neutral-200">
+      <button
+        type="button"
+        onClick={() => setAbierto((v) => !v)}
+        aria-expanded={abierto}
+        className="flex min-h-11 w-full items-center gap-2 px-3 text-left text-sm"
+      >
+        <span className="flex-1 font-medium text-neutral-800">
+          ¿Se va a otra obra algún día?
+        </span>
+        {cuantos > 0 && (
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+            {cuantos} {cuantos === 1 ? 'día movido' : 'días movidos'}
+          </span>
+        )}
+        <span aria-hidden="true" className="text-neutral-400">
+          {abierto ? '▴' : '▾'}
+        </span>
+      </button>
+
+      {abierto && (
+        <div className="space-y-1 border-t border-neutral-100 px-3 py-2">
+          <p className="pb-1 text-xs text-neutral-500">
+            El día que muevas se marca como asistido en la obra destino y suma a
+            la raya de ESA obra, junto con la gente que ya está asignada ahí.
+          </p>
+          {celdas.map((celda) => {
+            const destino = prestamos[celda.indice];
+            const bloqueado = celda.origen === 'REAL';
+            return (
+              <div key={celda.indice} className="flex items-center gap-2">
+                <span
+                  className={`w-10 shrink-0 text-xs font-semibold ${
+                    destino ? 'text-amber-800' : 'text-neutral-500'
+                  }`}
+                >
+                  {DIAS[celda.indice]}
+                </span>
+                <select
+                  value={destino ?? obraBaseId}
+                  disabled={bloqueado}
+                  onChange={(e) =>
+                    props.onMoverDia(
+                      celda.indice,
+                      e.target.value === obraBaseId ? null : e.target.value,
+                    )
+                  }
+                  aria-label={`Obra del ${DIAS[celda.indice]}`}
+                  className={`min-h-9 flex-1 rounded-lg border px-2 text-sm ${
+                    destino
+                      ? 'border-amber-400 bg-amber-50 font-medium text-amber-900'
+                      : 'border-neutral-200 text-neutral-500'
+                  } ${bloqueado ? 'cursor-not-allowed opacity-60' : ''}`}
+                >
+                  <option value={obraBaseId}>{obraBaseNombre}</option>
+                  {otras.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.nombre}
+                    </option>
+                  ))}
+                </select>
+                {bloqueado && (
+                  <span className="shrink-0 text-xs text-neutral-400">ya capturado</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
