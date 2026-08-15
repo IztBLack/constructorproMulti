@@ -55,6 +55,7 @@ export default async function ProyeccionPage({ searchParams }: PageProps) {
         <TablaProyeccion
           lunesMs={rango.inicioMs}
           hoyIndice={indiceDiaSemana(rango.inicioMs, hoyMxMs())}
+          hoyMs={hoyMxMs()}
           colaboradores={datos.colaboradores}
           puestos={datos.puestos}
           asistencias={datos.asistencias}

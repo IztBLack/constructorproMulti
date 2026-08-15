@@ -28,6 +28,9 @@ type Agrupar = 'cuadrilla' | 'obra' | 'ninguno';
 interface Props {
   lunesMs: number;
   hoyIndice: number | null;
+  /// Medianoche de HOY en México, calculada en el servidor. Sirve para «Ir a la
+  /// semana actual» sin leer el reloj del navegador, que puede estar en otra zona.
+  hoyMs: number;
   colaboradores: Colaborador[];
   puestos: Puesto[];
   asistencias: Asistencia[];
@@ -42,6 +45,7 @@ export function TablaProyeccion(props: Props) {
   const {
     lunesMs,
     hoyIndice,
+    hoyMs,
     colaboradores,
     puestos,
     asistencias,
@@ -58,6 +62,9 @@ export function TablaProyeccion(props: Props) {
   const [fichaAbierta, setFichaAbierta] = useState<string | null>(null);
   const [gestorAbierto, setGestorAbierto] = useState(false);
   const [confirmarSemana, setConfirmarSemana] = useState<number | null>(null);
+  const [confirmarReinicio, setConfirmarReinicio] = useState(false);
+  const [generandoPdf, setGenerandoPdf] = useState(false);
+  const [errorPdf, setErrorPdf] = useState<string | null>(null);
   const [ajusteAbierto, setAjusteAbierto] = useState<{
     destino: DestinoAjuste;
     destinoId: string;
@@ -317,7 +324,9 @@ export function TablaProyeccion(props: Props) {
     setEstado((e) => ({ ...e, ajustes: e.ajustes.filter((a) => a.id !== id) }));
   }
 
-  function rellenar(modo: 'lunesASabado' | 'sinSabado' | 'conDomingo' | 'limpiar') {
+  function rellenar(
+    modo: 'lunesASabado' | 'segunSuContrato' | 'sinSabado' | 'conDomingo' | 'limpiar',
+  ) {
     setEstado((e) => {
       const mapa = { ...e.diasProyectados };
       for (const r of resultado.renglones) {
@@ -327,6 +336,16 @@ export function TablaProyeccion(props: Props) {
         const actuales = new Set(mapa[id] ?? []);
         if (modo === 'lunesASabado') {
           for (let d = 0; d < 6; d++) if (!bloqueados.has(d)) actuales.add(d);
+        } else if (modo === 'segunSuContrato') {
+          // Cada quien según sus `dias_semana`: el que cobra 5 días vuelve a 5 y
+          // el de 7 a 7. Es el relleno que devuelve el escenario a su estado
+          // defendible sin tener que reiniciarlo entero.
+          const n = Math.min(Math.max(r.colaborador.dias_semana ?? 6, 1), 7);
+          for (let d = 0; d < 7; d++) {
+            if (bloqueados.has(d)) continue;
+            if (d < n) actuales.add(d);
+            else actuales.delete(d);
+          }
         } else if (modo === 'sinSabado') {
           if (!bloqueados.has(5)) actuales.delete(5);
         } else if (modo === 'conDomingo') {
@@ -334,10 +353,57 @@ export function TablaProyeccion(props: Props) {
         } else {
           for (const d of [...actuales]) if (!bloqueados.has(d)) actuales.delete(d);
         }
-        mapa[id] = [...actuales].sort();
+        mapa[id] = [...actuales].sort((a, b) => a - b);
       }
       return { ...e, diasProyectados: mapa };
     });
+  }
+
+  /// Tira el escenario y vuelve a la siembra. Pregunta, porque se lleva por
+  /// delante los días, los salarios, los préstamos y los ajustes.
+  function reiniciar() {
+    setEstado(estadoInicial);
+    setConfirmarReinicio(false);
+  }
+
+  /// Vuelve a la semana en curso. Hace el mismo daño que un chevrón, así que
+  /// pasa por la misma confirmación.
+  function irASemanaActual() {
+    const p = partesTz(hoyMs);
+    const lunes = sumarDiasCalendario(p.year, p.month, p.day, -(p.weekday - 1));
+    const ms = medianocheMx(lunes.y, lunes.m0, lunes.d);
+    if (ms === lunesMs) return;
+    if (tocado) setConfirmarSemana(ms);
+    else router.push(`/admin/proyeccion?semana=${ms}`);
+  }
+
+  /// Pide el PDF al servidor mandándole el escenario. El servidor RECALCULA:
+  /// no se le mandan cifras ya sumadas.
+  async function exportarPdf() {
+    setGenerandoPdf(true);
+    try {
+      const res = await fetch('/admin/proyeccion/pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado, obraFiltro: obraFiltro || null }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({ error: 'No se pudo generar el PDF.' }));
+        setErrorPdf(j.error ?? 'No se pudo generar el PDF.');
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'proyeccion-nomina.pdf';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setErrorPdf('No se pudo generar el PDF.');
+    } finally {
+      setGenerandoPdf(false);
+    }
   }
 
   function irASemana(dir: number) {
@@ -430,6 +496,9 @@ export function TablaProyeccion(props: Props) {
           <Button variant="secondary" size="sm" onClick={() => rellenar('lunesASabado')}>
             Completa L–S
           </Button>
+          <Button variant="secondary" size="sm" onClick={() => rellenar('segunSuContrato')}>
+            Según sus días
+          </Button>
           <Button variant="secondary" size="sm" onClick={() => rellenar('sinSabado')}>
             Sin sábado
           </Button>
@@ -442,9 +511,35 @@ export function TablaProyeccion(props: Props) {
         </span>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="secondary" size="sm" onClick={exportarPdf} disabled={generandoPdf}>
+          {generandoPdf ? 'Generando PDF…' : 'PDF de la proyección'}
+        </Button>
+        <Button variant="secondary" size="sm" onClick={irASemanaActual}>
+          Ir a la semana actual
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setConfirmarReinicio(true)}
+          disabled={!tocado}
+        >
+          Reiniciar la proyección
+        </Button>
+      </div>
+
       {avisoColumna && (
         <p role="status" className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
           {avisoColumna}
+        </p>
+      )}
+
+      {errorPdf && (
+        <p role="alert" className="flex items-center gap-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
+          <span className="flex-1">{errorPdf}</span>
+          <button type="button" onClick={() => setErrorPdf(null)} className="min-h-9 underline">
+            Cerrar
+          </button>
         </p>
       )}
 
@@ -655,6 +750,29 @@ export function TablaProyeccion(props: Props) {
           onQuitar={borrarAjuste}
           onCerrar={() => setAjusteAbierto(null)}
         />
+      )}
+
+      {confirmarReinicio && (
+        <Modal
+          open
+          onClose={() => setConfirmarReinicio(false)}
+          title="¿Reiniciar la proyección?"
+          size="sm"
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setConfirmarReinicio(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={reiniciar}>Reiniciar</Button>
+            </>
+          }
+        >
+          <p className="text-sm text-neutral-700">
+            Vuelve al escenario con el que abrió: cada quien con sus días de contrato. Se
+            pierden los días que moviste, los salarios, los préstamos entre obras y los
+            ajustes.
+          </p>
+        </Modal>
       )}
 
       {confirmarSemana !== null && (
