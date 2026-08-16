@@ -64,7 +64,7 @@ export function GestorParticipantes(props: Props) {
           onChange={(e) => setBusqueda(e.target.value)}
           placeholder="Buscar por nombre…"
           aria-label="Buscar colaborador"
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+          className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
         />
 
         <section className="space-y-2">
@@ -74,7 +74,7 @@ export function GestorParticipantes(props: Props) {
           {enProyeccion.length === 0 ? (
             <p className="text-sm text-neutral-500">Nadie todavía.</p>
           ) : (
-            <ul className="divide-y divide-neutral-100 rounded-lg border border-neutral-200">
+            <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200">
               {enProyeccion.map((c) => (
                 <li key={c.id} className="flex items-center gap-3 px-3 py-2">
                   <span className="min-w-0 flex-1">
@@ -89,7 +89,7 @@ export function GestorParticipantes(props: Props) {
                   <button
                     type="button"
                     onClick={() => props.onQuitar(c.id)}
-                    className="min-h-9 shrink-0 rounded-lg px-3 text-sm font-medium text-red-700 hover:bg-red-50"
+                    className="min-h-9 shrink-0 rounded-lg px-3 text-sm font-medium text-red-700 hover:bg-red-50 outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
                   >
                     Quitar
                   </button>
@@ -108,7 +108,7 @@ export function GestorParticipantes(props: Props) {
               Ya están todos los colaboradores activos.
             </p>
           ) : (
-            <ul className="divide-y divide-neutral-100 rounded-lg border border-neutral-200">
+            <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200">
               {fuera.map((c) => {
                 const suObra = obraDe[c.id];
                 const sinObra = !suObra;
@@ -134,7 +134,7 @@ export function GestorParticipantes(props: Props) {
                           setObraElegida((m) => ({ ...m, [c.id]: e.target.value }))
                         }
                         aria-label={`Obra para ${c.nombre}`}
-                        className="min-h-9 rounded-lg border border-neutral-300 px-2 text-sm"
+                        className="min-h-9 rounded-lg border border-neutral-300 px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
                       >
                         {obras.map((o) => (
                           <option key={o.id} value={o.id}>
@@ -148,7 +148,7 @@ export function GestorParticipantes(props: Props) {
                       type="button"
                       disabled={sinObra && !elegida}
                       onClick={() => props.onAgregar(c.id, sinObra ? elegida : null)}
-                      className="min-h-9 shrink-0 rounded-lg border border-neutral-300 px-3 text-sm font-medium text-neutral-700 hover:border-blue-500 hover:text-blue-700 disabled:opacity-50"
+                      className="min-h-9 shrink-0 rounded-lg border border-neutral-300 px-3 text-sm font-medium text-neutral-700 hover:border-blue-500 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
                     >
                       Agregar
                     </button>

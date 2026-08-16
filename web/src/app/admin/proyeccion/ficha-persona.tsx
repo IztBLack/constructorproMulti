@@ -109,7 +109,7 @@ export function FichaPersona(props: Props) {
                     props.onSimularCompleta(true);
                     setAvisoBloqueado([]);
                   }}
-                  className="min-h-9 rounded-lg border border-neutral-300 bg-white px-3 text-sm font-medium hover:border-blue-500 hover:text-blue-700"
+                  className="min-h-9 rounded-lg border border-neutral-300 bg-white px-3 text-sm font-medium hover:border-blue-500 hover:text-blue-700 outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
                 >
                   Simular semana completa
                 </button>
@@ -153,7 +153,7 @@ export function FichaPersona(props: Props) {
                 step={100}
                 onChange={(e) => setDestajo(e.target.value)}
                 onBlur={() => props.onDestajo(Math.abs(Number(destajo) || 0))}
-                className="w-44 rounded-lg border border-purple-700 px-3 py-2 text-right tabular-nums text-purple-700"
+                className="w-44 rounded-lg border border-purple-700 px-3 py-2 text-right tabular-nums text-purple-700 outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
                 aria-label={`Destajo estimado de ${r.colaborador.nombre}`}
               />
               <p className="text-xs text-neutral-500">
@@ -179,7 +179,7 @@ export function FichaPersona(props: Props) {
                 // todo y teclear, un `onChange` deja el salario en 0 por un
                 // instante y el gran total se desploma a media captura.
                 onBlur={() => props.onSalario(Math.abs(Number(salario) || 0))}
-                className="w-32 rounded-lg border border-neutral-300 px-3 py-2 text-right tabular-nums"
+                className="w-32 rounded-lg border border-neutral-300 px-3 py-2 text-right tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
                 aria-label={`Salario por día de ${r.colaborador.nombre}`}
               />
               {tieneSalarioPropio && (
@@ -189,7 +189,7 @@ export function FichaPersona(props: Props) {
                     props.onSalario(null);
                     props.onCerrar();
                   }}
-                  className="min-h-9 rounded-lg px-2 text-sm text-neutral-500 underline hover:text-neutral-900"
+                  className="min-h-9 rounded-lg px-2 text-sm text-neutral-500 underline hover:text-neutral-900 outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
                 >
                   Restablecer el del puesto
                 </button>
@@ -215,7 +215,7 @@ export function FichaPersona(props: Props) {
               entregaron y los descuentos.
             </p>
           ) : (
-            <ul className="divide-y divide-neutral-100 rounded-lg border border-neutral-200">
+            <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200">
               {ajustes.map((a) => (
                 <li key={a.id} className="flex items-center gap-3 px-3 py-2">
                   <span className="min-w-0 flex-1">
@@ -237,7 +237,7 @@ export function FichaPersona(props: Props) {
                   <button
                     type="button"
                     onClick={() => props.onEditarAjuste(a)}
-                    className="min-h-9 shrink-0 rounded-lg px-2 text-sm text-blue-700 hover:bg-blue-50"
+                    className="min-h-9 shrink-0 rounded-lg px-2 text-sm text-blue-700 hover:bg-blue-50 outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
                   >
                     Editar
                   </button>
@@ -271,7 +271,7 @@ export function FichaPersona(props: Props) {
           <button
             type="button"
             onClick={props.onQuitarPersona}
-            className="min-h-11 rounded-lg px-3 text-sm font-medium text-red-700 hover:bg-red-50"
+            className="min-h-11 rounded-lg px-3 text-sm font-medium text-red-700 hover:bg-red-50 outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
           >
             Quitar de la proyección
           </button>
@@ -313,7 +313,7 @@ function PrestamosPorDia(props: {
         type="button"
         onClick={() => setAbierto((v) => !v)}
         aria-expanded={abierto}
-        className="flex min-h-11 w-full items-center gap-2 px-3 text-left text-sm"
+        className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
       >
         <span className="flex-1 font-medium text-neutral-800">
           ¿Se va a otra obra algún día?
@@ -329,7 +329,7 @@ function PrestamosPorDia(props: {
       </button>
 
       {abierto && (
-        <div className="space-y-1 border-t border-neutral-100 px-3 py-2">
+        <div className="space-y-1 border-t border-neutral-200 px-3 py-2">
           <p className="pb-1 text-xs text-neutral-500">
             El día que muevas se marca como asistido en la obra destino y suma a
             la raya de ESA obra, junto con la gente que ya está asignada ahí.
@@ -356,9 +356,9 @@ function PrestamosPorDia(props: {
                     )
                   }
                   aria-label={`Obra del ${DIAS[celda.indice]}`}
-                  className={`min-h-9 flex-1 rounded-lg border px-2 text-sm ${
+                  className={`min-h-9 flex-1 rounded-lg border px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 ${
                     destino
-                      ? 'border-amber-400 bg-amber-50 font-medium text-amber-900'
+                      ? 'border-amber-700 bg-amber-50 font-medium text-amber-900'
                       : 'border-neutral-200 text-neutral-500'
                   } ${bloqueado ? 'cursor-not-allowed opacity-60' : ''}`}
                 >
@@ -391,7 +391,7 @@ function ChipDia(props: {
   const { celda, nombre, onClick } = props;
   const capturado = celda.origen === 'REAL';
 
-  let clase = 'border border-dashed border-neutral-400 text-neutral-500';
+  let clase = 'border border-dashed border-neutral-500 text-neutral-500';
   let simbolo = '+';
   let descripcion = 'no cuenta, toca para prenderlo';
 
@@ -414,7 +414,7 @@ function ChipDia(props: {
       type="button"
       onClick={onClick}
       aria-label={`${nombre}, ${DIAS_LARGOS[celda.indice]}: ${descripcion}`}
-      className={`relative flex h-14 w-14 flex-col items-center justify-center rounded-xl text-lg font-bold ${clase} ${
+      className={`relative flex h-14 w-14 flex-col items-center justify-center rounded-xl text-lg font-bold outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 ${clase} ${
         capturado ? 'cursor-default' : 'hover:border-indigo-500'
       }`}
     >

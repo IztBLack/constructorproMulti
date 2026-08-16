@@ -95,7 +95,7 @@ export function ModalAjuste(props: Props) {
               type="button"
               onClick={() => setTipo(t)}
               aria-pressed={tipo === t}
-              className={`min-h-11 flex-1 rounded-lg border px-3 text-sm ${
+              className={`min-h-11 flex-1 rounded-lg border px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 ${
                 tipo === t
                   ? 'border-blue-500 bg-blue-50 font-semibold text-blue-700'
                   : 'border-neutral-300 text-neutral-700 hover:border-neutral-400'
@@ -115,7 +115,7 @@ export function ModalAjuste(props: Props) {
             min={0}
             autoFocus
             onChange={(e) => setMonto(e.target.value)}
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-right tabular-nums"
+            className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-right tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
           />
           {/* El signo lo pone el TIPO, no el número: se dice en palabras para
               que nadie escriba «-500» esperando que reste dos veces. */}
@@ -139,7 +139,7 @@ export function ModalAjuste(props: Props) {
             value={nota}
             onChange={(e) => setNota(e.target.value)}
             placeholder="Colado de losa, préstamo, herramienta…"
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2"
+            className="w-full rounded-lg border border-neutral-300 px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
           />
         </label>
 

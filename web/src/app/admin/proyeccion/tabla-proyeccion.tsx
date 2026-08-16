@@ -466,7 +466,7 @@ export function TablaProyeccion(props: Props) {
         <select
           value={obraFiltro}
           onChange={(e) => setObraFiltro(e.target.value)}
-          className="min-h-11 rounded-lg border border-neutral-300 px-2 text-sm"
+          className="min-h-11 rounded-lg border border-neutral-300 px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
           aria-label="Filtrar por obra"
         >
           <option value="">Todas las obras</option>
@@ -480,7 +480,7 @@ export function TablaProyeccion(props: Props) {
         <select
           value={agrupar}
           onChange={(e) => setAgrupar(e.target.value as Agrupar)}
-          className="min-h-11 rounded-lg border border-neutral-300 px-2 text-sm"
+          className="min-h-11 rounded-lg border border-neutral-300 px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
           aria-label="Agrupar por"
         >
           <option value="cuadrilla">Agrupar por cuadrilla</option>
@@ -537,7 +537,7 @@ export function TablaProyeccion(props: Props) {
       {errorPdf && (
         <p role="alert" className="flex items-center gap-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
           <span className="flex-1">{errorPdf}</span>
-          <button type="button" onClick={() => setErrorPdf(null)} className="min-h-9 underline">
+          <button type="button" onClick={() => setErrorPdf(null)} className="min-h-9 rounded px-1 underline outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2">
             Cerrar
           </button>
         </p>
@@ -567,7 +567,7 @@ export function TablaProyeccion(props: Props) {
                           ? `Apagar el ${d.toLowerCase()} para todos`
                           : `Prender el ${d.toLowerCase()} para todos`
                       }
-                      className={`w-full rounded-lg border px-1 py-1 text-xs font-semibold ${
+                      className={`w-full rounded-lg border px-1 py-1 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 ${
                         llena
                           ? 'border-blue-700 bg-blue-700 text-white'
                           : 'border-neutral-200 bg-white text-neutral-700 hover:border-indigo-500 hover:text-blue-800'
@@ -613,7 +613,7 @@ export function TablaProyeccion(props: Props) {
             {resultado.lineasCuadrilla
               .filter((l) => !l.repartido)
               .map((l) => (
-                <tr key={l.ajuste.id} className="border-t border-neutral-100">
+                <tr key={l.ajuste.id} className="border-t border-neutral-200">
                   <td className="sticky left-0 z-10 bg-white px-3 py-2">
                     <button
                       type="button"
@@ -895,17 +895,17 @@ function TarjetaEscenario(props: {
       </p>
 
       {/* Leyenda: las cuatro formas reales, sin tocar nada. */}
-      <div className="mt-3 border-t border-neutral-100 pt-3">
+      <div className="mt-3 border-t border-neutral-200 pt-3">
         <button
           type="button"
           onClick={() => setLeyendaAbierta((v) => !v)}
           aria-expanded={leyendaAbierta}
-          className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 text-left text-xs text-neutral-600 hover:text-neutral-900"
+          className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 rounded-lg text-left text-xs text-neutral-600 hover:text-neutral-900 outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
         >
           <Muestra clase="bg-green-100 text-green-800 border border-green-200" simbolo="✓" texto="capturado" />
           <Muestra clase="bg-red-100 text-red-800 border border-red-200" simbolo="–" texto="faltó" />
           <Muestra clase="border-2 border-dashed border-indigo-500 text-blue-800" simbolo="✓" texto="estimado" />
-          <Muestra clase="border border-dashed border-neutral-400 text-neutral-500" simbolo="+" texto="no cuenta" />
+          <Muestra clase="border border-dashed border-neutral-500 text-neutral-500" simbolo="+" texto="no cuenta" />
           <span className="ml-auto underline">{leyendaAbierta ? 'Ocultar' : '¿Qué significan?'}</span>
         </button>
 
@@ -975,7 +975,7 @@ function GrupoFilas(props: {
               <button
                 type="button"
                 onClick={() => props.onAjusteCuadrilla(cuadrillaId, nombre)}
-                className="min-h-9 rounded-lg px-2 text-xs text-neutral-600 underline underline-offset-2 hover:text-blue-700"
+                className="min-h-9 rounded-lg px-2 text-xs text-neutral-600 underline underline-offset-2 hover:text-blue-700 outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
               >
                 + ajuste a la cuadrilla
               </button>
@@ -989,13 +989,13 @@ function GrupoFilas(props: {
       )}
 
       {items.map((r) => (
-        <tr key={r.colaborador.id} className="border-t border-neutral-100 hover:bg-neutral-50/60">
+        <tr key={r.colaborador.id} className="border-t border-neutral-200 hover:bg-neutral-50/60">
           {/* El nombre es el control principal: es lo único que SIEMPRE se ve. */}
           <td className="sticky left-0 z-10 bg-white px-1 py-1">
             <button
               type="button"
               onClick={() => props.onAbrirFicha(r.colaborador.id)}
-              className="flex min-h-11 w-full items-center gap-2 rounded-lg px-2 text-left hover:bg-neutral-100"
+              className="flex min-h-11 w-full items-center gap-2 rounded-lg px-2 text-left hover:bg-neutral-100 outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
               aria-label={`Abrir la ficha de ${r.colaborador.nombre}`}
             >
               <span className="min-w-0 flex-1">
@@ -1080,14 +1080,14 @@ function CeldaDiaBoton(props: {
         disabled
         title={`Ese día se va a ${obraDestino ?? 'otra obra'}`}
         aria-label={`${nombre}, ${DIAS[celda.indice]}: prestado a ${obraDestino ?? 'otra obra'}`}
-        className="inline-flex h-9 w-9 cursor-default items-center justify-center rounded-lg border border-dashed border-amber-400 bg-amber-50 text-[11px] font-bold text-amber-700"
+        className="inline-flex h-9 w-9 cursor-default items-center justify-center rounded-lg border border-dashed border-amber-700 bg-amber-50 text-[11px] font-bold text-amber-700"
       >
         {(obraDestino ?? '?').slice(0, 2).toUpperCase()}
       </button>
     );
   }
 
-  let clase = 'border border-dashed border-neutral-400 text-neutral-500 hover:border-indigo-500 hover:text-blue-700';
+  let clase = 'border border-dashed border-neutral-500 text-neutral-500 hover:border-indigo-500 hover:text-blue-700';
   let simbolo = '+';
   let descripcion = 'no cuenta, toca para prenderlo';
 
@@ -1112,7 +1112,7 @@ function CeldaDiaBoton(props: {
       disabled={bloqueada}
       title={bloqueada ? 'Ya está en el pase de lista' : undefined}
       aria-label={`${nombre}, ${DIAS[celda.indice]}: ${descripcion}`}
-      className={`inline-flex h-9 w-9 items-center justify-center rounded-lg text-sm font-bold ${clase} ${
+      className={`inline-flex h-9 w-9 items-center justify-center rounded-lg text-sm font-bold outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2 ${clase} ${
         bloqueada ? 'cursor-default' : ''
       }`}
     >
