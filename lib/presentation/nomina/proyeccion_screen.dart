@@ -97,6 +97,30 @@ class _Anchos {
   }
 }
 
+/// Ancho máximo de TODO el contenido: cinta de totales, controles y tabla.
+///
+/// Es el mismo número para los tres a propósito. La cinta repartía sus métricas
+/// con `Expanded` sobre el ancho completo, así que en la tableta «RAYA
+/// PROYECTADA» quedaba a la izquierda y «DÍAS-HOMBRE» a media pantalla, con un
+/// vacío enorme en medio — mientras la tabla, más angosta, iba por su lado. Con
+/// un solo ancho compartido las tres bandas se alinean y la pantalla se lee
+/// como una sola composición en vez de tres cosas sueltas.
+const _anchoMaxContenido = 1100.0;
+
+/// Centra y limita el ancho de una banda de la pantalla.
+class _Columna extends StatelessWidget {
+  const _Columna({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: _anchoMaxContenido),
+          child: child,
+        ),
+      );
+}
+
 const _altoRenglon = 52.0;
 const _altoGrupo = 38.0;
 
@@ -351,7 +375,12 @@ class _ProyeccionScreenState extends ConsumerState<ProyeccionScreen> {
     // mientras los nombres se truncaban.
     return LayoutBuilder(
       builder: (context, restricciones) {
-        final anchos = _Anchos.para(restricciones.maxWidth);
+        // El mismo tope que la cinta y los controles, para que las tres bandas
+        // queden alineadas en vez de cada una con su propio ancho.
+        final disponible = restricciones.maxWidth < _anchoMaxContenido
+            ? restricciones.maxWidth
+            : _anchoMaxContenido;
+        final anchos = _Anchos.para(disponible);
         // Si aun creciendo sobra lugar —una tableta ancha—, la tabla se CENTRA
         // en vez de quedarse pegada a la izquierda. Estirar siete columnas de
         // palomita hasta llenar 1600 px daría celdas enormes y vacías; unos
@@ -555,7 +584,8 @@ class _CintaTotalesState extends State<_CintaTotales> {
     return Container(
       color: c.surface,
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-      child: Row(
+      child: _Columna(
+          child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
@@ -593,7 +623,7 @@ class _CintaTotalesState extends State<_CintaTotales> {
               ),
             ),
         ],
-      ),
+      )),
     );
   }
 }
@@ -694,7 +724,8 @@ class _Controles extends ConsumerWidget {
     return Container(
       color: c.surface,
       padding: const EdgeInsets.fromLTRB(12, 0, 4, 8),
-      child: SingleChildScrollView(
+      child: _Columna(
+          child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
@@ -734,7 +765,7 @@ class _Controles extends ConsumerWidget {
             ),
           ],
         ),
-      ),
+      )),
     );
   }
 }
