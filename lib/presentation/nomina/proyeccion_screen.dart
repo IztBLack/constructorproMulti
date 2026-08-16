@@ -20,14 +20,81 @@ import 'proyeccion_tabla.dart';
 /// pie TIENEN que medir lo mismo: son tres filas independientes que solo se ven
 /// como una tabla si sus columnas coinciden al pixel.
 class _Col {
+  /// Mínimos. En un teléfono la tabla mide esto y se desplaza de lado; en una
+  /// pantalla más ancha crece (ver [_Anchos.para]).
   static const nombre = 168.0;
   static const dia = 44.0;
   static const dias = 52.0;
   static const subtotal = 108.0;
   static const menu = 40.0;
 
-  /// Ancho total de la mitad que se desplaza.
   static const desplazable = dia * 7 + dias + subtotal + menu;
+}
+
+/// Los anchos ya resueltos para el ancho de pantalla que toca.
+///
+/// Existe porque con anchos FIJOS la tabla medía 677 px y en la tableta se
+/// quedaba pegada a la izquierda con media pantalla muerta, mientras los
+/// nombres se truncaban en 168 px («Camilo Martínez …») teniendo espacio de
+/// sobra al lado. Los mismos números en un teléfono siguen siendo correctos:
+/// ahí no sobra nada y todo se queda en el mínimo.
+class _Anchos {
+  const _Anchos({
+    required this.nombre,
+    required this.dia,
+    required this.dias,
+    required this.subtotal,
+    required this.menu,
+  });
+
+  final double nombre;
+  final double dia;
+  final double dias;
+  final double subtotal;
+  final double menu;
+
+  double get desplazable => dia * 7 + dias + subtotal + menu;
+
+  /// Lo que mide la tabla completa, incluido el divisor de 1 px.
+  double get total => nombre + 1 + desplazable;
+
+  /// Reparte [disponible] entre las columnas.
+  ///
+  /// El sobrante se da PRIMERO al nombre, que es la columna que de verdad lo
+  /// necesita —ahí van nombre, puesto y salario— pero con tope: una columna de
+  /// nombres de 700 px se ve absurda y aleja el subtotal del renglón. Lo que
+  /// quede después se reparte entre los días, que ganan blanco alrededor de la
+  /// palomita sin cambiar de significado.
+  factory _Anchos.para(double disponible) {
+    // 1 px del divisor vertical entre la mitad fija y la desplazable.
+    final sobra = disponible - _Col.nombre - _Col.desplazable - 1;
+    if (sobra <= 0) {
+      return const _Anchos(
+        nombre: _Col.nombre,
+        dia: _Col.dia,
+        dias: _Col.dias,
+        subtotal: _Col.subtotal,
+        menu: _Col.menu,
+      );
+    }
+
+    final extraNombre = sobra.clamp(0.0, 132.0); // hasta 300 en total
+    var resto = sobra - extraNombre;
+
+    // El resto entre las 9 columnas desplazables (7 días + días + subtotal),
+    // con tope por columna para que no queden celdas gigantes y vacías.
+    final extraDia = (resto / 9).clamp(0.0, 20.0);
+    resto -= extraDia * 9;
+    final extraAncha = (resto / 2).clamp(0.0, 60.0);
+
+    return _Anchos(
+      nombre: _Col.nombre + extraNombre,
+      dia: _Col.dia + extraDia,
+      dias: _Col.dias + extraDia,
+      subtotal: _Col.subtotal + extraAncha,
+      menu: _Col.menu,
+    );
+  }
 }
 
 const _altoRenglon = 52.0;
@@ -279,23 +346,42 @@ class _ProyeccionScreenState extends ConsumerState<ProyeccionScreen> {
     }
 
     final colores = context.colores;
-    return TablaCongelada(
-      anchoColumnaFija: _Col.nombre,
-      altoEncabezado: 46,
-      altoPie: 54,
-      colorBorde: colores.border,
-      colorEncabezado: colores.surfaceMuted,
-      encabezadoFijo: const _EncabezadoNombre(),
-      encabezadoDesplazable: _EncabezadoDias(vista: vista),
-      renglones: _renglones(context, vista),
-      pieFijo: const _PieFijo(),
-      pieDesplazable: _PieTotales(resultado: vista.resultado),
+    // Los anchos se resuelven con el ancho REAL disponible, no con constantes:
+    // en la tableta sobraban ~900 px que quedaban en negro a la derecha
+    // mientras los nombres se truncaban.
+    return LayoutBuilder(
+      builder: (context, restricciones) {
+        final anchos = _Anchos.para(restricciones.maxWidth);
+        // Si aun creciendo sobra lugar —una tableta ancha—, la tabla se CENTRA
+        // en vez de quedarse pegada a la izquierda. Estirar siete columnas de
+        // palomita hasta llenar 1600 px daría celdas enormes y vacías; unos
+        // márgenes parejos se leen como una decisión y no como un hueco.
+        final tabla = TablaCongelada(
+          anchoColumnaFija: anchos.nombre,
+          altoEncabezado: 46,
+          altoPie: 54,
+          colorBorde: colores.border,
+          colorEncabezado: colores.surfaceMuted,
+          encabezadoFijo: const _EncabezadoNombre(),
+          encabezadoDesplazable: _EncabezadoDias(vista: vista, anchos: anchos),
+          renglones: _renglones(context, vista, anchos),
+          pieFijo: const _PieFijo(),
+          pieDesplazable:
+              _PieTotales(resultado: vista.resultado, anchos: anchos),
+        );
+
+        if (anchos.total >= restricciones.maxWidth) return tabla;
+        return Center(
+          child: SizedBox(width: anchos.total, child: tabla),
+        );
+      },
     );
   }
 
   /// Arma los renglones ya agrupados. Cada grupo mete una fila de encabezado con
   /// su subtotal, que es la cifra que de verdad se compara entre cuadrillas.
-  List<RenglonTabla> _renglones(BuildContext context, ProyeccionVista vista) {
+  List<RenglonTabla> _renglones(
+      BuildContext context, ProyeccionVista vista, _Anchos anchos) {
     final agrupar = ref.watch(agruparProyeccionProvider);
     final resultado = vista.resultado;
     final salida = <RenglonTabla>[];
@@ -304,7 +390,7 @@ class _ProyeccionScreenState extends ConsumerState<ProyeccionScreen> {
       salida.add(RenglonTabla(
         alto: _altoRenglon,
         fijo: _CeldaNombre(renglon: r, vista: vista),
-        desplazable: _CeldaDatos(renglon: r, vista: vista),
+        desplazable: _CeldaDatos(renglon: r, vista: vista, anchos: anchos),
       ));
     }
 
@@ -343,6 +429,7 @@ class _ProyeccionScreenState extends ConsumerState<ProyeccionScreen> {
             cuadrillaId:
                 agrupar == AgruparPor.cuadrilla && clave.isNotEmpty ? clave : null,
             nombreCuadrilla: nombre,
+            anchos: anchos,
           ),
         ));
         items.forEach(agregarRenglon);
@@ -358,7 +445,7 @@ class _ProyeccionScreenState extends ConsumerState<ProyeccionScreen> {
           nombre: vista.nombreCuadrilla[linea.cuadrillaId] ?? 'Cuadrilla',
           ajuste: linea.ajuste,
         ),
-        desplazable: _LineaCuadrillaMonto(linea: linea),
+        desplazable: _LineaCuadrillaMonto(linea: linea, anchos: anchos),
       ));
     }
 
@@ -676,8 +763,9 @@ class _EncabezadoNombre extends StatelessWidget {
 /// Encabezado de los siete días. Cada día es un botón: prende o apaga la
 /// columna completa para todos los que se puedan mover.
 class _EncabezadoDias extends ConsumerWidget {
-  const _EncabezadoDias({required this.vista});
+  const _EncabezadoDias({required this.vista, required this.anchos});
   final ProyeccionVista vista;
+  final _Anchos anchos;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -687,12 +775,12 @@ class _EncabezadoDias extends ConsumerWidget {
     final hoy = indiceDiaSemana(lunes, Semana.inicioDia(DateTime.now()));
 
     return SizedBox(
-      width: _Col.desplazable,
+      width: anchos.desplazable,
       child: Row(
         children: [
           for (var d = 0; d < 7; d++)
             SizedBox(
-              width: _Col.dia,
+              width: anchos.dia,
               child: InkWell(
                 onTap: () => _alternarColumna(ref, d),
                 child: Column(
@@ -713,9 +801,9 @@ class _EncabezadoDias extends ConsumerWidget {
                 ),
               ),
             ),
-          _celdaTitulo('DÍAS', _Col.dias, context),
-          _celdaTitulo('SUBTOTAL', _Col.subtotal, context),
-          const SizedBox(width: _Col.menu),
+          _celdaTitulo('DÍAS', anchos.dias, context),
+          _celdaTitulo('SUBTOTAL', anchos.subtotal, context),
+          SizedBox(width: anchos.menu),
         ],
       ),
     );
@@ -800,17 +888,19 @@ class _SubtotalGrupo extends ConsumerWidget {
     required this.subtotal,
     required this.cuadrillaId,
     required this.nombreCuadrilla,
+    required this.anchos,
   });
 
   final double subtotal;
   final String? cuadrillaId;
   final String nombreCuadrilla;
+  final _Anchos anchos;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colores;
     return Container(
-      width: _Col.desplazable,
+      width: anchos.desplazable,
       color: c.surfaceMuted,
       child: Row(
         children: [
@@ -830,7 +920,7 @@ class _SubtotalGrupo extends ConsumerWidget {
               ),
             ),
           SizedBox(
-            width: _Col.subtotal,
+            width: anchos.subtotal,
             child: Padding(
               padding: const EdgeInsets.only(right: 8),
               child: Text(Fmt.money(subtotal),
@@ -841,7 +931,7 @@ class _SubtotalGrupo extends ConsumerWidget {
                       fontFeatures: const [FontFeature.tabularFigures()])),
             ),
           ),
-          const SizedBox(width: _Col.menu),
+          SizedBox(width: anchos.menu),
         ],
       ),
     );
@@ -923,9 +1013,10 @@ class _CeldaNombre extends StatelessWidget {
 /// Mitad desplazable de un renglón: las siete celdas, los días, el subtotal y
 /// el menú.
 class _CeldaDatos extends ConsumerWidget {
-  const _CeldaDatos({required this.renglon, required this.vista});
+  const _CeldaDatos({required this.renglon, required this.vista, required this.anchos});
   final ProyeccionRenglon renglon;
   final ProyeccionVista vista;
+  final _Anchos anchos;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -933,7 +1024,7 @@ class _CeldaDatos extends ConsumerWidget {
     final t = Theme.of(context).textTheme;
 
     return Container(
-      width: _Col.desplazable,
+      width: anchos.desplazable,
       decoration: BoxDecoration(
         color: c.surface,
         border: Border(bottom: BorderSide(color: c.border)),
@@ -944,13 +1035,13 @@ class _CeldaDatos extends ConsumerWidget {
             // Los siete días se colapsan en un solo campo: a destajo el pago no
             // lo mueve la asistencia.
             SizedBox(
-              width: _Col.dia * 7,
+              width: anchos.dia * 7,
               child: _CampoDestajo(renglon: renglon),
             )
           else
             for (final celda in renglon.celdas)
               SizedBox(
-                width: _Col.dia,
+                width: anchos.dia,
                 child: _Celda(
                   celda: celda,
                   colaboradorId: renglon.colaborador.id,
@@ -958,7 +1049,7 @@ class _CeldaDatos extends ConsumerWidget {
                 ),
               ),
           SizedBox(
-            width: _Col.dias,
+            width: anchos.dias,
             child: Text(
                 renglon.esDestajista ? '—' : _sinCeros(renglon.diasTotales),
                 textAlign: TextAlign.right,
@@ -967,7 +1058,7 @@ class _CeldaDatos extends ConsumerWidget {
                     fontFeatures: const [FontFeature.tabularFigures()])),
           ),
           SizedBox(
-            width: _Col.subtotal,
+            width: anchos.subtotal,
             child: Padding(
               padding: const EdgeInsets.only(right: 8),
               child: Column(
@@ -991,7 +1082,7 @@ class _CeldaDatos extends ConsumerWidget {
             ),
           ),
           SizedBox(
-            width: _Col.menu,
+            width: anchos.menu,
             child: _MenuRenglon(renglon: renglon),
           ),
         ],
@@ -1338,14 +1429,15 @@ class _LineaCuadrillaNombre extends ConsumerWidget {
 }
 
 class _LineaCuadrillaMonto extends ConsumerWidget {
-  const _LineaCuadrillaMonto({required this.linea});
+  const _LineaCuadrillaMonto({required this.linea, required this.anchos});
   final LineaCuadrilla linea;
+  final _Anchos anchos;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colores;
     return Container(
-      width: _Col.desplazable,
+      width: anchos.desplazable,
       decoration: BoxDecoration(
         color: c.surface,
         border: Border(bottom: BorderSide(color: c.border)),
@@ -1354,7 +1446,7 @@ class _LineaCuadrillaMonto extends ConsumerWidget {
         children: [
           const Spacer(),
           SizedBox(
-            width: _Col.subtotal,
+            width: anchos.subtotal,
             child: Padding(
               padding: const EdgeInsets.only(right: 8),
               child: Text(Fmt.money(linea.montoConSigno),
@@ -1366,7 +1458,7 @@ class _LineaCuadrillaMonto extends ConsumerWidget {
             ),
           ),
           SizedBox(
-            width: _Col.menu,
+            width: anchos.menu,
             child: IconButton(
               iconSize: 17,
               icon: Icon(Icons.close, color: c.textFaint),
@@ -1411,8 +1503,9 @@ class _PieFijo extends StatelessWidget {
 }
 
 class _PieTotales extends StatelessWidget {
-  const _PieTotales({required this.resultado});
+  const _PieTotales({required this.resultado, required this.anchos});
   final ProyeccionResultado resultado;
+  final _Anchos anchos;
 
   @override
   Widget build(BuildContext context) {
@@ -1420,13 +1513,13 @@ class _PieTotales extends StatelessWidget {
     final t = Theme.of(context).textTheme;
 
     return Container(
-      width: _Col.desplazable,
+      width: anchos.desplazable,
       color: c.surfaceMuted,
       child: Row(
         children: [
           for (var d = 0; d < 7; d++)
             SizedBox(
-              width: _Col.dia,
+              width: anchos.dia,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -1449,7 +1542,7 @@ class _PieTotales extends StatelessWidget {
               ),
             ),
           SizedBox(
-            width: _Col.dias,
+            width: anchos.dias,
             child: Text(_sinCeros(resultado.diasHombre),
                 textAlign: TextAlign.right,
                 style: t.labelMedium?.copyWith(
@@ -1457,7 +1550,7 @@ class _PieTotales extends StatelessWidget {
                     fontFeatures: const [FontFeature.tabularFigures()])),
           ),
           SizedBox(
-            width: _Col.subtotal,
+            width: anchos.subtotal,
             child: Padding(
               padding: const EdgeInsets.only(right: 8),
               child: Text(Fmt.money(resultado.total),
@@ -1468,7 +1561,7 @@ class _PieTotales extends StatelessWidget {
                       fontFeatures: const [FontFeature.tabularFigures()])),
             ),
           ),
-          const SizedBox(width: _Col.menu),
+          SizedBox(width: anchos.menu),
         ],
       ),
     );
