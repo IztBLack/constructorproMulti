@@ -148,6 +148,41 @@ export interface ProyeccionEstado {
   obraBase: Record<string, string>;
 }
 
+/// Saca a alguien del escenario y borra TODO lo que colgaba de esa persona.
+///
+/// Vive aquí, junto al estado, y no suelto en el componente, porque la lista de
+/// campos por persona crece: `obraPorDia` y `obraBase` se agregaron después y
+/// nadie se acordó de limpiarlos al quitar a alguien. Con eso, quitar a una
+/// persona le dejaba una obra asignada fantasma: al volver a la lista de «fuera
+/// de la proyección» ya no salía como «Sin obra asignada» y perdía su selector
+/// de obra. Espeja `ProyeccionEstado.sinParticipante` del móvil.
+///
+/// **Si agregas un campo por persona a [ProyeccionEstado], límpialo aquí.**
+export function sinParticipante(
+  estado: ProyeccionEstado,
+  colaboradorId: string,
+): ProyeccionEstado {
+  const sin = <T,>(obj: Record<string, T>): Record<string, T> => {
+    const copia = { ...obj };
+    delete copia[colaboradorId];
+    return copia;
+  };
+  return {
+    ...estado,
+    participantes: estado.participantes.filter((id) => id !== colaboradorId),
+    diasProyectados: sin(estado.diasProyectados),
+    destajoEstimado: sin(estado.destajoEstimado),
+    salarioOverride: sin(estado.salarioOverride),
+    obraPorDia: sin(estado.obraPorDia),
+    obraBase: sin(estado.obraBase),
+    // Un anticipo colgando de alguien que ya no está sumaría al total sin que
+    // se vea de dónde sale.
+    ajustes: estado.ajustes.filter(
+      (a) => !(a.destino === 'COLABORADOR' && a.destinoId === colaboradorId),
+    ),
+  };
+}
+
 /// La obra base de cada quien, con lo que el escenario haya asignado encima.
 ///
 /// Un solo lugar para resolverlo, porque tanto el cálculo como el filtro y la

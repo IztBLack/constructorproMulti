@@ -11,6 +11,7 @@ import {
   indiceDiaSemana,
   obraBaseEfectiva,
   participantesDeObra,
+  sinParticipante,
   type AjusteProyeccion,
   type DestinoAjuste,
   type ProyeccionEstado,
@@ -227,18 +228,7 @@ export function TablaProyeccion(props: Props) {
   }, [avisoColumna]);
 
   function quitar(colaboradorId: string) {
-    setEstado((e) => ({
-      ...e,
-      participantes: e.participantes.filter((id) => id !== colaboradorId),
-      diasProyectados: sinClave(e.diasProyectados, colaboradorId),
-      destajoEstimado: sinClave(e.destajoEstimado, colaboradorId),
-      salarioOverride: sinClave(e.salarioOverride, colaboradorId),
-      // Un anticipo colgando de alguien que ya no está sumaría al total sin que
-      // se vea de dónde sale.
-      ajustes: e.ajustes.filter(
-        (a) => !(a.destino === 'COLABORADOR' && a.destinoId === colaboradorId),
-      ),
-    }));
+    setEstado((e) => sinParticipante(e, colaboradorId));
   }
 
   /// Mete a alguien al escenario. `obraAsignada` solo se usa para quien no
