@@ -330,6 +330,27 @@ body {
      había `font-family: Arial, Helvetica, sans-serif` que la pisaba. */
 }
 
+/* La lista desplegable de un `<select>` la dibuja el sistema, no el CSS de la
+   página, y por eso se escapa de la inversión de paleta y de cualquier
+   auditoría hecha sobre el DOM.
+
+   `color-scheme: dark` (arriba, en `.dark`) debería bastar, pero en la práctica
+   el menú seguía saliendo con fondo claro mientras las `<option>` heredaban el
+   `color` claro del `<select>` — texto casi blanco sobre fondo casi blanco. En
+   la pantalla de proyección la lista de obras quedaba ilegible.
+
+   Fijar los dos colores a la vez, desde las variables del tema, lo deja bien en
+   ambos modos sin depender de cómo interprete `color-scheme` cada navegador. En
+   claro los valores coinciden con los que el sistema ya usaba, así que el tema
+   claro no cambia de aspecto.
+
+   Va como regla de elemento a propósito: hay `<select>` en 20 archivos y esto
+   no es algo que cada formulario deba acordarse de resolver. */
+option {
+  background-color: var(--blanco);
+  color: var(--n-900);
+}
+
 /* La transición de color al cambiar de tema se aplica SOLO durante el cambio (la
    clase la pone y la quita `usar-tema.ts`). Sin esa acotación, cada cambio de
    color de la app —hovers, focus, badges que cambian de estado— heredaría una
