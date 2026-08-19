@@ -42,7 +42,11 @@ if ($LASTEXITCODE -ne 0) {
 
 # 4. Tests
 Write-Host "`n[4/5] Ejecutando tests..." -ForegroundColor Yellow
-flutter test test/logic
+# La suite COMPLETA, no solo `test/logic`. Corriendo 7 de los 30 archivos, esta
+# puerta dejo pasar durante meses dos tests de migracion en rojo —y las
+# migraciones son justo lo que puede borrarle los datos a un usuario al
+# actualizar—. `test/theme` y `test/widget` tampoco bloqueaban nada.
+flutter test
 if ($LASTEXITCODE -ne 0) {
     Write-Host "ERROR: tests fallaron." -ForegroundColor Red
     exit 1
@@ -51,9 +55,20 @@ if ($LASTEXITCODE -ne 0) {
 # 5. Build
 Write-Host "`n[5/5] Compilando..." -ForegroundColor Yellow
 
+# Reporte de errores: el DSN se pasa por variable de entorno para no quemarlo en
+# el repo. Sin $env:SENTRY_DSN los builds salen igual que siempre, con el log de
+# crashes solo en el dispositivo (ver lib/core/crash/crash_logger.dart).
+$dartDefines = @()
+if ($env:SENTRY_DSN) {
+    $dartDefines += "--dart-define=SENTRY_DSN=$($env:SENTRY_DSN)"
+    Write-Host "  (Sentry ACTIVADO en este build)" -ForegroundColor DarkGray
+} else {
+    Write-Host "  (Sentry apagado: no hay `$env:SENTRY_DSN)" -ForegroundColor DarkGray
+}
+
 # App Bundle (para Google Play)
 Write-Host "  → App Bundle (.aab)..." -ForegroundColor White
-flutter build appbundle --release
+flutter build appbundle --release @dartDefines
 if ($LASTEXITCODE -eq 0) {
     $aab = "build\app\outputs\bundle\release\app-release.aab"
     Write-Host "  ✓ App Bundle: $aab" -ForegroundColor Green
@@ -61,7 +76,7 @@ if ($LASTEXITCODE -eq 0) {
 
 # APK universal (para instalar directo / pruebas)
 Write-Host "  → APK universal..." -ForegroundColor White
-flutter build apk --release
+flutter build apk --release @dartDefines
 if ($LASTEXITCODE -eq 0) {
     $apk = "build\app\outputs\flutter-apk\app-release.apk"
     Write-Host "  ✓ APK: $apk" -ForegroundColor Green

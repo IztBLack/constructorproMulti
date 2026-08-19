@@ -1,0 +1,96 @@
+name: Calidad (analyze + tests + build)
+
+# La red de seguridad del repo. Hasta agosto de 2026 el único workflow era
+# `ios-build.yml`: ningún push corría `flutter analyze`, `flutter test`, `tsc` ni
+# `eslint`. Por eso dos tests de migración de Drift estuvieron en rojo durante
+# meses sin que nadie se enterara — la puerta de release local
+# (`build_release.ps1`) solo corría 7 de los 30 archivos de test, y la web no
+# tenía puerta ninguna.
+#
+# Los dos jobs son independientes a propósito: un fallo en la web no debe
+# esconder el resultado del móvil, ni al revés.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Un push nuevo sobre la misma rama cancela el run anterior: nadie necesita el
+# resultado de un commit que ya quedó atrás.
+concurrency:
+  group: calidad-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  movil:
+    name: Móvil (Flutter)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.2
+          cache: true
+
+      - name: Dependencias
+        run: flutter pub get
+
+      # `app_database.g.dart` SÍ está versionado, pero regenerarlo aquí es lo que
+      # hace fallar el CI cuando alguien tocó las tablas y no corrió build_runner:
+      # el generado quedaría distinto del commiteado y `flutter analyze` lo vería.
+      - name: Generar código (Drift)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      # `--no-fatal-infos` por la misma razón que en `build_release.ps1`: un
+      # `deprecated_member_use` del SDK no debe poder bloquear el repo entero.
+      # Los errores y las advertencias sí lo bloquean.
+      - name: Analizar
+        run: flutter analyze --no-fatal-infos lib
+
+      # La suite COMPLETA. Incluye `test/data` (migraciones), `test/theme`
+      # (contraste AA) y `test/widget`, que antes no bloqueaban nada.
+      - name: Tests
+        run: flutter test
+
+  web:
+    name: Web (Next.js)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Dependencias
+        run: npm ci
+
+      - name: Tipos
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx eslint .
+
+      - name: Tests
+        run: npm test
+
+      # `next build` es el único paso que valida el `outputFileTracingIncludes`
+      # de `next.config.ts`: sin él, el binario de Chromium se queda fuera del
+      # trazado de las 6 rutas de PDF y revientan en producción, no aquí.
+      #
+      # No necesita las variables de Supabase: el cliente las lee en cada
+      # petición, no al compilar.
+      - name: Build
+        run: npx next build
