@@ -64,6 +64,9 @@ dependencies:
   # Importación de estado de cuenta (Excel/CSV) de una obra.
   excel: ^4.0.6
   csv: ^6.0.0
+  # Reporte de errores. APAGADO mientras no se compile con
+  # --dart-define=SENTRY_DSN=...; ver lib/core/crash/crash_logger.dart.
+  sentry_flutter: ^9.6.0
   # Sync nube (Fase 2): cliente Supabase + detección de conectividad.
   supabase_flutter: ^2.9.0
   connectivity_plus: ^6.1.0

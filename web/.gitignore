@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# …salvo la plantilla, que no lleva ningun valor real y documenta que
+# variables hacen falta para levantar el proyecto.
+!.env.example
 
 # vercel
 .vercel
