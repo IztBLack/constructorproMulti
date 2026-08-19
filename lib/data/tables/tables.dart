@@ -78,6 +78,30 @@ class Colaboradores extends Table with SyncCols, Orderable {
   TextColumn get contactoParentesco => text().withDefault(const Constant(''))();
   BoolColumn get activo => boolean().withDefault(const Constant(true))();
 
+  /// El SUELDO no vive aquí: está en [ColaboradorSueldo], tabla aparte, desde el
+  /// esquema v10. Ver el porqué en esa clase.
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// El sueldo de un colaborador, 1-a-1 con [Colaboradores].
+///
+/// Vive en su propia tabla, y no como cuatro columnas de `colaboradores`, por
+/// una razón de SEGURIDAD y no de modelado: la RLS de Postgres filtra filas, no
+/// columnas, así que mientras el sueldo estuviera en `colaboradores` no había
+/// forma de dejar que el rol `colaborador` leyera los nombres de sus compañeros
+/// —los necesita para el pase de lista— sin dejarle leer también lo que cobran.
+/// Con la tabla aparte, su policy niega la lectura entera y el pull del móvil
+/// simplemente no le baja nada: el sueldo NUNCA llega a su teléfono. Espeja
+/// `supabase/migrations/0027_sueldo_tabla_aparte.sql`.
+///
+/// Sin fila = sin sueldo capturado, que es lo mismo que los cuatro campos en su
+/// default. Por eso no se crea una fila vacía por cada colaborador.
+@DataClassName('ColaboradorSueldoRow')
+class ColaboradorSueldo extends Table with SyncCols {
+  TextColumn get colaboradorId => text()();
+
   /// Salario diario (MXN/día) que consume la nómina. **Derivado** del sueldo por
   /// periodo: se recalcula desde [salarioPeriodo] + [periodoPago] + [diasSemana];
   /// no se edita a mano. Nullable → usa el salario del puesto.
@@ -94,7 +118,7 @@ class Colaboradores extends Table with SyncCols, Orderable {
   IntColumn get diasSemana => integer().withDefault(const Constant(6))();
 
   @override
-  Set<Column> get primaryKey => {id};
+  Set<Column> get primaryKey => {colaboradorId};
 }
 
 class ObraColaborador extends Table with SyncCols {

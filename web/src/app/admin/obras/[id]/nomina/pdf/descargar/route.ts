@@ -8,7 +8,8 @@ import {
   listPuestosLite,
   semanaDe,
 } from '@/lib/data/nomina';
-import { getNombreEmpresa } from '@/lib/data/empresa';
+import { getEmpresaUsuario, getNombreEmpresa } from '@/lib/data/empresa';
+import { puedeVerSueldos } from '@/lib/auth/sueldos';
 import { getEmpresaConfig } from '@/lib/data/empresa-config';
 import { createClient } from '@/lib/supabase/server';
 import { construirNominaDocumentoHtml } from '@/lib/obra/documento-nomina-html';
@@ -29,6 +30,15 @@ export async function GET(
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: 'No autenticado.' }, { status: 401 });
+  }
+
+  // Misma puerta que `/admin/proyeccion/pdf`: este documento lleva el sueldo de
+  // cada persona, así que no basta con estar autenticado. Faltaba hasta agosto
+  // de 2026 — la pantalla y el PDF enseñan el mismo dato y tenían permisos
+  // distintos, así que bastaba conocer la URL para saltarse la pantalla.
+  const { rol } = await getEmpresaUsuario();
+  if (!puedeVerSueldos(rol)) {
+    return NextResponse.json({ error: 'Sin permiso.' }, { status: 403 });
   }
 
   const { id } = await params;

@@ -90,15 +90,22 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
             tooltip: 'Reportes globales',
             onSelected: (v) {
               if (v == 'flujo') _exportarGlobal(ref);
-              if (v == 'nomina') _exportarNominaGlobal(ref);
+              // Segunda línea: el menú ya no ofrece la opción, pero el gate
+              // vive también aquí para que no dependa del dibujo.
+              if (v == 'nomina' && ref.read(puedeVerSueldosProvider)) {
+                _exportarNominaGlobal(ref);
+              }
               if (v == 'presupuestos') _exportarPresupuestosGlobal(ref);
               if (v == 'asistencias') _exportarAsistenciasGlobal(ref);
             },
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'flujo', child: Text('Flujo de caja global')),
-              PopupMenuItem(value: 'nomina', child: Text('Nómina global (semana)')),
-              PopupMenuItem(value: 'presupuestos', child: Text('Presupuestos global')),
-              PopupMenuItem(value: 'asistencias', child: Text('Asistencias global (semana)')),
+            itemBuilder: (_) => [
+              const PopupMenuItem(value: 'flujo', child: Text('Flujo de caja global')),
+              // La nómina global lleva el sueldo de toda la plantilla, así que
+              // se rige por la misma lista blanca que la proyección.
+              if (ref.watch(puedeVerSueldosProvider))
+                const PopupMenuItem(value: 'nomina', child: Text('Nómina global (semana)')),
+              const PopupMenuItem(value: 'presupuestos', child: Text('Presupuestos global')),
+              const PopupMenuItem(value: 'asistencias', child: Text('Asistencias global (semana)')),
             ],
           ),
         ],
@@ -293,7 +300,7 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
           // La proyección enseña el salario de cada persona junto a su nombre,
           // así que ni siquiera se ofrece a quien no puede verla: el gate de la
           // pantalla es la segunda línea de defensa, no la primera.
-          if (ref.watch(puedeVerProyeccionNominaProvider))
+          if (ref.watch(puedeVerSueldosProvider))
             _accion(Icons.calculate_outlined, 'Proyección',
                 () => Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => const ProyeccionScreen()))),

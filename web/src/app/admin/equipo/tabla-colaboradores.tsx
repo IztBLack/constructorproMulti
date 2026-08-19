@@ -7,7 +7,7 @@ import type { Colaborador, Puesto } from '@/lib/data/types';
 import type { OrdenModo } from '@/lib/data/orden-modos';
 import { Badge, Button, DataTable, EmptyState, type DataColumn } from '@/components/ui';
 import OrdenModoToggle from '@/components/orden-modo-toggle';
-import { usarArrastreOrden } from '@/components/usar-arrastre-orden';
+import { useArrastreOrden } from '@/components/use-arrastre-orden';
 import { ordenarPorModo } from '@/lib/data/ordenar';
 import { formatCurrency } from '@/lib/data/format';
 import { alternarActivoColaborador } from './actions';
@@ -74,7 +74,7 @@ export default function TablaColaboradores({
     modificado: (c) => c.updated_at,
   });
 
-  const { activo: modoArrastre, guardando, propsFila } = usarArrastreOrden({
+  const { activo: modoArrastre, guardando, propsFila } = useArrastreOrden({
     items: filas,
     idDe: (c) => c.id,
     tabla: 'colaboradores',

@@ -16,10 +16,10 @@ import {
   fechaDelDia,
   participantesDeObra,
   obraBaseEfectiva,
-  puedeVerProyeccion,
   type ProyeccionEstado,
 } from '@/lib/data/proyeccion-nomina';
 import { cargarDatosProyeccion } from '@/lib/data/proyeccion-nomina-server';
+import { puedeVerSueldos } from '@/lib/auth/sueldos';
 import { construirProyeccionDocumentoHtml } from '@/lib/nomina/documento-proyeccion-html';
 import { renderHtmlToPdf, pdfResponse } from '@/lib/pdf/render-html-to-pdf';
 import { createClient } from '@/lib/supabase/server';
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
   // Misma puerta que la pantalla: este documento lleva el salario de cada
   // persona, así que no basta con estar autenticado.
   const { rol } = await getEmpresaUsuario();
-  if (!puedeVerProyeccion(rol)) {
+  if (!puedeVerSueldos(rol)) {
     return NextResponse.json({ error: 'Sin permiso.' }, { status: 403 });
   }
 

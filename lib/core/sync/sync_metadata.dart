@@ -38,6 +38,7 @@ class SyncMetadata {
     const tablas = [
       'puestos',
       'colaboradores',
+      'colaborador_sueldo',
       'obras',
       'obra_caja_nota',
       'cuadrillas',

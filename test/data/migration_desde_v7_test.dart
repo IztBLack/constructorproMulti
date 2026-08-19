@@ -1,24 +1,32 @@
 import 'package:constructorpro/core/db/app_database.dart';
-import 'package:drift_dev/api/migrations.dart';
+import 'package:drift_dev/api/migrations_native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../generated_migrations/schema.dart';
 import '../generated_migrations/schema_v7.dart' as v7;
 
-/// Prueba la migración v7 → v8 (capa de tesorería) contra los snapshots de
-/// esquema. Garantiza que actualizar la app NO rompe a usuarios en producción:
-/// 1. El esquema resultante coincide EXACTAMENTE con el snapshot v8.
+/// Prueba la migración desde v7 hasta la versión ACTUAL de la app contra los
+/// snapshots de esquema. Garantiza que actualizar la app NO rompe a usuarios en
+/// producción:
+/// 1. El esquema resultante coincide EXACTAMENTE con el snapshot de esa versión.
 /// 2. Los datos previos (obras, cotizaciones, movimientos) sobreviven.
 /// 3. `cotizaciones.iva_porcentaje` queda en 16 en las filas viejas —la tasa que
 ///    ya tenían quemada en el código—, así ningún total cambia al migrar.
 /// 4. `movimientos.comprobante_uri` queda NULL en las filas viejas.
 /// 5. La tabla nueva `obra_caja_nota` queda operativa.
+///
+/// El destino es `db.schemaVersion`, NO un número escrito a mano. Los bloques de
+/// `onUpgrade` se condicionan solo por `from`, así que al subir la versión los
+/// pasos nuevos corren de todos modos y validar contra una versión intermedia
+/// falla siempre. Leerlo del propio esquema hace que subir `schemaVersion` solo
+/// pida regenerar snapshots, no editar este archivo — que es exactamente lo que
+/// se olvidó al pasar a v9.
 void main() {
   late SchemaVerifier verifier;
 
   setUpAll(() => verifier = SchemaVerifier(GeneratedHelper()));
 
-  test('v7 → v8: migra esquema y preserva datos existentes', () async {
+  test('desde v7: migra esquema y preserva datos existentes', () async {
     // 1. Base en el esquema v7 con datos previos (sin las columnas nuevas).
     final schema = await verifier.schemaAt(7);
     final oldDb = v7.DatabaseAtV7(schema.newConnection());
@@ -36,10 +44,11 @@ void main() {
     );
     await oldDb.close();
 
-    // 2. Migra a v8 con la migración real de la app y valida el esquema
-    //    resultante contra el snapshot v8 (addColumn + createTable correctos).
+    // 2. Migra con la migración real de la app y valida el esquema resultante
+    //    contra el snapshot de la versión actual (addColumn + createTable
+    //    correctos).
     final db = AppDatabase.forTesting(schema.newConnection());
-    await verifier.migrateAndValidate(db, 8);
+    await verifier.migrateAndValidate(db, db.schemaVersion);
 
     // 3. IVA congelado: la cotización vieja queda con la tasa por defecto 16, que
     //    es exactamente la que estaba quemada en el código antes de esta versión.

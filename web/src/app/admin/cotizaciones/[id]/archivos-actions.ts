@@ -11,6 +11,20 @@ export interface ActionResult {
 
 const MAX_BYTES = 15 * 1024 * 1024; // 15 MB
 
+/// Tipos permitidos, igual que en `obras/[id]/comprobante-actions.ts`.
+///
+/// Es una LISTA BLANCA y va del lado del servidor. El `accept` del `<input>` en
+/// `archivos-section.tsx` es una sugerencia para el selector de archivos, no una
+/// barrera: quien mande el FormData a mano lo ignora. Sin esto se podía guardar
+/// un `text/html` en el bucket y quedarse con una URL firmada que lo sirve.
+const TIPOS_OK = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'application/pdf',
+];
+
 /// Sube un archivo adjunto a una cotización.
 /// Lee el File del FormData, valida tamaño, sube al bucket y registra en archivos_cotizacion.
 export async function subirArchivoAction(
@@ -25,6 +39,10 @@ export async function subirArchivoAction(
 
   if (file.size > MAX_BYTES) {
     return { ok: false, error: 'El archivo supera el límite de 15 MB.' };
+  }
+
+  if (!TIPOS_OK.includes(file.type)) {
+    return { ok: false, error: 'Solo imágenes (JPG, PNG, WEBP, HEIC) o PDF.' };
   }
 
   let empresaId: string;
@@ -62,6 +80,8 @@ export async function subirArchivoAction(
 
   const { error: uploadError } = await supabase.storage
     .from('cotizaciones')
+    // `file.type` ya pasó por TIPOS_OK, así que aquí no entra nada arbitrario.
+    // El bucket lo vuelve a validar (migración 0028): esta es la primera de dos.
     .upload(path, file, { contentType: file.type });
 
   if (uploadError) {
@@ -72,8 +92,9 @@ export async function subirArchivoAction(
   const now = Date.now();
   const id = crypto.randomUUID();
 
-  // Determinar el tipo: preferir mime-type, si está vacío usar extensión
-  const tipo = file.type || (file.name.split('.').pop() ?? 'application/octet-stream');
+  // `file.type` ya viene validado contra TIPOS_OK, así que aquí no hace falta
+  // el respaldo por extensión que había antes.
+  const tipo = file.type;
 
   const { error: dbError } = await supabase.from('archivos_cotizacion').insert({
     id,

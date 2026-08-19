@@ -30,7 +30,7 @@ const NAV_LINKS = [
   // Es de uso diario —se arma la raya de la semana desde la oficina—, así que
   // va en la barra y no bajo Ajustes. El enlace se ve siempre porque este
   // componente es de cliente y no conoce el rol; la puerta está en la página
-  // (`puedeVerProyeccion`), que es servidor. Quien no tiene permiso llega y
+  // (`puedeVerSueldos`), que es servidor. Quien no tiene permiso llega y
   // encuentra el aviso, nunca los salarios.
   { href: '/admin/proyeccion', label: 'Proyección' },
 ];

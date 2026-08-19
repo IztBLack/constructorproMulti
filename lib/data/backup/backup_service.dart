@@ -393,9 +393,25 @@ class BackupService {
               contactoTelefono: Value(_s(m, 'contactoTelefono')),
               contactoParentesco: Value(_s(m, 'contactoParentesco')),
               activo: Value(_b(m, 'activo', true)),
-              salarioPersonalizado: Value(_dn(m, 'salarioPersonalizado')),
             ),
           );
+          // El sueldo va a su propia tabla desde el esquema v10. Las claves se
+          // conservan DENTRO del nodo `colaboradores` del archivo para que un
+          // respaldo viejo se siga pudiendo restaurar tal cual.
+          final tieneSueldo = m['salarioPersonalizado'] != null ||
+              m['salarioPeriodo'] != null;
+          if (tieneSueldo) {
+            b.insert(
+              db.colaboradorSueldo,
+              ColaboradorSueldoCompanion.insert(
+                colaboradorId: _s(m, 'id'),
+                salarioPersonalizado: Value(_dn(m, 'salarioPersonalizado')),
+                periodoPago: Value(_s(m, 'periodoPago', 'MENSUAL')),
+                salarioPeriodo: Value(_dn(m, 'salarioPeriodo')),
+                diasSemana: Value(_in(m, 'diasSemana') ?? 6),
+              ),
+            );
+          }
         }
         for (final m in _list(root, 'obraColaboradores')) {
           b.insert(
@@ -546,6 +562,15 @@ class BackupService {
   // ---------------- Exportar ----------------
   /// Genera el JSON de respaldo con el mismo esquema que la app Kotlin.
   Future<String> exportToJson() async {
+    // El sueldo vive en `colaborador_sueldo` desde v10; se lee una vez y se
+    // reparte por id al armar el nodo de cada colaborador.
+    final sueldos = {
+      for (final fila in await (db.select(db.colaboradorSueldo)
+                ..where((t) => t.deletedAt.isNull()))
+              .get())
+        fila.colaboradorId: fila,
+    };
+
     Map<String, dynamic> obraJson(Obra o) => {
       'id': o.id,
       'nombre': o.nombre,
@@ -585,7 +610,14 @@ class BackupService {
               'contactoTelefono': c.contactoTelefono,
               'contactoParentesco': c.contactoParentesco,
               'activo': c.activo,
-              'salarioPersonalizado': c.salarioPersonalizado,
+              // Del nodo del colaborador, aunque el dato viva en otra tabla: así
+              // el formato del respaldo no cambia y los archivos anteriores a
+              // v10 siguen siendo válidos. Se exportan los cuatro campos, no
+              // solo el diario: antes se perdían los otros tres al restaurar.
+              'salarioPersonalizado': sueldos[c.id]?.salarioPersonalizado,
+              'periodoPago': sueldos[c.id]?.periodoPago,
+              'salarioPeriodo': sueldos[c.id]?.salarioPeriodo,
+              'diasSemana': sueldos[c.id]?.diasSemana,
             },
           )
           .toList(),

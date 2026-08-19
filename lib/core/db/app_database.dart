@@ -16,6 +16,7 @@ part 'app_database.g.dart';
   Obras,
   Puestos,
   Colaboradores,
+  ColaboradorSueldo,
   ObraColaborador,
   Asistencias,
   Destajos,
@@ -41,7 +42,7 @@ class AppDatabase extends _$AppDatabase {
   static const _uuid = Uuid();
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -61,9 +62,16 @@ class AppDatabase extends _$AppDatabase {
         //   1. Sube `schemaVersion` (de 1 a 2, etc.).
         //   2. Agrega el paso incremental correspondiente, p. ej.:
         //        if (from < 2) await m.addColumn(obras, obras.comentario);
-        //   3. Genera un snapshot del esquema y prueba la migración:
+        //   3. Genera el snapshot del esquema Y las clases de prueba. Son DOS
+        //      comandos: olvidar el segundo fue lo que dejó la migración v8→v9
+        //      sin una sola prueba durante meses.
         //        dart run drift_dev schema dump lib/core/db/app_database.dart \
         //          drift_schemas/
+        //        dart run drift_dev schema generate drift_schemas/ \
+        //          test/generated_migrations/
+        //   4. Agrega `test/data/migration_desde_v<anterior>_test.dart`, calcado
+        //      del último. Los que ya existen apuntan a `db.schemaVersion`, así
+        //      que no hay que tocarlos al subir de versión.
         // Nunca borres ni recrees tablas con datos del usuario.
         onUpgrade: (m, from, to) async {
           // v1 → v2 (Fase 0 sync): añade columnas de sync a las 13 tablas.
@@ -126,10 +134,22 @@ class AppDatabase extends _$AppDatabase {
               "SELECT 1 FROM pragma_table_info('colaboradores') WHERE name='periodo_pago'"
             ).get().then((rows) => rows.isNotEmpty);
 
+            // SQL crudo y no `m.addColumn(colaboradores, …)`: estas tres
+            // columnas dejaron de existir en `Colaboradores` al mudarse a
+            // `colaborador_sueldo` (v10), y un paso histórico no puede depender
+            // de la forma ACTUAL de la tabla. Referenciarlas ni siquiera
+            // compilaría. Un usuario que salte de v3 a v10 pasa por aquí: se le
+            // crean y en el paso v10 se le mudan.
             if (!hasPeriodo) {
-              await m.addColumn(colaboradores, colaboradores.periodoPago);
-              await m.addColumn(colaboradores, colaboradores.salarioPeriodo);
-              await m.addColumn(colaboradores, colaboradores.diasSemana);
+              await customStatement(
+                "ALTER TABLE colaboradores ADD COLUMN periodo_pago TEXT NOT NULL DEFAULT 'MENSUAL'",
+              );
+              await customStatement(
+                'ALTER TABLE colaboradores ADD COLUMN salario_periodo REAL NULL',
+              );
+              await customStatement(
+                'ALTER TABLE colaboradores ADD COLUMN dias_semana INTEGER NOT NULL DEFAULT 6',
+              );
             }
             // Recrea los triggers para que incluyan las columnas nuevas.
             await _instalarTriggersSync();
@@ -274,8 +294,67 @@ class AppDatabase extends _$AppDatabase {
             // el sync propague la posición nueva.
             await _instalarTriggersSync();
           }
+          // v9 → v10 (SEGURIDAD, paridad Supabase 0027): el SUELDO sale de
+          // `colaboradores` a su propia tabla `colaborador_sueldo`.
+          //
+          // No es modelado, es permisos: la RLS filtra filas y no columnas, así
+          // que mientras el sueldo viviera en `colaboradores` no había manera de
+          // dejar que el rol `colaborador` leyera los nombres de sus compañeros
+          // —los necesita para el pase de lista— sin dejarle leer lo que cobran.
+          // Con la tabla aparte, el pull no le baja nada y el dato NUNCA llega a
+          // su teléfono. Ver `supabase/migrations/0027_sueldo_tabla_aparte.sql`.
+          if (from < 10) {
+            if (!await _tablaExiste('colaborador_sueldo')) {
+              await m.createTable(colaboradorSueldo);
+            }
+
+            // Copia solo a quien tiene sueldo capturado: una fila vacía por cada
+            // colaborador no aporta nada y se subiría al servidor en el push.
+            // `INSERT OR IGNORE` para que reintentar la migración sea inocuo.
+            if (await _columnaExiste('colaboradores', 'salario_periodo')) {
+              final now = DateTime.now().millisecondsSinceEpoch;
+              await customStatement(
+                'INSERT OR IGNORE INTO colaborador_sueldo ('
+                '  colaborador_id, salario_personalizado, periodo_pago,'
+                '  salario_periodo, dias_semana,'
+                '  empresa_id, created_at, updated_at, server_updated_at,'
+                '  deleted_at, sync_status'
+                ') SELECT '
+                '  id, salario_personalizado,'
+                "  COALESCE(periodo_pago, 'MENSUAL'), salario_periodo,"
+                '  COALESCE(dias_semana, 6),'
+                '  empresa_id, COALESCE(created_at, $now), $now, NULL,'
+                "  NULL, 'pending'"
+                ' FROM colaboradores'
+                ' WHERE deleted_at IS NULL'
+                '   AND (salario_personalizado IS NOT NULL'
+                '        OR salario_periodo IS NOT NULL)',
+              );
+
+              // Y ahora sí, fuera de `colaboradores`. SQLite no sabe soltar
+              // varias columnas de un golpe: `alterTable` reconstruye la tabla
+              // con la forma nueva y copia el resto de los datos.
+              await m.alterTable(TableMigration(colaboradores));
+            }
+
+            // `createTable` y `alterTable` NO instalan el trigger mark_pending, y
+            // la reconstrucción de `colaboradores` se lleva por delante el suyo.
+            // Sin esto, editar a alguien dejaría de marcarlo `pending` y sus
+            // cambios no volverían a subir jamás.
+            await _instalarTriggersSync();
+          }
         },
       );
+
+  /// ¿Existe esta tabla en la base local?
+  Future<bool> _tablaExiste(String nombre) => customSelect(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='$nombre'",
+      ).get().then((rows) => rows.isNotEmpty);
+
+  /// ¿Existe esta columna en esta tabla?
+  Future<bool> _columnaExiste(String tabla, String col) => customSelect(
+        "SELECT 1 FROM pragma_table_info('$tabla') WHERE name='$col'",
+      ).get().then((rows) => rows.isNotEmpty);
 
   /// Instala, por tabla, un trigger `AFTER UPDATE` que marca la fila como
   /// `pending` y refresca `updated_at` cuando la app edita datos. La condición

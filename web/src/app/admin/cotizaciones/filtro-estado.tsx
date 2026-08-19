@@ -18,7 +18,7 @@ import {
   Td,
 } from '@/components/ui';
 import OrdenModoToggle from '@/components/orden-modo-toggle';
-import { usarArrastreOrden } from '@/components/usar-arrastre-orden';
+import { useArrastreOrden } from '@/components/use-arrastre-orden';
 import { ordenarPorModo } from '@/lib/data/ordenar';
 import { esModoPersonalizado } from '@/lib/data/orden-modos';
 import type { BadgeTone } from '@/components/ui';
@@ -67,7 +67,7 @@ export default function FiltroEstadoCotizaciones({
   // Mover solo sobre la lista completa (sin filtro de estado).
   const puedeMover = personalizado && estado === 'TODOS';
 
-  const { guardando, propsFila } = usarArrastreOrden({
+  const { guardando, propsFila } = useArrastreOrden({
     items: filtradas,
     idDe: (c) => c.id,
     tabla: 'cotizaciones',

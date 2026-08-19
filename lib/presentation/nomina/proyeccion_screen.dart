@@ -173,11 +173,17 @@ class _ProyeccionScreenState extends ConsumerState<ProyeccionScreen> {
 
     final colabs =
         ref.read(colaboradoresProvider).asData?.value ?? const <db.Colaborador>[];
+    final sueldos = ref.read(sueldosPorColaboradorProvider).asData?.value ??
+        const <String, db.ColaboradorSueldoRow>{};
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       notifier.sembrar(
         participantes: sugeridos,
-        diasPorColaborador: {for (final c in colabs) c.id: c.diasSemana},
+        // El sueldo (y con él los días/semana) vive en `colaborador_sueldo`
+        // desde el esquema v10. Sin fila → 6, el default de la tabla.
+        diasPorColaborador: {
+          for (final c in colabs) c.id: sueldos[c.id]?.diasSemana ?? 6,
+        },
         destajoCapturado: ref.read(destajoCapturadoSemanaProvider),
       );
     });
@@ -187,13 +193,13 @@ class _ProyeccionScreenState extends ConsumerState<ProyeccionScreen> {
   Widget build(BuildContext context) {
     // Puerta de rol. La navegación ya esconde la entrada, pero la pantalla se
     // defiende sola: un deep link o una ruta guardada no deben poder saltársela.
-    if (!ref.watch(puedeVerProyeccionNominaProvider)) {
+    if (!ref.watch(puedeVerSueldosProvider)) {
       return Scaffold(
         appBar: AppBar(title: const Text('Proyección de nómina')),
         body: const EmptyStateView(
           icon: Icons.lock_outline,
           title: 'No tienes acceso a la proyección de nómina.',
-          hint: 'Solo los socios y los supervisores pueden verla.',
+          hint: 'Solo los socios, los supervisores y el contador pueden verla.',
         ),
       );
     }
@@ -1701,6 +1707,12 @@ class _BarraAcciones extends ConsumerWidget {
     final lunes = ref.read(semanaProyeccionProvider);
     final hoy = indiceDiaSemana(lunes, Semana.inicioDia(DateTime.now()));
 
+    // Los días/semana salen de `colaborador_sueldo` desde el esquema v10; sin
+    // fila, el default de la tabla (6).
+    final sueldos = ref.read(sueldosPorColaboradorProvider).asData?.value ??
+        const <String, db.ColaboradorSueldoRow>{};
+    int diasSemanaDe(String id) => sueldos[id]?.diasSemana ?? 6;
+
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -1724,12 +1736,12 @@ class _BarraAcciones extends ConsumerWidget {
               title: Text(c.nombre),
               subtitle: Text(c.tipoPago == 'DESTAJO'
                   ? 'A destajo'
-                  : '${c.diasSemana} días por semana'),
+                  : '${diasSemanaDe(c.id)} días por semana'),
               trailing: const Icon(Icons.add),
               onTap: () {
                 ref.read(proyeccionEstadoProvider.notifier).agregar(
                       c.id,
-                      diasSemana: c.diasSemana,
+                      diasSemana: diasSemanaDe(c.id),
                       // Quien entra a media semana arranca de hoy, no del lunes.
                       desdeDia: hoy ?? 0,
                     );

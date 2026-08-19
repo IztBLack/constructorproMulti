@@ -16,6 +16,7 @@ import '../../core/pdf/pdf_config.dart';
 import '../../core/storage/comprobante_storage.dart';
 import '../../core/sync/cloud_providers.dart';
 import '../../core/sync/rol_provider.dart';
+import '../common/empty_state_view.dart';
 import '../../core/sync/supabase_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
@@ -92,8 +93,8 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                 ),
               ),
               // Entra ya filtrada a esta obra. Solo para quien puede ver
-              // salarios (ver `puedeVerProyeccionNominaSegunRol`).
-              if (ref.watch(puedeVerProyeccionNominaProvider))
+              // salarios (ver `puedeVerSueldosSegunRol`).
+              if (ref.watch(puedeVerSueldosProvider))
                 const PopupMenuItem(
                   value: 'proyeccion',
                   child: ListTile(
@@ -174,6 +175,8 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     if (config == null) return;
     final idx = _tab.index;
     if (idx == 2) {
+      // La pestaña ya no se dibuja sin permiso, pero el export se defiende solo.
+      if (!ref.read(puedeVerSueldosProvider)) return;
       // Nómina de la semana activa
       final fin = Semana.finSemana(_inicioSemana);
       final rango = (obraId: _obraId, start: _inicioSemana, end: fin);
@@ -664,6 +667,17 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
 
   // ============ NÓMINA ============
   Widget _nominaTab() {
+    // Misma puerta que la proyección: esta pestaña enseña el sueldo de cada
+    // persona junto a su nombre. La pestaña se deja visible —quitarla cambiaría
+    // el largo del TabController y correría los índices— pero no muestra nada.
+    if (!ref.watch(puedeVerSueldosProvider)) {
+      return const EmptyStateView(
+        icon: Icons.lock_outline,
+        title: 'No tienes acceso a la nómina.',
+        hint: 'Solo los socios, los supervisores y el contador pueden verla.',
+      );
+    }
+
     final fin = Semana.finSemana(_inicioSemana);
     final rango = (obraId: _obraId, start: _inicioSemana, end: fin);
     final workersAsync = ref.watch(colaboradoresPorObraProvider(_obraId));

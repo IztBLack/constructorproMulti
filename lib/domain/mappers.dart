@@ -12,12 +12,24 @@ dom.TipoPago _tipoPago(String s) =>
 dom.Puesto puestoToDomain(Puesto r) =>
     dom.Puesto(id: r.id, nombre: r.nombre, salarioDiaDefault: r.salarioDiaDefault);
 
-dom.Colaborador colaboradorToDomain(Colaborador r) => dom.Colaborador(
+/// El sueldo llega POR SEPARADO (`sueldo`) porque desde el esquema v10 no vive
+/// en `colaboradores`, sino en `colaborador_sueldo`, para que la RLS pueda
+/// negárselo al rol `colaborador` (ver la tabla `ColaboradorSueldo`).
+///
+/// Que sea opcional no es laxitud: **null es el caso normal** de quien no tiene
+/// sueldo capturado, y también el de un dispositivo cuyo usuario no tiene
+/// permiso para verlo. En los dos casos la nómina cae al salario del puesto, que
+/// es exactamente lo que debe pasar.
+dom.Colaborador colaboradorToDomain(
+  Colaborador r, {
+  ColaboradorSueldoRow? sueldo,
+}) =>
+    dom.Colaborador(
       id: r.id,
       nombre: r.nombre,
       puestoId: r.puestoId,
       tipoPago: _tipoPago(r.tipoPago),
-      salarioPersonalizado: r.salarioPersonalizado,
+      salarioPersonalizado: sueldo?.salarioPersonalizado,
     );
 
 dom.Asistencia asistenciaToDomain(Asistencia r) => dom.Asistencia(

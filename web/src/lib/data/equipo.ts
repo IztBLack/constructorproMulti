@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import type { AsignacionObraColaborador, Colaborador, ObraResumen, Puesto } from './types';
+import { SELECT_CON_SUELDO, aplanarSueldo, aplanarSueldos } from './colaborador-sueldo';
 
 /// Colaborador activo en una obra, enriquecido con el nombre de su puesto
 /// (cuando está disponible) para mostrarlo en el detalle de la obra.
@@ -18,13 +19,13 @@ export async function listColaboradores(): Promise<{
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('colaboradores')
-    .select('*')
+    .select(SELECT_CON_SUELDO)
     .is('deleted_at', null)
     .order('orden')
     .order('nombre');
 
   if (error) return { data: [], error: error.message };
-  return { data: (data ?? []) as Colaborador[], error: null };
+  return { data: aplanarSueldos(data), error: null };
 }
 
 export async function getColaborador(
@@ -33,13 +34,13 @@ export async function getColaborador(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('colaboradores')
-    .select('*')
+    .select(SELECT_CON_SUELDO)
     .eq('id', id)
     .is('deleted_at', null)
     .maybeSingle();
 
   if (error) return { data: null, error: error.message };
-  return { data: data as Colaborador | null, error: null };
+  return { data: data ? aplanarSueldo(data) : null, error: null };
 }
 
 export async function listPuestos(): Promise<{ data: Puesto[]; error: string | null }> {

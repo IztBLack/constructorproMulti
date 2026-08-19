@@ -6,6 +6,8 @@
 /// cotización como aceptada. El diff se calcula al vuelo comparando esa foto
 /// contra el estado actual (secciones/partidas vivas). Ver migración 0011.
 
+import { IVA_POR_DEFECTO } from './types';
+
 export interface SnapshotPartida {
   id: string;
   descripcion: string;
@@ -34,6 +36,10 @@ export interface CotizacionSnapshot {
 export interface DetalleParaSnapshot {
   descuento: number;
   iva_enabled: boolean;
+  /// Tasa CONGELADA de la cotización (migración 0017). Opcional porque las filas
+  /// previas a 0017 no la traen; se cae a `IVA_POR_DEFECTO`, que es la que
+  /// tenían quemada en el código.
+  iva_porcentaje?: number | null;
   secciones: {
     id: string;
     nombre: string;
@@ -85,13 +91,22 @@ export function parseSnapshot(json: string | null | undefined): CotizacionSnapsh
   }
 }
 
-function totalDeSnapshot(snap: CotizacionSnapshot): number {
+/// Total de una foto, con la tasa de IVA de la cotización.
+///
+/// `ivaPorcentaje` viene de fuera y NO del snapshot a propósito: la tasa se
+/// congela al crear la cotización (0017) y ya no cambia, así que las dos fotos
+/// —la aprobada y la actual— se valoran con la misma. Antes esto multiplicaba
+/// por un `1.16` quemado, y en una empresa con IVA al 8% (frontera) o sin IVA,
+/// el cliente veía «Total antes / Total ahora» inflados justo al lado del botón
+/// de aprobar. Se debe leer con `cotizaciones.ts:calcularTotales`, que es la
+/// fórmula buena.
+function totalDeSnapshot(snap: CotizacionSnapshot, ivaPorcentaje: number): number {
   const subtotal = snap.secciones.reduce(
     (acc, s) => acc + s.partidas.reduce((a, p) => a + p.cantidad * p.precio_unitario, 0),
     0,
   );
   const base = subtotal - subtotal * ((snap.descuento ?? 0) / 100);
-  return snap.iva_enabled ? base * 1.16 : base;
+  return snap.iva_enabled ? base * (1 + ivaPorcentaje / 100) : base;
 }
 
 export interface CampoCambio {
@@ -176,8 +191,9 @@ export function compararSnapshot(
   const cambioGlobal =
     aprobado.descuento !== actualSnap.descuento || aprobado.iva_enabled !== actualSnap.iva_enabled;
 
-  const totalAntes = totalDeSnapshot(aprobado);
-  const totalAhora = totalDeSnapshot(actualSnap);
+  const ivaPct = actual.iva_porcentaje ?? IVA_POR_DEFECTO;
+  const totalAntes = totalDeSnapshot(aprobado, ivaPct);
+  const totalAhora = totalDeSnapshot(actualSnap, ivaPct);
 
   const hayCambios =
     nuevas.length > 0 ||

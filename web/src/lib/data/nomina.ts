@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getEmpresaUsuario } from './empresa';
 import type { Asistencia, Colaborador, Destajo, Puesto } from './types';
 import { siguienteMedianocheMx } from './tz';
+import { SELECT_CON_SUELDO, aplanarSueldos } from './colaborador-sueldo';
 
 export {
   semanaDe,
@@ -56,13 +57,13 @@ export async function listColaboradoresActivosObra(
 
   const { data, error } = await supabase
     .from('colaboradores')
-    .select('*')
+    .select(SELECT_CON_SUELDO)
     .in('id', colaboradorIds)
     .is('deleted_at', null)
     .order('nombre');
 
   if (error) return { data: [], error: error.message };
-  return { data: (data ?? []) as Colaborador[], error: null };
+  return { data: aplanarSueldos(data), error: null };
 }
 
 export async function listAsistenciasObraRango(

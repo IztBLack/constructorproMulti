@@ -7,7 +7,7 @@ import type { CuadrillaResumen } from '@/lib/data/cuadrillas';
 import type { OrdenModo } from '@/lib/data/orden-modos';
 import { Badge, Button, EmptyState, TableContainer, TBody, Td, Th, THead, Tr } from '@/components/ui';
 import OrdenModoToggle from '@/components/orden-modo-toggle';
-import { usarArrastreOrden } from '@/components/usar-arrastre-orden';
+import { useArrastreOrden } from '@/components/use-arrastre-orden';
 import { ordenarPorModo } from '@/lib/data/ordenar';
 import { ESPECIALIDAD_LABEL } from './especialidades';
 import { eliminarCuadrilla } from './actions';
@@ -31,7 +31,7 @@ export default function TablaCuadrillas({
     modificado: (c) => c.updated_at,
   });
 
-  const { activo: arrastrable, guardando, propsFila } = usarArrastreOrden({
+  const { activo: arrastrable, guardando, propsFila } = useArrastreOrden({
     items,
     idDe: (c) => c.id,
     tabla: 'cuadrillas',

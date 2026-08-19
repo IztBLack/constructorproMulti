@@ -23,7 +23,7 @@ bool puedeEditarOperacionSegunRol(String? rol) {
   return rol != 'contador' && rol != 'colaborador';
 }
 
-/// Roles con acceso a la PROYECCIÓN DE NÓMINA.
+/// Roles con acceso a los SUELDOS (nómina y proyección).
 ///
 /// Esta es una LISTA BLANCA, al revés que [puedeEditarOperacionSegunRol], y la
 /// diferencia es deliberada. Aquella protege una acción (editar); esta protege
@@ -38,15 +38,18 @@ bool puedeEditarOperacionSegunRol(String? rol) {
 ///   · `colaborador` — NO. Es staff de campo: captura asistencia y gasto. Aunque
 ///     RLS le deja LEER `colaboradores`, no hay razón para ponerle enfrente la
 ///     raya de sus compañeros.
-///   · `contador` — NO por ahora, y es el caso discutible: es quien necesita
-///     saber cuánto efectivo tener listo el sábado, y 0022 ya le da lectura de
-///     `asistencias`, `destajos` y `colaboradores`. Si se decide abrirle la
-///     pantalla en SOLO LECTURA, se agrega aquí y se combina con
-///     [puedeEditarOperacionSegunRol] para que no pueda mover el escenario.
+///   · `contador` — SÍ, desde 2026-08-17. Es quien necesita saber cuánto
+///     efectivo tener listo el sábado, y 0022 ya le da lectura de `asistencias`,
+///     `destajos` y `colaboradores`. Entra en SOLO LECTURA: mover el escenario
+///     sigue dependiendo de [puedeEditarOperacionSegunRol].
 ///   · `cliente` — NO, nunca. Ve su obra desde el portal y jamás la nómina.
-const _rolesProyeccionNomina = {'admin', 'supervisor'};
+///
+/// Espeja `ROLES_SUELDOS` de la web (`web/src/lib/auth/sueldos.ts`). Las dos
+/// listas tienen que decir lo mismo: si se separan, la oficina y la obra dejan
+/// de coincidir en quién ve la raya.
+const _rolesSueldos = {'admin', 'supervisor', 'contador'};
 
-/// ¿Este rol puede ver la proyección de nómina?
+/// ¿Este rol puede ver sueldos (nómina y proyección)?
 ///
 /// Un rol nulo o vacío CONCEDE acceso, igual que el resto del gate de roles,
 /// pero por una razón distinta a «no bloquear a un admin por un fallo de red»:
@@ -54,9 +57,9 @@ const _rolesProyeccionNomina = {'admin', 'supervisor'};
 /// `usuarios_empresa` que consultar, y ese caso es la instalación local de un
 /// solo dueño — negarle su propia nómina dejaría la app inservible. En cuanto
 /// hay sesión, el rol es conocido y la lista blanca aplica.
-bool puedeVerProyeccionNominaSegunRol(String? rol) {
+bool puedeVerSueldosSegunRol(String? rol) {
   if (rol == null || rol.isEmpty) return true;
-  return _rolesProyeccionNomina.contains(rol);
+  return _rolesSueldos.contains(rol);
 }
 
 /// Rol del usuario actual, resuelto desde Supabase (`usuarios_empresa`, igual
@@ -105,7 +108,7 @@ final puedeEditarOperacionProvider = Provider<bool>((ref) {
       );
 });
 
-/// ¿Se le muestra la proyección de nómina a este usuario?
+/// ¿Se le muestran los sueldos (nómina y proyección) a este usuario?
 ///
 /// A diferencia de [puedeEditarOperacionProvider], mientras el rol CARGA se
 /// niega el acceso. Es un cambio de polaridad a propósito: ocultar un botón
@@ -113,9 +116,9 @@ final puedeEditarOperacionProvider = Provider<bool>((ref) {
 /// plantilla a un colaborador durante ese medio segundo sí sería una fuga. El
 /// caso «sin sesión» no pasa por aquí: ahí el provider resuelve a `null` con
 /// `data` y la lista blanca ya lo concede.
-final puedeVerProyeccionNominaProvider = Provider<bool>((ref) {
+final puedeVerSueldosProvider = Provider<bool>((ref) {
   return ref.watch(rolUsuarioProvider).maybeWhen(
-        data: puedeVerProyeccionNominaSegunRol,
+        data: puedeVerSueldosSegunRol,
         orElse: () => false,
       );
 });

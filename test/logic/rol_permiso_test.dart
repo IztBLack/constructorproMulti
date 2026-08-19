@@ -25,29 +25,35 @@ void main() {
     });
   });
 
-  /// La proyección de nómina va al revés: LISTA BLANCA. Aquí no se protege una
-  /// acción sino la exhibición del salario de cada persona, así que un rol nuevo
-  /// tiene que pedir el permiso en vez de heredarlo.
-  group('puedeVerProyeccionNominaSegunRol', () {
-    test('socio y supervisor sí', () {
-      expect(puedeVerProyeccionNominaSegunRol('admin'), isTrue);
-      expect(puedeVerProyeccionNominaSegunRol('supervisor'), isTrue);
+  /// Los sueldos van al revés: LISTA BLANCA. Aquí no se protege una acción sino
+  /// la exhibición del salario de cada persona, así que un rol nuevo tiene que
+  /// pedir el permiso en vez de heredarlo.
+  ///
+  /// Gobierna los DOS módulos que enseñan la raya —nómina y proyección—. Tenían
+  /// permisos distintos hasta agosto de 2026 y por eso un colaborador de campo
+  /// podía bajarse el PDF de nómina con el sueldo de todos.
+  group('puedeVerSueldosSegunRol', () {
+    test('socio, supervisor y contador sí', () {
+      expect(puedeVerSueldosSegunRol('admin'), isTrue);
+      expect(puedeVerSueldosSegunRol('supervisor'), isTrue);
+      // El contador entró el 2026-08-17: 0022 lo define como el tesorero que ve
+      // los montos a pagar, y sin la raya no puede hacer su trabajo.
+      expect(puedeVerSueldosSegunRol('contador'), isTrue);
     });
 
-    test('colaborador, contador y cliente no', () {
-      expect(puedeVerProyeccionNominaSegunRol('colaborador'), isFalse);
-      expect(puedeVerProyeccionNominaSegunRol('contador'), isFalse);
-      expect(puedeVerProyeccionNominaSegunRol('cliente'), isFalse);
+    test('colaborador y cliente no', () {
+      expect(puedeVerSueldosSegunRol('colaborador'), isFalse);
+      expect(puedeVerSueldosSegunRol('cliente'), isFalse);
     });
 
     test('un rol que no existe todavía queda FUERA por omisión', () {
-      expect(puedeVerProyeccionNominaSegunRol('rol_que_no_existe'), isFalse);
-      expect(puedeVerProyeccionNominaSegunRol('auditor'), isFalse);
+      expect(puedeVerSueldosSegunRol('rol_que_no_existe'), isFalse);
+      expect(puedeVerSueldosSegunRol('auditor'), isFalse);
     });
 
     test('sin sesión (null/vacío) sí: es la instalación local del dueño', () {
-      expect(puedeVerProyeccionNominaSegunRol(null), isTrue);
-      expect(puedeVerProyeccionNominaSegunRol(''), isTrue);
+      expect(puedeVerSueldosSegunRol(null), isTrue);
+      expect(puedeVerSueldosSegunRol(''), isTrue);
     });
   });
 }

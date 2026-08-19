@@ -8,7 +8,8 @@ import {
   listPuestosLite,
   semanaDe,
 } from '@/lib/data/nomina';
-import { getNombreEmpresa } from '@/lib/data/empresa';
+import { getEmpresaUsuario, getNombreEmpresa } from '@/lib/data/empresa';
+import { puedeVerSueldos } from '@/lib/auth/sueldos';
 import { getEmpresaConfig } from '@/lib/data/empresa-config';
 import { construirNominaDocumentoHtml } from '@/lib/obra/documento-nomina-html';
 import { DocumentShell } from '@/components/pdf/document-shell';
@@ -25,6 +26,10 @@ interface Props {
 export default async function NominaPdfPage({ params, searchParams }: Props) {
   const { id } = await params;
   const { inicio } = await searchParams;
+
+  // La vista previa del PDF enseña lo mismo que el PDF: la raya completa.
+  const { rol } = await getEmpresaUsuario();
+  if (!puedeVerSueldos(rol)) notFound();
 
   const { data: obra, error } = await getObra(id);
   if (error) {

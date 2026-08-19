@@ -141,7 +141,7 @@ function FormSubida({
             ref={inputRef}
             type="file"
             name="archivo"
-            accept="application/pdf,image/*"
+            accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
             className="sr-only"
             onChange={onFileChange}
           />

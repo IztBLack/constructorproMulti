@@ -11,6 +11,8 @@ import {
   semanaDe,
 } from '@/lib/data/nomina';
 import { formatCurrency, formatDate } from '@/lib/data/format';
+import { getEmpresaUsuario } from '@/lib/data/empresa';
+import { puedeVerSueldos } from '@/lib/auth/sueldos';
 import ObraTabs from '../_obra-tabs';
 import { RegistrarNominaCaja } from './nomina-acciones';
 import { DestajosSemana } from './destajos-semana';
@@ -74,6 +76,24 @@ export default async function NominaObraPage({
 }) {
   const { id } = await params;
   const { inicio } = await searchParams;
+
+  // Misma puerta que la proyección: esta pantalla enseña el sueldo de cada
+  // persona junto a su nombre. Hasta agosto de 2026 solo pedía sesión, así que
+  // un `colaborador` de campo veía la raya completa de sus compañeros.
+  //
+  // Esto es presentación; la barrera real es la migración 0027, que le quita al
+  // colaborador las columnas de sueldo. Pero se corta aquí, antes de leer nada.
+  const { rol } = await getEmpresaUsuario();
+  if (!puedeVerSueldos(rol)) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Nómina"
+          description="Solo los socios, los supervisores y el contador pueden ver la raya."
+        />
+      </div>
+    );
+  }
 
   const { data: obra, error: obraError } = await getObra(id);
   if (obraError) {

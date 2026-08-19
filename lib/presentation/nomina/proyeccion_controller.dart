@@ -351,6 +351,12 @@ final proyeccionVistaProvider = Provider<ProyeccionVista>((ref) {
   final asistencias = asistenciasAsync.asData?.value ?? const <db.Asistencia>[];
   final destajos = destajosAsync.asData?.value ?? const <db.Destajo>[];
 
+  // El sueldo llega por su propia tabla desde el esquema v10 (RLS de 0027). En
+  // un dispositivo sin permiso el mapa viene vacío y todo cae al salario del
+  // puesto — que es justo lo que debe pasar, no un error.
+  final sueldos = ref.watch(sueldosPorColaboradorProvider).asData?.value ??
+      const <String, db.ColaboradorSueldoRow>{};
+
   final obraPorColaborador = <String, String>{
     for (final e in ultimaObra.entries) e.key: e.value.id,
   };
@@ -358,7 +364,7 @@ final proyeccionVistaProvider = Provider<ProyeccionVista>((ref) {
     for (final e in cuadrillaDe.entries) e.key: e.value.id,
   };
   final diasPorColaborador = <String, int>{
-    for (final c in colabs) c.id: c.diasSemana,
+    for (final c in colabs) c.id: sueldos[c.id]?.diasSemana ?? 6,
   };
 
   // Días ya capturados por persona: la UI los bloquea y los rellenos los saltan.
@@ -378,7 +384,9 @@ final proyeccionVistaProvider = Provider<ProyeccionVista>((ref) {
 
   final resultado = const ProyeccionCalculator().calcular(
     estado: estado.copyWith(participantes: visibles),
-    colaboradores: colabs.map(colaboradorToDomain).toList(),
+    colaboradores: [
+      for (final c in colabs) colaboradorToDomain(c, sueldo: sueldos[c.id]),
+    ],
     puestos: puestos.map(puestoToDomain).toList(),
     asistenciasReales: asistencias.map(asistenciaToDomain).toList(),
     destajosReales: destajos.map(destajoToDomain).toList(),
@@ -470,5 +478,9 @@ final colaboradorDomPorIdProvider =
     Provider<Map<String, dom.Colaborador>>((ref) {
   final colabs = ref.watch(colaboradoresProvider).asData?.value ??
       const <db.Colaborador>[];
-  return {for (final c in colabs) c.id: colaboradorToDomain(c)};
+  final sueldos = ref.watch(sueldosPorColaboradorProvider).asData?.value ??
+      const <String, db.ColaboradorSueldoRow>{};
+  return {
+    for (final c in colabs) c.id: colaboradorToDomain(c, sueldo: sueldos[c.id]),
+  };
 });

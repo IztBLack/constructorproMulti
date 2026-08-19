@@ -20,28 +20,11 @@
 
 
 import { calcularNomina } from './nomina-calculo';
-import type { Asistencia, Colaborador, Destajo, Puesto, Rol } from './types';
+import type { Asistencia, Colaborador, Destajo, Puesto } from './types';
 import { partesTz, medianocheMx, sumarDiasCalendario } from './tz';
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Permisos
-// ═══════════════════════════════════════════════════════════════════════════
-
-/// Roles con acceso a la proyección.
-///
-/// Es una LISTA BLANCA a propósito, al revés que `seccionesDe` en
-/// `lib/auth/secciones.ts`: esta pantalla enseña el salario de cada persona
-/// junto a su nombre, así que un rol nuevo debe tener que pedir el permiso en
-/// vez de heredarlo. Espeja `_rolesProyeccionNomina` del móvil.
-///
-/// `contador` queda FUERA por ahora, y es el caso discutible: la migración 0022
-/// lo define como tesorero que «ve los montos a pagar». Si se decide abrirle la
-/// pantalla, va aquí y en el móvil, en solo lectura.
-const ROLES_PROYECCION: readonly string[] = ['admin', 'supervisor'];
-
-export function puedeVerProyeccion(rol: Rol): boolean {
-  return ROLES_PROYECCION.includes(rol);
-}
+// Los permisos viven en `lib/auth/sueldos.ts`: gobiernan también la nómina, que
+// enseña el mismo dato, y tener dos listas fue justo lo que las dejó separarse.
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Fechas

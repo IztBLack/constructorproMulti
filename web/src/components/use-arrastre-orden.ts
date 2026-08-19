@@ -16,8 +16,14 @@ import { esInvertido, esModoPersonalizado, type OrdenModo } from '@/lib/data/ord
  *
  * `invertido` (modo `personalizado_desc`): lo que se ve está al revés de lo
  * guardado, así que la lista final se persiste al derecho.
+ *
+ * Se llama `use…` y no `usar…` aunque el resto del proyecto esté en español:
+ * ESLint reconoce los hooks por el prefijo `use`, y con el nombre en español
+ * daba cuatro errores `rules-of-hooks` y —peor— dejaba de aplicar
+ * `exhaustive-deps` en todo el archivo. Un detector apagado cuesta más que la
+ * inconsistencia de idioma.
  */
-export function usarArrastreOrden<T>({
+export function useArrastreOrden<T>({
   items,
   idDe,
   tabla,

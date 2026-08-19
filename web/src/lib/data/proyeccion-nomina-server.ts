@@ -7,6 +7,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import type { Asistencia, Colaborador, Destajo, Puesto } from './types';
+import { SELECT_CON_SUELDO, aplanarSueldos } from './colaborador-sueldo';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Lecturas
@@ -51,7 +52,7 @@ export async function cargarDatosProyeccion(
 
   const [colabsRes, puestosRes, asisRes, destRes, obrasRes, asigRes, cuadRes, miembrosRes] =
     await Promise.all([
-      supabase.from('colaboradores').select('*').is('deleted_at', null).eq('activo', true).order('nombre'),
+      supabase.from('colaboradores').select(SELECT_CON_SUELDO).is('deleted_at', null).eq('activo', true).order('nombre'),
       supabase.from('puestos').select('*').is('deleted_at', null),
       supabase.from('asistencias').select('*').gte('fecha', inicioMs).lte('fecha', finMs).is('deleted_at', null),
       supabase.from('destajos').select('*').gte('fecha', inicioMs).lte('fecha', finMs).is('deleted_at', null),
@@ -100,7 +101,7 @@ export async function cargarDatosProyeccion(
   }
 
   return {
-    colaboradores: (colabsRes.data ?? []) as Colaborador[],
+    colaboradores: aplanarSueldos(colabsRes.data),
     puestos: (puestosRes.data ?? []) as Puesto[],
     asistencias: (asisRes.data ?? []) as Asistencia[],
     destajos: (destRes.data ?? []) as Destajo[],

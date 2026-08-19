@@ -90,9 +90,15 @@ class DemoData {
             nombre: c.$2,
             puestoId: puestoId[c.$3]!,
             tipoPago: c.$4,
-            salarioPersonalizado: Value(c.$5),
             telefono: Value('55-${1000 + colabs.indexOf(c) * 7}-${2000 + colabs.indexOf(c) * 13}'),
           ));
+          // El sueldo va en su propia tabla desde el esquema v10.
+          if (c.$5 != null) {
+            b.insert(db.colaboradorSueldo, ColaboradorSueldoCompanion.insert(
+              colaboradorId: c.$1,
+              salarioPersonalizado: Value(c.$5),
+            ));
+          }
         }
       });
       double salarioDe(int i) => colabs[i].$5 ?? puestos[colabs[i].$3]!.$2;

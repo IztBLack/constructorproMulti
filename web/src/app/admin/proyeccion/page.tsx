@@ -1,7 +1,8 @@
 import { PageHeader } from '@/components/ui';
 import { getEmpresaUsuario } from '@/lib/data/empresa';
 import { navegarSemana, semanaDe } from '@/lib/data/nomina';
-import { indiceDiaSemana, puedeVerProyeccion } from '@/lib/data/proyeccion-nomina';
+import { indiceDiaSemana } from '@/lib/data/proyeccion-nomina';
+import { puedeVerSueldos } from '@/lib/auth/sueldos';
 import { cargarDatosProyeccion } from '@/lib/data/proyeccion-nomina-server';
 // `hoyMxMs` y no `Date.now()`: en Vercel el servidor corre en UTC, y calcular
 // «hoy» con el reloj del proceso adelanta el día durante la tarde-noche de
@@ -22,12 +23,12 @@ export default async function ProyeccionPage({ searchParams }: PageProps) {
   // Esto es presentación, no seguridad: las policies de Supabase son la barrera
   // real. Pero la pantalla enseña el salario de cada persona junto a su nombre,
   // así que aquí sí se corta antes de leer nada.
-  if (!puedeVerProyeccion(rol)) {
+  if (!puedeVerSueldos(rol)) {
     return (
       <div className="space-y-6">
         <PageHeader
           title="Proyección de nómina"
-          description="Solo los socios y los supervisores pueden ver esta pantalla."
+          description="Solo los socios, los supervisores y el contador pueden ver esta pantalla."
         />
       </div>
     );

@@ -449,9 +449,18 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
   }
 
   Future<void> _showDialog(Colaborador? colaborador, List<Puesto> puestos) async {
+    // El sueldo vive en `colaborador_sueldo` desde el esquema v10 (por la RLS de
+    // 0027: es lo que permite que un colaborador de campo lea los NOMBRES de sus
+    // compañeros sin leer lo que cobran). Sin fila = sin sueldo capturado, que
+    // es lo mismo que el formulario en blanco.
+    final sueldo = colaborador == null
+        ? null
+        : await ref.read(colaboradorRepositoryProvider).sueldoDe(colaborador.id);
+    if (!mounted) return;
+
     final nombreCtrl = TextEditingController(text: colaborador?.nombre ?? '');
     final montoCtrl = TextEditingController(
-        text: colaborador?.salarioPeriodo?.toString() ?? '');
+        text: sueldo?.salarioPeriodo?.toString() ?? '');
     final telCtrl = TextEditingController(text: colaborador?.telefono ?? '');
     final emNombreCtrl = TextEditingController(text: colaborador?.contactoNombre ?? '');
     final emTelCtrl = TextEditingController(text: colaborador?.contactoTelefono ?? '');
@@ -459,8 +468,8 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
     String? puestoId = colaborador?.puestoId ??
         (puestos.isNotEmpty ? puestos.first.id : null);
     String tipoPago = colaborador?.tipoPago ?? 'DIA';
-    PeriodoPago periodo = periodoPagoFromCode(colaborador?.periodoPago);
-    int diasSemana = colaborador?.diasSemana ?? 6;
+    PeriodoPago periodo = periodoPagoFromCode(sueldo?.periodoPago);
+    int diasSemana = sueldo?.diasSemana ?? 6;
     bool activo = colaborador?.activo ?? true;
     // Solo al DAR DE ALTA: obra opcional para crear y asignar en un paso.
     // Vacía = "asignar después".
@@ -626,21 +635,31 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
                 // El diario NO se captura: se deriva del sueldo del periodo.
                 final salarioDiario = salarioDiarioDesdePeriodo(
                     montoPeriodo, periodo, diasSemana);
-                await ref.read(colaboradorRepositoryProvider).upsert(
+                final repo = ref.read(colaboradorRepositoryProvider);
+                await repo.upsert(
                       ColaboradoresCompanion(
                         id: Value(nuevoId),
                         nombre: Value(nombreCtrl.text.trim()),
                         puestoId: Value(puestoId!),
                         tipoPago: Value(tipoPago),
-                        salarioPersonalizado: Value(salarioDiario),
-                        periodoPago: Value(periodo.code),
-                        salarioPeriodo: Value(montoPeriodo),
-                        diasSemana: Value(diasSemana),
                         telefono: Value(telCtrl.text.trim()),
                         contactoNombre: Value(emNombreCtrl.text.trim()),
                         contactoTelefono: Value(emTelCtrl.text.trim()),
                         contactoParentesco: Value(emParCtrl.text.trim()),
                         activo: Value(activo),
+                      ),
+                    );
+                // El sueldo, a su tabla. Se escribe SIEMPRE que haya monto; si
+                // se vació el campo se guarda igual, con el monto en null, para
+                // que borrarlo se propague por el sync en vez de quedar la fila
+                // vieja viva en el servidor.
+                await repo.upsertSueldo(
+                      ColaboradorSueldoCompanion(
+                        colaboradorId: Value(nuevoId),
+                        salarioPersonalizado: Value(salarioDiario),
+                        periodoPago: Value(periodo.code),
+                        salarioPeriodo: Value(montoPeriodo),
+                        diasSemana: Value(diasSemana),
                       ),
                     );
                 // Alta + asignación en un solo gesto (si se eligió obra).

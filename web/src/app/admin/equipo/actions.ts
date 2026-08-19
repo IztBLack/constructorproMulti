@@ -15,6 +15,44 @@ export interface ActionResult {
 /// Lee el sueldo por periodo del formulario y deriva el salario diario que
 /// consume la nómina (`salario_personalizado`). El diario NO viene del form:
 /// siempre se recalcula aquí a partir del periodo, el monto y los días/semana.
+/// Escribe (o actualiza) la fila de sueldo. Devuelve el mensaje de error, o
+/// null si salió bien.
+///
+/// Se llama SIEMPRE, incluso cuando el monto quedó vacío: guardar la fila con el
+/// monto en null es lo que hace que borrar un sueldo se propague al móvil por el
+/// sync. Si no se escribiera, el valor viejo seguiría vivo en el servidor.
+///
+/// `upsert` y no `insert`: la fila puede existir o no —solo se crea cuando
+/// alguien captura un sueldo— y el formulario de edición no sabe cuál es el caso.
+async function guardarSueldo(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  colaboradorId: string,
+  empresaId: string,
+  sueldo: {
+    periodoPago: PeriodoPago;
+    salarioPeriodo: number | null;
+    diasSemana: number;
+    salarioDiario: number | null;
+  },
+): Promise<string | null> {
+  const now = Date.now();
+  const { error } = await supabase.from('colaborador_sueldo').upsert(
+    {
+      colaborador_id: colaboradorId,
+      empresa_id: empresaId,
+      salario_personalizado: sueldo.salarioDiario,
+      periodo_pago: sueldo.periodoPago,
+      salario_periodo: sueldo.salarioPeriodo,
+      dias_semana: sueldo.diasSemana,
+      created_at: now,
+      updated_at: now,
+      deleted_at: null,
+    },
+    { onConflict: 'colaborador_id' },
+  );
+  return error ? error.message : null;
+}
+
 function derivarSueldo(formData: FormData): {
   periodoPago: PeriodoPago;
   salarioPeriodo: number | null;
@@ -79,16 +117,31 @@ export async function crearColaborador(formData: FormData): Promise<ActionResult
     contacto_telefono: '',
     contacto_parentesco: '',
     activo: true,
-    salario_personalizado: salarioDiario,
-    periodo_pago: periodoPago,
-    salario_periodo: salarioPeriodo,
-    dias_semana: diasSemana,
     created_at: now,
     updated_at: now,
   });
 
   if (error) {
     return { ok: false, error: error.message };
+  }
+
+  // El sueldo va a su propia tabla desde la migración 0027: la RLS filtra filas
+  // y no columnas, y así el rol `colaborador` puede leer los nombres de sus
+  // compañeros (los necesita para el pase de lista) sin leer lo que cobran.
+  const errSueldo = await guardarSueldo(supabase, colaboradorId, empresaId, {
+    periodoPago,
+    salarioPeriodo,
+    diasSemana,
+    salarioDiario,
+  });
+  if (errSueldo) {
+    // El colaborador YA existe: volver a enviar el formulario lo duplicaría. Se
+    // avisa del sueldo sin fingir que el alta entera falló.
+    revalidatePath('/admin/equipo');
+    return {
+      ok: false,
+      error: `Se creó a ${nombre}, pero no se pudo guardar el sueldo: ${errSueldo}`,
+    };
   }
 
   // Si se eligió obra, se asigna enseguida. El colaborador YA quedó creado: si
@@ -154,16 +207,28 @@ export async function actualizarColaborador(id: string, formData: FormData): Pro
       contacto_nombre: contactoNombre,
       contacto_telefono: contactoTelefono,
       contacto_parentesco: contactoParentesco,
-      salario_personalizado: salarioDiario,
-      periodo_pago: periodoPago,
-      salario_periodo: salarioPeriodo,
-      dias_semana: diasSemana,
       updated_at: now,
     })
     .eq('id', id);
 
   if (error) {
     return { ok: false, error: error.message };
+  }
+
+  let empresaId: string;
+  try {
+    ({ empresaId } = await getEmpresaUsuario());
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Error de autenticación.' };
+  }
+  const errSueldo = await guardarSueldo(supabase, id, empresaId, {
+    periodoPago,
+    salarioPeriodo,
+    diasSemana,
+    salarioDiario,
+  });
+  if (errSueldo) {
+    return { ok: false, error: `No se pudo guardar el sueldo: ${errSueldo}` };
   }
 
   revalidatePath('/admin/equipo');

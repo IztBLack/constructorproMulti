@@ -6,7 +6,7 @@ import type { OrdenModo } from '@/lib/data/orden-modos';
 import { formatDate } from '@/lib/data/format';
 import { Badge, Button, DataTable, EmptyState, type DataColumn } from '@/components/ui';
 import OrdenModoToggle from '@/components/orden-modo-toggle';
-import { usarArrastreOrden } from '@/components/usar-arrastre-orden';
+import { useArrastreOrden } from '@/components/use-arrastre-orden';
 import { ordenarPorModo } from '@/lib/data/ordenar';
 import { esModoPersonalizado } from '@/lib/data/orden-modos';
 
@@ -57,7 +57,7 @@ export default function BuscadorObras({
     modificado: (o) => o.updated_at,
   });
 
-  const { guardando, propsFila } = usarArrastreOrden({
+  const { guardando, propsFila } = useArrastreOrden({
     items: listado,
     idDe: (o) => o.id,
     tabla: 'obras',

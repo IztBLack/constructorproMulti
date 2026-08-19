@@ -115,6 +115,13 @@ final puestosProvider = StreamProvider<List<Puesto>>(
 final colaboradoresProvider = StreamProvider<List<Colaborador>>(
     (ref) => ref.watch(colaboradorRepositoryProvider).watchAll());
 
+/// `colaboradorId → sueldo`. Vacío en un dispositivo cuyo usuario no puede ver
+/// sueldos: el pull no le baja la tabla `colaborador_sueldo` (RLS de 0027), así
+/// que el dato nunca llega al teléfono. La nómina cae al salario del puesto.
+final sueldosPorColaboradorProvider =
+    StreamProvider<Map<String, ColaboradorSueldoRow>>(
+        (ref) => ref.watch(colaboradorRepositoryProvider).watchSueldos());
+
 /// colaboradorId → obras activas asignadas (un colaborador puede tener varias).
 final colaboradorObrasProvider = StreamProvider<Map<String, List<Obra>>>(
     (ref) => ref.watch(colaboradorRepositoryProvider).watchObrasPorColaborador());

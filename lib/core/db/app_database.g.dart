@@ -405,7 +405,11 @@ class Obra extends DataClass implements Insertable<Obra> {
   /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
   final int? deletedAt;
 
-  /// 'pending' | 'synced' | 'error'.
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
   final String syncStatus;
   final int orden;
   final String id;
@@ -1159,7 +1163,11 @@ class Puesto extends DataClass implements Insertable<Puesto> {
   /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
   final int? deletedAt;
 
-  /// 'pending' | 'synced' | 'error'.
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
   final String syncStatus;
   final int orden;
   final String id;
@@ -1683,52 +1691,6 @@ class $ColaboradoresTable extends Colaboradores
     ),
     defaultValue: const Constant(true),
   );
-  static const VerificationMeta _salarioPersonalizadoMeta =
-      const VerificationMeta('salarioPersonalizado');
-  @override
-  late final GeneratedColumn<double> salarioPersonalizado =
-      GeneratedColumn<double>(
-        'salario_personalizado',
-        aliasedName,
-        true,
-        type: DriftSqlType.double,
-        requiredDuringInsert: false,
-      );
-  static const VerificationMeta _periodoPagoMeta = const VerificationMeta(
-    'periodoPago',
-  );
-  @override
-  late final GeneratedColumn<String> periodoPago = GeneratedColumn<String>(
-    'periodo_pago',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultValue: const Constant('MENSUAL'),
-  );
-  static const VerificationMeta _salarioPeriodoMeta = const VerificationMeta(
-    'salarioPeriodo',
-  );
-  @override
-  late final GeneratedColumn<double> salarioPeriodo = GeneratedColumn<double>(
-    'salario_periodo',
-    aliasedName,
-    true,
-    type: DriftSqlType.double,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _diasSemanaMeta = const VerificationMeta(
-    'diasSemana',
-  );
-  @override
-  late final GeneratedColumn<int> diasSemana = GeneratedColumn<int>(
-    'dias_semana',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(6),
-  );
   @override
   List<GeneratedColumn> get $columns => [
     empresaId,
@@ -1747,10 +1709,6 @@ class $ColaboradoresTable extends Colaboradores
     contactoTelefono,
     contactoParentesco,
     activo,
-    salarioPersonalizado,
-    periodoPago,
-    salarioPeriodo,
-    diasSemana,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1877,39 +1835,6 @@ class $ColaboradoresTable extends Colaboradores
         activo.isAcceptableOrUnknown(data['activo']!, _activoMeta),
       );
     }
-    if (data.containsKey('salario_personalizado')) {
-      context.handle(
-        _salarioPersonalizadoMeta,
-        salarioPersonalizado.isAcceptableOrUnknown(
-          data['salario_personalizado']!,
-          _salarioPersonalizadoMeta,
-        ),
-      );
-    }
-    if (data.containsKey('periodo_pago')) {
-      context.handle(
-        _periodoPagoMeta,
-        periodoPago.isAcceptableOrUnknown(
-          data['periodo_pago']!,
-          _periodoPagoMeta,
-        ),
-      );
-    }
-    if (data.containsKey('salario_periodo')) {
-      context.handle(
-        _salarioPeriodoMeta,
-        salarioPeriodo.isAcceptableOrUnknown(
-          data['salario_periodo']!,
-          _salarioPeriodoMeta,
-        ),
-      );
-    }
-    if (data.containsKey('dias_semana')) {
-      context.handle(
-        _diasSemanaMeta,
-        diasSemana.isAcceptableOrUnknown(data['dias_semana']!, _diasSemanaMeta),
-      );
-    }
     return context;
   }
 
@@ -1983,22 +1908,6 @@ class $ColaboradoresTable extends Colaboradores
         DriftSqlType.bool,
         data['${effectivePrefix}activo'],
       )!,
-      salarioPersonalizado: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}salario_personalizado'],
-      ),
-      periodoPago: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}periodo_pago'],
-      )!,
-      salarioPeriodo: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}salario_periodo'],
-      ),
-      diasSemana: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}dias_semana'],
-      )!,
     );
   }
 
@@ -2024,7 +1933,11 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
   /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
   final int? deletedAt;
 
-  /// 'pending' | 'synced' | 'error'.
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
   final String syncStatus;
   final int orden;
   final String id;
@@ -2036,20 +1949,6 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
   final String contactoTelefono;
   final String contactoParentesco;
   final bool activo;
-
-  /// Salario diario (MXN/día) que consume la nómina. **Derivado** del sueldo por
-  /// periodo: se recalcula desde [salarioPeriodo] + [periodoPago] + [diasSemana];
-  /// no se edita a mano. Nullable → usa el salario del puesto.
-  final double? salarioPersonalizado;
-
-  /// Esquema de captura del sueldo base: "SEMANAL" | "QUINCENAL" | "MENSUAL".
-  final String periodoPago;
-
-  /// Monto del sueldo tal cual lo captura el usuario, para el periodo elegido.
-  final double? salarioPeriodo;
-
-  /// Días trabajados por semana (5, 6 o 7) usados como divisor a diario.
-  final int diasSemana;
   const Colaborador({
     required this.empresaId,
     required this.createdAt,
@@ -2067,10 +1966,6 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
     required this.contactoTelefono,
     required this.contactoParentesco,
     required this.activo,
-    this.salarioPersonalizado,
-    required this.periodoPago,
-    this.salarioPeriodo,
-    required this.diasSemana,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2095,14 +1990,6 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
     map['contacto_telefono'] = Variable<String>(contactoTelefono);
     map['contacto_parentesco'] = Variable<String>(contactoParentesco);
     map['activo'] = Variable<bool>(activo);
-    if (!nullToAbsent || salarioPersonalizado != null) {
-      map['salario_personalizado'] = Variable<double>(salarioPersonalizado);
-    }
-    map['periodo_pago'] = Variable<String>(periodoPago);
-    if (!nullToAbsent || salarioPeriodo != null) {
-      map['salario_periodo'] = Variable<double>(salarioPeriodo);
-    }
-    map['dias_semana'] = Variable<int>(diasSemana);
     return map;
   }
 
@@ -2128,14 +2015,6 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
       contactoTelefono: Value(contactoTelefono),
       contactoParentesco: Value(contactoParentesco),
       activo: Value(activo),
-      salarioPersonalizado: salarioPersonalizado == null && nullToAbsent
-          ? const Value.absent()
-          : Value(salarioPersonalizado),
-      periodoPago: Value(periodoPago),
-      salarioPeriodo: salarioPeriodo == null && nullToAbsent
-          ? const Value.absent()
-          : Value(salarioPeriodo),
-      diasSemana: Value(diasSemana),
     );
   }
 
@@ -2163,12 +2042,6 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
         json['contactoParentesco'],
       ),
       activo: serializer.fromJson<bool>(json['activo']),
-      salarioPersonalizado: serializer.fromJson<double?>(
-        json['salarioPersonalizado'],
-      ),
-      periodoPago: serializer.fromJson<String>(json['periodoPago']),
-      salarioPeriodo: serializer.fromJson<double?>(json['salarioPeriodo']),
-      diasSemana: serializer.fromJson<int>(json['diasSemana']),
     );
   }
   @override
@@ -2191,10 +2064,6 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
       'contactoTelefono': serializer.toJson<String>(contactoTelefono),
       'contactoParentesco': serializer.toJson<String>(contactoParentesco),
       'activo': serializer.toJson<bool>(activo),
-      'salarioPersonalizado': serializer.toJson<double?>(salarioPersonalizado),
-      'periodoPago': serializer.toJson<String>(periodoPago),
-      'salarioPeriodo': serializer.toJson<double?>(salarioPeriodo),
-      'diasSemana': serializer.toJson<int>(diasSemana),
     };
   }
 
@@ -2215,10 +2084,6 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
     String? contactoTelefono,
     String? contactoParentesco,
     bool? activo,
-    Value<double?> salarioPersonalizado = const Value.absent(),
-    String? periodoPago,
-    Value<double?> salarioPeriodo = const Value.absent(),
-    int? diasSemana,
   }) => Colaborador(
     empresaId: empresaId ?? this.empresaId,
     createdAt: createdAt ?? this.createdAt,
@@ -2238,14 +2103,6 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
     contactoTelefono: contactoTelefono ?? this.contactoTelefono,
     contactoParentesco: contactoParentesco ?? this.contactoParentesco,
     activo: activo ?? this.activo,
-    salarioPersonalizado: salarioPersonalizado.present
-        ? salarioPersonalizado.value
-        : this.salarioPersonalizado,
-    periodoPago: periodoPago ?? this.periodoPago,
-    salarioPeriodo: salarioPeriodo.present
-        ? salarioPeriodo.value
-        : this.salarioPeriodo,
-    diasSemana: diasSemana ?? this.diasSemana,
   );
   Colaborador copyWithCompanion(ColaboradoresCompanion data) {
     return Colaborador(
@@ -2275,18 +2132,6 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
           ? data.contactoParentesco.value
           : this.contactoParentesco,
       activo: data.activo.present ? data.activo.value : this.activo,
-      salarioPersonalizado: data.salarioPersonalizado.present
-          ? data.salarioPersonalizado.value
-          : this.salarioPersonalizado,
-      periodoPago: data.periodoPago.present
-          ? data.periodoPago.value
-          : this.periodoPago,
-      salarioPeriodo: data.salarioPeriodo.present
-          ? data.salarioPeriodo.value
-          : this.salarioPeriodo,
-      diasSemana: data.diasSemana.present
-          ? data.diasSemana.value
-          : this.diasSemana,
     );
   }
 
@@ -2308,11 +2153,7 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
           ..write('contactoNombre: $contactoNombre, ')
           ..write('contactoTelefono: $contactoTelefono, ')
           ..write('contactoParentesco: $contactoParentesco, ')
-          ..write('activo: $activo, ')
-          ..write('salarioPersonalizado: $salarioPersonalizado, ')
-          ..write('periodoPago: $periodoPago, ')
-          ..write('salarioPeriodo: $salarioPeriodo, ')
-          ..write('diasSemana: $diasSemana')
+          ..write('activo: $activo')
           ..write(')'))
         .toString();
   }
@@ -2335,10 +2176,6 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
     contactoTelefono,
     contactoParentesco,
     activo,
-    salarioPersonalizado,
-    periodoPago,
-    salarioPeriodo,
-    diasSemana,
   );
   @override
   bool operator ==(Object other) =>
@@ -2359,11 +2196,7 @@ class Colaborador extends DataClass implements Insertable<Colaborador> {
           other.contactoNombre == this.contactoNombre &&
           other.contactoTelefono == this.contactoTelefono &&
           other.contactoParentesco == this.contactoParentesco &&
-          other.activo == this.activo &&
-          other.salarioPersonalizado == this.salarioPersonalizado &&
-          other.periodoPago == this.periodoPago &&
-          other.salarioPeriodo == this.salarioPeriodo &&
-          other.diasSemana == this.diasSemana);
+          other.activo == this.activo);
 }
 
 class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
@@ -2383,10 +2216,6 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
   final Value<String> contactoTelefono;
   final Value<String> contactoParentesco;
   final Value<bool> activo;
-  final Value<double?> salarioPersonalizado;
-  final Value<String> periodoPago;
-  final Value<double?> salarioPeriodo;
-  final Value<int> diasSemana;
   final Value<int> rowid;
   const ColaboradoresCompanion({
     this.empresaId = const Value.absent(),
@@ -2405,10 +2234,6 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
     this.contactoTelefono = const Value.absent(),
     this.contactoParentesco = const Value.absent(),
     this.activo = const Value.absent(),
-    this.salarioPersonalizado = const Value.absent(),
-    this.periodoPago = const Value.absent(),
-    this.salarioPeriodo = const Value.absent(),
-    this.diasSemana = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ColaboradoresCompanion.insert({
@@ -2428,10 +2253,6 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
     this.contactoTelefono = const Value.absent(),
     this.contactoParentesco = const Value.absent(),
     this.activo = const Value.absent(),
-    this.salarioPersonalizado = const Value.absent(),
-    this.periodoPago = const Value.absent(),
-    this.salarioPeriodo = const Value.absent(),
-    this.diasSemana = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        nombre = Value(nombre),
@@ -2454,10 +2275,6 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
     Expression<String>? contactoTelefono,
     Expression<String>? contactoParentesco,
     Expression<bool>? activo,
-    Expression<double>? salarioPersonalizado,
-    Expression<String>? periodoPago,
-    Expression<double>? salarioPeriodo,
-    Expression<int>? diasSemana,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2477,11 +2294,6 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
       if (contactoTelefono != null) 'contacto_telefono': contactoTelefono,
       if (contactoParentesco != null) 'contacto_parentesco': contactoParentesco,
       if (activo != null) 'activo': activo,
-      if (salarioPersonalizado != null)
-        'salario_personalizado': salarioPersonalizado,
-      if (periodoPago != null) 'periodo_pago': periodoPago,
-      if (salarioPeriodo != null) 'salario_periodo': salarioPeriodo,
-      if (diasSemana != null) 'dias_semana': diasSemana,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2503,10 +2315,6 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
     Value<String>? contactoTelefono,
     Value<String>? contactoParentesco,
     Value<bool>? activo,
-    Value<double?>? salarioPersonalizado,
-    Value<String>? periodoPago,
-    Value<double?>? salarioPeriodo,
-    Value<int>? diasSemana,
     Value<int>? rowid,
   }) {
     return ColaboradoresCompanion(
@@ -2526,10 +2334,6 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
       contactoTelefono: contactoTelefono ?? this.contactoTelefono,
       contactoParentesco: contactoParentesco ?? this.contactoParentesco,
       activo: activo ?? this.activo,
-      salarioPersonalizado: salarioPersonalizado ?? this.salarioPersonalizado,
-      periodoPago: periodoPago ?? this.periodoPago,
-      salarioPeriodo: salarioPeriodo ?? this.salarioPeriodo,
-      diasSemana: diasSemana ?? this.diasSemana,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2585,20 +2389,6 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
     if (activo.present) {
       map['activo'] = Variable<bool>(activo.value);
     }
-    if (salarioPersonalizado.present) {
-      map['salario_personalizado'] = Variable<double>(
-        salarioPersonalizado.value,
-      );
-    }
-    if (periodoPago.present) {
-      map['periodo_pago'] = Variable<String>(periodoPago.value);
-    }
-    if (salarioPeriodo.present) {
-      map['salario_periodo'] = Variable<double>(salarioPeriodo.value);
-    }
-    if (diasSemana.present) {
-      map['dias_semana'] = Variable<int>(diasSemana.value);
-    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2624,6 +2414,721 @@ class ColaboradoresCompanion extends UpdateCompanion<Colaborador> {
           ..write('contactoTelefono: $contactoTelefono, ')
           ..write('contactoParentesco: $contactoParentesco, ')
           ..write('activo: $activo, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ColaboradorSueldoTable extends ColaboradorSueldo
+    with TableInfo<$ColaboradorSueldoTable, ColaboradorSueldoRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ColaboradorSueldoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _empresaIdMeta = const VerificationMeta(
+    'empresaId',
+  );
+  @override
+  late final GeneratedColumn<String> empresaId = GeneratedColumn<String>(
+    'empresa_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _serverUpdatedAtMeta = const VerificationMeta(
+    'serverUpdatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> serverUpdatedAt = GeneratedColumn<int>(
+    'server_updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _colaboradorIdMeta = const VerificationMeta(
+    'colaboradorId',
+  );
+  @override
+  late final GeneratedColumn<String> colaboradorId = GeneratedColumn<String>(
+    'colaborador_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _salarioPersonalizadoMeta =
+      const VerificationMeta('salarioPersonalizado');
+  @override
+  late final GeneratedColumn<double> salarioPersonalizado =
+      GeneratedColumn<double>(
+        'salario_personalizado',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _periodoPagoMeta = const VerificationMeta(
+    'periodoPago',
+  );
+  @override
+  late final GeneratedColumn<String> periodoPago = GeneratedColumn<String>(
+    'periodo_pago',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('MENSUAL'),
+  );
+  static const VerificationMeta _salarioPeriodoMeta = const VerificationMeta(
+    'salarioPeriodo',
+  );
+  @override
+  late final GeneratedColumn<double> salarioPeriodo = GeneratedColumn<double>(
+    'salario_periodo',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _diasSemanaMeta = const VerificationMeta(
+    'diasSemana',
+  );
+  @override
+  late final GeneratedColumn<int> diasSemana = GeneratedColumn<int>(
+    'dias_semana',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(6),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    colaboradorId,
+    salarioPersonalizado,
+    periodoPago,
+    salarioPeriodo,
+    diasSemana,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'colaborador_sueldo';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ColaboradorSueldoRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('empresa_id')) {
+      context.handle(
+        _empresaIdMeta,
+        empresaId.isAcceptableOrUnknown(data['empresa_id']!, _empresaIdMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('server_updated_at')) {
+      context.handle(
+        _serverUpdatedAtMeta,
+        serverUpdatedAt.isAcceptableOrUnknown(
+          data['server_updated_at']!,
+          _serverUpdatedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('colaborador_id')) {
+      context.handle(
+        _colaboradorIdMeta,
+        colaboradorId.isAcceptableOrUnknown(
+          data['colaborador_id']!,
+          _colaboradorIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_colaboradorIdMeta);
+    }
+    if (data.containsKey('salario_personalizado')) {
+      context.handle(
+        _salarioPersonalizadoMeta,
+        salarioPersonalizado.isAcceptableOrUnknown(
+          data['salario_personalizado']!,
+          _salarioPersonalizadoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('periodo_pago')) {
+      context.handle(
+        _periodoPagoMeta,
+        periodoPago.isAcceptableOrUnknown(
+          data['periodo_pago']!,
+          _periodoPagoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('salario_periodo')) {
+      context.handle(
+        _salarioPeriodoMeta,
+        salarioPeriodo.isAcceptableOrUnknown(
+          data['salario_periodo']!,
+          _salarioPeriodoMeta,
+        ),
+      );
+    }
+    if (data.containsKey('dias_semana')) {
+      context.handle(
+        _diasSemanaMeta,
+        diasSemana.isAcceptableOrUnknown(data['dias_semana']!, _diasSemanaMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {colaboradorId};
+  @override
+  ColaboradorSueldoRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ColaboradorSueldoRow(
+      empresaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}empresa_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      serverUpdatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}server_updated_at'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      colaboradorId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}colaborador_id'],
+      )!,
+      salarioPersonalizado: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}salario_personalizado'],
+      ),
+      periodoPago: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}periodo_pago'],
+      )!,
+      salarioPeriodo: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}salario_periodo'],
+      ),
+      diasSemana: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}dias_semana'],
+      )!,
+    );
+  }
+
+  @override
+  $ColaboradorSueldoTable createAlias(String alias) {
+    return $ColaboradorSueldoTable(attachedDatabase, alias);
+  }
+}
+
+class ColaboradorSueldoRow extends DataClass
+    implements Insertable<ColaboradorSueldoRow> {
+  /// Llave multitenant + RLS. Vacío mientras no haya backend.
+  final String empresaId;
+
+  /// Alta (UTC ms). 0 en filas previas a la migración.
+  final int createdAt;
+
+  /// Última edición de cliente (UTC ms). Árbitro local de LWW + dirty flag.
+  final int updatedAt;
+
+  /// Lo pone Postgres; árbitro de LWW y cursor de pull. Null hasta sincronizar.
+  final int? serverUpdatedAt;
+
+  /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
+  final int? deletedAt;
+
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
+  final String syncStatus;
+  final String colaboradorId;
+
+  /// Salario diario (MXN/día) que consume la nómina. **Derivado** del sueldo por
+  /// periodo: se recalcula desde [salarioPeriodo] + [periodoPago] + [diasSemana];
+  /// no se edita a mano. Nullable → usa el salario del puesto.
+  final double? salarioPersonalizado;
+
+  /// Esquema de captura del sueldo base: "SEMANAL" | "QUINCENAL" | "MENSUAL".
+  final String periodoPago;
+
+  /// Monto del sueldo tal cual lo captura el usuario, para el periodo elegido.
+  final double? salarioPeriodo;
+
+  /// Días trabajados por semana (5, 6 o 7) usados como divisor a diario.
+  final int diasSemana;
+  const ColaboradorSueldoRow({
+    required this.empresaId,
+    required this.createdAt,
+    required this.updatedAt,
+    this.serverUpdatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.colaboradorId,
+    this.salarioPersonalizado,
+    required this.periodoPago,
+    this.salarioPeriodo,
+    required this.diasSemana,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['empresa_id'] = Variable<String>(empresaId);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || serverUpdatedAt != null) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    map['colaborador_id'] = Variable<String>(colaboradorId);
+    if (!nullToAbsent || salarioPersonalizado != null) {
+      map['salario_personalizado'] = Variable<double>(salarioPersonalizado);
+    }
+    map['periodo_pago'] = Variable<String>(periodoPago);
+    if (!nullToAbsent || salarioPeriodo != null) {
+      map['salario_periodo'] = Variable<double>(salarioPeriodo);
+    }
+    map['dias_semana'] = Variable<int>(diasSemana);
+    return map;
+  }
+
+  ColaboradorSueldoCompanion toCompanion(bool nullToAbsent) {
+    return ColaboradorSueldoCompanion(
+      empresaId: Value(empresaId),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      serverUpdatedAt: serverUpdatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverUpdatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      colaboradorId: Value(colaboradorId),
+      salarioPersonalizado: salarioPersonalizado == null && nullToAbsent
+          ? const Value.absent()
+          : Value(salarioPersonalizado),
+      periodoPago: Value(periodoPago),
+      salarioPeriodo: salarioPeriodo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(salarioPeriodo),
+      diasSemana: Value(diasSemana),
+    );
+  }
+
+  factory ColaboradorSueldoRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ColaboradorSueldoRow(
+      empresaId: serializer.fromJson<String>(json['empresaId']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      serverUpdatedAt: serializer.fromJson<int?>(json['serverUpdatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      colaboradorId: serializer.fromJson<String>(json['colaboradorId']),
+      salarioPersonalizado: serializer.fromJson<double?>(
+        json['salarioPersonalizado'],
+      ),
+      periodoPago: serializer.fromJson<String>(json['periodoPago']),
+      salarioPeriodo: serializer.fromJson<double?>(json['salarioPeriodo']),
+      diasSemana: serializer.fromJson<int>(json['diasSemana']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'empresaId': serializer.toJson<String>(empresaId),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'serverUpdatedAt': serializer.toJson<int?>(serverUpdatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'colaboradorId': serializer.toJson<String>(colaboradorId),
+      'salarioPersonalizado': serializer.toJson<double?>(salarioPersonalizado),
+      'periodoPago': serializer.toJson<String>(periodoPago),
+      'salarioPeriodo': serializer.toJson<double?>(salarioPeriodo),
+      'diasSemana': serializer.toJson<int>(diasSemana),
+    };
+  }
+
+  ColaboradorSueldoRow copyWith({
+    String? empresaId,
+    int? createdAt,
+    int? updatedAt,
+    Value<int?> serverUpdatedAt = const Value.absent(),
+    Value<int?> deletedAt = const Value.absent(),
+    String? syncStatus,
+    String? colaboradorId,
+    Value<double?> salarioPersonalizado = const Value.absent(),
+    String? periodoPago,
+    Value<double?> salarioPeriodo = const Value.absent(),
+    int? diasSemana,
+  }) => ColaboradorSueldoRow(
+    empresaId: empresaId ?? this.empresaId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    serverUpdatedAt: serverUpdatedAt.present
+        ? serverUpdatedAt.value
+        : this.serverUpdatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    colaboradorId: colaboradorId ?? this.colaboradorId,
+    salarioPersonalizado: salarioPersonalizado.present
+        ? salarioPersonalizado.value
+        : this.salarioPersonalizado,
+    periodoPago: periodoPago ?? this.periodoPago,
+    salarioPeriodo: salarioPeriodo.present
+        ? salarioPeriodo.value
+        : this.salarioPeriodo,
+    diasSemana: diasSemana ?? this.diasSemana,
+  );
+  ColaboradorSueldoRow copyWithCompanion(ColaboradorSueldoCompanion data) {
+    return ColaboradorSueldoRow(
+      empresaId: data.empresaId.present ? data.empresaId.value : this.empresaId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      serverUpdatedAt: data.serverUpdatedAt.present
+          ? data.serverUpdatedAt.value
+          : this.serverUpdatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      colaboradorId: data.colaboradorId.present
+          ? data.colaboradorId.value
+          : this.colaboradorId,
+      salarioPersonalizado: data.salarioPersonalizado.present
+          ? data.salarioPersonalizado.value
+          : this.salarioPersonalizado,
+      periodoPago: data.periodoPago.present
+          ? data.periodoPago.value
+          : this.periodoPago,
+      salarioPeriodo: data.salarioPeriodo.present
+          ? data.salarioPeriodo.value
+          : this.salarioPeriodo,
+      diasSemana: data.diasSemana.present
+          ? data.diasSemana.value
+          : this.diasSemana,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ColaboradorSueldoRow(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('colaboradorId: $colaboradorId, ')
+          ..write('salarioPersonalizado: $salarioPersonalizado, ')
+          ..write('periodoPago: $periodoPago, ')
+          ..write('salarioPeriodo: $salarioPeriodo, ')
+          ..write('diasSemana: $diasSemana')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    colaboradorId,
+    salarioPersonalizado,
+    periodoPago,
+    salarioPeriodo,
+    diasSemana,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ColaboradorSueldoRow &&
+          other.empresaId == this.empresaId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.serverUpdatedAt == this.serverUpdatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.colaboradorId == this.colaboradorId &&
+          other.salarioPersonalizado == this.salarioPersonalizado &&
+          other.periodoPago == this.periodoPago &&
+          other.salarioPeriodo == this.salarioPeriodo &&
+          other.diasSemana == this.diasSemana);
+}
+
+class ColaboradorSueldoCompanion extends UpdateCompanion<ColaboradorSueldoRow> {
+  final Value<String> empresaId;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int?> serverUpdatedAt;
+  final Value<int?> deletedAt;
+  final Value<String> syncStatus;
+  final Value<String> colaboradorId;
+  final Value<double?> salarioPersonalizado;
+  final Value<String> periodoPago;
+  final Value<double?> salarioPeriodo;
+  final Value<int> diasSemana;
+  final Value<int> rowid;
+  const ColaboradorSueldoCompanion({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.colaboradorId = const Value.absent(),
+    this.salarioPersonalizado = const Value.absent(),
+    this.periodoPago = const Value.absent(),
+    this.salarioPeriodo = const Value.absent(),
+    this.diasSemana = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ColaboradorSueldoCompanion.insert({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String colaboradorId,
+    this.salarioPersonalizado = const Value.absent(),
+    this.periodoPago = const Value.absent(),
+    this.salarioPeriodo = const Value.absent(),
+    this.diasSemana = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : colaboradorId = Value(colaboradorId);
+  static Insertable<ColaboradorSueldoRow> custom({
+    Expression<String>? empresaId,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? serverUpdatedAt,
+    Expression<int>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? colaboradorId,
+    Expression<double>? salarioPersonalizado,
+    Expression<String>? periodoPago,
+    Expression<double>? salarioPeriodo,
+    Expression<int>? diasSemana,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (empresaId != null) 'empresa_id': empresaId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (serverUpdatedAt != null) 'server_updated_at': serverUpdatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (colaboradorId != null) 'colaborador_id': colaboradorId,
+      if (salarioPersonalizado != null)
+        'salario_personalizado': salarioPersonalizado,
+      if (periodoPago != null) 'periodo_pago': periodoPago,
+      if (salarioPeriodo != null) 'salario_periodo': salarioPeriodo,
+      if (diasSemana != null) 'dias_semana': diasSemana,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ColaboradorSueldoCompanion copyWith({
+    Value<String>? empresaId,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int?>? serverUpdatedAt,
+    Value<int?>? deletedAt,
+    Value<String>? syncStatus,
+    Value<String>? colaboradorId,
+    Value<double?>? salarioPersonalizado,
+    Value<String>? periodoPago,
+    Value<double?>? salarioPeriodo,
+    Value<int>? diasSemana,
+    Value<int>? rowid,
+  }) {
+    return ColaboradorSueldoCompanion(
+      empresaId: empresaId ?? this.empresaId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      colaboradorId: colaboradorId ?? this.colaboradorId,
+      salarioPersonalizado: salarioPersonalizado ?? this.salarioPersonalizado,
+      periodoPago: periodoPago ?? this.periodoPago,
+      salarioPeriodo: salarioPeriodo ?? this.salarioPeriodo,
+      diasSemana: diasSemana ?? this.diasSemana,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (empresaId.present) {
+      map['empresa_id'] = Variable<String>(empresaId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (serverUpdatedAt.present) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (colaboradorId.present) {
+      map['colaborador_id'] = Variable<String>(colaboradorId.value);
+    }
+    if (salarioPersonalizado.present) {
+      map['salario_personalizado'] = Variable<double>(
+        salarioPersonalizado.value,
+      );
+    }
+    if (periodoPago.present) {
+      map['periodo_pago'] = Variable<String>(periodoPago.value);
+    }
+    if (salarioPeriodo.present) {
+      map['salario_periodo'] = Variable<double>(salarioPeriodo.value);
+    }
+    if (diasSemana.present) {
+      map['dias_semana'] = Variable<int>(diasSemana.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ColaboradorSueldoCompanion(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('colaboradorId: $colaboradorId, ')
           ..write('salarioPersonalizado: $salarioPersonalizado, ')
           ..write('periodoPago: $periodoPago, ')
           ..write('salarioPeriodo: $salarioPeriodo, ')
@@ -2955,7 +3460,11 @@ class ObraColaboradorData extends DataClass
   /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
   final int? deletedAt;
 
-  /// 'pending' | 'synced' | 'error'.
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
   final String syncStatus;
   final String obraId;
   final String colaboradorId;
@@ -3672,7 +4181,11 @@ class Asistencia extends DataClass implements Insertable<Asistencia> {
   /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
   final int? deletedAt;
 
-  /// 'pending' | 'synced' | 'error'.
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
   final String syncStatus;
   final String id;
   final String colaboradorId;
@@ -4422,7 +4935,11 @@ class Destajo extends DataClass implements Insertable<Destajo> {
   /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
   final int? deletedAt;
 
-  /// 'pending' | 'synced' | 'error'.
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
   final String syncStatus;
   final String id;
   final String colaboradorId;
@@ -5174,7 +5691,11 @@ class Cuadrilla extends DataClass implements Insertable<Cuadrilla> {
   /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
   final int? deletedAt;
 
-  /// 'pending' | 'synced' | 'error'.
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
   final String syncStatus;
   final int orden;
   final String id;
@@ -5897,7 +6418,11 @@ class CuadrillaMiembroData extends DataClass
   /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
   final int? deletedAt;
 
-  /// 'pending' | 'synced' | 'error'.
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
   final String syncStatus;
   final int orden;
   final String cuadrillaId;
@@ -6604,7 +7129,11 @@ class AsignacionCuadrillaObraData extends DataClass
   /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
   final int? deletedAt;
 
-  /// 'pending' | 'synced' | 'error'.
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
   final String syncStatus;
   final String id;
   final String cuadrillaId;
@@ -7492,7 +8021,11 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
   /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
   final int? deletedAt;
 
-  /// 'pending' | 'synced' | 'error'.
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
   final String syncStatus;
   final int orden;
   final String id;
@@ -8347,7 +8880,11 @@ class Seccion extends DataClass implements Insertable<Seccion> {
   /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
   final int? deletedAt;
 
-  /// 'pending' | 'synced' | 'error'.
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
   final String syncStatus;
   final String id;
   final String cotizacionId;
@@ -9062,7 +9599,11 @@ class Partida extends DataClass implements Insertable<Partida> {
   /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
   final int? deletedAt;
 
-  /// 'pending' | 'synced' | 'error'.
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
   final String syncStatus;
   final String id;
   final String seccionId;
@@ -9847,7 +10388,11 @@ class Pago extends DataClass implements Insertable<Pago> {
   /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
   final int? deletedAt;
 
-  /// 'pending' | 'synced' | 'error'.
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
   final String syncStatus;
   final String id;
   final String cotizacionId;
@@ -10796,7 +11341,11 @@ class Movimiento extends DataClass implements Insertable<Movimiento> {
   /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
   final int? deletedAt;
 
-  /// 'pending' | 'synced' | 'error'.
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
   final String syncStatus;
   final String id;
   final String obraId;
@@ -11814,7 +12363,11 @@ class CatalogoConcepto extends DataClass
   /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
   final int? deletedAt;
 
-  /// 'pending' | 'synced' | 'error'.
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
   final String syncStatus;
   final int orden;
   final String id;
@@ -12590,7 +13143,11 @@ class ArchivoCotizacion extends DataClass
   /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
   final int? deletedAt;
 
-  /// 'pending' | 'synced' | 'error'.
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
   final String syncStatus;
   final String id;
   final String cotizacionId;
@@ -13352,7 +13909,11 @@ class ObraPresupuestoRow extends DataClass
   /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
   final int? deletedAt;
 
-  /// 'pending' | 'synced' | 'error'.
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
   final String syncStatus;
   final String id;
   final String obraId;
@@ -14021,7 +14582,11 @@ class ObraCajaNotaRow extends DataClass implements Insertable<ObraCajaNotaRow> {
   /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
   final int? deletedAt;
 
-  /// 'pending' | 'synced' | 'error'.
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
   final String syncStatus;
   final String obraId;
   final String nota;
@@ -14315,6 +14880,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ObrasTable obras = $ObrasTable(this);
   late final $PuestosTable puestos = $PuestosTable(this);
   late final $ColaboradoresTable colaboradores = $ColaboradoresTable(this);
+  late final $ColaboradorSueldoTable colaboradorSueldo =
+      $ColaboradorSueldoTable(this);
   late final $ObraColaboradorTable obraColaborador = $ObraColaboradorTable(
     this,
   );
@@ -14347,6 +14914,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     obras,
     puestos,
     colaboradores,
+    colaboradorSueldo,
     obraColaborador,
     asistencias,
     destajos,
@@ -15071,10 +15639,6 @@ typedef $$ColaboradoresTableCreateCompanionBuilder =
       Value<String> contactoTelefono,
       Value<String> contactoParentesco,
       Value<bool> activo,
-      Value<double?> salarioPersonalizado,
-      Value<String> periodoPago,
-      Value<double?> salarioPeriodo,
-      Value<int> diasSemana,
       Value<int> rowid,
     });
 typedef $$ColaboradoresTableUpdateCompanionBuilder =
@@ -15095,10 +15659,6 @@ typedef $$ColaboradoresTableUpdateCompanionBuilder =
       Value<String> contactoTelefono,
       Value<String> contactoParentesco,
       Value<bool> activo,
-      Value<double?> salarioPersonalizado,
-      Value<String> periodoPago,
-      Value<double?> salarioPeriodo,
-      Value<int> diasSemana,
       Value<int> rowid,
     });
 
@@ -15188,26 +15748,6 @@ class $$ColaboradoresTableFilterComposer
 
   ColumnFilters<bool> get activo => $composableBuilder(
     column: $table.activo,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get salarioPersonalizado => $composableBuilder(
-    column: $table.salarioPersonalizado,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get periodoPago => $composableBuilder(
-    column: $table.periodoPago,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get salarioPeriodo => $composableBuilder(
-    column: $table.salarioPeriodo,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get diasSemana => $composableBuilder(
-    column: $table.diasSemana,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -15300,26 +15840,6 @@ class $$ColaboradoresTableOrderingComposer
     column: $table.activo,
     builder: (column) => ColumnOrderings(column),
   );
-
-  ColumnOrderings<double> get salarioPersonalizado => $composableBuilder(
-    column: $table.salarioPersonalizado,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get periodoPago => $composableBuilder(
-    column: $table.periodoPago,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<double> get salarioPeriodo => $composableBuilder(
-    column: $table.salarioPeriodo,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get diasSemana => $composableBuilder(
-    column: $table.diasSemana,
-    builder: (column) => ColumnOrderings(column),
-  );
 }
 
 class $$ColaboradoresTableAnnotationComposer
@@ -15388,26 +15908,6 @@ class $$ColaboradoresTableAnnotationComposer
 
   GeneratedColumn<bool> get activo =>
       $composableBuilder(column: $table.activo, builder: (column) => column);
-
-  GeneratedColumn<double> get salarioPersonalizado => $composableBuilder(
-    column: $table.salarioPersonalizado,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get periodoPago => $composableBuilder(
-    column: $table.periodoPago,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<double> get salarioPeriodo => $composableBuilder(
-    column: $table.salarioPeriodo,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get diasSemana => $composableBuilder(
-    column: $table.diasSemana,
-    builder: (column) => column,
-  );
 }
 
 class $$ColaboradoresTableTableManager
@@ -15457,10 +15957,6 @@ class $$ColaboradoresTableTableManager
                 Value<String> contactoTelefono = const Value.absent(),
                 Value<String> contactoParentesco = const Value.absent(),
                 Value<bool> activo = const Value.absent(),
-                Value<double?> salarioPersonalizado = const Value.absent(),
-                Value<String> periodoPago = const Value.absent(),
-                Value<double?> salarioPeriodo = const Value.absent(),
-                Value<int> diasSemana = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ColaboradoresCompanion(
                 empresaId: empresaId,
@@ -15479,10 +15975,6 @@ class $$ColaboradoresTableTableManager
                 contactoTelefono: contactoTelefono,
                 contactoParentesco: contactoParentesco,
                 activo: activo,
-                salarioPersonalizado: salarioPersonalizado,
-                periodoPago: periodoPago,
-                salarioPeriodo: salarioPeriodo,
-                diasSemana: diasSemana,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -15503,10 +15995,6 @@ class $$ColaboradoresTableTableManager
                 Value<String> contactoTelefono = const Value.absent(),
                 Value<String> contactoParentesco = const Value.absent(),
                 Value<bool> activo = const Value.absent(),
-                Value<double?> salarioPersonalizado = const Value.absent(),
-                Value<String> periodoPago = const Value.absent(),
-                Value<double?> salarioPeriodo = const Value.absent(),
-                Value<int> diasSemana = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ColaboradoresCompanion.insert(
                 empresaId: empresaId,
@@ -15525,10 +16013,6 @@ class $$ColaboradoresTableTableManager
                 contactoTelefono: contactoTelefono,
                 contactoParentesco: contactoParentesco,
                 activo: activo,
-                salarioPersonalizado: salarioPersonalizado,
-                periodoPago: periodoPago,
-                salarioPeriodo: salarioPeriodo,
-                diasSemana: diasSemana,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -15554,6 +16038,347 @@ typedef $$ColaboradoresTableProcessedTableManager =
         BaseReferences<_$AppDatabase, $ColaboradoresTable, Colaborador>,
       ),
       Colaborador,
+      PrefetchHooks Function()
+    >;
+typedef $$ColaboradorSueldoTableCreateCompanionBuilder =
+    ColaboradorSueldoCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      required String colaboradorId,
+      Value<double?> salarioPersonalizado,
+      Value<String> periodoPago,
+      Value<double?> salarioPeriodo,
+      Value<int> diasSemana,
+      Value<int> rowid,
+    });
+typedef $$ColaboradorSueldoTableUpdateCompanionBuilder =
+    ColaboradorSueldoCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      Value<String> colaboradorId,
+      Value<double?> salarioPersonalizado,
+      Value<String> periodoPago,
+      Value<double?> salarioPeriodo,
+      Value<int> diasSemana,
+      Value<int> rowid,
+    });
+
+class $$ColaboradorSueldoTableFilterComposer
+    extends Composer<_$AppDatabase, $ColaboradorSueldoTable> {
+  $$ColaboradorSueldoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get colaboradorId => $composableBuilder(
+    column: $table.colaboradorId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get salarioPersonalizado => $composableBuilder(
+    column: $table.salarioPersonalizado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get periodoPago => $composableBuilder(
+    column: $table.periodoPago,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get salarioPeriodo => $composableBuilder(
+    column: $table.salarioPeriodo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get diasSemana => $composableBuilder(
+    column: $table.diasSemana,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ColaboradorSueldoTableOrderingComposer
+    extends Composer<_$AppDatabase, $ColaboradorSueldoTable> {
+  $$ColaboradorSueldoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get colaboradorId => $composableBuilder(
+    column: $table.colaboradorId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get salarioPersonalizado => $composableBuilder(
+    column: $table.salarioPersonalizado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get periodoPago => $composableBuilder(
+    column: $table.periodoPago,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get salarioPeriodo => $composableBuilder(
+    column: $table.salarioPeriodo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get diasSemana => $composableBuilder(
+    column: $table.diasSemana,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ColaboradorSueldoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ColaboradorSueldoTable> {
+  $$ColaboradorSueldoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get empresaId =>
+      $composableBuilder(column: $table.empresaId, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get colaboradorId => $composableBuilder(
+    column: $table.colaboradorId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get salarioPersonalizado => $composableBuilder(
+    column: $table.salarioPersonalizado,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get periodoPago => $composableBuilder(
+    column: $table.periodoPago,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get salarioPeriodo => $composableBuilder(
+    column: $table.salarioPeriodo,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get diasSemana => $composableBuilder(
+    column: $table.diasSemana,
+    builder: (column) => column,
+  );
+}
+
+class $$ColaboradorSueldoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ColaboradorSueldoTable,
+          ColaboradorSueldoRow,
+          $$ColaboradorSueldoTableFilterComposer,
+          $$ColaboradorSueldoTableOrderingComposer,
+          $$ColaboradorSueldoTableAnnotationComposer,
+          $$ColaboradorSueldoTableCreateCompanionBuilder,
+          $$ColaboradorSueldoTableUpdateCompanionBuilder,
+          (
+            ColaboradorSueldoRow,
+            BaseReferences<
+              _$AppDatabase,
+              $ColaboradorSueldoTable,
+              ColaboradorSueldoRow
+            >,
+          ),
+          ColaboradorSueldoRow,
+          PrefetchHooks Function()
+        > {
+  $$ColaboradorSueldoTableTableManager(
+    _$AppDatabase db,
+    $ColaboradorSueldoTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ColaboradorSueldoTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ColaboradorSueldoTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ColaboradorSueldoTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String> colaboradorId = const Value.absent(),
+                Value<double?> salarioPersonalizado = const Value.absent(),
+                Value<String> periodoPago = const Value.absent(),
+                Value<double?> salarioPeriodo = const Value.absent(),
+                Value<int> diasSemana = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ColaboradorSueldoCompanion(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                colaboradorId: colaboradorId,
+                salarioPersonalizado: salarioPersonalizado,
+                periodoPago: periodoPago,
+                salarioPeriodo: salarioPeriodo,
+                diasSemana: diasSemana,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                required String colaboradorId,
+                Value<double?> salarioPersonalizado = const Value.absent(),
+                Value<String> periodoPago = const Value.absent(),
+                Value<double?> salarioPeriodo = const Value.absent(),
+                Value<int> diasSemana = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ColaboradorSueldoCompanion.insert(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                colaboradorId: colaboradorId,
+                salarioPersonalizado: salarioPersonalizado,
+                periodoPago: periodoPago,
+                salarioPeriodo: salarioPeriodo,
+                diasSemana: diasSemana,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ColaboradorSueldoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ColaboradorSueldoTable,
+      ColaboradorSueldoRow,
+      $$ColaboradorSueldoTableFilterComposer,
+      $$ColaboradorSueldoTableOrderingComposer,
+      $$ColaboradorSueldoTableAnnotationComposer,
+      $$ColaboradorSueldoTableCreateCompanionBuilder,
+      $$ColaboradorSueldoTableUpdateCompanionBuilder,
+      (
+        ColaboradorSueldoRow,
+        BaseReferences<
+          _$AppDatabase,
+          $ColaboradorSueldoTable,
+          ColaboradorSueldoRow
+        >,
+      ),
+      ColaboradorSueldoRow,
       PrefetchHooks Function()
     >;
 typedef $$ObraColaboradorTableCreateCompanionBuilder =
@@ -21042,6 +21867,8 @@ class $AppDatabaseManager {
       $$PuestosTableTableManager(_db, _db.puestos);
   $$ColaboradoresTableTableManager get colaboradores =>
       $$ColaboradoresTableTableManager(_db, _db.colaboradores);
+  $$ColaboradorSueldoTableTableManager get colaboradorSueldo =>
+      $$ColaboradorSueldoTableTableManager(_db, _db.colaboradorSueldo);
   $$ObraColaboradorTableTableManager get obraColaborador =>
       $$ObraColaboradorTableTableManager(_db, _db.obraColaborador);
   $$AsistenciasTableTableManager get asistencias =>

@@ -145,6 +145,38 @@ class ColaboradorRepository {
   Future<void> upsert(ColaboradoresCompanion colaborador) =>
       db.into(db.colaboradores).insertOnConflictUpdate(colaborador);
 
+  // ── Sueldo ────────────────────────────────────────────────────────────────
+  // Vive en `colaborador_sueldo`, tabla aparte, por permisos: la RLS filtra
+  // filas y no columnas, así que era la única forma de que el rol `colaborador`
+  // pueda leer los NOMBRES de sus compañeros (los necesita para el pase de
+  // lista) sin leer lo que cobran. En un dispositivo sin ese permiso el pull no
+  // baja nada y estos métodos devuelven vacío, que es el comportamiento
+  // correcto: la nómina cae al salario del puesto.
+
+  /// `colaboradorId → sueldo`, reactivo. Mapa y no lista porque todos los
+  /// consumidores lo usan para buscar por id.
+  Stream<Map<String, ColaboradorSueldoRow>> watchSueldos() =>
+      (db.select(db.colaboradorSueldo)..where((t) => t.deletedAt.isNull()))
+          .watch()
+          .map((filas) => {for (final f in filas) f.colaboradorId: f});
+
+  /// Sueldo de una persona; null si no tiene capturado (o no hay permiso).
+  Future<ColaboradorSueldoRow?> sueldoDe(String colaboradorId) =>
+      (db.select(db.colaboradorSueldo)
+            ..where((t) => t.colaboradorId.equals(colaboradorId))
+            ..where((t) => t.deletedAt.isNull()))
+          .getSingleOrNull();
+
+  /// Lectura puntual del mapa completo (para exportar y para los PDF, que no
+  /// necesitan un stream).
+  Future<Map<String, ColaboradorSueldoRow>> sueldos() =>
+      (db.select(db.colaboradorSueldo)..where((t) => t.deletedAt.isNull()))
+          .get()
+          .then((filas) => {for (final f in filas) f.colaboradorId: f});
+
+  Future<void> upsertSueldo(ColaboradorSueldoCompanion sueldo) =>
+      db.into(db.colaboradorSueldo).insertOnConflictUpdate(sueldo);
+
   Future<void> delete(String id) {
     final now = DateTime.now().millisecondsSinceEpoch;
     return (db.update(db.colaboradores)..where((t) => t.id.equals(id))).write(

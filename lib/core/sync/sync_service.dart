@@ -82,6 +82,8 @@ class SyncService {
   static const List<String> pushOrder = [
     'puestos',
     'colaboradores',
+    // El sueldo va DESPUÉS de colaboradores: su PK es colaborador_id (FK).
+    'colaborador_sueldo',
     'obras',
     // Nota de conciliación: DESPUÉS de obras (su PK/FK es obra_id).
     'obra_caja_nota',
