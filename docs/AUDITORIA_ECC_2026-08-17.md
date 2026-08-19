@@ -292,3 +292,85 @@ Hacen falta usuarios reales y no se han hecho:
     npx vitest run                         →  104 ✓ en 7 archivos (antes: no existía)
     npx next build                         →  verde con Next 16.3.1
     npm audit --omit=dev                   →  2 moderadas    (antes: 7, 5 altas)
+
+---
+
+# Anexo — Verificación contra producción, 2026-08-18
+
+El informe de arriba cerraba diciendo que nada se había probado contra Supabase
+de producción ni contra un dispositivo real. Eso ya no es cierto. Lo que sigue
+es lo que se comprobó, con el resultado que dio.
+
+## Migraciones aplicadas
+
+`0027` y `0028` están **aplicadas y verificadas** en `vmkkkrlctakzzqebtyci`.
+`0029` **no**, y sigue esperando a que todos los equipos tengan la app nueva.
+
+Un aviso que vale la pena dejar escrito: al revisar se creyó por un momento que
+la 0029 ya estaba aplicada, y se llegó a redactar un revert de emergencia
+(`0030_revertir_0029_sueldo_columnas.sql`). La consulta al esquema lo desmintió
+—las cuatro columnas seguían ahí— y el archivo quedó como escotilla de salida,
+no como algo que haya que correr. **Antes de actuar sobre el estado de
+producción, consúltalo; no lo des por sabido.**
+
+## Estado de los datos, después de migrar la tableta
+
+| Comprobación | Resultado |
+|---|---|
+| Filas en `colaborador_sueldo` | 30 |
+| Colaboradores con sueldo en `colaboradores` | 30 |
+| Huérfanos (los que abortarían la 0029) | **0** |
+| Discrepancias de monto entre tabla vieja y nueva | **0** |
+
+Cero discrepancias es lo que importa: cada monto de la tabla nueva es idéntico
+al de la columna vieja. La migración Drift v9→v10 —que reconstruye
+`colaboradores` entera para soltar cuatro columnas— no perdió ni alteró nada.
+
+La tableta (SM_X510, la de obra) migró en el arranque y subió sus 29 filas:
+
+    [SyncService] PUSH colaborador_sueldo: 29 por subir
+
+Sin crash y sin error de SQLite. El servidor pasó de 29 a 30 filas porque la
+tableta traía un sueldo que la copia de la 0027 no había alcanzado a ver.
+
+## RLS: probada, no asumida
+
+Simulando la sesión de cada usuario en Postgres (`set local role authenticated`
++ `request.jwt.claims`), sin contraseñas y dentro de una transacción revertida:
+
+| Sesión | Pasa `auth_tiene_rol(admin,supervisor,contador)` | Ve `colaborador_sueldo` | Ve `colaboradores` |
+|---|---|---|---|
+| admin | sí | 30 | 41 |
+| cliente | **no** | **0** | **0** |
+
+La policy `colaborador_sueldo_read` hace lo que debe. Un `colaborador` se
+comporta igual que el `cliente` frente a esa tabla, porque el gate lista roles
+explícitamente y él no está.
+
+## Por qué la 0029 sigue importando
+
+`colaboradores` tiene dos policies de SELECT, y una de ellas incluye al rol de
+campo:
+
+    colaboradores_staff_read → admin, supervisor, colaborador
+    colaboradores_contador_read → contador
+
+Necesita esa lectura para el pase de lista. Pero mientras las cuatro columnas de
+sueldo sigan en esa tabla, esa misma lectura se las entrega. **Ese es el hueco
+que cierra la 0029, y no lo cierra ninguna otra cosa** — los gates de la app son
+presentación, y el colaborador tiene la anon key y su propia sesión.
+
+## Lo que baja el riesgo hoy
+
+Producción tiene **dos cuentas**: un `admin` y un `cliente`. No existe ninguna
+cuenta con rol `colaborador` ni `contador`. Así que A3 hoy no es explotable por
+nadie: es una puerta abierta a un cuarto donde todavía no hay quien entre. Eso
+da margen para hacer el despliegue con calma, pero **el orden no cambia**: la
+0029 va antes de crear la primera cuenta de campo, o al mismo tiempo.
+
+## Lo que sigue sin evidencia
+
+- El PDF de cotización desde Vercel (la ruta del Chromium empaquetado).
+- Arrastrar para reordenar en las cuatro pantallas, tras el renombrado del hook.
+- Cobertura medida.
+- La web desplegada con Next 16.3.1.
