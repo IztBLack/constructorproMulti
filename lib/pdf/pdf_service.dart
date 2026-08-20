@@ -241,6 +241,26 @@ class PdfService {
     );
   }
 
+  /// Subtotal al pie de la tabla de una seccion. Alineado a la derecha y mas
+  /// discreto que `_totalLinea`, que es para los totales del documento.
+  static pw.Widget _subtotalSeccion(double value) => pw.Container(
+        alignment: pw.Alignment.centerRight,
+        padding: const pw.EdgeInsets.only(top: 4, right: 6),
+        child: pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.end,
+          children: [
+            pw.Text('SUBTOTAL DE LA SECCION  ',
+                style: pw.TextStyle(
+                    fontSize: 7,
+                    fontWeight: pw.FontWeight.bold,
+                    color: _gris500)),
+            pw.Text(Fmt.money(value),
+                style: pw.TextStyle(
+                    fontSize: 9, fontWeight: pw.FontWeight.bold, color: _slate)),
+          ],
+        ),
+      );
+
   /// Renglón de totales alineado a la derecha, estilo web (`.tot-fila` /
   /// `.tot-total`). Las líneas normales van en gris con separador tenue; la línea
   /// [bold] es el gran total, con borde superior pizarra y texto grande.
@@ -485,7 +505,16 @@ class PdfService {
       footer: _footer(config),
       build: (context) {
         final widgets = <pw.Widget>[
-          _header('Presupuesto', 'Proyecto: ${cot.nombreProyecto}\nCliente: ${cot.cliente}', config, color),
+          // Proyecto y cliente son opcionales: el renglon vacio no se imprime.
+          _header(
+              'Presupuesto',
+              [
+                if (cot.nombreProyecto.trim().isNotEmpty)
+                  'Proyecto: ${cot.nombreProyecto}',
+                if (cot.cliente.trim().isNotEmpty) 'Cliente: ${cot.cliente}',
+              ].join('\n'),
+              config,
+              color),
         ];
         final tieneAvance = aportadoPorPartida.isNotEmpty;
         for (final s in secciones) {
@@ -516,14 +545,27 @@ class PdfService {
               final importe = p.cantidad * p.precioUnitario;
               final aportado = aportadoPorPartida[p.id] ?? 0;
               final pct = importe > 0 ? aportado / importe * 100 : 0;
+              // Partida sin precio: celdas en blanco, igual que la web. Un
+              // "$0.00" ahi se leeria como "va gratis", y estas partidas son
+              // justo las que el cliente suministra.
+              final sinPrecio = p.precioUnitario == 0;
               return [
                 p.clave, p.descripcion, p.unidad, p.cantidad.toString(),
-                Fmt.money(p.precioUnitario), Fmt.money(importe),
+                sinPrecio ? '' : Fmt.money(p.precioUnitario),
+                sinPrecio ? '' : Fmt.money(importe),
                 if (tieneAvance) Fmt.money(aportado),
                 if (tieneAvance) '${pct.toStringAsFixed(0)}%',
               ];
             }).toList(),
           ));
+          // Subtotal de la seccion, igual que en la web. Si no suma nada -una
+          // relacion de materiales sin precios- no se imprime: un "$0.00" ahi
+          // se leeria como "sale gratis".
+          final subtotalSeccion = pts.fold<double>(
+              0, (acc, p) => acc + p.cantidad * p.precioUnitario);
+          if (subtotalSeccion > 0) {
+            widgets.add(_subtotalSeccion(subtotalSeccion));
+          }
         }
         widgets.add(pw.SizedBox(height: 10));
         widgets.add(_totalLinea('Subtotal', totales.subtotal));

@@ -51,6 +51,9 @@ const ESTILOS = `
   .th-concepto { width: 42%; }
   .concepto { color: #0F172A; line-height: 1.35; }
   .importe { font-weight: 600; color: #0F172A; }
+  .sub-fila td { border-top: 1px solid #d4d4d4; border-bottom: none; padding-top: 7px; background: #ffffff; }
+  .sub-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #737373; }
+  .sub-val { font-weight: 700; color: #0F172A; font-variant-numeric: tabular-nums; }
 `;
 
 export function construirCotizacionDocumentoHtml(params: {
@@ -71,16 +74,38 @@ export function construirCotizacionDocumentoHtml(params: {
               .map((p) => {
                 const importe = p.cantidad * p.precio_unitario;
                 const clave = p.clave ? `<span class="clave">${esc(p.clave)}</span> ` : '';
+                // Partida sin precio: se deja en blanco. Imprimir "$0.00" se lee
+                // como "va gratis"; el hueco se lee como "falta cotizar" —que es
+                // lo que significa— y sirve para listas de materiales o de
+                // conceptos que suministra el cliente.
+                const sinPrecio = p.precio_unitario === 0;
                 return `
                 <tr>
                   <td class="concepto">${clave}${esc(p.descripcion)}</td>
                   <td class="c">${esc(p.unidad) || '—'}</td>
                   <td class="r">${p.cantidad.toLocaleString('es-MX')}</td>
-                  <td class="r">${formatCurrency(p.precio_unitario)}</td>
-                  <td class="r importe">${formatCurrency(importe)}</td>
+                  <td class="r">${sinPrecio ? '' : formatCurrency(p.precio_unitario)}</td>
+                  <td class="r importe">${sinPrecio ? '' : formatCurrency(importe)}</td>
                 </tr>`;
               })
               .join('');
+
+      // Subtotal de la sección: lo que ya se ve en pantalla al editarla. Si la
+      // sección no suma nada —una relación de materiales sin precios, por
+      // ejemplo— no se imprime: un "$0.00" ahí se leería como "sale gratis".
+      const subtotalSeccion = seccion.partidas.reduce(
+        (acc, p) => acc + p.cantidad * p.precio_unitario,
+        0,
+      );
+      const pieSeccion =
+        subtotalSeccion > 0
+          ? `<tfoot>
+              <tr class="sub-fila">
+                <td colspan="4" class="r sub-lbl">Subtotal de la sección</td>
+                <td class="r sub-val">${formatCurrency(subtotalSeccion)}</td>
+              </tr>
+            </tfoot>`
+          : '';
 
       return `
         <div class="seccion avoid">
@@ -96,6 +121,7 @@ export function construirCotizacionDocumentoHtml(params: {
               </tr>
             </thead>
             <tbody>${filas}</tbody>
+            ${pieSeccion}
           </table>
         </div>`;
     })
@@ -108,6 +134,10 @@ export function construirCotizacionDocumentoHtml(params: {
 
   const bloqueCliente = cotizacion.cliente
     ? `<div><p class="etiqueta">Cliente</p><p class="dato">${esc(cotizacion.cliente)}</p></div>`
+    : '';
+
+  const bloqueProyecto = cotizacion.nombre_proyecto
+    ? `<div><p class="etiqueta">Proyecto</p><p class="dato">${esc(cotizacion.nombre_proyecto)}</p></div>`
     : '';
 
   const bloqueUbicacion = cotizacion.ubicacion
@@ -150,7 +180,7 @@ export function construirCotizacionDocumentoHtml(params: {
 
     <section class="info-grid avoid">
       ${bloqueCliente}
-      <div><p class="etiqueta">Proyecto</p><p class="dato">${esc(cotizacion.nombre_proyecto)}</p></div>
+      ${bloqueProyecto}
       ${bloqueUbicacion}
     </section>
 
