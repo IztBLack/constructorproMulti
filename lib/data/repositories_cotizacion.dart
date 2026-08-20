@@ -5,6 +5,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:uuid/uuid.dart';
 
 import '../core/db/app_database.dart';
+import '../domain/cotizacion_titulo.dart';
 
 const _uuid = Uuid();
 
@@ -178,7 +179,11 @@ class CotizacionRepository {
       await db.into(db.cotizaciones).insert(CotizacionesCompanion.insert(
             id: nuevaId,
             cliente: orig.cliente,
-            nombreProyecto: '${orig.nombreProyecto} (copia)',
+            // Sin nombre no se inventa uno: la copia se queda igual de
+            // vacia (igual que en la web).
+            nombreProyecto: orig.nombreProyecto.isEmpty
+                ? ''
+                : '${orig.nombreProyecto} (copia)',
             ubicacion: Value(orig.ubicacion),
             fecha: DateTime.now().millisecondsSinceEpoch,
             estado: const Value('BORRADOR'),
@@ -220,7 +225,12 @@ class CotizacionRepository {
     await db.transaction(() async {
       await db.into(db.obras).insert(ObrasCompanion.insert(
             id: obraId,
-            nombre: c.nombreProyecto,
+            // La obra SI necesita nombre para ubicarla en sus listas, y la
+            // cotizacion pudo quedarse sin el (es opcional).
+            nombre: tituloCotizacion(
+                nombreProyecto: c.nombreProyecto,
+                ubicacion: c.ubicacion,
+                cliente: c.cliente),
             cliente: Value(c.cliente),
             ubicacion: Value(c.ubicacion),
             fechaInicio: now,

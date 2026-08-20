@@ -12,6 +12,7 @@ import {
   Td,
 } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/lib/data/format';
+import { tituloCotizacion } from '@/lib/cotizacion/titulo';
 import {
   getCotizacionClienteConDetalle,
   listPagosDeCotizacion,
@@ -82,7 +83,7 @@ export default async function CotizacionDetallePage({
         </Link>
 
         <PageHeader
-          title={cot.nombre_proyecto}
+          title={tituloCotizacion(cot)}
           description={cot.ubicacion ?? undefined}
           actions={<Badge tone={tone}>{cot.estado}</Badge>}
         />

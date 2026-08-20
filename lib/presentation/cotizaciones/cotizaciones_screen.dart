@@ -8,6 +8,7 @@ import '../../core/format/format.dart';
 import '../../core/sync/rol_provider.dart';
 import '../../data/orden_personalizado.dart';
 import '../../data/providers.dart';
+import '../../domain/cotizacion_titulo.dart';
 import '../common/app_spacing.dart';
 import '../common/async_action_button.dart';
 import '../common/sync_status_action.dart';
@@ -237,7 +238,10 @@ class _CotizacionesScreenState extends ConsumerState<CotizacionesScreen> {
   Widget _fila(Cotizacion c, bool puedeEditar, {bool arrastrable = false}) {
     return ListTile(
       key: ValueKey(c.id),
-      title: Text(c.nombreProyecto),
+      title: Text(tituloCotizacion(
+          nombreProyecto: c.nombreProyecto,
+          ubicacion: c.ubicacion,
+          cliente: c.cliente)),
       // El estado dejó de ser un círculo de color a la izquierda —que
       // obligaba a memorizar qué significaba cada tono— y pasó a ser
       // una etiqueta que lo dice con palabras, igual que en la web.
@@ -294,15 +298,16 @@ class _CotizacionesScreenState extends ConsumerState<CotizacionesScreen> {
         content: Form(
           key: formKey,
           child: Column(mainAxisSize: MainAxisSize.min, children: [
+            // Nombre y cliente son OPCIONALES (igual que en la web): hay
+            // presupuestos que se hacen con la pura ubicación.
             TextFormField(
               controller: nombreCtrl,
-              decoration: const InputDecoration(labelText: 'Nombre del proyecto'),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+              decoration: const InputDecoration(
+                  labelText: 'Nombre del proyecto (opcional)'),
             ),
             TextFormField(
               controller: clienteCtrl,
-              decoration: const InputDecoration(labelText: 'Cliente'),
+              decoration: const InputDecoration(labelText: 'Cliente (opcional)'),
             ),
             TextFormField(
               controller: ubicacionCtrl,
@@ -353,7 +358,8 @@ class _CotizacionesScreenState extends ConsumerState<CotizacionesScreen> {
       context,
       title: 'Eliminar cotización',
       message:
-          '¿Eliminar la cotización "${c.nombreProyecto}"? Se borran sus secciones, partidas y pagos. '
+          '¿Eliminar la cotización "${tituloCotizacion(nombreProyecto: c.nombreProyecto, ubicacion: c.ubicacion, cliente: c.cliente)}"? '
+          'Se borran sus secciones, partidas y pagos. '
           'Esta acción no se puede deshacer.',
       actionLabel: 'Eliminar',
     );

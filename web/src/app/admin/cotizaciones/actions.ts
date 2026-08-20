@@ -76,11 +76,9 @@ function leerCotizacionDeFormData(formData: FormData) {
 export async function crearCotizacionAction(
   formData: FormData,
 ): Promise<ActionResult & { id: string | null }> {
+  // Cliente y nombre del proyecto son OPCIONALES: hay presupuestos que se hacen
+  // con la pura ubicación. Vacíos se guardan como '' y el documento los omite.
   const input = leerCotizacionDeFormData(formData);
-
-  if (!input.cliente || !input.nombre_proyecto) {
-    return { id: null, error: 'Cliente y nombre del proyecto son obligatorios.' };
-  }
 
   const { id, error } = await crearCotizacion(input);
   if (error) return { id: null, error };
@@ -94,10 +92,6 @@ export async function actualizarCotizacionAction(
   formData: FormData,
 ): Promise<ActionResult> {
   const input = leerCotizacionDeFormData(formData);
-
-  if (!input.cliente || !input.nombre_proyecto) {
-    return { error: 'Cliente y nombre del proyecto son obligatorios.' };
-  }
 
   const { error } = await actualizarCotizacion(id, input);
   if (error) return { error };

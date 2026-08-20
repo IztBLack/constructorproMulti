@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Badge, EmptyState, PageHeader } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/lib/data/format';
+import { tituloCotizacion } from '@/lib/cotizacion/titulo';
 import { getClienteActual, listCotizacionesCliente } from '@/lib/data/portal-cliente';
 import type { EstadoCotizacionPortal } from '@/lib/data/portal-cliente';
 
@@ -63,7 +64,7 @@ export default async function CotizacionesPage() {
                 <div className="min-w-0 flex-1 space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-semibold text-neutral-900">
-                      {cotizacion.nombre_proyecto}
+                      {tituloCotizacion(cotizacion)}
                     </span>
                     <Badge tone={tone}>{cotizacion.estado}</Badge>
                   </div>

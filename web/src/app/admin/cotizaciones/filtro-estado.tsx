@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { Cotizacion, EstadoCotizacion } from '@/lib/data/types';
 import type { OrdenModo } from '@/lib/data/orden-modos';
 import { formatDate } from '@/lib/data/format';
+import { tituloCotizacion } from '@/lib/cotizacion/titulo';
 import {
   Badge,
   EmptyState,
@@ -167,7 +168,7 @@ export default function FiltroEstadoCotizaciones({
                   ) : (
                     <>
                       <RowLink href={`/admin/cotizaciones/${c.id}`}>
-                        Ver cotización {c.nombre_proyecto}
+                        Ver cotización {tituloCotizacion(c)}
                       </RowLink>
                       {c.cliente}
                     </>
@@ -176,7 +177,7 @@ export default function FiltroEstadoCotizaciones({
                 <Td>
                   {puedeMover ? (
                     <Link href={`/admin/cotizaciones/${c.id}`} className="hover:underline">
-                      {c.nombre_proyecto}
+                      {tituloCotizacion(c)}
                     </Link>
                   ) : (
                     c.nombre_proyecto

@@ -13,6 +13,7 @@ import '../../core/storage/app_paths.dart';
 import 'package:pdfx/pdfx.dart';
 
 import '../../core/db/app_database.dart';
+import '../../domain/cotizacion_titulo.dart';
 import '../../core/format/format.dart';
 import '../../core/pdf/pdf_config.dart';
 import '../../core/theme/app_colors.dart';
@@ -64,7 +65,10 @@ class _State extends ConsumerState<CotizacionDetailScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.cotizacion.nombreProyecto),
+        title: Text(tituloCotizacion(
+            nombreProyecto: widget.cotizacion.nombreProyecto,
+            ubicacion: widget.cotizacion.ubicacion,
+            cliente: widget.cotizacion.cliente)),
         actions: [
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
@@ -240,7 +244,8 @@ class _State extends ConsumerState<CotizacionDetailScreen>
 
   Future<void> _convertir() async {
     final ok = await _confirm(
-        '¿Convertir "${widget.cotizacion.nombreProyecto}" en una obra?', 'Convertir');
+        '¿Convertir "${tituloCotizacion(nombreProyecto: widget.cotizacion.nombreProyecto, ubicacion: widget.cotizacion.ubicacion, cliente: widget.cotizacion.cliente)}" en una obra?',
+        'Convertir');
     if (!ok) return;
     await ref.read(cotizacionRepositoryProvider).convertirEnObra(widget.cotizacion);
     if (mounted) {

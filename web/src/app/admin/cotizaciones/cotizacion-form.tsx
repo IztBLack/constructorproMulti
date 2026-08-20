@@ -95,15 +95,14 @@ export function CotizacionForm(props: Props) {
             />
           </Field>
         ) : (
-          <Field label="Cliente (texto libre)" hint="Nombre del cliente para esta cotización">
-            <Input name="cliente" required defaultValue={cotizacion?.cliente ?? ''} disabled={pending} />
+          <Field label="Cliente (texto libre)" hint="Opcional">
+            <Input name="cliente" defaultValue={cotizacion?.cliente ?? ''} disabled={pending} />
           </Field>
         )}
 
-        <Field label="Nombre del proyecto">
+        <Field label="Nombre del proyecto" hint="Opcional">
           <Input
             name="nombre_proyecto"
-            required
             defaultValue={cotizacion?.nombre_proyecto ?? ''}
             disabled={pending}
           />

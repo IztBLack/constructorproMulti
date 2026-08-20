@@ -7,6 +7,7 @@ import '../../core/pdf/pdf_config.dart';
 import '../../core/sync/rol_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
+import '../../domain/cotizacion_titulo.dart';
 import '../../domain/logic/flujo_calculator.dart';
 import '../../domain/logic/nomina_calculator.dart';
 import '../../domain/logic/presupuesto_calculator.dart';
@@ -497,7 +498,14 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
         partidas: partidas.map(partidaToDomain).toList(),
         ivaEnabled: c.ivaEnabled,
       );
-      datos.add((proyecto: c.nombreProyecto, cliente: c.cliente, totales: totales));
+      datos.add((
+        proyecto: tituloCotizacion(
+            nombreProyecto: c.nombreProyecto,
+            ubicacion: c.ubicacion,
+            cliente: c.cliente),
+        cliente: c.cliente,
+        totales: totales
+      ));
     }
     final base = await PdfPrefs.load();
     if (!mounted) return;

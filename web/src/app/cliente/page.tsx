@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { LinkButton, Badge, EmptyState } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/lib/data/format';
+import { tituloCotizacion } from '@/lib/cotizacion/titulo';
 import {
   getClienteActual,
   listObrasCliente,
@@ -205,7 +206,7 @@ export default async function ClienteResumenPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <h3 className="text-sm font-semibold text-neutral-900 truncate">
-                        {cot.nombre_proyecto}
+                        {tituloCotizacion(cot)}
                       </h3>
                       <Badge tone="amber">Pendiente de respuesta</Badge>
                     </div>

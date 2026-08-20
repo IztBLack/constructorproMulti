@@ -5,6 +5,7 @@ import { getEmpresaConfig } from './empresa-config';
 import { IVA_POR_DEFECTO } from './types';
 import type { Cotizacion, CotizacionConDetalle, EstadoCotizacion, Partida, Seccion } from './types';
 import { generarClave } from '@/lib/cotizacion/clave-generator';
+import { tituloCotizacion } from '@/lib/cotizacion/titulo';
 import type { ParsedConcepto } from '@/lib/cotizacion/text-import-parser';
 
 export async function listCotizaciones(): Promise<{
@@ -317,7 +318,10 @@ export async function convertirCotizacionEnObra(
   const { error: obraErr } = await supabase.from('obras').insert({
     id: obraId,
     empresa_id: empresaId,
-    nombre: detalle.nombre_proyecto,
+    // La obra SÍ necesita nombre para poder ubicarla en sus listas, y la
+    // cotización pudo quedarse sin él (es opcional): se cae al mismo respaldo
+    // que usan los encabezados.
+    nombre: tituloCotizacion(detalle),
     cliente: detalle.cliente,
     cliente_id: detalle.cliente_id,
     ubicacion: detalle.ubicacion ?? '',
@@ -589,7 +593,8 @@ export async function duplicarCotizacion(
     empresa_id: empresaId,
     cliente: origen.cliente,
     cliente_id: origen.cliente_id,
-    nombre_proyecto: `${origen.nombre_proyecto} (copia)`,
+    // Sin nombre no se inventa uno: la copia se queda igual de vacía.
+    nombre_proyecto: origen.nombre_proyecto ? `${origen.nombre_proyecto} (copia)` : '',
     ubicacion: origen.ubicacion ?? '',
     fecha: now,
     estado: 'BORRADOR',

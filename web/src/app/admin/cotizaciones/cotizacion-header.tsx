@@ -6,6 +6,7 @@ import { Badge, Button, Field, Input, Modal, PageHeader, Select } from '@/compon
 import type { BadgeTone } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/lib/data/format';
 import type { Cliente, Cotizacion, EstadoCotizacion } from '@/lib/data/types';
+import { tituloCotizacion } from '@/lib/cotizacion/titulo';
 import { CotizacionForm } from './cotizacion-form';
 import {
   ajustarPreciosCotizacionAction,
@@ -186,8 +187,12 @@ export function CotizacionHeader({
   return (
     <>
       <PageHeader
-        title={cotizacion.nombre_proyecto}
-        eyebrow={`Cliente: ${cotizacion.cliente}${cotizacion.ubicacion ? ` · ${cotizacion.ubicacion}` : ''}`}
+        title={tituloCotizacion(cotizacion)}
+        eyebrow={
+          [cotizacion.cliente ? `Cliente: ${cotizacion.cliente}` : '', cotizacion.ubicacion ?? '']
+            .filter(Boolean)
+            .join(' · ') || undefined
+        }
         description={`Fecha: ${formatDate(cotizacion.fecha)}`}
         actions={
           <>
