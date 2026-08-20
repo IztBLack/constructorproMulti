@@ -58,6 +58,32 @@ Write-Host "`n[5/5] Compilando..." -ForegroundColor Yellow
 # Reporte de errores: el DSN se pasa por variable de entorno para no quemarlo en
 # el repo. Sin $env:SENTRY_DSN los builds salen igual que siempre, con el log de
 # crashes solo en el dispositivo (ver lib/core/crash/crash_logger.dart).
+#
+# Si no viene del entorno, se busca en `.env.tokens`. Depender de que alguien
+# recuerde exportarlo en cada sesion de PowerShell es un fallo SILENCIOSO: el
+# build termina bien y el APK sale sin reporte de errores, con el unico aviso en
+# gris a media compilacion.
+if (-not $env:SENTRY_DSN) {
+    # En un worktree de git, `.env.tokens` vive en el repo principal, no junto a
+    # este script; por eso se prueban las dos rutas.
+    $candidatos = @(Join-Path $PSScriptRoot ".env.tokens")
+    $gitComun = git rev-parse --git-common-dir 2>$null
+    if ($LASTEXITCODE -eq 0 -and $gitComun) {
+        $raizPrincipal = Split-Path -Parent (Resolve-Path -LiteralPath $gitComun)
+        $candidatos += (Join-Path $raizPrincipal ".env.tokens")
+    }
+
+    foreach ($archivo in $candidatos) {
+        if (-not (Test-Path -LiteralPath $archivo)) { continue }
+        $encontrada = Select-String -LiteralPath $archivo -Pattern '^\s*SENTRY_DSN\s*=\s*(.+?)\s*$'
+        if ($encontrada) {
+            $env:SENTRY_DSN = $encontrada.Matches[0].Groups[1].Value.Trim('"').Trim("'")
+            Write-Host "  (DSN de Sentry tomado de $archivo)" -ForegroundColor DarkGray
+            break
+        }
+    }
+}
+
 $dartDefines = @()
 if ($env:SENTRY_DSN) {
     $dartDefines += "--dart-define=SENTRY_DSN=$($env:SENTRY_DSN)"
