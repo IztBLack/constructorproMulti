@@ -1,6 +1,6 @@
 # Rebrand: ConstructorPro → Cimnova
 
-Rama: `rebrand/cimnova` (basada en `main`). Fecha: 2026-08-06.
+Rama: `rebrand/cimnova`. Commit original 2026-08-06; reaplicado sobre `main` el 2026-08-20.
 
 **Cimnova** = "cimiento" + "-nova". Conserva el espíritu del acrónimo CIME
 (Construcción, Ingeniería y Manejo Empresarial). Dominios verificados **libres**
@@ -33,13 +33,42 @@ en el momento del cambio: `cimnova.mx`, `cimnova.app`, `cimnova.com`,
   al importar, para no romper respaldos existentes de los usuarios.
 - URLs/dominios en minúsculas (`constructorpro-tawny...`) — se cambian al migrar el deploy.
 
+## Por qué se dejó ConstructorPro (verificado 2026-08-20)
+
+Los dos dominios que de verdad importaban están tomados:
+
+- `constructorpro.com` — redirige a HugeDomains; un inversor lo vende en
+  **$2,995 USD**. No hay sitio real detrás.
+- `constructorpro.com.mx` — registrado (NS de GoDaddy), sirve una página vacía.
+- Libres quedaban solo `constructorpro.mx`, `.app`, `.io` y `.net`.
+
+Además el nombre está saturado en el mismo giro (ConstruccionPro, Contractor Pro
+App, Constructor Technology AG, Build Construct Pro), y "Constructor" + "Pro" es
+una combinación descriptiva: de las más difíciles de registrar ante el IMPI y de
+las más difíciles de defender. `Cimnova`, al ser un término inventado, no tiene
+ninguno de los dos problemas. Sus dominios seguían libres al 2026-08-20.
+
 ## Pendientes (manuales / externos)
 
-1. **Registrar dominios**: `cimnova.mx` + `cimnova.app` (y `.com`/`.com.mx` si se desea).
-2. **Registro de marca en el IMPI** (clase correspondiente).
-3. **Supabase (dashboard)**: renombrar proyecto (cosmético), plantillas/sender de correo
-   de Auth, **Redirect URLs** del nuevo dominio. NO cambiar el project ref.
-4. **Deploy web** al nuevo dominio (Vercel) + redirect 301 desde el dominio anterior.
-5. **GitHub**: nombre de repo/releases, README, nombre del archivo APK.
-6. **Verificar build**: `flutter analyze` + build de Android/iOS (no se corrió aquí).
-7. **Tiendas** (si aplica): listados de Play/App Store.
+1. **Registrar dominios**: `cimnova.mx` + `cimnova.app` (y `.com`/`.com.mx` si se
+   desea). Confirmar disponibilidad en el registrador: lo verificado aquí es
+   ausencia de NS, que es señal fuerte pero no prueba de registro.
+2. **Registro de marca en el IMPI** (clase correspondiente); confirmar en MARCANET.
+3. **Supabase (dashboard)**: renombrar proyecto (cosmético), plantillas/sender de
+   correo de Auth, **Redirect URLs** del nuevo dominio. NO cambiar el project ref.
+4. **Deploy web** al nuevo dominio (Vercel) + redirect 301 desde el anterior.
+5. **GitHub**: nombre de repo/releases y del APK. ⚠️ El asset de cada release debe
+   seguir llamándose `constructorpro.apk`: es la ruta que el portal sirve
+   (`releases/latest/download/constructorpro.apk`). Cambiarlo rompe la descarga.
+6. **Tiendas** (si aplica): listados de Play/App Store.
+
+## Ya hecho
+
+- **2026-08-20** — reaplicado sobre `main` (35 commits por delante de la base
+  original). Conflictos resueltos en `web/src/lib/descargas.ts` (se conservó la
+  URL `releases/latest` de main) y `build_release.ps1` (cosmético).
+- Barrido de lo que entró después: doc de auditoría, ejemplo de `gh release` del
+  README y la carpeta `web/design-system/constructorpro` → `cimnova`.
+- **Verificación**: `tsc --noEmit` limpio, 109/109 tests de la web,
+  `dart analyze lib test` sin errores ni warnings (los 6 `info` de `onReorder`
+  son preexistentes en `main`, ajenos al rebrand).
