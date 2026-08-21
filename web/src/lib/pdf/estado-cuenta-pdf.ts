@@ -1,6 +1,6 @@
 /**
  * Importar el "estado de cuenta" de una obra desde un PDF (la plantilla de
- * ConstructorPro exportada/impresa a PDF).
+ * Cimnova exportada/impresa a PDF).
  *
  * A diferencia del .xlsx/.csv, un PDF no trae una grilla de celdas: solo texto
  * con posición (x, y). Este módulo reconstruye la tabla de MOVIMIENTOS a partir

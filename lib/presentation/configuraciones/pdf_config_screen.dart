@@ -76,7 +76,7 @@ class _PdfConfigScreenState extends State<PdfConfigScreen> {
 
   Future<void> _guardar() async {
     await PdfPrefs.save(PdfConfig(
-      empresaNombre: _empresa.text.trim().isEmpty ? 'ConstructorPro' : _empresa.text.trim(),
+      empresaNombre: _empresa.text.trim().isEmpty ? 'Cimnova' : _empresa.text.trim(),
       empresaContacto: _contacto.text.trim(),
       colorHex: _color.text.trim().isEmpty ? '#1A3A5C' : _color.text.trim(),
       pieDePagina: _pie.text.trim(),

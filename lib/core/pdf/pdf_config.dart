@@ -21,7 +21,7 @@ class PdfConfig {
   final String? firmaPath;
 
   const PdfConfig({
-    this.empresaNombre = 'ConstructorPro',
+    this.empresaNombre = 'Cimnova',
     this.empresaContacto = '',
     this.colorHex = '#1A3A5C',
     this.pieDePagina = '',
@@ -71,7 +71,7 @@ class PdfPrefs {
   static Future<PdfConfig> load() async {
     final p = await SharedPreferences.getInstance();
     return PdfConfig(
-      empresaNombre: p.getString('pdf_empresa') ?? 'ConstructorPro',
+      empresaNombre: p.getString('pdf_empresa') ?? 'Cimnova',
       empresaContacto: p.getString('pdf_contacto') ?? '',
       colorHex: p.getString('pdf_color') ?? '#1A3A5C',
       pieDePagina: p.getString('pdf_pie') ?? '',

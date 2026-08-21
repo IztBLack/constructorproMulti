@@ -44,7 +44,7 @@ export default async function CajaPdfPage({ params }: Props) {
     partidas,
     movimientos,
     notaCaja,
-    nombreEmpresa: nombreEmpresa ?? 'ConstructorPro',
+    nombreEmpresa: nombreEmpresa ?? 'Cimnova',
     pdf,
   });
 

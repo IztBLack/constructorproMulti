@@ -53,7 +53,7 @@ export async function GET(
   const html = construirEstadoCuentaClienteHtml({
     obra,
     estado,
-    nombreEmpresa: nombreEmpresa ?? 'ConstructorPro',
+    nombreEmpresa: nombreEmpresa ?? 'Cimnova',
     pdf,
     hoy: hoyMxMs(),
   });

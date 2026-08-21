@@ -304,9 +304,9 @@ class ConfigScreen extends ConsumerWidget {
       // ZIP completo: datos + archivos adjuntos (fotos/planos).
       final bytes = await ref.read(backupServiceProvider).exportToZipBytes();
       final dir = await getTemporaryDirectory();
-      final file = File(p.join(dir.path, 'RespaldoConstructorPro.zip'));
+      final file = File(p.join(dir.path, 'RespaldoCimnova.zip'));
       await file.writeAsBytes(bytes);
-      await Share.shareXFiles([XFile(file.path)], text: 'Respaldo ConstructorPro');
+      await Share.shareXFiles([XFile(file.path)], text: 'Respaldo Cimnova');
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context)
@@ -368,7 +368,7 @@ class ConfigScreen extends ConsumerWidget {
       return;
     }
     await Share.shareXFiles([XFile(logs.first.path)],
-        text: 'Reporte de error ConstructorPro');
+        text: 'Reporte de error Cimnova');
   }
 }
 

@@ -76,7 +76,7 @@ export async function GET(
     summary,
     inicioMs,
     finMs,
-    nombreEmpresa: nombreEmpresa ?? 'ConstructorPro',
+    nombreEmpresa: nombreEmpresa ?? 'Cimnova',
     pdf,
   });
 

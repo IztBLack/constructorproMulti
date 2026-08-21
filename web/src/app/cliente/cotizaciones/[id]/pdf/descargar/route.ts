@@ -36,7 +36,7 @@ export async function GET(
   const html = construirCotizacionDocumentoHtml({
     cotizacion,
     totales,
-    nombreEmpresa: nombreEmpresa ?? 'ConstructorPro',
+    nombreEmpresa: nombreEmpresa ?? 'Cimnova',
     pdf,
   });
 

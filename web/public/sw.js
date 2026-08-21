@@ -1,5 +1,5 @@
 /**
- * Service worker de ConstructorPro — shell offline mínimo.
+ * Service worker de Cimnova — shell offline mínimo.
  *
  * ============================================================
  * REGLA DE SEGURIDAD (multi-tenant): NUNCA cachear respuestas

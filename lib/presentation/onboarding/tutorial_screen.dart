@@ -12,7 +12,7 @@ class _Paso {
 }
 
 const _pasos = <_Paso>[
-  _Paso(Icons.handyman, 'Bienvenido a ConstructorPro',
+  _Paso(Icons.handyman, 'Bienvenido a Cimnova',
       'Tu asistente para administrar obras, equipo, asistencia, gastos y cotizaciones, todo desde el celular o la tablet — incluso sin internet.'),
   _Paso(Icons.foundation, 'Obras',
       'Da de alta cada obra con su cliente y ubicación. Dentro de cada obra controlas el equipo asignado, la asistencia, la nómina y el flujo de caja.'),

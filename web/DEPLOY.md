@@ -1,4 +1,4 @@
-# 🚀 Despliegue a producción — ConstructorPro Web
+# 🚀 Despliegue a producción — Cimnova Web
 
 La web es una app **Next.js 16 (App Router)**. El backend (base de datos, auth,
 storage) ya vive en **Supabase** (proyecto `vmkkkrlctakzzqebtyci`), así que **lo

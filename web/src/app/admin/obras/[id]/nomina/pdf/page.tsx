@@ -62,7 +62,7 @@ export default async function NominaPdfPage({ params, searchParams }: Props) {
     summary,
     inicioMs,
     finMs,
-    nombreEmpresa: nombreEmpresa ?? 'ConstructorPro',
+    nombreEmpresa: nombreEmpresa ?? 'Cimnova',
     pdf,
   });
 

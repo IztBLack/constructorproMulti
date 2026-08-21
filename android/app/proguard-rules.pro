@@ -1,4 +1,4 @@
-# ConstructorPro — ProGuard / R8 rules
+# Cimnova — ProGuard / R8 rules
 
 # Flutter engine
 -keep class io.flutter.** { *; }

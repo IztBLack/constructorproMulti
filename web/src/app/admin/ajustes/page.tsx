@@ -148,7 +148,7 @@ export default async function AjustesPage() {
               alcance="Lo ven tus clientes"
               descripcion="Datos de la constructora que aparecen en la aplicación y en el portal del cliente."
             >
-              <SeccionEmpresa nombreActual={nombreEmpresa ?? 'ConstructorPro'} />
+              <SeccionEmpresa nombreActual={nombreEmpresa ?? 'Cimnova'} />
             </GrupoAjustes>
           )}
 
@@ -157,7 +157,7 @@ export default async function AjustesPage() {
               id="usuarios"
               titulo="Usuarios"
               alcance="Da o quita accesos"
-              descripcion="Quién puede entrar a ConstructorPro y con qué permisos. Es lo más delicado de esta pantalla, y por eso va al final."
+              descripcion="Quién puede entrar a Cimnova y con qué permisos. Es lo más delicado de esta pantalla, y por eso va al final."
             >
               <SeccionUsuarios
                 total={usuarios.length}

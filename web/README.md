@@ -1,7 +1,7 @@
-# 🏗️ ConstructorPro — Web (Next.js)
+# 🏗️ Cimnova — Web (Next.js)
 
 Web **online-directa contra Supabase** (Postgres + Auth + RLS), parte del plan
-nube+web de ConstructorPro. Comparte la misma BD que la app móvil Flutter; **no hay
+nube+web de Cimnova. Comparte la misma BD que la app móvil Flutter; **no hay
 API propia** (Supabase la expone). Dos zonas:
 
 - **`/admin`** — panel de oficina (captura/gestión). Roles `admin`/`supervisor`/`colaborador`.

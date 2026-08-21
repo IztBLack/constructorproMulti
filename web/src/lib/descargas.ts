@@ -41,7 +41,7 @@
  *  3. Cópialo como `constructorpro.apk` (nombre estable, ver la regla de arriba).
  *  4. Publica el release (necesita `gh` autenticado):
  *        gh release create v1.0.7 constructorpro.apk `
- *          --repo IztBLack/constructorproMulti --title "ConstructorPro 1.0.7 (Android)"
+ *          --repo IztBLack/constructorproMulti --title "Cimnova 1.0.7 (Android)"
  *  5. Listo: el portal ya sirve esa versión. Aquí solo se toca `tamanoAprox` si
  *     el peso del APK cambió de forma notoria.
  */

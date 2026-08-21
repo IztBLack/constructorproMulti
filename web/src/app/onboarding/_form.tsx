@@ -48,7 +48,7 @@ export default function OnboardingForm() {
     <main className="flex min-h-screen items-center justify-center bg-neutral-50 p-4">
       <div className="w-full max-w-md space-y-6">
         <PageHeader
-          title="Bienvenido a ConstructorPro"
+          title="Bienvenido a Cimnova"
           description="Únete a una empresa o crea la tuya"
         />
 

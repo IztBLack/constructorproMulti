@@ -184,7 +184,7 @@ export function TablaUsuarios({
           >
             <p className="text-sm text-neutral-700">
               <strong>{revocando.nombre ?? revocando.email}</strong> dejará de entrar
-              a ConstructorPro.
+              a Cimnova.
             </p>
             {/* La duda real de quien pulsa esto es "¿se borra lo que capturó?".
                 Contestarla aquí evita que no se atrevan a usar el botón. */}

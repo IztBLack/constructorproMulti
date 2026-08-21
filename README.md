@@ -1,4 +1,4 @@
-# 🏗️ ConstructorPro (Flutter)
+# 🏗️ Cimnova (Flutter)
 
 App **multiplataforma (Android + iOS)** para la gestión integral de obras de
 construcción: cotizaciones, presupuestos, equipo, asistencia, nómina, flujo de caja
@@ -161,7 +161,7 @@ que editar código de la web ni volver a desplegarla.
 ```powershell
 .\build_release.ps1        # deja build\app\outputs\flutter-apk\constructorpro.apk
 gh release create v1.0.7 build\app\outputs\flutter-apk\constructorpro.apk `
-  --repo IztBLack/constructorproMulti --title "ConstructorPro 1.0.7 (Android)"
+  --repo IztBLack/constructorproMulti --title "Cimnova 1.0.7 (Android)"
 ```
 
 ⚠️ **El asset debe llamarse siempre `constructorpro.apk`**, sin la versión en el

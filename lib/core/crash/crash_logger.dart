@@ -80,7 +80,7 @@ class CrashLogger {
       final ts = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
       final file = File(p.join(dir.path, 'crash_$ts.txt'));
       final content = StringBuffer()
-        ..writeln('=== ConstructorPro — Reporte de error ===')
+        ..writeln('=== Cimnova — Reporte de error ===')
         ..writeln('Fecha: ${DateTime.now()}')
         ..writeln('Plataforma: ${Platform.operatingSystem} ${Platform.operatingSystemVersion}')
         ..writeln()

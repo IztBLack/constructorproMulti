@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "ConstructorPro",
-    template: "%s · ConstructorPro",
+    default: "Cimnova",
+    template: "%s · Cimnova",
   },
   description:
     "Gestión de obras: nómina, asistencia, cotizaciones y pagos.",
@@ -28,13 +28,13 @@ export const metadata: Metadata = {
     apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
   appleWebApp: {
-    title: "ConstructorPro",
+    title: "Cimnova",
     statusBarStyle: "default",
   },
 };
 
 // `theme-color` de la barra de estado en la PWA instalada. Es el Primary del
-// design system (`web/design-system/constructorpro/MASTER.md`). Debe coincidir
+// design system (`web/design-system/cimnova/MASTER.md`). Debe coincidir
 // con `theme_color` de `app/manifest.ts`: si difieren, iOS y Android pueden
 // tomar valores distintos y la barra cambia de color entre pantallas.
 export const viewport: Viewport = {

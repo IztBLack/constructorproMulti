@@ -30,7 +30,7 @@ class BackupService {
   List<Map<String, dynamic>> _list(Map root, String key) =>
       ((root[key] as List?) ?? const []).cast<Map<String, dynamic>>();
 
-  /// Decodifica y valida que el JSON sea realmente un respaldo de ConstructorPro
+  /// Decodifica y valida que el JSON sea realmente un respaldo de Cimnova
   /// ANTES de tocar la base de datos. Restaurar borra todo el contenido actual,
   /// así que un archivo inválido o ajeno no debe llegar a esa fase.
   static Map<String, dynamic> _parseAndValidate(String jsonString) {
@@ -44,7 +44,7 @@ class BackupService {
     }
     if (decoded is! Map<String, dynamic>) {
       throw const FormatException(
-        'El archivo no tiene el formato de un respaldo de ConstructorPro.',
+        'El archivo no tiene el formato de un respaldo de Cimnova.',
       );
     }
     // Firma mínima de un respaldo real: las tablas núcleo deben venir como listas.
@@ -60,9 +60,11 @@ class BackupService {
     // Si trae la firma de origen, debe coincidir: así rechazamos un archivo de
     // otra app que por casualidad tenga esas mismas listas.
     final app = decoded['app'];
-    if (app != null && app != 'ConstructorPro') {
+    // Aceptamos la firma nueva ('Cimnova') y la anterior ('ConstructorPro')
+    // para que los respaldos generados antes del rebrand se sigan importando.
+    if (app != null && app != 'Cimnova' && app != 'ConstructorPro') {
       throw const FormatException(
-        'Este respaldo es de otra aplicación, no de ConstructorPro. '
+        'Este respaldo es de otra aplicación, no de Cimnova. '
         'No se modificaron tus datos.',
       );
     }
@@ -585,8 +587,9 @@ class BackupService {
     final data = {
       // Firma de origen: permite validar el respaldo al importar. Los respaldos
       // antiguos (o de la app Kotlin) sin esta clave se siguen aceptando por
-      // estructura, así que es retrocompatible.
-      'app': 'ConstructorPro',
+      // estructura, así que es retrocompatible. La firma anterior
+      // ('ConstructorPro') también se acepta al importar tras el rebrand.
+      'app': 'Cimnova',
       'backupVersion': 1,
       'obras': (await db.select(db.obras).get()).map(obraJson).toList(),
       'puestos': (await db.select(db.puestos).get())
@@ -799,7 +802,7 @@ class BackupService {
       archive = ZipDecoder().decodeBytes(bytes);
     } catch (_) {
       throw const FormatException(
-        'El archivo no es un respaldo ZIP válido de ConstructorPro.',
+        'El archivo no es un respaldo ZIP válido de Cimnova.',
       );
     }
     final dataFile = archive.findFile('data.json');

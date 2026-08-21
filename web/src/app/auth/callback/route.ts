@@ -20,7 +20,7 @@ const DESTINOS = new Set([
  * El destino se valida contra una lista cerrada. Si se aceptara cualquier valor
  * de `destino`, esta ruta sería un redirector abierto: bastaría mandar un
  * enlace con `?destino=https://sitio-falso.com` —con el dominio real de
- * ConstructorPro a la vista— para llevar a alguien a una página de phishing.
+ * Cimnova a la vista— para llevar a alguien a una página de phishing.
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);

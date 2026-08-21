@@ -6,7 +6,7 @@ import { enlaceApkAndroid, enlaceAppIos } from '@/lib/descargas';
 import { IconAndroid, IconApple } from '@/components/descargas/iconos';
 
 export const metadata: Metadata = {
-  title: { absolute: 'ConstructorPro — Lleva tus obras en orden' },
+  title: { absolute: 'Cimnova — Lleva tus obras en orden' },
   description:
     'Lleva las cuentas, el equipo y los pagos de tus obras en un solo lugar. Fácil de usar, con un espacio para ti y otro para tus clientes.',
 };
@@ -220,7 +220,7 @@ export default function Home() {
             className="flex items-center gap-2 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
           >
             <BrandMark />
-            <span className="text-lg font-semibold tracking-tight">ConstructorPro</span>
+            <span className="text-lg font-semibold tracking-tight">Cimnova</span>
           </Link>
 
           <nav className="hidden items-center gap-6 text-sm text-neutral-600 md:flex">
@@ -264,7 +264,7 @@ export default function Home() {
               </h1>
 
               <p className="mt-5 max-w-xl text-lg leading-relaxed text-neutral-600">
-                ConstructorPro junta las cuentas, tu gente y los pagos de todas tus obras en un solo
+                Cimnova junta las cuentas, tu gente y los pagos de todas tus obras en un solo
                 lugar. Así tú tienes el control, y tus clientes pueden ver cómo va su obra cuando
                 quieran.
               </p>
@@ -484,7 +484,7 @@ export default function Home() {
                 Llévala contigo a la obra
               </h2>
               <p className="mt-3 text-neutral-600">
-                Además del panel en la computadora, ConstructorPro tiene app para tu celular. Así
+                Además del panel en la computadora, Cimnova tiene app para tu celular. Así
                 anotas todo directo en la obra, aunque no tengas internet.
               </p>
             </div>
@@ -621,7 +621,7 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <BrandMark />
             <div>
-              <p className="text-sm font-semibold">ConstructorPro</p>
+              <p className="text-sm font-semibold">Cimnova</p>
               <p className="text-xs text-neutral-500">El control de tus obras, en un solo lugar</p>
             </div>
           </div>
@@ -640,7 +640,7 @@ export default function Home() {
         <div className="border-t border-neutral-200">
           {/* neutral-600: el -400 daba 2.52:1 sobre blanco. */}
           <p className="mx-auto max-w-6xl px-4 py-4 text-xs text-neutral-600 sm:px-6">
-            © {new Date().getFullYear()} ConstructorPro. Todos los derechos reservados.
+            © {new Date().getFullYear()} Cimnova. Todos los derechos reservados.
           </p>
         </div>
       </footer>

@@ -1,4 +1,4 @@
-# ConstructorPro web como PWA (app instalable)
+# Cimnova web como PWA (app instalable)
 
 Existe para dar a los usuarios de **iPhone** una app sin cuenta de Apple Developer
 (los ~$99 USD/año que habilitarían TestFlight). La app nativa Flutter en iOS sigue

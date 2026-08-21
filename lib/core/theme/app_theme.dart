@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
 
-/// Tema Material 3 de ConstructorPro, alineado con el kit de la web
+/// Tema Material 3 de Cimnova, alineado con el kit de la web
 /// (`web/src/components/ui/`).
 ///
 /// **Por qué se reescribió.** Antes este archivo eran 20 líneas: un

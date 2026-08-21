@@ -133,7 +133,7 @@ export async function construirExcelEstadoCuenta({
   notaCaja,
 }: ExportInput): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'ConstructorPro';
+  wb.creator = 'Cimnova';
   wb.created = new Date();
 
   const ws = wb.addWorksheet('Estado de Cuenta');

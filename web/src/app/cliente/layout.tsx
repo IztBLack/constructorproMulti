@@ -21,7 +21,7 @@ export default async function ClienteLayout({ children }: { children: React.Reac
 
   const cliente = await getClienteActual();
   // Marca = nombre de la constructora del cliente (no un literal fijo).
-  const marca = (await getNombreEmpresa()) ?? 'ConstructorPro';
+  const marca = (await getNombreEmpresa()) ?? 'Cimnova';
 
   // Si no hay vínculo, mostramos el layout igualmente pero sin nombre de cliente
   const nombreCliente = cliente?.nombre ?? 'Cliente';

@@ -47,7 +47,7 @@ export async function getEmpresaUsuario(): Promise<EmpresaUsuario> {
 }
 
 /// Nombre de la empresa del usuario actual, para mostrar como marca en la UI
-/// (en vez de un literal "ConstructorPro"). No lanza: devuelve null si no hay
+/// (en vez de un literal "Cimnova"). No lanza: devuelve null si no hay
 /// sesión o empresa. Lectura acotada por RLS a las empresas del usuario.
 export async function getNombreEmpresa(): Promise<string | null> {
   const supabase = await createClient();

@@ -51,7 +51,7 @@ jobs:
           # ni atributos extendidos que confunden a los instaladores.
           /usr/bin/ditto -c -k --sequesterRsrc --keepParent Payload app-unsigned.ipa
           # Copia con nombre estable para la URL del Release.
-          cp app-unsigned.ipa ConstructorPro.ipa
+          cp app-unsigned.ipa Cimnova.ipa
           echo "=== Estructura del IPA ==="
           unzip -l app-unsigned.ipa | head -25
 
@@ -65,7 +65,7 @@ jobs:
       - name: Calcular metadatos del Source
         id: meta
         run: |
-          IPA=build/ios/iphoneos/ConstructorPro.ipa
+          IPA=build/ios/iphoneos/Cimnova.ipa
           SIZE=$(stat -f%z "$IPA")
           SHORTVER=$(grep '^version:' pubspec.yaml | sed -E 's/version:[[:space:]]*//' | cut -d'+' -f1 | tr -d '\r')
           echo "size=$SIZE"            >> "$GITHUB_OUTPUT"
@@ -75,16 +75,16 @@ jobs:
 
       - name: Generar apps.json (manifiesto SideStore)
         run: |
-          DL="https://github.com/${{ github.repository }}/releases/download/sidestore/ConstructorPro.ipa"
+          DL="https://github.com/${{ github.repository }}/releases/download/sidestore/Cimnova.ipa"
           ICON="https://raw.githubusercontent.com/${{ github.repository }}/main/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-1024.png"
           cat > apps.json <<EOF
           {
-            "name": "ConstructorPro (Mario)",
+            "name": "Cimnova (Mario)",
             "identifier": "com.mario.constructorpro.source",
             "sourceURL": "https://github.com/${{ github.repository }}/releases/download/sidestore/apps.json",
             "apps": [
               {
-                "name": "ConstructorPro",
+                "name": "Cimnova",
                 "bundleIdentifier": "com.mario.constructorpro",
                 "developerName": "Mario",
                 "subtitle": "Gestión de obras",
@@ -118,7 +118,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          IPA=build/ios/iphoneos/ConstructorPro.ipa
+          IPA=build/ios/iphoneos/Cimnova.ipa
           if gh release view sidestore >/dev/null 2>&1; then
             gh release upload sidestore "$IPA" apps.json --clobber
           else

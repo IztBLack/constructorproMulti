@@ -1,14 +1,14 @@
-# Política de Privacidad — ConstructorPro
+# Política de Privacidad — Cimnova
 
 **Última actualización:** junio 2026
 
 ## 1. Quién somos
 
-ConstructorPro es una aplicación móvil para la gestión integral de obras de construcción desarrollada para uso personal y profesional en México.
+Cimnova es una aplicación móvil para la gestión integral de obras de construcción desarrollada para uso personal y profesional en México.
 
 ## 2. Datos que recopilamos
 
-**ConstructorPro no recopila, transmite ni comparte ningún dato personal con terceros.**
+**Cimnova no recopila, transmite ni comparte ningún dato personal con terceros.**
 
 Toda la información que el usuario ingresa en la app (obras, cotizaciones, colaboradores, asistencias, nómina, flujo de caja) se almacena **exclusivamente en el dispositivo** del usuario mediante una base de datos local (SQLite). No existe ningún servidor externo, cuenta de usuario, ni conexión a internet requerida para el funcionamiento de la app.
 
@@ -52,7 +52,7 @@ Los datos se almacenan en la base de datos local del dispositivo, protegida por 
 
 ## 7. Menores de edad
 
-ConstructorPro está diseñada para uso profesional en gestión de obras. No está dirigida a menores de 18 años ni recopila información de menores.
+Cimnova está diseñada para uso profesional en gestión de obras. No está dirigida a menores de 18 años ni recopila información de menores.
 
 ## 8. Cambios a esta política
 
@@ -66,4 +66,4 @@ Si tienes preguntas sobre esta política de privacidad, puedes contactarnos en:
 
 ---
 
-*Esta política aplica a la aplicación ConstructorPro para Android e iOS.*
+*Esta política aplica a la aplicación Cimnova para Android e iOS.*

@@ -1,5 +1,5 @@
 ﻿# ============================================================
-# ConstructorPro — Script de build release (Android)
+# Cimnova — Script de build release (Android)
 # Ejecutar desde PowerShell en la raíz del proyecto:
 #   .\build_release.ps1
 #
@@ -16,7 +16,7 @@ $env:Path             += ";D:\flutter\bin"
 
 Set-Location $PSScriptRoot
 
-Write-Host "`n=== ConstructorPro Release Build ===" -ForegroundColor Cyan
+Write-Host "`n=== Cimnova Release Build ===" -ForegroundColor Cyan
 
 # 1. Verificar entorno
 Write-Host "`n[1/5] Verificando Flutter..." -ForegroundColor Yellow
@@ -163,7 +163,7 @@ Write-Host ""
 Write-Host "Publica el release y el portal queda al dia solo (sirve 'latest'):" -ForegroundColor Yellow
 Write-Host "  gh release create v$versionName $apkPortal ``" -ForegroundColor White
 Write-Host "    --repo IztBLack/constructorproMulti ``" -ForegroundColor White
-Write-Host "    --title `"ConstructorPro $versionName (Android)`"" -ForegroundColor White
+Write-Host "    --title `"Cimnova $versionName (Android)`"" -ForegroundColor White
 Write-Host ""
 Write-Host "NO renombres el APK con la version: el enlace del portal lo busca" -ForegroundColor DarkGray
 Write-Host "por nombre exacto (web/src/lib/descargas.ts)." -ForegroundColor DarkGray

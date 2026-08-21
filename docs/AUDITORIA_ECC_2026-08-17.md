@@ -1,4 +1,4 @@
-# Auditoría ConstructorPro — 2026-08-17
+# Auditoría Cimnova — 2026-08-17
 
 Hecha con los checklists de **ECC** (github.com/affaan-m/ECC), clonado en
 `~/.claude/ecc` (no instalado como plugin). Skills aplicadas: `production-audit`,

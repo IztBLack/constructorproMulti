@@ -1,4 +1,4 @@
-# ☁️ Backend Supabase — ConstructorPro (Fase ②, cimiento)
+# ☁️ Backend Supabase — Cimnova (Fase ②, cimiento)
 
 Espejo en Postgres del esquema local (Drift) + Auth + RLS, base del sync
 offline-first. La app móvil sigue siendo offline-first (Drift = fuente de verdad);

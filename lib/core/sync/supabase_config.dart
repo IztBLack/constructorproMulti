@@ -8,7 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class SupabaseConfig {
   SupabaseConfig._();
 
-  /// Proyecto Supabase de ConstructorPro.
+  /// Proyecto Supabase de Cimnova.
   static const String url = 'https://vmkkkrlctakzzqebtyci.supabase.co';
 
   /// Publishable key. Es **pública por diseño** (la protege la RLS de Postgres);

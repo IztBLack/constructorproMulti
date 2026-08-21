@@ -152,7 +152,7 @@ export function AvisoInstalar() {
         <div className="space-y-1">
           {escenario === 'ios-safari' && (
             <>
-              <p className="font-medium">Instala ConstructorPro en tu iPhone</p>
+              <p className="font-medium">Instala Cimnova en tu iPhone</p>
               <p className="text-blue-800">
                 Toca <strong>Compartir</strong> (el cuadro con la flecha hacia arriba) y luego{' '}
                 <strong>Añadir a inicio</strong>.
@@ -179,7 +179,7 @@ export function AvisoInstalar() {
 
           {escenario === 'prompt-nativo' && (
             <>
-              <p className="font-medium">Instala ConstructorPro</p>
+              <p className="font-medium">Instala Cimnova</p>
               <p className="text-blue-800">
                 Ábrela como app: arranca más rápido y conserva lo capturado sin señal.
               </p>

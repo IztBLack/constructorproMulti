@@ -1,6 +1,6 @@
 # Cliente Page Overrides
 
-> **PROJECT:** ConstructorPro
+> **PROJECT:** Cimnova
 > **Generated:** 2026-07-02 05:15:16
 > **Page Type:** Checkout / Payment
 

@@ -12,8 +12,8 @@ import type { MetadataRoute } from 'next';
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'ConstructorPro',
-    short_name: 'ConstructorPro',
+    name: 'Cimnova',
+    short_name: 'Cimnova',
     description: 'Gestión de obras: nómina, asistencia, cotizaciones y pagos.',
     start_url: '/campo',
     scope: '/',
@@ -22,7 +22,7 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: 'es-MX',
     dir: 'ltr',
     // Fondo de la pantalla de arranque, antes del primer pintado. Es el
-    // `Background` del design system (`web/design-system/constructorpro/MASTER.md`),
+    // `Background` del design system (`web/design-system/cimnova/MASTER.md`),
     // por decisión de marca.
     //
     // Ojo al probar en dispositivo: la UI web real es clara (`bg-neutral-50`), así
@@ -30,7 +30,7 @@ export default function manifest(): MetadataRoute.Manifest {
     // destello molesta en el iPhone, el arreglo es volver a `#FFFFFF`.
     background_color: '#0F172A',
     // `theme_color` = barra de estado del sistema. Es el Primary del design system
-    // (`web/design-system/constructorpro/MASTER.md`), no el azul del ícono móvil.
+    // (`web/design-system/cimnova/MASTER.md`), no el azul del ícono móvil.
     theme_color: '#1E293B',
     icons: [
       {

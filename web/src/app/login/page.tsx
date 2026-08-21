@@ -151,7 +151,7 @@ function LoginInner() {
           <div className="text-2xl" aria-hidden="true">
             🏗️
           </div>
-          <h1 className="text-xl font-semibold text-neutral-900">ConstructorPro</h1>
+          <h1 className="text-xl font-semibold text-neutral-900">Cimnova</h1>
           <p className="text-sm text-neutral-500">
             {esRegistro ? 'Crea tu cuenta' : 'Entra a tu panel'}
           </p>

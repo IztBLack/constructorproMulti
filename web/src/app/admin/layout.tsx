@@ -18,7 +18,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const marca = (await getNombreEmpresa()) ?? 'ConstructorPro';
+  const marca = (await getNombreEmpresa()) ?? 'Cimnova';
   const nombre = nombreUsuario(user);
 
   return (

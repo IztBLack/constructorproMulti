@@ -26,7 +26,7 @@ void main() {
     // (p. ej. Samsung con barra de 3 botones) la barra de navegación tapa el
     // contenido de abajo. Al activarlo, Flutter recibe los insets y el Scaffold
     // reserva el espacio. En iOS es no-op (allí ya es edge-to-edge y lo maneja
-    // SafeArea). El color/contraste de las barras se define en ConstructorProApp.
+    // SafeArea). El color/contraste de las barras se define en CimnovaApp.
     // `runGuarded` ya llamó a WidgetsFlutterBinding.ensureInitialized().
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
@@ -60,13 +60,13 @@ void main() {
         databaseProvider.overrideWithValue(db),
         sharedPreferencesProvider.overrideWithValue(prefs),
       ],
-      child: const ConstructorProApp(),
+      child: const CimnovaApp(),
     ));
   });
 }
 
-class ConstructorProApp extends ConsumerWidget {
-  const ConstructorProApp({super.key});
+class CimnovaApp extends ConsumerWidget {
+  const CimnovaApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -74,7 +74,7 @@ class ConstructorProApp extends ConsumerWidget {
     // Arranca el sync automático (arranque/reconexión/post-escritura).
     ref.watch(syncControllerProvider);
     return MaterialApp(
-      title: 'ConstructorPro',
+      title: 'Cimnova',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,

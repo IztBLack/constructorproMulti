@@ -25,7 +25,7 @@ export default async function CotizacionClientePdfPage({ params }: Props) {
   const html = construirCotizacionDocumentoHtml({
     cotizacion,
     totales,
-    nombreEmpresa: nombreEmpresa ?? 'ConstructorPro',
+    nombreEmpresa: nombreEmpresa ?? 'Cimnova',
     pdf,
   });
 

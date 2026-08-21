@@ -18,7 +18,7 @@ con un **código de 6 dígitos**; una vez vinculado, el cliente **solo ve lo suy
 
 ```
 ┌───────────────────────────────────────────────┐
-│  Bienvenido a ConstructorPro                   │
+│  Bienvenido a Cimnova                   │
 │                                                │
 │  Ingresa el código de acceso que te dio tu     │
 │  constructora.                                 │

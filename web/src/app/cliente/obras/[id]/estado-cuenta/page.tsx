@@ -29,7 +29,7 @@ export default async function EstadoCuentaPage({ params }: Props) {
   const html = construirEstadoCuentaClienteHtml({
     obra,
     estado,
-    nombreEmpresa: nombreEmpresa ?? 'ConstructorPro',
+    nombreEmpresa: nombreEmpresa ?? 'Cimnova',
     pdf,
     hoy: hoyMxMs(),
   });

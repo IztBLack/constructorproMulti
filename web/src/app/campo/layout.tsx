@@ -15,7 +15,7 @@ import { ToggleTema } from '@/components/tema/toggle-tema';
  * /login desde el middleware, y es a propósito: una redirección exige red, y
  * esta pantalla tiene que abrir sin señal.
  */
-// El layout raíz ya aplica la plantilla "%s · ConstructorPro", así que aquí va
+// El layout raíz ya aplica la plantilla "%s · Cimnova", así que aquí va
 // solo el nombre de la pantalla; incluir la marca la duplicaría en la pestaña.
 export const metadata = {
   title: 'Pase de lista',

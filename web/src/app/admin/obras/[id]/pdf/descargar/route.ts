@@ -48,7 +48,7 @@ export async function GET(
     partidas,
     movimientos,
     notaCaja,
-    nombreEmpresa: nombreEmpresa ?? 'ConstructorPro',
+    nombreEmpresa: nombreEmpresa ?? 'Cimnova',
     pdf,
   });
 

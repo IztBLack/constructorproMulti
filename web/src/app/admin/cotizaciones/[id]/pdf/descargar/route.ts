@@ -36,7 +36,7 @@ export async function GET(
     .select('nombre')
     .eq('id', cotizacion.empresa_id)
     .maybeSingle();
-  const nombreEmpresa: string = empresaData?.nombre ?? 'ConstructorPro';
+  const nombreEmpresa: string = empresaData?.nombre ?? 'Cimnova';
   const { pdf } = await getEmpresaConfig();
   const totales = calcularTotales(cotizacion);
 

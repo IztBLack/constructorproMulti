@@ -51,7 +51,7 @@ export default async function UsuariosPage() {
 
       <PageHeader
         title="Usuarios y roles"
-        description="Quién puede entrar a ConstructorPro y con qué permisos."
+        description="Quién puede entrar a Cimnova y con qué permisos."
         actions={<InvitarUsuario urlBase={host} />}
       />
 
