@@ -31,6 +31,10 @@ const nextConfig: NextConfig = {
     '/admin/obras/\\[id\\]/nomina/pdf/descargar': [
       './node_modules/@sparticuz/chromium/**/*',
     ],
+    // Nota de obra (trato con un socio): mismo Chromium, misma necesidad.
+    '/admin/obras/\\[id\\]/notas/\\[notaId\\]/pdf/descargar': [
+      './node_modules/@sparticuz/chromium/**/*',
+    ],
     // PDF de estado de cuenta del cliente generado desde el lado admin/oficina:
     // también renderiza con Chromium, así que necesita empaquetar el binario o
     // da 500 en producción (Vercel).

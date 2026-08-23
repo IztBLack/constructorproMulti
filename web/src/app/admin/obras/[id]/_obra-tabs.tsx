@@ -28,6 +28,7 @@ function tabsFor(obraId: string) {
     { href: base, label: 'Detalle' },
     { href: `${base}/asistencia`, label: 'Asistencia' },
     { href: `${base}/nomina`, label: 'Nómina' },
+    { href: `${base}/notas`, label: 'Notas' },
     { href: `${base}/importar`, label: 'Importar' },
   ];
 }
