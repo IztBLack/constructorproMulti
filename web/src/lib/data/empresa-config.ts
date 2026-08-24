@@ -38,9 +38,12 @@ export interface PdfConfig {
    * Vacío o ausente = se imprime el texto integrado. Cada documento puede a su
    * vez pisar el suyo con su columna `texto_final` (0032).
    *
-   * Va DENTRO de este jsonb y no en columnas nuevas porque es exactamente para
-   * lo que sirve un jsonb de personalización, y porque el móvil guarda su
-   * PdfConfig en SharedPreferences: nunca escribe aquí, así que no las pisa.
+   * OJO: se PERSISTE en su propia columna `empresa_config.pdf_textos` (0033),
+   * no dentro del jsonb `pdf_config`. Viaja aquí solo por comodidad, porque
+   * todos los builders ya reciben un `PdfConfig`. La columna aparte existe
+   * porque el móvil también escribe este texto y guarda su copia del resto del
+   * aspecto en SharedPreferences: si subiera el jsonb entero, borraría el color
+   * y el contacto que se configuraron desde la web.
    */
   textos: TextosEmpresa;
 }
@@ -98,8 +101,10 @@ function leerUiOrden(crudo: unknown): UiOrden {
 }
 
 /** Normaliza lo que venga del jsonb: puede ser null, incompleto o basura. */
-function leerPdfConfig(crudo: unknown): PdfConfig {
-  if (!crudo || typeof crudo !== 'object') return PDF_CONFIG_POR_DEFECTO;
+function leerPdfConfig(crudo: unknown, textos: unknown): PdfConfig {
+  if (!crudo || typeof crudo !== 'object') {
+    return { ...PDF_CONFIG_POR_DEFECTO, textos: leerTextosEmpresa(textos) };
+  }
   const o = crudo as Record<string, unknown>;
   const color = typeof o.colorHex === 'string' ? o.colorHex : '';
 
@@ -116,7 +121,8 @@ function leerPdfConfig(crudo: unknown): PdfConfig {
     modoCompacto: o.modoCompacto === true,
     firmaIzquierda: str(o.firmaIzquierda),
     firmaDerecha: str(o.firmaDerecha),
-    textos: leerTextosEmpresa(o.textos),
+    // De la columna `pdf_textos`, no de este jsonb (ver 0033).
+    textos: leerTextosEmpresa(textos),
   };
 }
 
@@ -133,7 +139,7 @@ export async function getEmpresaConfig(): Promise<EmpresaConfig> {
 
   const { data, error } = await supabase
     .from('empresa_config')
-    .select('iva_porcentaje, pdf_config')
+    .select('iva_porcentaje, pdf_config, pdf_textos')
     .maybeSingle();
 
   if (error || !data) {
@@ -142,7 +148,7 @@ export async function getEmpresaConfig(): Promise<EmpresaConfig> {
 
   return {
     ivaPorcentaje: Number(data.iva_porcentaje ?? IVA_POR_DEFECTO),
-    pdf: leerPdfConfig(data.pdf_config),
+    pdf: leerPdfConfig(data.pdf_config, data.pdf_textos),
   };
 }
 
@@ -193,18 +199,20 @@ export async function guardarPdfConfig(
 
   // Los textos se recortan aquí y no en la UI: este es el único camino a la
   // base, y el tope existe para que un pegado accidental no rompa la hoja.
-  const limpio: PdfConfig = {
-    ...pdf,
-    textos: Object.fromEntries(
-      Object.entries(pdf.textos ?? {})
-        .map(([k, v]) => [k, recortar(String(v ?? ''))])
-        .filter(([, v]) => v !== ''),
-    ),
-  };
+  const textos = Object.fromEntries(
+    Object.entries(pdf.textos ?? {})
+      .map(([k, v]) => [k, recortar(String(v ?? ''))])
+      .filter(([, v]) => v !== ''),
+  );
+
+  // `textos` sale del jsonb a propósito: su casa es la columna `pdf_textos`
+  // (0033) y dejarlo también aquí crearía dos fuentes de verdad.
+  const { textos: _fuera, ...aspecto } = pdf;
+  void _fuera;
 
   const { error } = await supabase
     .from('empresa_config')
-    .update({ pdf_config: limpio, updated_at: Date.now() })
+    .update({ pdf_config: aspecto, pdf_textos: textos, updated_at: Date.now() })
     .eq('empresa_id', empresaId);
 
   if (error) return { ok: false, error: error.message };

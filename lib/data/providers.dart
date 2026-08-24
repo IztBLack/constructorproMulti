@@ -7,6 +7,8 @@ import '../domain/logic/movimiento_colaborador_service.dart';
 import 'backup/backup_service.dart';
 import 'maintenance_repository.dart';
 import 'orden_personalizado.dart';
+import 'textos_pdf_service.dart';
+import '../core/pdf/textos_finales.dart';
 import 'repositories.dart';
 import 'repositories_obra.dart';
 import 'repositories_cuadrilla.dart';
@@ -71,6 +73,32 @@ class OrdenModoNotifier extends Notifier<Map<String, String>> {
 
   Future<void> setModo(String listKey, String modo) async {
     state = await ref.read(ordenModoServiceProvider).setModo(listKey, modo);
+  }
+}
+
+// ---------------- Texto general del pie de los PDF ----------------
+/// Servicio del texto general (Supabase `empresa_config.pdf_textos` + caché).
+final textosPdfServiceProvider = Provider<TextosPdfService>(
+    (ref) => TextosPdfService(ref.watch(sharedPreferencesProvider)));
+
+/// Estado reactivo del texto general por tipo de documento. Mismo trato que
+/// [ordenModoProvider]: arranca del caché (síncrono, sirve sin señal) y refresca
+/// desde Supabase en segundo plano.
+final textosPdfProvider =
+    NotifierProvider<TextosPdfNotifier, Map<TipoDocumento, String>>(
+        TextosPdfNotifier.new);
+
+class TextosPdfNotifier extends Notifier<Map<TipoDocumento, String>> {
+  @override
+  Map<TipoDocumento, String> build() {
+    Future.microtask(() async {
+      state = await ref.read(textosPdfServiceProvider).refrescar();
+    });
+    return ref.read(textosPdfServiceProvider).textos;
+  }
+
+  Future<void> setTexto(TipoDocumento tipo, String texto) async {
+    state = await ref.read(textosPdfServiceProvider).setTexto(tipo, texto);
   }
 }
 

@@ -518,6 +518,9 @@ class PdfService {
     required bool iva,
     Map<String, double> aportadoPorPartida = const {},
     PdfConfig config = const PdfConfig(),
+    /// Texto general de la empresa por tipo (`empresa_config.pdf_textos`).
+    /// Lo comparten web y móvil; vacío = se imprime el integrado.
+    Map<TipoDocumento, String> textosEmpresa = const {},
   }) async {
     final color = _hex(config.colorHex);
     final doc = pw.Document();
@@ -596,6 +599,7 @@ class PdfService {
         widgets.add(_textoFinal(resolverTextoFinal(
           tipo: TipoDocumento.cotizacion,
           documento: cot.textoFinal,
+          textosEmpresa: textosEmpresa,
           ctx: ContextoTextoFinal(
             nombreEmpresa: config.empresaNombre,
             ivaEnabled: iva,

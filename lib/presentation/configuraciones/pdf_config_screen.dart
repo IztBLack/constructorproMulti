@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -8,15 +9,17 @@ import 'package:path_provider/path_provider.dart';
 import '../../core/storage/app_paths.dart';
 
 import '../../core/pdf/pdf_config.dart';
+import '../../core/pdf/textos_finales.dart';
+import '../../data/providers.dart';
 
-class PdfConfigScreen extends StatefulWidget {
+class PdfConfigScreen extends ConsumerStatefulWidget {
   const PdfConfigScreen({super.key});
 
   @override
-  State<PdfConfigScreen> createState() => _PdfConfigScreenState();
+  ConsumerState<PdfConfigScreen> createState() => _PdfConfigScreenState();
 }
 
-class _PdfConfigScreenState extends State<PdfConfigScreen> {
+class _PdfConfigScreenState extends ConsumerState<PdfConfigScreen> {
   final _empresa = TextEditingController();
   final _contacto = TextEditingController();
   final _color = TextEditingController();
@@ -24,6 +27,14 @@ class _PdfConfigScreenState extends State<PdfConfigScreen> {
   final _watermark = TextEditingController();
   final _firmaIzq = TextEditingController();
   final _firmaDer = TextEditingController();
+
+  /// Un controlador por tipo de documento para el párrafo final GENERAL. A
+  /// diferencia del resto de esta pantalla —que es la copia local del aspecto—,
+  /// estos textos se comparten con la web (`empresa_config.pdf_textos`).
+  final _textos = {
+    for (final t in TipoDocumento.values) t: TextEditingController(),
+  };
+
   bool _mayusculas = false;
   bool _compacto = false;
   String? _logoPath;
@@ -45,6 +56,9 @@ class _PdfConfigScreenState extends State<PdfConfigScreen> {
     _watermark.dispose();
     _firmaIzq.dispose();
     _firmaDer.dispose();
+    for (final c in _textos.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -61,7 +75,23 @@ class _PdfConfigScreenState extends State<PdfConfigScreen> {
     _compacto = c.modoCompacto;
     _logoPath = c.logoPath;
     _firmaPath = c.firmaPath;
+
+    // Los textos generales se pintan del caché al instante y se refrescan
+    // contra Supabase enseguida: si alguien los cambió desde la web, aquí se
+    // ve el valor al día sin tener que cerrar la pantalla.
+    final servicio = ref.read(textosPdfServiceProvider);
+    for (final t in TipoDocumento.values) {
+      _textos[t]!.text = servicio.textoDe(t);
+    }
     setState(() => _cargado = true);
+
+    final frescos = await servicio.refrescar();
+    if (!mounted) return;
+    for (final t in TipoDocumento.values) {
+      final v = frescos[t] ?? '';
+      // No se pisa lo que el usuario ya esté escribiendo en ese campo.
+      if (_textos[t]!.text.isEmpty && v.isNotEmpty) _textos[t]!.text = v;
+    }
   }
 
   Future<String?> _pickImage(String nombre) async {
@@ -88,6 +118,12 @@ class _PdfConfigScreenState extends State<PdfConfigScreen> {
       logoPath: _logoPath,
       firmaPath: _firmaPath,
     ));
+
+    // Estos SÍ suben: son de la empresa, no del dispositivo.
+    for (final t in TipoDocumento.values) {
+      await ref.read(textosPdfProvider.notifier).setTexto(t, _textos[t]!.text);
+    }
+
     if (mounted) {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Configuración de PDF guardada.')));
