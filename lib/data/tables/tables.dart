@@ -380,6 +380,66 @@ class ArchivosCotizacion extends Table with SyncCols {
 
 /// Nota de conciliación de caja, una por obra. Espeja `obra_caja_nota` de
 /// Supabase (migración 0023): texto libre de la contadora al pie del Excel
+
+/// NOTAS DE OBRA: la cuenta de un trato de palabra con un socio que NO está en
+/// el sistema (maestros, subcontratistas). Espeja `nota_obra` de Supabase
+/// (migración 0031).
+///
+/// Varias por obra, una por socio. No es una cotización —esas son el documento
+/// formal del cliente, con IVA y aprobación— ni un movimiento de caja, que es
+/// dinero que YA se movió: aquí hay proyecciones y acuerdos que todavía no.
+///
+/// `totalOverride` y `saldoOverride` en NULL significan "usa el calculado". Los
+/// números se los asigna la constructora con la que se trabaja y no siempre
+/// cuadran con la aritmética, así que la app sugiere y el dueño decide.
+@DataClassName('NotaObraRow')
+class NotaObra extends Table with SyncCols, Orderable {
+  TextColumn get id => text()();
+  TextColumn get obraId => text()();
+
+  /// Nombre libre: el socio normalmente no existe en el sistema.
+  TextColumn get destinatario => text().withDefault(const Constant(''))();
+
+  /// Puente opcional a `colaboradores` cuando sí está dado de alta.
+  TextColumn get colaboradorId => text().nullable()();
+
+  TextColumn get titulo => text().withDefault(const Constant(''))();
+  IntColumn get fecha => integer()();
+  TextColumn get estado => text().withDefault(const Constant('ABIERTA'))();
+  RealColumn get totalOverride => real().nullable()();
+  RealColumn get saldoOverride => real().nullable()();
+  TextColumn get notas => text().withDefault(const Constant(''))();
+
+  /// Párrafo final del PDF solo para esta nota (0032).
+  TextColumn get textoFinal => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Los renglones de una nota. Espeja `nota_obra_renglon` (0031).
+///
+/// `tipo` define el signo y es lo único que la suma necesita:
+///   CONCEPTO (+), DEDUCCION (−), PAGO (−), TEXTO (no suma, es un apunte).
+///
+/// `montoBase` + `porcentaje` documentan la cuenta que se enseña
+/// ("62,000 − 4%") y `monto` es el valor que REALMENTE entra en los totales.
+@DataClassName('NotaObraRenglonRow')
+class NotaObraRenglon extends Table with SyncCols, Orderable {
+  TextColumn get id => text()();
+  TextColumn get notaId => text()();
+  TextColumn get tipo => text().withDefault(const Constant('CONCEPTO'))();
+  TextColumn get etiqueta => text().withDefault(const Constant(''))();
+  RealColumn get monto => real().nullable()();
+  RealColumn get montoBase => real().nullable()();
+  RealColumn get porcentaje => real().nullable()();
+  TextColumn get texto => text().withDefault(const Constant(''))();
+  IntColumn get fecha => integer().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 /// ("DIFERENCIA A FAVOR $20,957 CON…").
 ///
 /// La PK es `obraId` (1-a-1 con la obra), no un id propio, igual que en el

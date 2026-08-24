@@ -32,6 +32,8 @@ part 'app_database.g.dart';
   ArchivosCotizacion,
   ObraPresupuesto,
   ObraCajaNota,
+  NotaObra,
+  NotaObraRenglon,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -42,7 +44,7 @@ class AppDatabase extends _$AppDatabase {
   static const _uuid = Uuid();
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -350,6 +352,20 @@ class AppDatabase extends _$AppDatabase {
           // ninguna cotización existente cambia de aspecto al actualizar.
           if (from < 11) {
             await m.addColumn(cotizaciones, cotizaciones.textoFinal);
+          }
+
+          // v11 → v12: notas de obra (tratos con socios, Supabase 0031). Dos
+          // tablas NUEVAS: no se toca ni una fila existente. `createTable` no
+          // instala el trigger `mark_pending`, y sin él las notas se editarían
+          // sin marcarse `pending` y jamás subirían al servidor.
+          if (from < 12) {
+            if (!await _tablaExiste('nota_obra')) {
+              await m.createTable(notaObra);
+            }
+            if (!await _tablaExiste('nota_obra_renglon')) {
+              await m.createTable(notaObraRenglon);
+            }
+            await _instalarTriggersSync();
           }
         },
       );

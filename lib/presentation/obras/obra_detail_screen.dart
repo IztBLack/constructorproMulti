@@ -30,6 +30,7 @@ import '../common/app_snackbar.dart';
 import '../common/confirm_dialog.dart';
 import '../common/money_text.dart';
 import '../common/section_header.dart';
+import '../notas/notas_obra_screen.dart';
 import '../pdf_pre_dialog.dart';
 import 'importar_movimientos_screen.dart';
 
@@ -81,6 +82,12 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                 Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => ProyeccionScreen(obraId: widget.obra.id)));
               }
+              if (v == 'notas') {
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => NotasObraScreen(
+                        obraId: widget.obra.id,
+                        obraNombre: widget.obra.nombre)));
+              }
             },
             itemBuilder: (ctx) => [
               const PopupMenuItem(
@@ -89,6 +96,16 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                   contentPadding: EdgeInsets.zero,
                   leading: Icon(Icons.upload_file),
                   title: Text('Importar movimientos'),
+                ),
+              ),
+              // Va en el menú y no en una quinta pestaña: la TabBar es fija y
+              // con cuatro títulos cortos ya reparte justo el ancho.
+              const PopupMenuItem(
+                value: 'notas',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.handshake_outlined),
+                  title: Text('Notas de trato'),
                 ),
               ),
               // Entra ya filtrada a esta obra. Solo para quien puede ver

@@ -16,6 +16,7 @@ import 'repositories.dart';
 import 'repositories_obra.dart';
 import 'repositories_cuadrilla.dart';
 import 'repositories_cotizacion.dart';
+import 'repositories_nota_obra.dart';
 
 /// Pestaña seleccionada del shell inferior (para accesos rápidos del dashboard).
 final homeTabProvider = StateProvider<int>((ref) => 0);
@@ -182,6 +183,10 @@ final obraPresupuestoRepositoryProvider = Provider<ObraPresupuestoRepository>(
 final obraCajaNotaRepositoryProvider = Provider<ObraCajaNotaRepository>(
     (ref) => ObraCajaNotaRepository(ref.watch(databaseProvider)));
 
+/// Notas de trato con socios (Supabase 0031).
+final notaObraRepositoryProvider = Provider<NotaObraRepository>(
+    (ref) => NotaObraRepository(ref.watch(databaseProvider)));
+
 // ---------------- Streams ----------------
 final obrasProvider = StreamProvider<List<Obra>>(
     (ref) => ref.watch(obraRepositoryProvider).watchAll());
@@ -229,6 +234,16 @@ final partidasPresupuestoPorObraProvider =
 final obraCajaNotaProvider =
     StreamProvider.family<ObraCajaNotaRow?, String>((ref, obraId) =>
         ref.watch(obraCajaNotaRepositoryProvider).watch(obraId));
+
+/// Las notas de trato de una obra, con sus renglones.
+final notasDeObraProvider =
+    StreamProvider.family<List<NotaConRenglones>, String>((ref, obraId) =>
+        ref.watch(notaObraRepositoryProvider).watchDeObra(obraId));
+
+/// Una nota concreta, para la pantalla del editor.
+final notaObraProvider =
+    StreamProvider.family<NotaConRenglones?, String>((ref, notaId) =>
+        ref.watch(notaObraRepositoryProvider).watchUna(notaId));
 
 typedef RangoObra = ({String obraId, int start, int end});
 

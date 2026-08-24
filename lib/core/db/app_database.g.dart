@@ -14932,6 +14932,1933 @@ class ObraCajaNotaCompanion extends UpdateCompanion<ObraCajaNotaRow> {
   }
 }
 
+class $NotaObraTable extends NotaObra
+    with TableInfo<$NotaObraTable, NotaObraRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NotaObraTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _empresaIdMeta = const VerificationMeta(
+    'empresaId',
+  );
+  @override
+  late final GeneratedColumn<String> empresaId = GeneratedColumn<String>(
+    'empresa_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _serverUpdatedAtMeta = const VerificationMeta(
+    'serverUpdatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> serverUpdatedAt = GeneratedColumn<int>(
+    'server_updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _ordenMeta = const VerificationMeta('orden');
+  @override
+  late final GeneratedColumn<int> orden = GeneratedColumn<int>(
+    'orden',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _obraIdMeta = const VerificationMeta('obraId');
+  @override
+  late final GeneratedColumn<String> obraId = GeneratedColumn<String>(
+    'obra_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _destinatarioMeta = const VerificationMeta(
+    'destinatario',
+  );
+  @override
+  late final GeneratedColumn<String> destinatario = GeneratedColumn<String>(
+    'destinatario',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _colaboradorIdMeta = const VerificationMeta(
+    'colaboradorId',
+  );
+  @override
+  late final GeneratedColumn<String> colaboradorId = GeneratedColumn<String>(
+    'colaborador_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _tituloMeta = const VerificationMeta('titulo');
+  @override
+  late final GeneratedColumn<String> titulo = GeneratedColumn<String>(
+    'titulo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _fechaMeta = const VerificationMeta('fecha');
+  @override
+  late final GeneratedColumn<int> fecha = GeneratedColumn<int>(
+    'fecha',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _estadoMeta = const VerificationMeta('estado');
+  @override
+  late final GeneratedColumn<String> estado = GeneratedColumn<String>(
+    'estado',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('ABIERTA'),
+  );
+  static const VerificationMeta _totalOverrideMeta = const VerificationMeta(
+    'totalOverride',
+  );
+  @override
+  late final GeneratedColumn<double> totalOverride = GeneratedColumn<double>(
+    'total_override',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _saldoOverrideMeta = const VerificationMeta(
+    'saldoOverride',
+  );
+  @override
+  late final GeneratedColumn<double> saldoOverride = GeneratedColumn<double>(
+    'saldo_override',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _notasMeta = const VerificationMeta('notas');
+  @override
+  late final GeneratedColumn<String> notas = GeneratedColumn<String>(
+    'notas',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _textoFinalMeta = const VerificationMeta(
+    'textoFinal',
+  );
+  @override
+  late final GeneratedColumn<String> textoFinal = GeneratedColumn<String>(
+    'texto_final',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    orden,
+    id,
+    obraId,
+    destinatario,
+    colaboradorId,
+    titulo,
+    fecha,
+    estado,
+    totalOverride,
+    saldoOverride,
+    notas,
+    textoFinal,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nota_obra';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NotaObraRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('empresa_id')) {
+      context.handle(
+        _empresaIdMeta,
+        empresaId.isAcceptableOrUnknown(data['empresa_id']!, _empresaIdMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('server_updated_at')) {
+      context.handle(
+        _serverUpdatedAtMeta,
+        serverUpdatedAt.isAcceptableOrUnknown(
+          data['server_updated_at']!,
+          _serverUpdatedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('orden')) {
+      context.handle(
+        _ordenMeta,
+        orden.isAcceptableOrUnknown(data['orden']!, _ordenMeta),
+      );
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('obra_id')) {
+      context.handle(
+        _obraIdMeta,
+        obraId.isAcceptableOrUnknown(data['obra_id']!, _obraIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_obraIdMeta);
+    }
+    if (data.containsKey('destinatario')) {
+      context.handle(
+        _destinatarioMeta,
+        destinatario.isAcceptableOrUnknown(
+          data['destinatario']!,
+          _destinatarioMeta,
+        ),
+      );
+    }
+    if (data.containsKey('colaborador_id')) {
+      context.handle(
+        _colaboradorIdMeta,
+        colaboradorId.isAcceptableOrUnknown(
+          data['colaborador_id']!,
+          _colaboradorIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('titulo')) {
+      context.handle(
+        _tituloMeta,
+        titulo.isAcceptableOrUnknown(data['titulo']!, _tituloMeta),
+      );
+    }
+    if (data.containsKey('fecha')) {
+      context.handle(
+        _fechaMeta,
+        fecha.isAcceptableOrUnknown(data['fecha']!, _fechaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaMeta);
+    }
+    if (data.containsKey('estado')) {
+      context.handle(
+        _estadoMeta,
+        estado.isAcceptableOrUnknown(data['estado']!, _estadoMeta),
+      );
+    }
+    if (data.containsKey('total_override')) {
+      context.handle(
+        _totalOverrideMeta,
+        totalOverride.isAcceptableOrUnknown(
+          data['total_override']!,
+          _totalOverrideMeta,
+        ),
+      );
+    }
+    if (data.containsKey('saldo_override')) {
+      context.handle(
+        _saldoOverrideMeta,
+        saldoOverride.isAcceptableOrUnknown(
+          data['saldo_override']!,
+          _saldoOverrideMeta,
+        ),
+      );
+    }
+    if (data.containsKey('notas')) {
+      context.handle(
+        _notasMeta,
+        notas.isAcceptableOrUnknown(data['notas']!, _notasMeta),
+      );
+    }
+    if (data.containsKey('texto_final')) {
+      context.handle(
+        _textoFinalMeta,
+        textoFinal.isAcceptableOrUnknown(data['texto_final']!, _textoFinalMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NotaObraRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NotaObraRow(
+      empresaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}empresa_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      serverUpdatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}server_updated_at'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      orden: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}orden'],
+      )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      obraId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}obra_id'],
+      )!,
+      destinatario: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}destinatario'],
+      )!,
+      colaboradorId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}colaborador_id'],
+      ),
+      titulo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}titulo'],
+      )!,
+      fecha: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}fecha'],
+      )!,
+      estado: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estado'],
+      )!,
+      totalOverride: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}total_override'],
+      ),
+      saldoOverride: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}saldo_override'],
+      ),
+      notas: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notas'],
+      )!,
+      textoFinal: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}texto_final'],
+      ),
+    );
+  }
+
+  @override
+  $NotaObraTable createAlias(String alias) {
+    return $NotaObraTable(attachedDatabase, alias);
+  }
+}
+
+class NotaObraRow extends DataClass implements Insertable<NotaObraRow> {
+  /// Llave multitenant + RLS. Vacío mientras no haya backend.
+  final String empresaId;
+
+  /// Alta (UTC ms). 0 en filas previas a la migración.
+  final int createdAt;
+
+  /// Última edición de cliente (UTC ms). Árbitro local de LWW + dirty flag.
+  final int updatedAt;
+
+  /// Lo pone Postgres; árbitro de LWW y cursor de pull. Null hasta sincronizar.
+  final int? serverUpdatedAt;
+
+  /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
+  final int? deletedAt;
+
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
+  final String syncStatus;
+  final int orden;
+  final String id;
+  final String obraId;
+
+  /// Nombre libre: el socio normalmente no existe en el sistema.
+  final String destinatario;
+
+  /// Puente opcional a `colaboradores` cuando sí está dado de alta.
+  final String? colaboradorId;
+  final String titulo;
+  final int fecha;
+  final String estado;
+  final double? totalOverride;
+  final double? saldoOverride;
+  final String notas;
+
+  /// Párrafo final del PDF solo para esta nota (0032).
+  final String? textoFinal;
+  const NotaObraRow({
+    required this.empresaId,
+    required this.createdAt,
+    required this.updatedAt,
+    this.serverUpdatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.orden,
+    required this.id,
+    required this.obraId,
+    required this.destinatario,
+    this.colaboradorId,
+    required this.titulo,
+    required this.fecha,
+    required this.estado,
+    this.totalOverride,
+    this.saldoOverride,
+    required this.notas,
+    this.textoFinal,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['empresa_id'] = Variable<String>(empresaId);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || serverUpdatedAt != null) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    map['orden'] = Variable<int>(orden);
+    map['id'] = Variable<String>(id);
+    map['obra_id'] = Variable<String>(obraId);
+    map['destinatario'] = Variable<String>(destinatario);
+    if (!nullToAbsent || colaboradorId != null) {
+      map['colaborador_id'] = Variable<String>(colaboradorId);
+    }
+    map['titulo'] = Variable<String>(titulo);
+    map['fecha'] = Variable<int>(fecha);
+    map['estado'] = Variable<String>(estado);
+    if (!nullToAbsent || totalOverride != null) {
+      map['total_override'] = Variable<double>(totalOverride);
+    }
+    if (!nullToAbsent || saldoOverride != null) {
+      map['saldo_override'] = Variable<double>(saldoOverride);
+    }
+    map['notas'] = Variable<String>(notas);
+    if (!nullToAbsent || textoFinal != null) {
+      map['texto_final'] = Variable<String>(textoFinal);
+    }
+    return map;
+  }
+
+  NotaObraCompanion toCompanion(bool nullToAbsent) {
+    return NotaObraCompanion(
+      empresaId: Value(empresaId),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      serverUpdatedAt: serverUpdatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverUpdatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      orden: Value(orden),
+      id: Value(id),
+      obraId: Value(obraId),
+      destinatario: Value(destinatario),
+      colaboradorId: colaboradorId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(colaboradorId),
+      titulo: Value(titulo),
+      fecha: Value(fecha),
+      estado: Value(estado),
+      totalOverride: totalOverride == null && nullToAbsent
+          ? const Value.absent()
+          : Value(totalOverride),
+      saldoOverride: saldoOverride == null && nullToAbsent
+          ? const Value.absent()
+          : Value(saldoOverride),
+      notas: Value(notas),
+      textoFinal: textoFinal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(textoFinal),
+    );
+  }
+
+  factory NotaObraRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NotaObraRow(
+      empresaId: serializer.fromJson<String>(json['empresaId']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      serverUpdatedAt: serializer.fromJson<int?>(json['serverUpdatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      orden: serializer.fromJson<int>(json['orden']),
+      id: serializer.fromJson<String>(json['id']),
+      obraId: serializer.fromJson<String>(json['obraId']),
+      destinatario: serializer.fromJson<String>(json['destinatario']),
+      colaboradorId: serializer.fromJson<String?>(json['colaboradorId']),
+      titulo: serializer.fromJson<String>(json['titulo']),
+      fecha: serializer.fromJson<int>(json['fecha']),
+      estado: serializer.fromJson<String>(json['estado']),
+      totalOverride: serializer.fromJson<double?>(json['totalOverride']),
+      saldoOverride: serializer.fromJson<double?>(json['saldoOverride']),
+      notas: serializer.fromJson<String>(json['notas']),
+      textoFinal: serializer.fromJson<String?>(json['textoFinal']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'empresaId': serializer.toJson<String>(empresaId),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'serverUpdatedAt': serializer.toJson<int?>(serverUpdatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'orden': serializer.toJson<int>(orden),
+      'id': serializer.toJson<String>(id),
+      'obraId': serializer.toJson<String>(obraId),
+      'destinatario': serializer.toJson<String>(destinatario),
+      'colaboradorId': serializer.toJson<String?>(colaboradorId),
+      'titulo': serializer.toJson<String>(titulo),
+      'fecha': serializer.toJson<int>(fecha),
+      'estado': serializer.toJson<String>(estado),
+      'totalOverride': serializer.toJson<double?>(totalOverride),
+      'saldoOverride': serializer.toJson<double?>(saldoOverride),
+      'notas': serializer.toJson<String>(notas),
+      'textoFinal': serializer.toJson<String?>(textoFinal),
+    };
+  }
+
+  NotaObraRow copyWith({
+    String? empresaId,
+    int? createdAt,
+    int? updatedAt,
+    Value<int?> serverUpdatedAt = const Value.absent(),
+    Value<int?> deletedAt = const Value.absent(),
+    String? syncStatus,
+    int? orden,
+    String? id,
+    String? obraId,
+    String? destinatario,
+    Value<String?> colaboradorId = const Value.absent(),
+    String? titulo,
+    int? fecha,
+    String? estado,
+    Value<double?> totalOverride = const Value.absent(),
+    Value<double?> saldoOverride = const Value.absent(),
+    String? notas,
+    Value<String?> textoFinal = const Value.absent(),
+  }) => NotaObraRow(
+    empresaId: empresaId ?? this.empresaId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    serverUpdatedAt: serverUpdatedAt.present
+        ? serverUpdatedAt.value
+        : this.serverUpdatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    orden: orden ?? this.orden,
+    id: id ?? this.id,
+    obraId: obraId ?? this.obraId,
+    destinatario: destinatario ?? this.destinatario,
+    colaboradorId: colaboradorId.present
+        ? colaboradorId.value
+        : this.colaboradorId,
+    titulo: titulo ?? this.titulo,
+    fecha: fecha ?? this.fecha,
+    estado: estado ?? this.estado,
+    totalOverride: totalOverride.present
+        ? totalOverride.value
+        : this.totalOverride,
+    saldoOverride: saldoOverride.present
+        ? saldoOverride.value
+        : this.saldoOverride,
+    notas: notas ?? this.notas,
+    textoFinal: textoFinal.present ? textoFinal.value : this.textoFinal,
+  );
+  NotaObraRow copyWithCompanion(NotaObraCompanion data) {
+    return NotaObraRow(
+      empresaId: data.empresaId.present ? data.empresaId.value : this.empresaId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      serverUpdatedAt: data.serverUpdatedAt.present
+          ? data.serverUpdatedAt.value
+          : this.serverUpdatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      orden: data.orden.present ? data.orden.value : this.orden,
+      id: data.id.present ? data.id.value : this.id,
+      obraId: data.obraId.present ? data.obraId.value : this.obraId,
+      destinatario: data.destinatario.present
+          ? data.destinatario.value
+          : this.destinatario,
+      colaboradorId: data.colaboradorId.present
+          ? data.colaboradorId.value
+          : this.colaboradorId,
+      titulo: data.titulo.present ? data.titulo.value : this.titulo,
+      fecha: data.fecha.present ? data.fecha.value : this.fecha,
+      estado: data.estado.present ? data.estado.value : this.estado,
+      totalOverride: data.totalOverride.present
+          ? data.totalOverride.value
+          : this.totalOverride,
+      saldoOverride: data.saldoOverride.present
+          ? data.saldoOverride.value
+          : this.saldoOverride,
+      notas: data.notas.present ? data.notas.value : this.notas,
+      textoFinal: data.textoFinal.present
+          ? data.textoFinal.value
+          : this.textoFinal,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotaObraRow(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
+          ..write('id: $id, ')
+          ..write('obraId: $obraId, ')
+          ..write('destinatario: $destinatario, ')
+          ..write('colaboradorId: $colaboradorId, ')
+          ..write('titulo: $titulo, ')
+          ..write('fecha: $fecha, ')
+          ..write('estado: $estado, ')
+          ..write('totalOverride: $totalOverride, ')
+          ..write('saldoOverride: $saldoOverride, ')
+          ..write('notas: $notas, ')
+          ..write('textoFinal: $textoFinal')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    orden,
+    id,
+    obraId,
+    destinatario,
+    colaboradorId,
+    titulo,
+    fecha,
+    estado,
+    totalOverride,
+    saldoOverride,
+    notas,
+    textoFinal,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NotaObraRow &&
+          other.empresaId == this.empresaId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.serverUpdatedAt == this.serverUpdatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.orden == this.orden &&
+          other.id == this.id &&
+          other.obraId == this.obraId &&
+          other.destinatario == this.destinatario &&
+          other.colaboradorId == this.colaboradorId &&
+          other.titulo == this.titulo &&
+          other.fecha == this.fecha &&
+          other.estado == this.estado &&
+          other.totalOverride == this.totalOverride &&
+          other.saldoOverride == this.saldoOverride &&
+          other.notas == this.notas &&
+          other.textoFinal == this.textoFinal);
+}
+
+class NotaObraCompanion extends UpdateCompanion<NotaObraRow> {
+  final Value<String> empresaId;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int?> serverUpdatedAt;
+  final Value<int?> deletedAt;
+  final Value<String> syncStatus;
+  final Value<int> orden;
+  final Value<String> id;
+  final Value<String> obraId;
+  final Value<String> destinatario;
+  final Value<String?> colaboradorId;
+  final Value<String> titulo;
+  final Value<int> fecha;
+  final Value<String> estado;
+  final Value<double?> totalOverride;
+  final Value<double?> saldoOverride;
+  final Value<String> notas;
+  final Value<String?> textoFinal;
+  final Value<int> rowid;
+  const NotaObraCompanion({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
+    this.id = const Value.absent(),
+    this.obraId = const Value.absent(),
+    this.destinatario = const Value.absent(),
+    this.colaboradorId = const Value.absent(),
+    this.titulo = const Value.absent(),
+    this.fecha = const Value.absent(),
+    this.estado = const Value.absent(),
+    this.totalOverride = const Value.absent(),
+    this.saldoOverride = const Value.absent(),
+    this.notas = const Value.absent(),
+    this.textoFinal = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NotaObraCompanion.insert({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
+    required String id,
+    required String obraId,
+    this.destinatario = const Value.absent(),
+    this.colaboradorId = const Value.absent(),
+    this.titulo = const Value.absent(),
+    required int fecha,
+    this.estado = const Value.absent(),
+    this.totalOverride = const Value.absent(),
+    this.saldoOverride = const Value.absent(),
+    this.notas = const Value.absent(),
+    this.textoFinal = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       obraId = Value(obraId),
+       fecha = Value(fecha);
+  static Insertable<NotaObraRow> custom({
+    Expression<String>? empresaId,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? serverUpdatedAt,
+    Expression<int>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<int>? orden,
+    Expression<String>? id,
+    Expression<String>? obraId,
+    Expression<String>? destinatario,
+    Expression<String>? colaboradorId,
+    Expression<String>? titulo,
+    Expression<int>? fecha,
+    Expression<String>? estado,
+    Expression<double>? totalOverride,
+    Expression<double>? saldoOverride,
+    Expression<String>? notas,
+    Expression<String>? textoFinal,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (empresaId != null) 'empresa_id': empresaId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (serverUpdatedAt != null) 'server_updated_at': serverUpdatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (orden != null) 'orden': orden,
+      if (id != null) 'id': id,
+      if (obraId != null) 'obra_id': obraId,
+      if (destinatario != null) 'destinatario': destinatario,
+      if (colaboradorId != null) 'colaborador_id': colaboradorId,
+      if (titulo != null) 'titulo': titulo,
+      if (fecha != null) 'fecha': fecha,
+      if (estado != null) 'estado': estado,
+      if (totalOverride != null) 'total_override': totalOverride,
+      if (saldoOverride != null) 'saldo_override': saldoOverride,
+      if (notas != null) 'notas': notas,
+      if (textoFinal != null) 'texto_final': textoFinal,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NotaObraCompanion copyWith({
+    Value<String>? empresaId,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int?>? serverUpdatedAt,
+    Value<int?>? deletedAt,
+    Value<String>? syncStatus,
+    Value<int>? orden,
+    Value<String>? id,
+    Value<String>? obraId,
+    Value<String>? destinatario,
+    Value<String?>? colaboradorId,
+    Value<String>? titulo,
+    Value<int>? fecha,
+    Value<String>? estado,
+    Value<double?>? totalOverride,
+    Value<double?>? saldoOverride,
+    Value<String>? notas,
+    Value<String?>? textoFinal,
+    Value<int>? rowid,
+  }) {
+    return NotaObraCompanion(
+      empresaId: empresaId ?? this.empresaId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      orden: orden ?? this.orden,
+      id: id ?? this.id,
+      obraId: obraId ?? this.obraId,
+      destinatario: destinatario ?? this.destinatario,
+      colaboradorId: colaboradorId ?? this.colaboradorId,
+      titulo: titulo ?? this.titulo,
+      fecha: fecha ?? this.fecha,
+      estado: estado ?? this.estado,
+      totalOverride: totalOverride ?? this.totalOverride,
+      saldoOverride: saldoOverride ?? this.saldoOverride,
+      notas: notas ?? this.notas,
+      textoFinal: textoFinal ?? this.textoFinal,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (empresaId.present) {
+      map['empresa_id'] = Variable<String>(empresaId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (serverUpdatedAt.present) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (orden.present) {
+      map['orden'] = Variable<int>(orden.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (obraId.present) {
+      map['obra_id'] = Variable<String>(obraId.value);
+    }
+    if (destinatario.present) {
+      map['destinatario'] = Variable<String>(destinatario.value);
+    }
+    if (colaboradorId.present) {
+      map['colaborador_id'] = Variable<String>(colaboradorId.value);
+    }
+    if (titulo.present) {
+      map['titulo'] = Variable<String>(titulo.value);
+    }
+    if (fecha.present) {
+      map['fecha'] = Variable<int>(fecha.value);
+    }
+    if (estado.present) {
+      map['estado'] = Variable<String>(estado.value);
+    }
+    if (totalOverride.present) {
+      map['total_override'] = Variable<double>(totalOverride.value);
+    }
+    if (saldoOverride.present) {
+      map['saldo_override'] = Variable<double>(saldoOverride.value);
+    }
+    if (notas.present) {
+      map['notas'] = Variable<String>(notas.value);
+    }
+    if (textoFinal.present) {
+      map['texto_final'] = Variable<String>(textoFinal.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotaObraCompanion(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
+          ..write('id: $id, ')
+          ..write('obraId: $obraId, ')
+          ..write('destinatario: $destinatario, ')
+          ..write('colaboradorId: $colaboradorId, ')
+          ..write('titulo: $titulo, ')
+          ..write('fecha: $fecha, ')
+          ..write('estado: $estado, ')
+          ..write('totalOverride: $totalOverride, ')
+          ..write('saldoOverride: $saldoOverride, ')
+          ..write('notas: $notas, ')
+          ..write('textoFinal: $textoFinal, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NotaObraRenglonTable extends NotaObraRenglon
+    with TableInfo<$NotaObraRenglonTable, NotaObraRenglonRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NotaObraRenglonTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _empresaIdMeta = const VerificationMeta(
+    'empresaId',
+  );
+  @override
+  late final GeneratedColumn<String> empresaId = GeneratedColumn<String>(
+    'empresa_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _serverUpdatedAtMeta = const VerificationMeta(
+    'serverUpdatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> serverUpdatedAt = GeneratedColumn<int>(
+    'server_updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _ordenMeta = const VerificationMeta('orden');
+  @override
+  late final GeneratedColumn<int> orden = GeneratedColumn<int>(
+    'orden',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _notaIdMeta = const VerificationMeta('notaId');
+  @override
+  late final GeneratedColumn<String> notaId = GeneratedColumn<String>(
+    'nota_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoMeta = const VerificationMeta('tipo');
+  @override
+  late final GeneratedColumn<String> tipo = GeneratedColumn<String>(
+    'tipo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('CONCEPTO'),
+  );
+  static const VerificationMeta _etiquetaMeta = const VerificationMeta(
+    'etiqueta',
+  );
+  @override
+  late final GeneratedColumn<String> etiqueta = GeneratedColumn<String>(
+    'etiqueta',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _montoMeta = const VerificationMeta('monto');
+  @override
+  late final GeneratedColumn<double> monto = GeneratedColumn<double>(
+    'monto',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _montoBaseMeta = const VerificationMeta(
+    'montoBase',
+  );
+  @override
+  late final GeneratedColumn<double> montoBase = GeneratedColumn<double>(
+    'monto_base',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _porcentajeMeta = const VerificationMeta(
+    'porcentaje',
+  );
+  @override
+  late final GeneratedColumn<double> porcentaje = GeneratedColumn<double>(
+    'porcentaje',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _textoMeta = const VerificationMeta('texto');
+  @override
+  late final GeneratedColumn<String> texto = GeneratedColumn<String>(
+    'texto',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _fechaMeta = const VerificationMeta('fecha');
+  @override
+  late final GeneratedColumn<int> fecha = GeneratedColumn<int>(
+    'fecha',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    orden,
+    id,
+    notaId,
+    tipo,
+    etiqueta,
+    monto,
+    montoBase,
+    porcentaje,
+    texto,
+    fecha,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nota_obra_renglon';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NotaObraRenglonRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('empresa_id')) {
+      context.handle(
+        _empresaIdMeta,
+        empresaId.isAcceptableOrUnknown(data['empresa_id']!, _empresaIdMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('server_updated_at')) {
+      context.handle(
+        _serverUpdatedAtMeta,
+        serverUpdatedAt.isAcceptableOrUnknown(
+          data['server_updated_at']!,
+          _serverUpdatedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('orden')) {
+      context.handle(
+        _ordenMeta,
+        orden.isAcceptableOrUnknown(data['orden']!, _ordenMeta),
+      );
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('nota_id')) {
+      context.handle(
+        _notaIdMeta,
+        notaId.isAcceptableOrUnknown(data['nota_id']!, _notaIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_notaIdMeta);
+    }
+    if (data.containsKey('tipo')) {
+      context.handle(
+        _tipoMeta,
+        tipo.isAcceptableOrUnknown(data['tipo']!, _tipoMeta),
+      );
+    }
+    if (data.containsKey('etiqueta')) {
+      context.handle(
+        _etiquetaMeta,
+        etiqueta.isAcceptableOrUnknown(data['etiqueta']!, _etiquetaMeta),
+      );
+    }
+    if (data.containsKey('monto')) {
+      context.handle(
+        _montoMeta,
+        monto.isAcceptableOrUnknown(data['monto']!, _montoMeta),
+      );
+    }
+    if (data.containsKey('monto_base')) {
+      context.handle(
+        _montoBaseMeta,
+        montoBase.isAcceptableOrUnknown(data['monto_base']!, _montoBaseMeta),
+      );
+    }
+    if (data.containsKey('porcentaje')) {
+      context.handle(
+        _porcentajeMeta,
+        porcentaje.isAcceptableOrUnknown(data['porcentaje']!, _porcentajeMeta),
+      );
+    }
+    if (data.containsKey('texto')) {
+      context.handle(
+        _textoMeta,
+        texto.isAcceptableOrUnknown(data['texto']!, _textoMeta),
+      );
+    }
+    if (data.containsKey('fecha')) {
+      context.handle(
+        _fechaMeta,
+        fecha.isAcceptableOrUnknown(data['fecha']!, _fechaMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NotaObraRenglonRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NotaObraRenglonRow(
+      empresaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}empresa_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      serverUpdatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}server_updated_at'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      orden: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}orden'],
+      )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      notaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}nota_id'],
+      )!,
+      tipo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tipo'],
+      )!,
+      etiqueta: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}etiqueta'],
+      )!,
+      monto: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}monto'],
+      ),
+      montoBase: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}monto_base'],
+      ),
+      porcentaje: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}porcentaje'],
+      ),
+      texto: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}texto'],
+      )!,
+      fecha: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}fecha'],
+      ),
+    );
+  }
+
+  @override
+  $NotaObraRenglonTable createAlias(String alias) {
+    return $NotaObraRenglonTable(attachedDatabase, alias);
+  }
+}
+
+class NotaObraRenglonRow extends DataClass
+    implements Insertable<NotaObraRenglonRow> {
+  /// Llave multitenant + RLS. Vacío mientras no haya backend.
+  final String empresaId;
+
+  /// Alta (UTC ms). 0 en filas previas a la migración.
+  final int createdAt;
+
+  /// Última edición de cliente (UTC ms). Árbitro local de LWW + dirty flag.
+  final int updatedAt;
+
+  /// Lo pone Postgres; árbitro de LWW y cursor de pull. Null hasta sincronizar.
+  final int? serverUpdatedAt;
+
+  /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
+  final int? deletedAt;
+
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
+  final String syncStatus;
+  final int orden;
+  final String id;
+  final String notaId;
+  final String tipo;
+  final String etiqueta;
+  final double? monto;
+  final double? montoBase;
+  final double? porcentaje;
+  final String texto;
+  final int? fecha;
+  const NotaObraRenglonRow({
+    required this.empresaId,
+    required this.createdAt,
+    required this.updatedAt,
+    this.serverUpdatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.orden,
+    required this.id,
+    required this.notaId,
+    required this.tipo,
+    required this.etiqueta,
+    this.monto,
+    this.montoBase,
+    this.porcentaje,
+    required this.texto,
+    this.fecha,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['empresa_id'] = Variable<String>(empresaId);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || serverUpdatedAt != null) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    map['orden'] = Variable<int>(orden);
+    map['id'] = Variable<String>(id);
+    map['nota_id'] = Variable<String>(notaId);
+    map['tipo'] = Variable<String>(tipo);
+    map['etiqueta'] = Variable<String>(etiqueta);
+    if (!nullToAbsent || monto != null) {
+      map['monto'] = Variable<double>(monto);
+    }
+    if (!nullToAbsent || montoBase != null) {
+      map['monto_base'] = Variable<double>(montoBase);
+    }
+    if (!nullToAbsent || porcentaje != null) {
+      map['porcentaje'] = Variable<double>(porcentaje);
+    }
+    map['texto'] = Variable<String>(texto);
+    if (!nullToAbsent || fecha != null) {
+      map['fecha'] = Variable<int>(fecha);
+    }
+    return map;
+  }
+
+  NotaObraRenglonCompanion toCompanion(bool nullToAbsent) {
+    return NotaObraRenglonCompanion(
+      empresaId: Value(empresaId),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      serverUpdatedAt: serverUpdatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverUpdatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      orden: Value(orden),
+      id: Value(id),
+      notaId: Value(notaId),
+      tipo: Value(tipo),
+      etiqueta: Value(etiqueta),
+      monto: monto == null && nullToAbsent
+          ? const Value.absent()
+          : Value(monto),
+      montoBase: montoBase == null && nullToAbsent
+          ? const Value.absent()
+          : Value(montoBase),
+      porcentaje: porcentaje == null && nullToAbsent
+          ? const Value.absent()
+          : Value(porcentaje),
+      texto: Value(texto),
+      fecha: fecha == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fecha),
+    );
+  }
+
+  factory NotaObraRenglonRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NotaObraRenglonRow(
+      empresaId: serializer.fromJson<String>(json['empresaId']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      serverUpdatedAt: serializer.fromJson<int?>(json['serverUpdatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      orden: serializer.fromJson<int>(json['orden']),
+      id: serializer.fromJson<String>(json['id']),
+      notaId: serializer.fromJson<String>(json['notaId']),
+      tipo: serializer.fromJson<String>(json['tipo']),
+      etiqueta: serializer.fromJson<String>(json['etiqueta']),
+      monto: serializer.fromJson<double?>(json['monto']),
+      montoBase: serializer.fromJson<double?>(json['montoBase']),
+      porcentaje: serializer.fromJson<double?>(json['porcentaje']),
+      texto: serializer.fromJson<String>(json['texto']),
+      fecha: serializer.fromJson<int?>(json['fecha']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'empresaId': serializer.toJson<String>(empresaId),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'serverUpdatedAt': serializer.toJson<int?>(serverUpdatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'orden': serializer.toJson<int>(orden),
+      'id': serializer.toJson<String>(id),
+      'notaId': serializer.toJson<String>(notaId),
+      'tipo': serializer.toJson<String>(tipo),
+      'etiqueta': serializer.toJson<String>(etiqueta),
+      'monto': serializer.toJson<double?>(monto),
+      'montoBase': serializer.toJson<double?>(montoBase),
+      'porcentaje': serializer.toJson<double?>(porcentaje),
+      'texto': serializer.toJson<String>(texto),
+      'fecha': serializer.toJson<int?>(fecha),
+    };
+  }
+
+  NotaObraRenglonRow copyWith({
+    String? empresaId,
+    int? createdAt,
+    int? updatedAt,
+    Value<int?> serverUpdatedAt = const Value.absent(),
+    Value<int?> deletedAt = const Value.absent(),
+    String? syncStatus,
+    int? orden,
+    String? id,
+    String? notaId,
+    String? tipo,
+    String? etiqueta,
+    Value<double?> monto = const Value.absent(),
+    Value<double?> montoBase = const Value.absent(),
+    Value<double?> porcentaje = const Value.absent(),
+    String? texto,
+    Value<int?> fecha = const Value.absent(),
+  }) => NotaObraRenglonRow(
+    empresaId: empresaId ?? this.empresaId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    serverUpdatedAt: serverUpdatedAt.present
+        ? serverUpdatedAt.value
+        : this.serverUpdatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    orden: orden ?? this.orden,
+    id: id ?? this.id,
+    notaId: notaId ?? this.notaId,
+    tipo: tipo ?? this.tipo,
+    etiqueta: etiqueta ?? this.etiqueta,
+    monto: monto.present ? monto.value : this.monto,
+    montoBase: montoBase.present ? montoBase.value : this.montoBase,
+    porcentaje: porcentaje.present ? porcentaje.value : this.porcentaje,
+    texto: texto ?? this.texto,
+    fecha: fecha.present ? fecha.value : this.fecha,
+  );
+  NotaObraRenglonRow copyWithCompanion(NotaObraRenglonCompanion data) {
+    return NotaObraRenglonRow(
+      empresaId: data.empresaId.present ? data.empresaId.value : this.empresaId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      serverUpdatedAt: data.serverUpdatedAt.present
+          ? data.serverUpdatedAt.value
+          : this.serverUpdatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      orden: data.orden.present ? data.orden.value : this.orden,
+      id: data.id.present ? data.id.value : this.id,
+      notaId: data.notaId.present ? data.notaId.value : this.notaId,
+      tipo: data.tipo.present ? data.tipo.value : this.tipo,
+      etiqueta: data.etiqueta.present ? data.etiqueta.value : this.etiqueta,
+      monto: data.monto.present ? data.monto.value : this.monto,
+      montoBase: data.montoBase.present ? data.montoBase.value : this.montoBase,
+      porcentaje: data.porcentaje.present
+          ? data.porcentaje.value
+          : this.porcentaje,
+      texto: data.texto.present ? data.texto.value : this.texto,
+      fecha: data.fecha.present ? data.fecha.value : this.fecha,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotaObraRenglonRow(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
+          ..write('id: $id, ')
+          ..write('notaId: $notaId, ')
+          ..write('tipo: $tipo, ')
+          ..write('etiqueta: $etiqueta, ')
+          ..write('monto: $monto, ')
+          ..write('montoBase: $montoBase, ')
+          ..write('porcentaje: $porcentaje, ')
+          ..write('texto: $texto, ')
+          ..write('fecha: $fecha')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    orden,
+    id,
+    notaId,
+    tipo,
+    etiqueta,
+    monto,
+    montoBase,
+    porcentaje,
+    texto,
+    fecha,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NotaObraRenglonRow &&
+          other.empresaId == this.empresaId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.serverUpdatedAt == this.serverUpdatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.orden == this.orden &&
+          other.id == this.id &&
+          other.notaId == this.notaId &&
+          other.tipo == this.tipo &&
+          other.etiqueta == this.etiqueta &&
+          other.monto == this.monto &&
+          other.montoBase == this.montoBase &&
+          other.porcentaje == this.porcentaje &&
+          other.texto == this.texto &&
+          other.fecha == this.fecha);
+}
+
+class NotaObraRenglonCompanion extends UpdateCompanion<NotaObraRenglonRow> {
+  final Value<String> empresaId;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int?> serverUpdatedAt;
+  final Value<int?> deletedAt;
+  final Value<String> syncStatus;
+  final Value<int> orden;
+  final Value<String> id;
+  final Value<String> notaId;
+  final Value<String> tipo;
+  final Value<String> etiqueta;
+  final Value<double?> monto;
+  final Value<double?> montoBase;
+  final Value<double?> porcentaje;
+  final Value<String> texto;
+  final Value<int?> fecha;
+  final Value<int> rowid;
+  const NotaObraRenglonCompanion({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
+    this.id = const Value.absent(),
+    this.notaId = const Value.absent(),
+    this.tipo = const Value.absent(),
+    this.etiqueta = const Value.absent(),
+    this.monto = const Value.absent(),
+    this.montoBase = const Value.absent(),
+    this.porcentaje = const Value.absent(),
+    this.texto = const Value.absent(),
+    this.fecha = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NotaObraRenglonCompanion.insert({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
+    required String id,
+    required String notaId,
+    this.tipo = const Value.absent(),
+    this.etiqueta = const Value.absent(),
+    this.monto = const Value.absent(),
+    this.montoBase = const Value.absent(),
+    this.porcentaje = const Value.absent(),
+    this.texto = const Value.absent(),
+    this.fecha = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       notaId = Value(notaId);
+  static Insertable<NotaObraRenglonRow> custom({
+    Expression<String>? empresaId,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? serverUpdatedAt,
+    Expression<int>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<int>? orden,
+    Expression<String>? id,
+    Expression<String>? notaId,
+    Expression<String>? tipo,
+    Expression<String>? etiqueta,
+    Expression<double>? monto,
+    Expression<double>? montoBase,
+    Expression<double>? porcentaje,
+    Expression<String>? texto,
+    Expression<int>? fecha,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (empresaId != null) 'empresa_id': empresaId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (serverUpdatedAt != null) 'server_updated_at': serverUpdatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (orden != null) 'orden': orden,
+      if (id != null) 'id': id,
+      if (notaId != null) 'nota_id': notaId,
+      if (tipo != null) 'tipo': tipo,
+      if (etiqueta != null) 'etiqueta': etiqueta,
+      if (monto != null) 'monto': monto,
+      if (montoBase != null) 'monto_base': montoBase,
+      if (porcentaje != null) 'porcentaje': porcentaje,
+      if (texto != null) 'texto': texto,
+      if (fecha != null) 'fecha': fecha,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NotaObraRenglonCompanion copyWith({
+    Value<String>? empresaId,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int?>? serverUpdatedAt,
+    Value<int?>? deletedAt,
+    Value<String>? syncStatus,
+    Value<int>? orden,
+    Value<String>? id,
+    Value<String>? notaId,
+    Value<String>? tipo,
+    Value<String>? etiqueta,
+    Value<double?>? monto,
+    Value<double?>? montoBase,
+    Value<double?>? porcentaje,
+    Value<String>? texto,
+    Value<int?>? fecha,
+    Value<int>? rowid,
+  }) {
+    return NotaObraRenglonCompanion(
+      empresaId: empresaId ?? this.empresaId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      orden: orden ?? this.orden,
+      id: id ?? this.id,
+      notaId: notaId ?? this.notaId,
+      tipo: tipo ?? this.tipo,
+      etiqueta: etiqueta ?? this.etiqueta,
+      monto: monto ?? this.monto,
+      montoBase: montoBase ?? this.montoBase,
+      porcentaje: porcentaje ?? this.porcentaje,
+      texto: texto ?? this.texto,
+      fecha: fecha ?? this.fecha,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (empresaId.present) {
+      map['empresa_id'] = Variable<String>(empresaId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (serverUpdatedAt.present) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (orden.present) {
+      map['orden'] = Variable<int>(orden.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (notaId.present) {
+      map['nota_id'] = Variable<String>(notaId.value);
+    }
+    if (tipo.present) {
+      map['tipo'] = Variable<String>(tipo.value);
+    }
+    if (etiqueta.present) {
+      map['etiqueta'] = Variable<String>(etiqueta.value);
+    }
+    if (monto.present) {
+      map['monto'] = Variable<double>(monto.value);
+    }
+    if (montoBase.present) {
+      map['monto_base'] = Variable<double>(montoBase.value);
+    }
+    if (porcentaje.present) {
+      map['porcentaje'] = Variable<double>(porcentaje.value);
+    }
+    if (texto.present) {
+      map['texto'] = Variable<String>(texto.value);
+    }
+    if (fecha.present) {
+      map['fecha'] = Variable<int>(fecha.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotaObraRenglonCompanion(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
+          ..write('id: $id, ')
+          ..write('notaId: $notaId, ')
+          ..write('tipo: $tipo, ')
+          ..write('etiqueta: $etiqueta, ')
+          ..write('monto: $monto, ')
+          ..write('montoBase: $montoBase, ')
+          ..write('porcentaje: $porcentaje, ')
+          ..write('texto: $texto, ')
+          ..write('fecha: $fecha, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -14964,6 +16891,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this,
   );
   late final $ObraCajaNotaTable obraCajaNota = $ObraCajaNotaTable(this);
+  late final $NotaObraTable notaObra = $NotaObraTable(this);
+  late final $NotaObraRenglonTable notaObraRenglon = $NotaObraRenglonTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -14988,6 +16919,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     archivosCotizacion,
     obraPresupuesto,
     obraCajaNota,
+    notaObra,
+    notaObraRenglon,
   ];
 }
 
@@ -21936,6 +23869,889 @@ typedef $$ObraCajaNotaTableProcessedTableManager =
       ObraCajaNotaRow,
       PrefetchHooks Function()
     >;
+typedef $$NotaObraTableCreateCompanionBuilder =
+    NotaObraCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      Value<int> orden,
+      required String id,
+      required String obraId,
+      Value<String> destinatario,
+      Value<String?> colaboradorId,
+      Value<String> titulo,
+      required int fecha,
+      Value<String> estado,
+      Value<double?> totalOverride,
+      Value<double?> saldoOverride,
+      Value<String> notas,
+      Value<String?> textoFinal,
+      Value<int> rowid,
+    });
+typedef $$NotaObraTableUpdateCompanionBuilder =
+    NotaObraCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      Value<int> orden,
+      Value<String> id,
+      Value<String> obraId,
+      Value<String> destinatario,
+      Value<String?> colaboradorId,
+      Value<String> titulo,
+      Value<int> fecha,
+      Value<String> estado,
+      Value<double?> totalOverride,
+      Value<double?> saldoOverride,
+      Value<String> notas,
+      Value<String?> textoFinal,
+      Value<int> rowid,
+    });
+
+class $$NotaObraTableFilterComposer
+    extends Composer<_$AppDatabase, $NotaObraTable> {
+  $$NotaObraTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get obraId => $composableBuilder(
+    column: $table.obraId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get destinatario => $composableBuilder(
+    column: $table.destinatario,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get colaboradorId => $composableBuilder(
+    column: $table.colaboradorId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get titulo => $composableBuilder(
+    column: $table.titulo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get fecha => $composableBuilder(
+    column: $table.fecha,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estado => $composableBuilder(
+    column: $table.estado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get totalOverride => $composableBuilder(
+    column: $table.totalOverride,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get saldoOverride => $composableBuilder(
+    column: $table.saldoOverride,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notas => $composableBuilder(
+    column: $table.notas,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get textoFinal => $composableBuilder(
+    column: $table.textoFinal,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$NotaObraTableOrderingComposer
+    extends Composer<_$AppDatabase, $NotaObraTable> {
+  $$NotaObraTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get obraId => $composableBuilder(
+    column: $table.obraId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get destinatario => $composableBuilder(
+    column: $table.destinatario,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get colaboradorId => $composableBuilder(
+    column: $table.colaboradorId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get titulo => $composableBuilder(
+    column: $table.titulo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get fecha => $composableBuilder(
+    column: $table.fecha,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estado => $composableBuilder(
+    column: $table.estado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get totalOverride => $composableBuilder(
+    column: $table.totalOverride,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get saldoOverride => $composableBuilder(
+    column: $table.saldoOverride,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notas => $composableBuilder(
+    column: $table.notas,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get textoFinal => $composableBuilder(
+    column: $table.textoFinal,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$NotaObraTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NotaObraTable> {
+  $$NotaObraTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get empresaId =>
+      $composableBuilder(column: $table.empresaId, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get orden =>
+      $composableBuilder(column: $table.orden, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get obraId =>
+      $composableBuilder(column: $table.obraId, builder: (column) => column);
+
+  GeneratedColumn<String> get destinatario => $composableBuilder(
+    column: $table.destinatario,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get colaboradorId => $composableBuilder(
+    column: $table.colaboradorId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get titulo =>
+      $composableBuilder(column: $table.titulo, builder: (column) => column);
+
+  GeneratedColumn<int> get fecha =>
+      $composableBuilder(column: $table.fecha, builder: (column) => column);
+
+  GeneratedColumn<String> get estado =>
+      $composableBuilder(column: $table.estado, builder: (column) => column);
+
+  GeneratedColumn<double> get totalOverride => $composableBuilder(
+    column: $table.totalOverride,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get saldoOverride => $composableBuilder(
+    column: $table.saldoOverride,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get notas =>
+      $composableBuilder(column: $table.notas, builder: (column) => column);
+
+  GeneratedColumn<String> get textoFinal => $composableBuilder(
+    column: $table.textoFinal,
+    builder: (column) => column,
+  );
+}
+
+class $$NotaObraTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NotaObraTable,
+          NotaObraRow,
+          $$NotaObraTableFilterComposer,
+          $$NotaObraTableOrderingComposer,
+          $$NotaObraTableAnnotationComposer,
+          $$NotaObraTableCreateCompanionBuilder,
+          $$NotaObraTableUpdateCompanionBuilder,
+          (
+            NotaObraRow,
+            BaseReferences<_$AppDatabase, $NotaObraTable, NotaObraRow>,
+          ),
+          NotaObraRow,
+          PrefetchHooks Function()
+        > {
+  $$NotaObraTableTableManager(_$AppDatabase db, $NotaObraTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$NotaObraTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$NotaObraTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$NotaObraTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String> obraId = const Value.absent(),
+                Value<String> destinatario = const Value.absent(),
+                Value<String?> colaboradorId = const Value.absent(),
+                Value<String> titulo = const Value.absent(),
+                Value<int> fecha = const Value.absent(),
+                Value<String> estado = const Value.absent(),
+                Value<double?> totalOverride = const Value.absent(),
+                Value<double?> saldoOverride = const Value.absent(),
+                Value<String> notas = const Value.absent(),
+                Value<String?> textoFinal = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NotaObraCompanion(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                orden: orden,
+                id: id,
+                obraId: obraId,
+                destinatario: destinatario,
+                colaboradorId: colaboradorId,
+                titulo: titulo,
+                fecha: fecha,
+                estado: estado,
+                totalOverride: totalOverride,
+                saldoOverride: saldoOverride,
+                notas: notas,
+                textoFinal: textoFinal,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
+                required String id,
+                required String obraId,
+                Value<String> destinatario = const Value.absent(),
+                Value<String?> colaboradorId = const Value.absent(),
+                Value<String> titulo = const Value.absent(),
+                required int fecha,
+                Value<String> estado = const Value.absent(),
+                Value<double?> totalOverride = const Value.absent(),
+                Value<double?> saldoOverride = const Value.absent(),
+                Value<String> notas = const Value.absent(),
+                Value<String?> textoFinal = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NotaObraCompanion.insert(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                orden: orden,
+                id: id,
+                obraId: obraId,
+                destinatario: destinatario,
+                colaboradorId: colaboradorId,
+                titulo: titulo,
+                fecha: fecha,
+                estado: estado,
+                totalOverride: totalOverride,
+                saldoOverride: saldoOverride,
+                notas: notas,
+                textoFinal: textoFinal,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$NotaObraTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $NotaObraTable,
+      NotaObraRow,
+      $$NotaObraTableFilterComposer,
+      $$NotaObraTableOrderingComposer,
+      $$NotaObraTableAnnotationComposer,
+      $$NotaObraTableCreateCompanionBuilder,
+      $$NotaObraTableUpdateCompanionBuilder,
+      (NotaObraRow, BaseReferences<_$AppDatabase, $NotaObraTable, NotaObraRow>),
+      NotaObraRow,
+      PrefetchHooks Function()
+    >;
+typedef $$NotaObraRenglonTableCreateCompanionBuilder =
+    NotaObraRenglonCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      Value<int> orden,
+      required String id,
+      required String notaId,
+      Value<String> tipo,
+      Value<String> etiqueta,
+      Value<double?> monto,
+      Value<double?> montoBase,
+      Value<double?> porcentaje,
+      Value<String> texto,
+      Value<int?> fecha,
+      Value<int> rowid,
+    });
+typedef $$NotaObraRenglonTableUpdateCompanionBuilder =
+    NotaObraRenglonCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      Value<int> orden,
+      Value<String> id,
+      Value<String> notaId,
+      Value<String> tipo,
+      Value<String> etiqueta,
+      Value<double?> monto,
+      Value<double?> montoBase,
+      Value<double?> porcentaje,
+      Value<String> texto,
+      Value<int?> fecha,
+      Value<int> rowid,
+    });
+
+class $$NotaObraRenglonTableFilterComposer
+    extends Composer<_$AppDatabase, $NotaObraRenglonTable> {
+  $$NotaObraRenglonTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notaId => $composableBuilder(
+    column: $table.notaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get etiqueta => $composableBuilder(
+    column: $table.etiqueta,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get monto => $composableBuilder(
+    column: $table.monto,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get montoBase => $composableBuilder(
+    column: $table.montoBase,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get porcentaje => $composableBuilder(
+    column: $table.porcentaje,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get texto => $composableBuilder(
+    column: $table.texto,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get fecha => $composableBuilder(
+    column: $table.fecha,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$NotaObraRenglonTableOrderingComposer
+    extends Composer<_$AppDatabase, $NotaObraRenglonTable> {
+  $$NotaObraRenglonTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notaId => $composableBuilder(
+    column: $table.notaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get etiqueta => $composableBuilder(
+    column: $table.etiqueta,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get monto => $composableBuilder(
+    column: $table.monto,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get montoBase => $composableBuilder(
+    column: $table.montoBase,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get porcentaje => $composableBuilder(
+    column: $table.porcentaje,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get texto => $composableBuilder(
+    column: $table.texto,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get fecha => $composableBuilder(
+    column: $table.fecha,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$NotaObraRenglonTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NotaObraRenglonTable> {
+  $$NotaObraRenglonTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get empresaId =>
+      $composableBuilder(column: $table.empresaId, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get orden =>
+      $composableBuilder(column: $table.orden, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get notaId =>
+      $composableBuilder(column: $table.notaId, builder: (column) => column);
+
+  GeneratedColumn<String> get tipo =>
+      $composableBuilder(column: $table.tipo, builder: (column) => column);
+
+  GeneratedColumn<String> get etiqueta =>
+      $composableBuilder(column: $table.etiqueta, builder: (column) => column);
+
+  GeneratedColumn<double> get monto =>
+      $composableBuilder(column: $table.monto, builder: (column) => column);
+
+  GeneratedColumn<double> get montoBase =>
+      $composableBuilder(column: $table.montoBase, builder: (column) => column);
+
+  GeneratedColumn<double> get porcentaje => $composableBuilder(
+    column: $table.porcentaje,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get texto =>
+      $composableBuilder(column: $table.texto, builder: (column) => column);
+
+  GeneratedColumn<int> get fecha =>
+      $composableBuilder(column: $table.fecha, builder: (column) => column);
+}
+
+class $$NotaObraRenglonTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NotaObraRenglonTable,
+          NotaObraRenglonRow,
+          $$NotaObraRenglonTableFilterComposer,
+          $$NotaObraRenglonTableOrderingComposer,
+          $$NotaObraRenglonTableAnnotationComposer,
+          $$NotaObraRenglonTableCreateCompanionBuilder,
+          $$NotaObraRenglonTableUpdateCompanionBuilder,
+          (
+            NotaObraRenglonRow,
+            BaseReferences<
+              _$AppDatabase,
+              $NotaObraRenglonTable,
+              NotaObraRenglonRow
+            >,
+          ),
+          NotaObraRenglonRow,
+          PrefetchHooks Function()
+        > {
+  $$NotaObraRenglonTableTableManager(
+    _$AppDatabase db,
+    $NotaObraRenglonTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$NotaObraRenglonTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$NotaObraRenglonTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$NotaObraRenglonTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String> notaId = const Value.absent(),
+                Value<String> tipo = const Value.absent(),
+                Value<String> etiqueta = const Value.absent(),
+                Value<double?> monto = const Value.absent(),
+                Value<double?> montoBase = const Value.absent(),
+                Value<double?> porcentaje = const Value.absent(),
+                Value<String> texto = const Value.absent(),
+                Value<int?> fecha = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NotaObraRenglonCompanion(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                orden: orden,
+                id: id,
+                notaId: notaId,
+                tipo: tipo,
+                etiqueta: etiqueta,
+                monto: monto,
+                montoBase: montoBase,
+                porcentaje: porcentaje,
+                texto: texto,
+                fecha: fecha,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
+                required String id,
+                required String notaId,
+                Value<String> tipo = const Value.absent(),
+                Value<String> etiqueta = const Value.absent(),
+                Value<double?> monto = const Value.absent(),
+                Value<double?> montoBase = const Value.absent(),
+                Value<double?> porcentaje = const Value.absent(),
+                Value<String> texto = const Value.absent(),
+                Value<int?> fecha = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NotaObraRenglonCompanion.insert(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                orden: orden,
+                id: id,
+                notaId: notaId,
+                tipo: tipo,
+                etiqueta: etiqueta,
+                monto: monto,
+                montoBase: montoBase,
+                porcentaje: porcentaje,
+                texto: texto,
+                fecha: fecha,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$NotaObraRenglonTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $NotaObraRenglonTable,
+      NotaObraRenglonRow,
+      $$NotaObraRenglonTableFilterComposer,
+      $$NotaObraRenglonTableOrderingComposer,
+      $$NotaObraRenglonTableAnnotationComposer,
+      $$NotaObraRenglonTableCreateCompanionBuilder,
+      $$NotaObraRenglonTableUpdateCompanionBuilder,
+      (
+        NotaObraRenglonRow,
+        BaseReferences<
+          _$AppDatabase,
+          $NotaObraRenglonTable,
+          NotaObraRenglonRow
+        >,
+      ),
+      NotaObraRenglonRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -21981,4 +24797,8 @@ class $AppDatabaseManager {
       $$ObraPresupuestoTableTableManager(_db, _db.obraPresupuesto);
   $$ObraCajaNotaTableTableManager get obraCajaNota =>
       $$ObraCajaNotaTableTableManager(_db, _db.obraCajaNota);
+  $$NotaObraTableTableManager get notaObra =>
+      $$NotaObraTableTableManager(_db, _db.notaObra);
+  $$NotaObraRenglonTableTableManager get notaObraRenglon =>
+      $$NotaObraRenglonTableTableManager(_db, _db.notaObraRenglon);
 }
