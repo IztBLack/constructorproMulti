@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" width="800" height="200">
+  <!-- Logotipo de MUESTRA, generado para este proyecto. No es la marca de
+       ninguna empresa real: sirve de patrón para verificar cómo se imprime un
+       logotipo en los documentos y para fijar el estándar de subida. -->
+  <rect width="800" height="200" fill="none"/>
+  <g>
+    <rect x="10" y="36" width="128" height="128" rx="22" fill="#0369A1"/>
+    <path d="M42 132 L74 74 L106 132 Z" fill="#FFFFFF"/>
+    <rect x="60" y="118" width="28" height="14" fill="#0369A1"/>
+  </g>
+  <text x="168" y="106" font-family="Segoe UI, Helvetica, Arial, sans-serif"
+        font-size="72" font-weight="700" fill="#0F172A">Constructora</text>
+  <text x="171" y="146" font-family="Segoe UI, Helvetica, Arial, sans-serif"
+        font-size="27" font-weight="500" letter-spacing="7" fill="#0369A1">RAMOS · VERACRUZ</text>
+</svg>
