@@ -55,8 +55,13 @@ class AppCard extends StatelessWidget {
     return Material(
       color: color ?? c.surface,
       elevation: 0,
-      borderRadius: radio,
       clipBehavior: Clip.antiAlias,
+      // Solo `shape`, nunca `shape` + `borderRadius`: Material los prohíbe
+      // juntos (`!(shape != null && borderRadius != null)`) y en depuración
+      // lanzaba en CADA tarjeta, dejando la pantalla de Resumen llena de
+      // recuadros rojos. El radio ya viaja dentro del shape, así que el
+      // aspecto no cambia — en release la aserción estaba apagada y por eso
+      // el fallo pasó inadvertido.
       shape: RoundedRectangleBorder(
         borderRadius: radio,
         side: BorderSide(color: borderColor ?? c.border),

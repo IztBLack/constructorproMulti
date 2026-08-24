@@ -281,6 +281,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
     final config = await showPdfPreDialog(context, base);
     if (config == null) return;
     final bytes = await PdfService.presupuesto(
+      textosEmpresa: ref.read(textosPdfProvider),
       cot: widget.cotizacion,
       secciones: secciones,
       partidas: partidas,
@@ -418,7 +419,12 @@ class _State extends ConsumerState<CotizacionDetailScreen>
           );
         },
       ),
+      // Las tres pestañas del TabBarView existen a la vez, así que sus FAB
+      // coexisten: sin un heroTag propio comparten el tag por defecto y Flutter
+      // lanza "multiple heroes share the same tag" en cada transición. Mismo
+      // arreglo que en obra_detail_screen.
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'fabSeccion',
         onPressed: () => _seccionDialog(null),
         icon: const Icon(Icons.create_new_folder),
         label: const Text('Sección'),
@@ -440,7 +446,13 @@ class _State extends ConsumerState<CotizacionDetailScreen>
   /// RESUELTO —el que se va a imprimir— y deja editarlo o volver al general.
   Widget _tarjetaTextoFinal() {
     final cs = Theme.of(context).colorScheme;
-    final propio = _textoFinal != null && _textoFinal!.trim().isNotEmpty;
+    final generales = ref.watch(textosPdfProvider);
+    final origen = origenTextoFinal(
+      tipo: TipoDocumento.cotizacion,
+      documento: _textoFinal,
+      textosEmpresa: generales,
+    );
+    final propio = origen == OrigenTexto.documento;
 
     return FutureBuilder<PdfConfig>(
       future: PdfPrefs.load(),
@@ -452,6 +464,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
         final resuelto = resolverTextoFinal(
           tipo: TipoDocumento.cotizacion,
           documento: _textoFinal,
+          textosEmpresa: generales,
           ctx: _ctxTexto(cfg),
         );
 
@@ -469,7 +482,12 @@ class _State extends ConsumerState<CotizacionDetailScreen>
                           style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                     Chip(
-                      label: Text(propio ? 'Editado aquí' : 'Texto por defecto',
+                      label: Text(
+                          switch (origen) {
+                            OrigenTexto.documento => 'Editado aquí',
+                            OrigenTexto.empresa => 'Texto de tus ajustes',
+                            OrigenTexto.integrado => 'Texto por defecto',
+                          },
                           style: const TextStyle(fontSize: 11)),
                       visualDensity: VisualDensity.compact,
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -516,7 +534,14 @@ class _State extends ConsumerState<CotizacionDetailScreen>
 
   Future<void> _editarTextoFinal(String resuelto, PdfConfig cfg) async {
     final ctrl = TextEditingController(text: resuelto);
-    final integrado = textoIntegrado(TipoDocumento.cotizacion, _ctxTexto(cfg));
+    // El punto de partida es el texto GENERAL de la empresa (o el integrado si
+    // no hay ninguno), no el integrado a secas: si el dueño ya escribió sus
+    // condiciones en Ajustes, volver "al de siempre" tiene que devolverlo ahí.
+    final general = resolverTextoFinal(
+      tipo: TipoDocumento.cotizacion,
+      textosEmpresa: ref.read(textosPdfProvider),
+      ctx: _ctxTexto(cfg),
+    );
 
     final guardar = await showDialog<bool>(
       context: context,
@@ -542,8 +567,8 @@ class _State extends ConsumerState<CotizacionDetailScreen>
               Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton(
-                  onPressed: () => ctrl.text = integrado,
-                  child: const Text('Volver al texto por defecto'),
+                  onPressed: () => ctrl.text = general,
+                  child: const Text('Volver al texto general'),
                 ),
               ),
             ],
@@ -1013,6 +1038,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'fabPago',
         onPressed: _pagoDialog,
         icon: const Icon(Icons.payments),
         label: const Text('Registrar pago'),
@@ -1150,6 +1176,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'fabArchivo',
         onPressed: _agregarArchivo,
         icon: const Icon(Icons.attach_file),
         label: const Text('Agregar'),
