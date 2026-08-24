@@ -276,7 +276,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
       descuentoPorcentaje: widget.cotizacion.descuento,
       totalPagado: totalPagado,
     );
-    final base = await PdfPrefs.load();
+    final base = await ref.read(pdfConfigEfectivaProvider.future);
     if (!mounted) return;
     final config = await showPdfPreDialog(context, base);
     if (config == null) return;
@@ -455,7 +455,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
     final propio = origen == OrigenTexto.documento;
 
     return FutureBuilder<PdfConfig>(
-      future: PdfPrefs.load(),
+      future: ref.read(pdfConfigEfectivaProvider.future),
       builder: (context, snap) {
         // Mientras carga la config no se pinta un texto a medias: cambiaría de
         // contenido al llegar los datos, que se lee como un parpadeo raro.

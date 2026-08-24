@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../data/providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/pdf/pdf_config.dart';
 import '../../pdf/pdf_service.dart';
 import '../common/app_snackbar.dart';
 import '../pdf_pre_dialog.dart';
@@ -18,7 +18,7 @@ Future<void> exportarProyeccionPdf(
   WidgetRef ref,
   ProyeccionVista vista,
 ) async {
-  final base = await PdfPrefs.load();
+  final base = await ref.read(pdfConfigEfectivaProvider.future);
   if (!context.mounted) return;
 
   final cfg = await showPdfPreDialog(context, base);

@@ -10,6 +10,8 @@ import '../../core/storage/app_paths.dart';
 
 import '../../core/pdf/pdf_config.dart';
 import '../../core/pdf/textos_finales.dart';
+import '../../core/sync/cloud_providers.dart';
+import '../../data/pdf_config_service.dart';
 import '../../data/providers.dart';
 
 class PdfConfigScreen extends ConsumerStatefulWidget {
@@ -20,7 +22,6 @@ class PdfConfigScreen extends ConsumerStatefulWidget {
 }
 
 class _PdfConfigScreenState extends ConsumerState<PdfConfigScreen> {
-  final _empresa = TextEditingController();
   final _contacto = TextEditingController();
   final _color = TextEditingController();
   final _pie = TextEditingController();
@@ -49,7 +50,6 @@ class _PdfConfigScreenState extends ConsumerState<PdfConfigScreen> {
 
   @override
   void dispose() {
-    _empresa.dispose();
     _contacto.dispose();
     _color.dispose();
     _pie.dispose();
@@ -63,18 +63,20 @@ class _PdfConfigScreenState extends ConsumerState<PdfConfigScreen> {
   }
 
   Future<void> _load() async {
-    final c = await PdfPrefs.load();
-    _empresa.text = c.empresaNombre;
-    _contacto.text = c.empresaContacto;
-    _color.text = c.colorHex;
-    _pie.text = c.pieDePagina;
-    _watermark.text = c.watermark;
-    _firmaIzq.text = c.firmaIzquierda;
-    _firmaDer.text = c.firmaDerecha;
-    _mayusculas = c.mayusculas;
-    _compacto = c.modoCompacto;
-    _logoPath = c.logoPath;
-    _firmaPath = c.firmaPath;
+    // El ASPECTO es de la empresa y se baja del servidor (la oficina manda);
+    // solo el logo y la firma siguen siendo archivos de este dispositivo.
+    final a = await ref.read(pdfConfigServiceProvider).refrescar();
+    final locales = await PdfPrefs.load();
+    _contacto.text = a.empresaContacto;
+    _color.text = a.colorHex;
+    _pie.text = a.pieDePagina;
+    _watermark.text = a.watermark;
+    _firmaIzq.text = a.firmaIzquierda;
+    _firmaDer.text = a.firmaDerecha;
+    _mayusculas = a.mayusculas;
+    _compacto = a.modoCompacto;
+    _logoPath = locales.logoPath;
+    _firmaPath = locales.firmaPath;
 
     // Los textos generales se pintan del caché al instante y se refrescan
     // contra Supabase enseguida: si alguien los cambió desde la web, aquí se
@@ -105,16 +107,24 @@ class _PdfConfigScreenState extends ConsumerState<PdfConfigScreen> {
   }
 
   Future<void> _guardar() async {
+    // El aspecto sube: lo comparten la web y todos los dispositivos.
+    await ref.read(pdfAspectoProvider.notifier).guardar(AspectoPdf(
+          empresaContacto: _contacto.text.trim(),
+          colorHex: _color.text.trim().isEmpty
+              ? AspectoPdf.web.colorHex
+              : _color.text.trim(),
+          pieDePagina: _pie.text.trim(),
+          watermark: _watermark.text.trim(),
+          mayusculas: _mayusculas,
+          modoCompacto: _compacto,
+          firmaIzquierda: _firmaIzq.text.trim(),
+          firmaDerecha: _firmaDer.text.trim(),
+        ));
+
+    // El logo y la firma son archivos de ESTE teléfono y se quedan locales.
+    final previos = await PdfPrefs.load();
     await PdfPrefs.save(PdfConfig(
-      empresaNombre: _empresa.text.trim().isEmpty ? 'ConstructorPro' : _empresa.text.trim(),
-      empresaContacto: _contacto.text.trim(),
-      colorHex: _color.text.trim().isEmpty ? '#1A3A5C' : _color.text.trim(),
-      pieDePagina: _pie.text.trim(),
-      watermark: _watermark.text.trim(),
-      mayusculas: _mayusculas,
-      modoCompacto: _compacto,
-      firmaIzquierda: _firmaIzq.text.trim().isEmpty ? 'Autorizado por Obra' : _firmaIzq.text.trim(),
-      firmaDerecha: _firmaDer.text.trim().isEmpty ? 'Aceptado por Cliente' : _firmaDer.text.trim(),
+      empresaNombre: previos.empresaNombre,
       logoPath: _logoPath,
       firmaPath: _firmaPath,
     ));
@@ -141,8 +151,11 @@ class _PdfConfigScreenState extends ConsumerState<PdfConfigScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          TextField(controller: _empresa, decoration: const InputDecoration(labelText: 'Nombre de la empresa')),
-          const SizedBox(height: 8),
+          // El nombre no se edita aquí: sale del registro de la empresa, que es
+          // la misma fuente que usa la web. Tener dos campos hacía que un mismo
+          // documento saliera con nombres distintos según de dónde se emitiera.
+          _AvisoCompartido(),
+          const SizedBox(height: 12),
           TextField(
             controller: _contacto,
             maxLines: 2,
@@ -230,6 +243,38 @@ class _PdfConfigScreenState extends ConsumerState<PdfConfigScreen> {
             onPressed: _guardar,
             icon: const Icon(Icons.save),
             label: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Aclara que esta pantalla ya no es "las preferencias de mi teléfono": lo que
+/// se cambie aquí lo verá también la oficina.
+class _AvisoCompartido extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+    final nombre = ref.watch(empresaNombreProvider).asData?.value;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(nombre ?? 'Tu empresa',
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(
+            'Esta configuración es de la empresa: se comparte con la web y con '
+            'los demás dispositivos. El nombre se cambia en los ajustes de la '
+            'empresa. El logo y la firma sí son de este teléfono.',
+            style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
           ),
         ],
       ),

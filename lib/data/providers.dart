@@ -7,7 +7,10 @@ import '../domain/logic/movimiento_colaborador_service.dart';
 import 'backup/backup_service.dart';
 import 'maintenance_repository.dart';
 import 'orden_personalizado.dart';
+import '../core/sync/cloud_providers.dart';
+import 'pdf_config_service.dart';
 import 'textos_pdf_service.dart';
+import '../core/pdf/pdf_config.dart';
 import '../core/pdf/textos_finales.dart';
 import 'repositories.dart';
 import 'repositories_obra.dart';
@@ -75,6 +78,52 @@ class OrdenModoNotifier extends Notifier<Map<String, String>> {
     state = await ref.read(ordenModoServiceProvider).setModo(listKey, modo);
   }
 }
+
+// ---------------- Aspecto compartido de los PDF ----------------
+/// Servicio del aspecto (Supabase `empresa_config.pdf_config` + caché).
+final pdfConfigServiceProvider = Provider<PdfConfigService>(
+    (ref) => PdfConfigService(ref.watch(sharedPreferencesProvider)));
+
+/// Estado reactivo del aspecto. Arranca del caché y refresca desde el servidor.
+final pdfAspectoProvider =
+    NotifierProvider<PdfAspectoNotifier, AspectoPdf>(PdfAspectoNotifier.new);
+
+class PdfAspectoNotifier extends Notifier<AspectoPdf> {
+  @override
+  AspectoPdf build() {
+    Future.microtask(() async {
+      state = await ref.read(pdfConfigServiceProvider).refrescar();
+    });
+    return ref.read(pdfConfigServiceProvider).aspecto;
+  }
+
+  Future<void> guardar(AspectoPdf a) async {
+    state = await ref.read(pdfConfigServiceProvider).guardar(a);
+  }
+}
+
+/// La configuración COMPLETA con la que se genera cualquier PDF del móvil.
+///
+/// Junta las tres piezas que hoy viven en sitios distintos a propósito:
+///   · el aspecto, que es de la empresa y se comparte con la web;
+///   · el nombre, que sale del registro de la empresa (una sola fuente);
+///   · el logo y la firma, que siguen siendo archivos del dispositivo.
+///
+/// Todo el que vaya a imprimir debe pedir ESTA y no `PdfPrefs.load()`, que solo
+/// conoce lo local y por eso imprimía con un color distinto al de la oficina.
+final pdfConfigEfectivaProvider = FutureProvider<PdfConfig>((ref) async {
+  final aspecto = await ref.watch(pdfConfigServiceProvider).refrescar();
+  final nombre = await ref.watch(empresaNombreProvider.future);
+  final locales = await PdfPrefs.load();
+
+  return aspecto.aPdfConfig(
+    empresaNombre: (nombre?.trim().isNotEmpty ?? false)
+        ? nombre!.trim()
+        : locales.empresaNombre,
+    logoPath: locales.logoPath,
+    firmaPath: locales.firmaPath,
+  );
+});
 
 // ---------------- Texto general del pie de los PDF ----------------
 /// Servicio del texto general (Supabase `empresa_config.pdf_textos` + caché).

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../pdf_preview_screen.dart';
 import '../../core/format/format.dart';
-import '../../core/pdf/pdf_config.dart';
 import '../../core/sync/rol_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
@@ -402,7 +401,7 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
                   movs.where((x) => x.obraId == o.id).map(movimientoToDomain).toList()),
             ))
         .toList();
-    final base = await PdfPrefs.load();
+    final base = await ref.read(pdfConfigEfectivaProvider.future);
     if (!mounted) return;
     final config = await showPdfPreDialog(context, base);
     if (config == null) return;
@@ -443,7 +442,7 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
       );
       if (summary.items.isNotEmpty) datos.add((obra: o.nombre, summary: summary));
     }
-    final base = await PdfPrefs.load();
+    final base = await ref.read(pdfConfigEfectivaProvider.future);
     if (!mounted) return;
     final config = await showPdfPreDialog(context, base);
     if (config == null) return;
@@ -476,7 +475,7 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
           .toList();
       if (filas.isNotEmpty) datos.add((obra: o.nombre, filas: filas));
     }
-    final base = await PdfPrefs.load();
+    final base = await ref.read(pdfConfigEfectivaProvider.future);
     if (!mounted) return;
     final config = await showPdfPreDialog(context, base);
     if (config == null) return;
@@ -507,7 +506,7 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
         totales: totales
       ));
     }
-    final base = await PdfPrefs.load();
+    final base = await ref.read(pdfConfigEfectivaProvider.future);
     if (!mounted) return;
     final config = await showPdfPreDialog(context, base);
     if (config == null) return;

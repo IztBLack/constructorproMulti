@@ -12,7 +12,6 @@ import 'package:uuid/uuid.dart';
 import '../pdf_preview_screen.dart';
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
-import '../../core/pdf/pdf_config.dart';
 import '../../core/storage/comprobante_storage.dart';
 import '../../core/sync/cloud_providers.dart';
 import '../../core/sync/rol_provider.dart';
@@ -169,7 +168,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
   }
 
   Future<void> _exportarPdf() async {
-    final base = await PdfPrefs.load();
+    final base = await ref.read(pdfConfigEfectivaProvider.future);
     if (!mounted) return;
     final config = await showPdfPreDialog(context, base);
     if (config == null) return;
@@ -229,7 +228,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
   /// error futuro no puede colar un gasto al cliente.
   Future<void> _exportarEstadoCuentaCliente(
       EstadoCuentaSummary estado, List<Movimiento> movs) async {
-    final base = await PdfPrefs.load();
+    final base = await ref.read(pdfConfigEfectivaProvider.future);
     if (!mounted) return;
     final config = await showPdfPreDialog(context, base);
     if (config == null) return;
