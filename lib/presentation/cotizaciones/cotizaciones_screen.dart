@@ -180,6 +180,7 @@ class _CotizacionesScreenState extends ConsumerState<CotizacionesScreen> {
       // Sin permiso de edición (contador/colaborador) no se ofrece crear.
       floatingActionButton: puedeEditar
           ? FloatingActionButton.extended(
+              heroTag: 'fabCotizacion',
               onPressed: () => _dialog(null),
               icon: const Icon(Icons.add),
               label: const Text('Nueva'),

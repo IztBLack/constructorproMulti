@@ -47,6 +47,7 @@ class PuestosScreen extends ConsumerWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'fabPuesto',
         onPressed: () => _showDialog(context, ref, null),
         child: const Icon(Icons.add),
       ),

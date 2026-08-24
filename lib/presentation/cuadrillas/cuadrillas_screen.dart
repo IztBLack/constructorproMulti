@@ -202,6 +202,7 @@ class _CuadrillasScreenState extends ConsumerState<CuadrillasScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'fabCuadrilla',
         onPressed: () => _showEditDialog(null),
         icon: const Icon(Icons.group_add),
         label: const Text('Nueva'),

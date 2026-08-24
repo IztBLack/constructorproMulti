@@ -277,6 +277,7 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
       // Sin permiso de edición (contador/colaborador) no se ofrece crear obra.
       floatingActionButton: puedeEditar
           ? FloatingActionButton.extended(
+              heroTag: 'fabObra',
               onPressed: () => _showObraDialog(null),
               icon: const Icon(Icons.add),
               label: const Text('Nueva obra'),

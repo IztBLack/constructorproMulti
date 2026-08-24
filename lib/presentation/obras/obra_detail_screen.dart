@@ -282,6 +282,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'fabAsignar',
         onPressed: _asignarDialog,
         icon: const Icon(Icons.group_add),
         label: const Text('Asignar'),

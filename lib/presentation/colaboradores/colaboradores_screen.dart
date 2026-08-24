@@ -332,6 +332,7 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'fabColaborador',
         onPressed: () {
           if (puestos.isEmpty) {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(

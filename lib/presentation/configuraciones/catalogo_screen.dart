@@ -95,6 +95,7 @@ class _CatalogoScreenState extends ConsumerState<CatalogoScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'fabCatalogo',
         onPressed: () => _dialog(null),
         icon: const Icon(Icons.add),
         label: const Text('Concepto'),
