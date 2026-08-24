@@ -16,6 +16,7 @@ import '../../core/db/app_database.dart';
 import '../../domain/cotizacion_titulo.dart';
 import '../../core/format/format.dart';
 import '../../core/pdf/pdf_config.dart';
+import '../../core/pdf/textos_finales.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
 import '../../data/repositories_cotizacion.dart';
@@ -43,6 +44,11 @@ class _State extends ConsumerState<CotizacionDetailScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tab = TabController(length: 3, vsync: this);
   late bool _ivaEnabled = widget.cotizacion.ivaEnabled;
+
+  /// Párrafo final propio de esta cotización. NULL = se imprime el general.
+  /// Se guarda en estado local por lo mismo que `_ivaEnabled`: la pantalla
+  /// recibe la cotización como copia y no la vuelve a leer.
+  late String? _textoFinal = widget.cotizacion.textoFinal;
 
   String get _cotId => widget.cotizacion.id;
 
@@ -323,14 +329,15 @@ class _State extends ConsumerState<CotizacionDetailScreen>
           return Column(
             children: [
               Expanded(
-                child: secciones.isEmpty
-                    ? const EmptyStateView(
-                        icon: Icons.create_new_folder_outlined,
-                        title: 'Sin secciones.',
-                        hint: 'Toca “Sección” para agregar una.',
-                      )
-                    : ListView(
-                        children: secciones.map((s) {
+                child: ListView(
+                        children: [
+                          if (secciones.isEmpty)
+                            const EmptyStateView(
+                              icon: Icons.create_new_folder_outlined,
+                              title: 'Sin secciones.',
+                              hint: 'Toca “Sección” para agregar una.',
+                            ),
+                          ...secciones.map((s) {
                           final pts = partidas.where((p) => p.seccionId == s.id).toList();
                           final subtotal =
                               pts.fold<double>(0, (a, p) => a + p.cantidad * p.precioUnitario);
@@ -395,7 +402,15 @@ class _State extends ConsumerState<CotizacionDetailScreen>
                               ]),
                             ],
                           );
-                        }).toList(),
+                          }),
+                          // El párrafo final del PDF, al cierre de la lista:
+                          // es un DATO de la cotización, no una opción de
+                          // impresión, así que vive donde se capturan los datos
+                          // y no en el diálogo de "Opciones del PDF".
+                          _tarjetaTextoFinal(),
+                          // Aire para que el FAB no tape la tarjeta.
+                          const SizedBox(height: 80),
+                        ],
                       ),
               ),
               _totalesBar(totales),
@@ -409,6 +424,153 @@ class _State extends ConsumerState<CotizacionDetailScreen>
         label: const Text('Sección'),
       ),
     );
+  }
+
+  // ============ TEXTO FINAL DEL PDF ============
+
+  /// Contexto con el que se arma el texto integrado. El nombre de la empresa
+  /// sale de la config local del PDF, igual que al generar el documento.
+  ContextoTextoFinal _ctxTexto(PdfConfig cfg) => ContextoTextoFinal(
+        nombreEmpresa: cfg.empresaNombre,
+        ivaEnabled: _ivaEnabled,
+        ivaPct: widget.cotizacion.ivaPorcentaje,
+      );
+
+  /// Tarjeta gemela de la de la web (`TextoFinalCard`): enseña el párrafo YA
+  /// RESUELTO —el que se va a imprimir— y deja editarlo o volver al general.
+  Widget _tarjetaTextoFinal() {
+    final cs = Theme.of(context).colorScheme;
+    final propio = _textoFinal != null && _textoFinal!.trim().isNotEmpty;
+
+    return FutureBuilder<PdfConfig>(
+      future: PdfPrefs.load(),
+      builder: (context, snap) {
+        // Mientras carga la config no se pinta un texto a medias: cambiaría de
+        // contenido al llegar los datos, que se lee como un parpadeo raro.
+        if (!snap.hasData) return const SizedBox.shrink();
+        final cfg = snap.data!;
+        final resuelto = resolverTextoFinal(
+          tipo: TipoDocumento.cotizacion,
+          documento: _textoFinal,
+          ctx: _ctxTexto(cfg),
+        );
+
+        return Card(
+          margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text('Texto final del PDF',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                    Chip(
+                      label: Text(propio ? 'Editado aquí' : 'Texto por defecto',
+                          style: const TextStyle(fontSize: 11)),
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      backgroundColor:
+                          propio ? cs.tertiaryContainer : cs.surfaceContainerHighest,
+                      side: BorderSide.none,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.only(left: 10),
+                  decoration: BoxDecoration(
+                    border: Border(left: BorderSide(color: cs.outlineVariant, width: 2)),
+                  ),
+                  child: Text(resuelto,
+                      style: TextStyle(fontSize: 12.5, color: cs.onSurfaceVariant)),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text('Se imprime al pie, arriba de tu pie de página.',
+                          style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+                    ),
+                    if (propio)
+                      TextButton(
+                        onPressed: () => _guardarTextoFinal(null),
+                        child: const Text('Restaurar'),
+                      ),
+                    TextButton(
+                      onPressed: () => _editarTextoFinal(resuelto, cfg),
+                      child: const Text('Editar'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _editarTextoFinal(String resuelto, PdfConfig cfg) async {
+    final ctrl = TextEditingController(text: resuelto);
+    final integrado = textoIntegrado(TipoDocumento.cotizacion, _ctxTexto(cfg));
+
+    final guardar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Texto final del PDF'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Cambia lo que necesites. Se guarda solo en esta cotización.',
+                style: TextStyle(fontSize: 12),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: ctrl,
+                maxLines: 6,
+                minLines: 4,
+                maxLength: largoMaximoTextoFinal,
+                decoration: const InputDecoration(border: OutlineInputBorder()),
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: () => ctrl.text = integrado,
+                  child: const Text('Volver al texto por defecto'),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true), child: const Text('Guardar')),
+        ],
+      ),
+    );
+
+    if (guardar != true) return;
+    final texto = ctrl.text.trim();
+    // Vacío = "sin texto propio", igual que la web: no se guarda cadena vacía,
+    // se borra el propio y la cotización vuelve a seguir el general.
+    await _guardarTextoFinal(texto.isEmpty ? null : texto);
+  }
+
+  Future<void> _guardarTextoFinal(String? texto) async {
+    await ref.read(cotizacionRepositoryProvider).upsert(
+          CotizacionesCompanion(id: Value(_cotId), textoFinal: Value(texto)),
+        );
+    if (!mounted) return;
+    setState(() => _textoFinal = texto);
   }
 
   Widget _totalesBar(PresupuestoTotales t) {

@@ -50,7 +50,7 @@ export interface RenglonInput {
 }
 
 const CAMPOS_NOTA =
-  'id, obra_id, destinatario, colaborador_id, titulo, fecha, estado, total_override, saldo_override, notas, orden';
+  'id, obra_id, destinatario, colaborador_id, titulo, fecha, estado, total_override, saldo_override, notas, orden, texto_final';
 const CAMPOS_RENGLON =
   'id, nota_id, tipo, etiqueta, monto, monto_base, porcentaje, texto, fecha, orden';
 

@@ -6,6 +6,7 @@ import 'package:pdf/widgets.dart' as pw;
 import '../core/db/app_database.dart';
 import '../core/format/format.dart';
 import '../core/pdf/pdf_config.dart';
+import '../core/pdf/textos_finales.dart';
 import '../domain/logic/flujo_calculator.dart';
 import '../domain/logic/nomina_calculator.dart';
 import '../domain/logic/presupuesto_calculator.dart';
@@ -216,6 +217,26 @@ class PdfService {
               child: pw.Text(cfg.pieDePagina,
                   style: const pw.TextStyle(fontSize: 9, color: _gris400)),
             );
+
+  /// Párrafo final de condiciones, arriba de las firmas y del pie de página.
+  ///
+  /// Hasta ahora el móvil no lo imprimía y la web sí: el MISMO presupuesto
+  /// salía con condiciones o sin ellas según desde dónde se mandara. Se resuelve
+  /// con `textos_finales.dart`, que es el puerto del módulo de la web.
+  static pw.Widget _textoFinal(String texto) => pw.Padding(
+        padding: const pw.EdgeInsets.only(top: 22),
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Container(height: 1, color: PdfColors.grey300),
+            pw.SizedBox(height: 8),
+            pw.Text(
+              texto,
+              style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+            ),
+          ],
+        ),
+      );
 
   static pw.Widget _firmas(PdfConfig cfg) {
     final firma = cfg.firmaBytes;
@@ -572,6 +593,15 @@ class PdfService {
         if (totales.descuento > 0) widgets.add(_totalLinea('Descuento', -totales.descuento));
         if (iva) widgets.add(_totalLinea('IVA', totales.iva));
         widgets.add(_totalLinea('TOTAL', totales.total, bold: true, color: color));
+        widgets.add(_textoFinal(resolverTextoFinal(
+          tipo: TipoDocumento.cotizacion,
+          documento: cot.textoFinal,
+          ctx: ContextoTextoFinal(
+            nombreEmpresa: config.empresaNombre,
+            ivaEnabled: iva,
+            ivaPct: cot.ivaPorcentaje,
+          ),
+        )));
         widgets.add(_firmas(config));
         return widgets;
       },

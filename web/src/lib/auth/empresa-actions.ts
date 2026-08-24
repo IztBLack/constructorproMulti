@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getEmpresaUsuario } from '@/lib/data/empresa';
 import { guardarIvaPorDefecto, guardarPdfConfig } from '@/lib/data/empresa-config';
+import { TIPOS_DOCUMENTO, type TextosEmpresa } from '@/lib/pdf/textos-finales';
 
 export interface ResultadoEmpresa {
   ok: boolean;
@@ -70,6 +71,11 @@ export async function actualizarPdfConfig(formData: FormData): Promise<Resultado
     modoCompacto: formData.get('modo_compacto') === 'on',
     firmaIzquierda: String(formData.get('firma_izquierda') ?? '').trim().slice(0, 60),
     firmaDerecha: String(formData.get('firma_derecha') ?? '').trim().slice(0, 60),
+    // Párrafo final por tipo de documento. Un campo vacío NO es "sin párrafo":
+    // es "usa el texto integrado", y `guardarPdfConfig` lo descarta por eso.
+    textos: Object.fromEntries(
+      TIPOS_DOCUMENTO.map((tipo) => [tipo, String(formData.get(`texto_${tipo}`) ?? '')]),
+    ) as TextosEmpresa,
   };
 
   const resultado = await guardarPdfConfig(pdf);
@@ -80,6 +86,7 @@ export async function actualizarPdfConfig(formData: FormData): Promise<Resultado
   revalidatePath('/admin/ajustes');
   // Las vistas de documento leen esta configuración al pintarse.
   revalidatePath('/admin/cotizaciones', 'layout');
+  revalidatePath('/admin/obras', 'layout');
   return { ok: true, aviso: 'Personalización guardada. Se aplica a los documentos nuevos que abras.' };
 }
 

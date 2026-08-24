@@ -11,6 +11,11 @@ import { listPagosByCotizacion, sumaPagos } from '@/lib/data/pagos';
 import { listArchivosCotizacion } from '@/lib/data/archivos';
 import { listClientes } from '@/lib/data/clientes';
 import { formatCurrency } from '@/lib/data/format';
+import { getNombreEmpresa } from '@/lib/data/empresa';
+import { getEmpresaConfig } from '@/lib/data/empresa-config';
+import { getEmpresaUsuario } from '@/lib/data/empresa';
+import { origenTextoFinal, resolverTextoFinal, textoIntegrado } from '@/lib/pdf/textos-finales';
+import { TextoFinalCard } from '@/components/pdf/texto-final-card';
 import { LinkButton } from '@/components/ui';
 import { CotizacionHeader } from '../cotizacion-header';
 import { SeccionesList } from '../secciones-list';
@@ -39,14 +44,27 @@ export default async function CotizacionDetallePage({
 
   const totales = calcularTotales(cotizacion);
 
-  const [{ data: pagos }, { data: clientes }, { data: archivos }, { data: obras }, aportado] =
-    await Promise.all([
-      listPagosByCotizacion(id),
-      listClientes(),
-      listArchivosCotizacion(id),
-      listObras(),
-      aportadoPorCotizacion(id),
-    ]);
+  const [
+    { data: pagos },
+    { data: clientes },
+    { data: archivos },
+    { data: obras },
+    aportado,
+    nombreEmpresa,
+    { pdf },
+    rol,
+  ] = await Promise.all([
+    listPagosByCotizacion(id),
+    listClientes(),
+    listArchivosCotizacion(id),
+    listObras(),
+    aportadoPorCotizacion(id),
+    getNombreEmpresa(),
+    getEmpresaConfig(),
+    getEmpresaUsuario()
+      .then((e) => e.rol)
+      .catch(() => ''),
+  ]);
   const totalPagado = sumaPagos(pagos ?? []);
 
   // Obras activas para "Vincular a obra" (paridad móvil).
@@ -131,6 +149,31 @@ export default async function CotizacionDetallePage({
           </div>
         </dl>
       </section>
+
+      {/* Párrafo final del PDF. Va aquí, después del Resumen y antes de los
+          pagos: es lo último del documento, y el orden de la pantalla sigue al
+          del papel. */}
+      <TextoFinalCard
+        tipo="cotizacion"
+        documentoId={cotizacion.id}
+        resuelto={resolverTextoFinal({
+          tipo: 'cotizacion',
+          documento: cotizacion.texto_final,
+          empresa: pdf.textos,
+          ctx: { nombreEmpresa: nombreEmpresa ?? 'ConstructorPro', ivaEnabled: cotizacion.iva_enabled, ivaPct: totales.ivaPct },
+        })}
+        integrado={textoIntegrado('cotizacion', {
+          nombreEmpresa: nombreEmpresa ?? 'ConstructorPro',
+          ivaEnabled: cotizacion.iva_enabled,
+          ivaPct: totales.ivaPct,
+        })}
+        origen={origenTextoFinal({
+          tipo: 'cotizacion',
+          documento: cotizacion.texto_final,
+          empresa: pdf.textos,
+        })}
+        puedeEditar={['admin', 'supervisor'].includes(rol)}
+      />
 
       <PagosSection
         cotizacionId={cotizacion.id}

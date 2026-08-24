@@ -42,7 +42,7 @@ class AppDatabase extends _$AppDatabase {
   static const _uuid = Uuid();
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -342,6 +342,14 @@ class AppDatabase extends _$AppDatabase {
             // Sin esto, editar a alguien dejaría de marcarlo `pending` y sus
             // cambios no volverían a subir jamás.
             await _instalarTriggersSync();
+          }
+
+          // v10 → v11: párrafo final editable por cotización (Supabase 0032).
+          // Columna nullable y sin backfill: NULL significa "usa el texto
+          // general", que es exactamente el comportamiento de siempre, así que
+          // ninguna cotización existente cambia de aspecto al actualizar.
+          if (from < 11) {
+            await m.addColumn(cotizaciones, cotizaciones.textoFinal);
           }
         },
       );

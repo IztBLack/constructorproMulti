@@ -3,7 +3,10 @@ import { notFound } from 'next/navigation';
 import { getObra } from '@/lib/data/obras';
 import { getNotaObra } from '@/lib/data/notas-obra';
 import { listColaboradores } from '@/lib/data/equipo';
-import { getEmpresaUsuario } from '@/lib/data/empresa';
+import { getEmpresaUsuario, getNombreEmpresa } from '@/lib/data/empresa';
+import { getEmpresaConfig } from '@/lib/data/empresa-config';
+import { origenTextoFinal, resolverTextoFinal, textoIntegrado } from '@/lib/pdf/textos-finales';
+import { TextoFinalCard } from '@/components/pdf/texto-final-card';
 import { LinkButton } from '@/components/ui';
 import EditorNota from './editor-nota';
 
@@ -16,14 +19,17 @@ export default async function NotaDetallePage({
 }) {
   const { id, notaId } = await params;
 
-  const [{ data: obra }, { data: nota, error }, { data: colaboradores }, rol] = await Promise.all([
-    getObra(id),
-    getNotaObra(notaId),
-    listColaboradores(),
-    getEmpresaUsuario()
-      .then((e) => e.rol)
-      .catch(() => ''),
-  ]);
+  const [{ data: obra }, { data: nota, error }, { data: colaboradores }, rol, nombreEmpresa, { pdf }] =
+    await Promise.all([
+      getObra(id),
+      getNotaObra(notaId),
+      listColaboradores(),
+      getEmpresaUsuario()
+        .then((e) => e.rol)
+        .catch(() => ''),
+      getNombreEmpresa(),
+      getEmpresaConfig(),
+    ]);
 
   if (error) {
     return (
@@ -58,6 +64,23 @@ export default async function NotaDetallePage({
         obraId={id}
         nota={nota}
         colaboradores={colaboradores.map((c) => ({ id: c.id, nombre: c.nombre }))}
+        puedeEditar={puedeEditar}
+      />
+
+      <TextoFinalCard
+        tipo="nota"
+        documentoId={nota.id}
+        resuelto={resolverTextoFinal({
+          tipo: 'nota',
+          documento: nota.texto_final,
+          empresa: pdf.textos,
+          ctx: { nombreEmpresa: nombreEmpresa ?? 'ConstructorPro', destinatario: nota.destinatario },
+        })}
+        integrado={textoIntegrado('nota', {
+          nombreEmpresa: nombreEmpresa ?? 'ConstructorPro',
+          destinatario: nota.destinatario,
+        })}
+        origen={origenTextoFinal({ tipo: 'nota', documento: nota.texto_final, empresa: pdf.textos })}
         puedeEditar={puedeEditar}
       />
     </div>

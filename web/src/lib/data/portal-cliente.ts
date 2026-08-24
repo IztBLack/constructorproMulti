@@ -27,6 +27,8 @@ export interface ObraPortal {
   activa: boolean;
   avance: number; // 0-100
   cliente_id: string | null;
+  /** Párrafo final del estado de cuenta de esta obra (0032). */
+  texto_final: string | null;
 }
 
 export interface PagoPortal {
@@ -175,7 +177,7 @@ export async function listObrasCliente(): Promise<ObraPortal[]> {
 
   const { data, error } = await supabase
     .from('obras')
-    .select('id, nombre, cliente, ubicacion, fecha_inicio, activa, avance, cliente_id')
+    .select('id, nombre, cliente, ubicacion, fecha_inicio, activa, avance, cliente_id, texto_final')
     .is('deleted_at', null)
     .order('fecha_inicio', { ascending: false });
 
@@ -190,7 +192,7 @@ export async function getObraCliente(id: string): Promise<ObraPortal | null> {
 
   const { data, error } = await supabase
     .from('obras')
-    .select('id, nombre, cliente, ubicacion, fecha_inicio, activa, avance, cliente_id')
+    .select('id, nombre, cliente, ubicacion, fecha_inicio, activa, avance, cliente_id, texto_final')
     .eq('id', id)
     .is('deleted_at', null)
     .maybeSingle();

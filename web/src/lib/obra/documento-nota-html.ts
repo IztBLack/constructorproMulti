@@ -8,6 +8,7 @@ import {
   type RenglonNota,
 } from '@/lib/data/notas-obra-calculo';
 import { envolverDocumento, esc, folioCorto } from '@/lib/pdf/documento-base';
+import { resolverTextoFinal } from '@/lib/pdf/textos-finales';
 
 /**
  * HTML de una NOTA DE OBRA: la cuenta de un trato con un socio, para mandársela
@@ -30,6 +31,13 @@ export function construirNotaObraHtml(params: {
   const t = calcularTotales(nota, nota.renglones);
   const folio = folioCorto(nota.id);
   const liquidada = nota.estado === 'LIQUIDADA';
+
+  const textoFinal = resolverTextoFinal({
+    tipo: 'nota',
+    documento: nota.texto_final,
+    empresa: pdf.textos,
+    ctx: { nombreEmpresa, destinatario: nota.destinatario },
+  });
 
   const filas =
     nota.renglones.length === 0
@@ -110,11 +118,7 @@ export function construirNotaObraHtml(params: {
     <footer class="doc-footer avoid">
       ${pie}
       <div class="vigencia">
-        <p class="vigencia-texto">
-          Relación de trabajos y pagos acordados entre ${esc(nombreEmpresa)} y
-          ${esc(nota.destinatario) || 'la parte indicada'}. Montos en pesos mexicanos (MXN).
-          Cualquier diferencia se aclara antes del siguiente pago.
-        </p>
+        <p class="vigencia-texto">${esc(textoFinal)}</p>
         ${pdf.pieDePagina ? `<p class="pie-empresa">${esc(pdf.pieDePagina)}</p>` : ''}
       </div>
     </footer>`;

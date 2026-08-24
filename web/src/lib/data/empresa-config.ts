@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { getEmpresaUsuario } from './empresa';
+import { leerTextosEmpresa, recortar, type TextosEmpresa } from '@/lib/pdf/textos-finales';
 
 /** Tasa con la que operó siempre la app antes de que fuera configurable. */
 export const IVA_POR_DEFECTO = 16;
@@ -32,6 +33,16 @@ export interface PdfConfig {
   firmaIzquierda: string;
   /** Rótulo de la firma derecha (vacío = sin firmas). */
   firmaDerecha: string;
+  /**
+   * Párrafo final por tipo de documento (cotización, nota, estado de cuenta).
+   * Vacío o ausente = se imprime el texto integrado. Cada documento puede a su
+   * vez pisar el suyo con su columna `texto_final` (0032).
+   *
+   * Va DENTRO de este jsonb y no en columnas nuevas porque es exactamente para
+   * lo que sirve un jsonb de personalización, y porque el móvil guarda su
+   * PdfConfig en SharedPreferences: nunca escribe aquí, así que no las pisa.
+   */
+  textos: TextosEmpresa;
 }
 
 /**
@@ -48,6 +59,7 @@ export const PDF_CONFIG_POR_DEFECTO: PdfConfig = {
   modoCompacto: false,
   firmaIzquierda: '',
   firmaDerecha: '',
+  textos: {},
 };
 
 export interface EmpresaConfig {
@@ -104,6 +116,7 @@ function leerPdfConfig(crudo: unknown): PdfConfig {
     modoCompacto: o.modoCompacto === true,
     firmaIzquierda: str(o.firmaIzquierda),
     firmaDerecha: str(o.firmaDerecha),
+    textos: leerTextosEmpresa(o.textos),
   };
 }
 
@@ -178,9 +191,20 @@ export async function guardarPdfConfig(
   const { empresaId } = await getEmpresaUsuario();
   const supabase = await createClient();
 
+  // Los textos se recortan aquí y no en la UI: este es el único camino a la
+  // base, y el tope existe para que un pegado accidental no rompa la hoja.
+  const limpio: PdfConfig = {
+    ...pdf,
+    textos: Object.fromEntries(
+      Object.entries(pdf.textos ?? {})
+        .map(([k, v]) => [k, recortar(String(v ?? ''))])
+        .filter(([, v]) => v !== ''),
+    ),
+  };
+
   const { error } = await supabase
     .from('empresa_config')
-    .update({ pdf_config: pdf, updated_at: Date.now() })
+    .update({ pdf_config: limpio, updated_at: Date.now() })
     .eq('empresa_id', empresaId);
 
   if (error) return { ok: false, error: error.message };

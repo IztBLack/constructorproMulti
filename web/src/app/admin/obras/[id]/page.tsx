@@ -10,6 +10,10 @@ import { listColaboradores, listColaboradoresDeObra } from '@/lib/data/equipo';
 import { listClientes } from '@/lib/data/clientes';
 import { getEmpresaUsuario } from '@/lib/data/empresa';
 import { getNotaCaja } from '@/lib/data/caja-nota';
+import { getNombreEmpresa } from '@/lib/data/empresa';
+import { getEmpresaConfig } from '@/lib/data/empresa-config';
+import { origenTextoFinal, resolverTextoFinal, textoIntegrado } from '@/lib/pdf/textos-finales';
+import { TextoFinalCard } from '@/components/pdf/texto-final-card';
 import ObraHeader from './obra-header';
 import { NotaCaja } from './nota-caja';
 import RegistrarMovimiento from './registrar-movimiento';
@@ -47,6 +51,8 @@ export default async function ObraDetallePage({
     { data: clientes },
     notaCaja,
     { data: todasLasObras },
+    nombreEmpresa,
+    { pdf },
   ] = await Promise.all([
     listMovimientosByObra(id),
     listPresupuestoObra(id),
@@ -55,6 +61,8 @@ export default async function ObraDetallePage({
     listClientes(),
     getNotaCaja(id),
     listObras(),
+    getNombreEmpresa(),
+    getEmpresaConfig(),
   ]);
 
   // Para el cambio rápido entre obras (paridad móvil): todas por nombre.
@@ -85,6 +93,29 @@ export default async function ObraDetallePage({
 
       {/* Nota de conciliación (el apunte al pie del Excel de la contadora). */}
       <NotaCaja obraId={id} notaInicial={notaCaja} puedeEditar={esOficina} />
+
+      {/* Párrafo final del ESTADO DE CUENTA DEL CLIENTE de esta obra. Vive junto
+          al estado de cuenta y no en Movimientos porque es lo que se imprime en
+          ese documento, no en el PDF de caja interno. */}
+      <TextoFinalCard
+        tipo="estado_cuenta"
+        documentoId={id}
+        resuelto={resolverTextoFinal({
+          tipo: 'estado_cuenta',
+          documento: obra.texto_final,
+          empresa: pdf.textos,
+          ctx: { nombreEmpresa: nombreEmpresa ?? 'ConstructorPro' },
+        })}
+        integrado={textoIntegrado('estado_cuenta', {
+          nombreEmpresa: nombreEmpresa ?? 'ConstructorPro',
+        })}
+        origen={origenTextoFinal({
+          tipo: 'estado_cuenta',
+          documento: obra.texto_final,
+          empresa: pdf.textos,
+        })}
+        puedeEditar={['admin', 'supervisor'].includes(rol)}
+      />
 
       {/* 2. Presupuesto por partidas (editable) */}
       {!presupuestoError && (

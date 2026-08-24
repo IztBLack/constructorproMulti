@@ -250,6 +250,14 @@ class Cotizaciones extends Table with SyncCols, Orderable {
   TextColumn get obraId => text().nullable()();
   TextColumn get pdfConfigJson => text().nullable()();
 
+  /// Párrafo final del PDF solo para esta cotización. Espeja
+  /// `cotizaciones.texto_final` de Supabase (migración 0032).
+  ///
+  /// NULL = "no tengo el mío": se imprime el texto general de la empresa o, si
+  /// tampoco hay, el integrado. Es distinto de cadena vacía, que sería "sin
+  /// párrafo", y por eso la columna es nullable en vez de tener default ''.
+  TextColumn get textoFinal => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }

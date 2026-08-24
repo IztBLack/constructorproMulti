@@ -7746,6 +7746,17 @@ class $CotizacionesTable extends Cotizaciones
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _textoFinalMeta = const VerificationMeta(
+    'textoFinal',
+  );
+  @override
+  late final GeneratedColumn<String> textoFinal = GeneratedColumn<String>(
+    'texto_final',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     empresaId,
@@ -7767,6 +7778,7 @@ class $CotizacionesTable extends Cotizaciones
     notas,
     obraId,
     pdfConfigJson,
+    textoFinal,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -7911,6 +7923,12 @@ class $CotizacionesTable extends Cotizaciones
         ),
       );
     }
+    if (data.containsKey('texto_final')) {
+      context.handle(
+        _textoFinalMeta,
+        textoFinal.isAcceptableOrUnknown(data['texto_final']!, _textoFinalMeta),
+      );
+    }
     return context;
   }
 
@@ -7996,6 +8014,10 @@ class $CotizacionesTable extends Cotizaciones
         DriftSqlType.string,
         data['${effectivePrefix}pdf_config_json'],
       ),
+      textoFinal: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}texto_final'],
+      ),
     );
   }
 
@@ -8050,6 +8072,14 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
   final String notas;
   final String? obraId;
   final String? pdfConfigJson;
+
+  /// Párrafo final del PDF solo para esta cotización. Espeja
+  /// `cotizaciones.texto_final` de Supabase (migración 0032).
+  ///
+  /// NULL = "no tengo el mío": se imprime el texto general de la empresa o, si
+  /// tampoco hay, el integrado. Es distinto de cadena vacía, que sería "sin
+  /// párrafo", y por eso la columna es nullable en vez de tener default ''.
+  final String? textoFinal;
   const Cotizacion({
     required this.empresaId,
     required this.createdAt,
@@ -8070,6 +8100,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
     required this.notas,
     this.obraId,
     this.pdfConfigJson,
+    this.textoFinal,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -8100,6 +8131,9 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
     }
     if (!nullToAbsent || pdfConfigJson != null) {
       map['pdf_config_json'] = Variable<String>(pdfConfigJson);
+    }
+    if (!nullToAbsent || textoFinal != null) {
+      map['texto_final'] = Variable<String>(textoFinal);
     }
     return map;
   }
@@ -8133,6 +8167,9 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
       pdfConfigJson: pdfConfigJson == null && nullToAbsent
           ? const Value.absent()
           : Value(pdfConfigJson),
+      textoFinal: textoFinal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(textoFinal),
     );
   }
 
@@ -8161,6 +8198,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
       notas: serializer.fromJson<String>(json['notas']),
       obraId: serializer.fromJson<String?>(json['obraId']),
       pdfConfigJson: serializer.fromJson<String?>(json['pdfConfigJson']),
+      textoFinal: serializer.fromJson<String?>(json['textoFinal']),
     );
   }
   @override
@@ -8186,6 +8224,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
       'notas': serializer.toJson<String>(notas),
       'obraId': serializer.toJson<String?>(obraId),
       'pdfConfigJson': serializer.toJson<String?>(pdfConfigJson),
+      'textoFinal': serializer.toJson<String?>(textoFinal),
     };
   }
 
@@ -8209,6 +8248,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
     String? notas,
     Value<String?> obraId = const Value.absent(),
     Value<String?> pdfConfigJson = const Value.absent(),
+    Value<String?> textoFinal = const Value.absent(),
   }) => Cotizacion(
     empresaId: empresaId ?? this.empresaId,
     createdAt: createdAt ?? this.createdAt,
@@ -8233,6 +8273,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
     pdfConfigJson: pdfConfigJson.present
         ? pdfConfigJson.value
         : this.pdfConfigJson,
+    textoFinal: textoFinal.present ? textoFinal.value : this.textoFinal,
   );
   Cotizacion copyWithCompanion(CotizacionesCompanion data) {
     return Cotizacion(
@@ -8267,6 +8308,9 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
       pdfConfigJson: data.pdfConfigJson.present
           ? data.pdfConfigJson.value
           : this.pdfConfigJson,
+      textoFinal: data.textoFinal.present
+          ? data.textoFinal.value
+          : this.textoFinal,
     );
   }
 
@@ -8291,7 +8335,8 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
           ..write('descuento: $descuento, ')
           ..write('notas: $notas, ')
           ..write('obraId: $obraId, ')
-          ..write('pdfConfigJson: $pdfConfigJson')
+          ..write('pdfConfigJson: $pdfConfigJson, ')
+          ..write('textoFinal: $textoFinal')
           ..write(')'))
         .toString();
   }
@@ -8317,6 +8362,7 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
     notas,
     obraId,
     pdfConfigJson,
+    textoFinal,
   );
   @override
   bool operator ==(Object other) =>
@@ -8340,7 +8386,8 @@ class Cotizacion extends DataClass implements Insertable<Cotizacion> {
           other.descuento == this.descuento &&
           other.notas == this.notas &&
           other.obraId == this.obraId &&
-          other.pdfConfigJson == this.pdfConfigJson);
+          other.pdfConfigJson == this.pdfConfigJson &&
+          other.textoFinal == this.textoFinal);
 }
 
 class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
@@ -8363,6 +8410,7 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
   final Value<String> notas;
   final Value<String?> obraId;
   final Value<String?> pdfConfigJson;
+  final Value<String?> textoFinal;
   final Value<int> rowid;
   const CotizacionesCompanion({
     this.empresaId = const Value.absent(),
@@ -8384,6 +8432,7 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
     this.notas = const Value.absent(),
     this.obraId = const Value.absent(),
     this.pdfConfigJson = const Value.absent(),
+    this.textoFinal = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CotizacionesCompanion.insert({
@@ -8406,6 +8455,7 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
     this.notas = const Value.absent(),
     this.obraId = const Value.absent(),
     this.pdfConfigJson = const Value.absent(),
+    this.textoFinal = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        cliente = Value(cliente),
@@ -8431,6 +8481,7 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
     Expression<String>? notas,
     Expression<String>? obraId,
     Expression<String>? pdfConfigJson,
+    Expression<String>? textoFinal,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -8453,6 +8504,7 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
       if (notas != null) 'notas': notas,
       if (obraId != null) 'obra_id': obraId,
       if (pdfConfigJson != null) 'pdf_config_json': pdfConfigJson,
+      if (textoFinal != null) 'texto_final': textoFinal,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -8477,6 +8529,7 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
     Value<String>? notas,
     Value<String?>? obraId,
     Value<String?>? pdfConfigJson,
+    Value<String?>? textoFinal,
     Value<int>? rowid,
   }) {
     return CotizacionesCompanion(
@@ -8499,6 +8552,7 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
       notas: notas ?? this.notas,
       obraId: obraId ?? this.obraId,
       pdfConfigJson: pdfConfigJson ?? this.pdfConfigJson,
+      textoFinal: textoFinal ?? this.textoFinal,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -8563,6 +8617,9 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
     if (pdfConfigJson.present) {
       map['pdf_config_json'] = Variable<String>(pdfConfigJson.value);
     }
+    if (textoFinal.present) {
+      map['texto_final'] = Variable<String>(textoFinal.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -8591,6 +8648,7 @@ class CotizacionesCompanion extends UpdateCompanion<Cotizacion> {
           ..write('notas: $notas, ')
           ..write('obraId: $obraId, ')
           ..write('pdfConfigJson: $pdfConfigJson, ')
+          ..write('textoFinal: $textoFinal, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -18467,6 +18525,7 @@ typedef $$CotizacionesTableCreateCompanionBuilder =
       Value<String> notas,
       Value<String?> obraId,
       Value<String?> pdfConfigJson,
+      Value<String?> textoFinal,
       Value<int> rowid,
     });
 typedef $$CotizacionesTableUpdateCompanionBuilder =
@@ -18490,6 +18549,7 @@ typedef $$CotizacionesTableUpdateCompanionBuilder =
       Value<String> notas,
       Value<String?> obraId,
       Value<String?> pdfConfigJson,
+      Value<String?> textoFinal,
       Value<int> rowid,
     });
 
@@ -18594,6 +18654,11 @@ class $$CotizacionesTableFilterComposer
 
   ColumnFilters<String> get pdfConfigJson => $composableBuilder(
     column: $table.pdfConfigJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get textoFinal => $composableBuilder(
+    column: $table.textoFinal,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -18701,6 +18766,11 @@ class $$CotizacionesTableOrderingComposer
     column: $table.pdfConfigJson,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get textoFinal => $composableBuilder(
+    column: $table.textoFinal,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CotizacionesTableAnnotationComposer
@@ -18780,6 +18850,11 @@ class $$CotizacionesTableAnnotationComposer
     column: $table.pdfConfigJson,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get textoFinal => $composableBuilder(
+    column: $table.textoFinal,
+    builder: (column) => column,
+  );
 }
 
 class $$CotizacionesTableTableManager
@@ -18832,6 +18907,7 @@ class $$CotizacionesTableTableManager
                 Value<String> notas = const Value.absent(),
                 Value<String?> obraId = const Value.absent(),
                 Value<String?> pdfConfigJson = const Value.absent(),
+                Value<String?> textoFinal = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CotizacionesCompanion(
                 empresaId: empresaId,
@@ -18853,6 +18929,7 @@ class $$CotizacionesTableTableManager
                 notas: notas,
                 obraId: obraId,
                 pdfConfigJson: pdfConfigJson,
+                textoFinal: textoFinal,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -18876,6 +18953,7 @@ class $$CotizacionesTableTableManager
                 Value<String> notas = const Value.absent(),
                 Value<String?> obraId = const Value.absent(),
                 Value<String?> pdfConfigJson = const Value.absent(),
+                Value<String?> textoFinal = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CotizacionesCompanion.insert(
                 empresaId: empresaId,
@@ -18897,6 +18975,7 @@ class $$CotizacionesTableTableManager
                 notas: notas,
                 obraId: obraId,
                 pdfConfigJson: pdfConfigJson,
+                textoFinal: textoFinal,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

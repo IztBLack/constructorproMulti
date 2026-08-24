@@ -2,6 +2,7 @@ import type { EstadoCuentaObra, ObraPortal } from '@/lib/data/portal-cliente';
 import type { PdfConfig } from '@/lib/data/empresa-config';
 import { formatCurrency, formatDate } from '@/lib/data/format';
 import { envolverDocumento, esc, folioCorto } from '@/lib/pdf/documento-base';
+import { resolverTextoFinal } from '@/lib/pdf/textos-finales';
 
 /**
  * HTML del estado de cuenta que ve el CLIENTE de una obra. A diferencia del de
@@ -17,6 +18,15 @@ export function construirEstadoCuentaClienteHtml(params: {
   hoy: number;
 }): string {
   const { obra, estado, nombreEmpresa, pdf, hoy } = params;
+
+  // El texto propio vive en la OBRA: el estado de cuenta no es una entidad con
+  // fila propia, se emite de una obra.
+  const textoFinal = resolverTextoFinal({
+    tipo: 'estado_cuenta',
+    documento: obra.texto_final,
+    empresa: pdf.textos,
+    ctx: { nombreEmpresa },
+  });
   const { costoTotal, recibido, pendiente, pagadoPct, partidas, entradas } = estado;
   const folio = folioCorto(obra.id);
 
@@ -124,10 +134,7 @@ export function construirEstadoCuentaClienteHtml(params: {
 
     <footer class="doc-footer avoid">
       <div class="vigencia">
-        <p class="vigencia-texto">
-          Documento informativo del avance de pagos de su obra. Los montos están expresados en
-          pesos mexicanos (MXN). Para cualquier aclaración comuníquese con ${esc(nombreEmpresa)}.
-        </p>
+        <p class="vigencia-texto">${esc(textoFinal)}</p>
         ${pdf.pieDePagina ? `<p class="pie-empresa">${esc(pdf.pieDePagina)}</p>` : ''}
       </div>
     </footer>`;

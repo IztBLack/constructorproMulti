@@ -1,10 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Card, CardHeader, CardTitle, Field, Input } from '@/components/ui';
+import { Button, Card, CardHeader, CardTitle, Field, Input, Textarea } from '@/components/ui';
 import { EstadoFormulario } from './estado-formulario';
 import { actualizarPdfConfig } from '@/lib/auth/empresa-actions';
 import type { PdfConfig } from '@/lib/data/empresa-config';
+import {
+  LARGO_MAXIMO,
+  NOMBRE_TIPO,
+  TIPOS_DOCUMENTO,
+  textoIntegrado,
+  type TextosEmpresa,
+  type TipoDocumento,
+} from '@/lib/pdf/textos-finales';
 
 /**
  * Personalización de los documentos (cotización en PDF, estado de cuenta, caja,
@@ -25,6 +33,7 @@ export function SeccionPdf({ configActual }: { configActual: PdfConfig }) {
   const [compacto, setCompacto] = useState(configActual.modoCompacto);
   const [firmaIzq, setFirmaIzq] = useState(configActual.firmaIzquierda);
   const [firmaDer, setFirmaDer] = useState(configActual.firmaDerecha);
+  const [textos, setTextos] = useState<TextosEmpresa>(configActual.textos ?? {});
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -38,7 +47,8 @@ export function SeccionPdf({ configActual }: { configActual: PdfConfig }) {
     mayusculas === configActual.mayusculas &&
     compacto === configActual.modoCompacto &&
     firmaIzq === configActual.firmaIzquierda &&
-    firmaDer === configActual.firmaDerecha;
+    firmaDer === configActual.firmaDerecha &&
+    TIPOS_DOCUMENTO.every((t) => (textos[t] ?? '') === (configActual.textos?.[t] ?? ''));
 
   async function alEnviar(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -182,6 +192,30 @@ export function SeccionPdf({ configActual }: { configActual: PdfConfig }) {
           </label>
         </div>
 
+        {/* Párrafo final por tipo de documento. Va después de las casillas
+            porque es lo más largo de la tarjeta y lo que menos se toca: una vez
+            escritas tus condiciones, no vuelves aquí en meses. */}
+        <fieldset className="space-y-3 rounded-lg border border-neutral-200 p-4">
+          <legend className="px-1 text-sm font-medium text-neutral-700">
+            Párrafo final de cada documento
+          </legend>
+          <p className="-mt-1 text-xs text-neutral-500">
+            Es el texto de condiciones que va al pie, arriba de tu pie de página. Déjalo
+            vacío para usar el que trae la app. Cada cotización o nota puede cambiar el
+            suyo sin tocar esto.
+          </p>
+
+          {TIPOS_DOCUMENTO.map((tipo) => (
+            <CampoTexto
+              key={tipo}
+              tipo={tipo}
+              valor={textos[tipo] ?? ''}
+              onChange={(v) => setTextos((t) => ({ ...t, [tipo]: v }))}
+              disabled={cargando}
+            />
+          ))}
+        </fieldset>
+
         {/* Vista previa: reproduce el encabezado real del documento. Va en
             `tema-papel` porque simula una hoja impresa (siempre blanca): sin esto,
             en modo oscuro la tarjeta se invertía a oscura mientras el color de
@@ -212,5 +246,73 @@ export function SeccionPdf({ configActual }: { configActual: PdfConfig }) {
         </Button>
       </form>
     </Card>
+  );
+}
+
+/**
+ * Un campo por tipo de documento. El marcador de posición es el texto integrado
+ * REAL: así se ve qué se va a imprimir si lo dejas vacío, en lugar de tener que
+ * generar un PDF para averiguarlo.
+ *
+ * "Copiar el texto de la app" rellena el campo con ese mismo texto para poder
+ * editarlo en vez de redactar condiciones desde cero. El nombre de la empresa
+ * queda escrito literal — a partir de ahí es tuyo, y no se actualiza solo si
+ * renombras la empresa.
+ */
+function CampoTexto({
+  tipo,
+  valor,
+  onChange,
+  disabled,
+}: {
+  tipo: TipoDocumento;
+  valor: string;
+  onChange: (v: string) => void;
+  disabled: boolean;
+}) {
+  const integrado = textoIntegrado(tipo, {
+    nombreEmpresa: 'tu constructora',
+    ivaEnabled: true,
+    ivaPct: 16,
+    destinatario: 'el socio',
+  });
+
+  return (
+    <Field
+      label={NOMBRE_TIPO[tipo]}
+      hint={valor.trim() === '' ? 'Vacío: se imprime el texto de la app.' : undefined}
+    >
+      <div className="space-y-1.5">
+        <Textarea
+          name={`texto_${tipo}`}
+          value={valor}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+          rows={3}
+          maxLength={LARGO_MAXIMO}
+          placeholder={integrado}
+        />
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => onChange(integrado)}
+            disabled={disabled}
+            className="text-xs text-neutral-500 underline underline-offset-2 transition hover:text-neutral-900 disabled:opacity-50"
+          >
+            Copiar el texto de la app para editarlo
+          </button>
+          {valor.trim() !== '' && (
+            <button
+              type="button"
+              onClick={() => onChange('')}
+              disabled={disabled}
+              className="text-xs text-neutral-500 underline underline-offset-2 transition hover:text-neutral-900 disabled:opacity-50"
+            >
+              Volver al de la app
+            </button>
+          )}
+        </div>
+      </div>
+    </Field>
   );
 }

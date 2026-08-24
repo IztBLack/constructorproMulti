@@ -125,7 +125,9 @@ const BASE_CSS = `
   .notas { margin-bottom: 14px; }
   .notas-texto { font-size: 11px; color: #404040; white-space: pre-wrap; line-height: 1.5; margin: 0; }
   .vigencia { border-top: 1px dashed #e5e5e5; padding-top: 14px; }
-  .vigencia-texto { font-size: 10px; color: #a3a3a3; line-height: 1.6; margin: 0; }
+  /* pre-line porque este párrafo ahora es editable (0032): si alguien lo
+     escribe en varios renglones, se imprime en varios renglones. */
+  .vigencia-texto { font-size: 10px; color: #a3a3a3; line-height: 1.6; margin: 0; white-space: pre-line; }
   .pie-empresa { font-size: 10px; font-weight: 500; color: #0F172A; margin: 8px 0 0; }
 `;
 

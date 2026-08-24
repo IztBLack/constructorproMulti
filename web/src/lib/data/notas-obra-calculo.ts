@@ -55,6 +55,8 @@ export interface NotaObra {
   saldo_override: number | null;
   notas: string;
   orden: number;
+  /** Párrafo final del PDF solo para esta nota (0032). Null = el general. */
+  texto_final: string | null;
 }
 
 /** Nota con sus renglones ya cargados (lo que consumen editor y PDF). */

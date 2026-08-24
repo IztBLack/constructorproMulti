@@ -1,6 +1,7 @@
 import type { PdfConfig } from '@/lib/data/empresa-config';
 import { formatCurrency, formatDate } from '@/lib/data/format';
 import { envolverDocumento, esc, folioCorto } from '@/lib/pdf/documento-base';
+import { resolverTextoFinal } from '@/lib/pdf/textos-finales';
 
 /**
  * HTML del documento de una cotización. Solo arma el CUERPO y sus estilos
@@ -23,6 +24,8 @@ export interface CotizacionDocData {
   descuento: number;
   iva_enabled: boolean;
   notas: string | null;
+  /** Párrafo final propio de esta cotización (0032). Null = el general. */
+  texto_final?: string | null;
   secciones: {
     id: string;
     nombre: string;
@@ -64,6 +67,20 @@ export function construirCotizacionDocumentoHtml(params: {
 }): string {
   const { cotizacion, totales, nombreEmpresa, pdf } = params;
   const folio = folioCorto(cotizacion.id);
+
+  // El párrafo final se resuelve AQUÍ y no en cada llamador: este builder tiene
+  // cuatro (admin y cliente, vista previa y descarga) y resolverlo en cada uno
+  // era garantía de que tarde o temprano imprimieran cosas distintas.
+  const textoFinal = resolverTextoFinal({
+    tipo: 'cotizacion',
+    documento: cotizacion.texto_final,
+    empresa: pdf.textos,
+    ctx: {
+      nombreEmpresa,
+      ivaEnabled: cotizacion.iva_enabled,
+      ivaPct: totales.ivaPct,
+    },
+  });
 
   const filasSecciones = cotizacion.secciones
     .map((seccion) => {
@@ -159,10 +176,6 @@ export function construirCotizacionDocumentoHtml(params: {
 
   const bloquePie = pdf.pieDePagina ? `<p class="pie-empresa">${esc(pdf.pieDePagina)}</p>` : '';
   const contacto = pdf.empresaContacto ? `<p class="contacto">${esc(pdf.empresaContacto)}</p>` : '';
-  const leyendaIva = cotizacion.iva_enabled
-    ? ` Los precios incluyen IVA (${totales.ivaPct}%).`
-    : ' Los precios no incluyen IVA.';
-
   const cuerpo = `
     <header class="doc-header avoid">
       <div>
@@ -199,11 +212,7 @@ export function construirCotizacionDocumentoHtml(params: {
     <footer class="doc-footer avoid">
       ${bloqueNotas}
       <div class="vigencia">
-        <p class="vigencia-texto">
-          Esta cotización tiene una vigencia de 30 días naturales a partir de la fecha de emisión.
-          Los precios están expresados en pesos mexicanos (MXN).${leyendaIva}
-          Para consultas o aclaraciones comuníquese con ${esc(nombreEmpresa)}.
-        </p>
+        <p class="vigencia-texto">${esc(textoFinal)}</p>
         ${bloquePie}
       </div>
     </footer>`;

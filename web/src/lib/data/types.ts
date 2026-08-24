@@ -29,6 +29,8 @@ export interface Obra {
   avance: number;
   cotizacion_origen_id: string | null;
   pdf_config_json: unknown | null;
+  /** Párrafo final del estado de cuenta del cliente de esta obra (0032). */
+  texto_final: string | null;
   created_at: number;
   updated_at: number;
   server_updated_at: number | null;
@@ -52,6 +54,8 @@ export interface Cotizacion {
   iva_porcentaje?: number | null;
   descuento: number;
   notas: string | null;
+  /** Párrafo final del PDF solo para esta cotización (0032). */
+  texto_final: string | null;
   obra_id: string | null;
   /// Foto (JSON) de la versión que el cliente aprobó por última vez. Null hasta
   /// que se acepta. Sirve para detectar cambios posteriores (re-aprobación).
