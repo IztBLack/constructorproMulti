@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui';
 import BarraOffline from '@/components/offline/barra-offline';
 import { OPCIONES, formatoJornadas } from '@/lib/asistencia/fracciones';
@@ -122,7 +121,6 @@ export default function PaseLista() {
   // "Mover a otra obra" desde el pase (paridad móvil). `recargar` fuerza recargar
   // el día tras mover, para que la persona reaparezca bajo la obra nueva.
   const [recargar, setRecargar] = useState(0);
-  const router = useRouter();
   const [moviendoKey, setMoviendoKey] = useState<string | null>(null);
 
   // Extras del alta rápida. Se piden UNA vez y solo sirven en línea; si fallan,
@@ -133,9 +131,6 @@ export default function PaseLista() {
   const [nuevoNombre, setNuevoNombre] = useState('');
   const [altaPend, setAltaPend] = useState(false);
   const [altaError, setAltaError] = useState<string | null>(null);
-  /// Cuántos quedaron incompletos en esta sesión, para el aviso.
-  const [incompletos, setIncompletos] = useState<string[]>([]);
-  const [avisoOculto, setAvisoOculto] = useState(false);
   const [obraDestino, setObraDestino] = useState('');
   const [movPend, setMovPend] = useState(false);
   const [movError, setMovError] = useState<string | null>(null);
@@ -175,8 +170,6 @@ export default function PaseLista() {
         setAltaError(r.error ?? 'No se pudo crear.');
         return;
       }
-      setIncompletos((prev) => [...prev, nombre]);
-      setAvisoOculto(false);
       setNuevoNombre('');
       setAltaEnObra(null);
       setRecargar((n) => n + 1);
@@ -451,31 +444,6 @@ export default function PaseLista() {
               </p>
             </>
           )}
-        </div>
-      )}
-
-      {/* Aviso de datos pendientes. Se queda hasta que se cierre a mano: un
-          aviso que desaparece solo es un aviso que nadie vio. "Más tarde" lo
-          oculta en esta sesión; al recargar vuelve, porque el pendiente sigue
-          ahí. */}
-      {incompletos.length > 0 && !avisoOculto && (
-        <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
-          <p className="text-sm font-medium text-amber-900">
-            {incompletos.length === 1
-              ? `A ${incompletos[0]} le faltan datos.`
-              : `Tienes ${incompletos.length} colaboradores con información incompleta.`}
-          </p>
-          <p className="mt-0.5 text-xs text-amber-800">
-            Sin puesto ni sueldo, la nómina los cuenta en $0.
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => router.push('/admin/equipo?incompletos=1')}>
-              Ir a completar
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => setAvisoOculto(true)}>
-              Dejar para más tarde
-            </Button>
-          </div>
         </div>
       )}
 

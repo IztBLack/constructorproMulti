@@ -184,3 +184,58 @@ export async function listObrasPorColaborador(): Promise<{
   }
   return { data: out, error: null };
 }
+
+// ── Colaboradores con información pendiente ────────────────────────────────
+
+/**
+ * Nombre del puesto placeholder que deja el alta rápida del pase de lista.
+ * Duplicado a propósito de `equipo/actions.ts`, que es `'use server'` y no
+ * puede exportar constantes.
+ */
+export const PUESTO_POR_DEFINIR = 'Por definir';
+
+export interface Incompletos {
+  total: number;
+  /** Los primeros nombres, para poder decir "Juan y 2 más" en vez de un número seco. */
+  nombres: string[];
+}
+
+/**
+ * Cuántas personas quedaron a medio registrar.
+ *
+ * "Incompleto" = tiene el puesto [PUESTO_POR_DEFINIR], que es la marca que deja
+ * el alta por nombre. Es una definición consultable y no una heurística: no se
+ * infiere de "le falta el sueldo", porque un sueldo vacío es legítimo — la
+ * nómina cae al del puesto.
+ *
+ * Nunca lanza: si la consulta falla se devuelve 0. Este dato alimenta un aviso;
+ * romper toda la sección de administración porque no se pudo contar sería peor
+ * que no avisar.
+ */
+export async function contarIncompletos(): Promise<Incompletos> {
+  const vacio: Incompletos = { total: 0, nombres: [] };
+  try {
+    const supabase = await createClient();
+    const { data: puesto } = await supabase
+      .from('puestos')
+      .select('id')
+      .eq('nombre', PUESTO_POR_DEFINIR)
+      .is('deleted_at', null)
+      .maybeSingle();
+
+    if (!puesto?.id) return vacio;
+
+    const { data } = await supabase
+      .from('colaboradores')
+      .select('nombre')
+      .eq('puesto_id', puesto.id)
+      .eq('activo', true)
+      .is('deleted_at', null)
+      .order('nombre');
+
+    const nombres = (data ?? []).map((c) => c.nombre as string);
+    return { total: nombres.length, nombres: nombres.slice(0, 3) };
+  } catch {
+    return vacio;
+  }
+}

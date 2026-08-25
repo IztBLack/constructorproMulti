@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { getNombreEmpresa } from '@/lib/data/empresa';
 import { nombreUsuario } from '@/lib/data/usuario';
+import { contarIncompletos } from '@/lib/data/equipo';
+import { AvisoIncompletos } from '@/components/equipo/aviso-incompletos';
 import { NavLinks } from './nav-links';
 import { AvisoInstalar } from '@/components/pwa/aviso-instalar';
 import { ToggleTema } from '@/components/tema/toggle-tema';
@@ -20,6 +22,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const marca = (await getNombreEmpresa()) ?? 'ConstructorPro';
   const nombre = nombreUsuario(user);
+  // Aviso global de gente a medio registrar. Va en el layout y no en una
+  // pantalla porque el pendiente es del negocio: quien da de alta en la obra
+  // no suele ser quien completa los datos en la oficina.
+  const incompletos = await contarIncompletos();
 
   return (
     // `print:*` deja fuera de la impresión el chrome del admin (nav, encabezado,
@@ -68,6 +74,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-8 print:max-w-none print:p-0">
         <div className="mb-6 empty:mb-0 print:hidden">
           <AvisoInstalar />
+        </div>
+        {/* `print:hidden`: es un aviso de trabajo pendiente, no parte de ningún
+            documento que se imprima desde estas pantallas. */}
+        <div className="print:hidden">
+          <AvisoIncompletos datos={incompletos} />
         </div>
         {children}
       </main>

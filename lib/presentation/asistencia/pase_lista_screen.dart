@@ -1,7 +1,5 @@
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
@@ -9,7 +7,6 @@ import '../../core/theme/app_colors.dart';
 import '../../core/sync/cloud_providers.dart';
 import '../../core/sync/rol_provider.dart';
 import '../../data/providers.dart';
-import '../../domain/logic/salario_periodo.dart';
 import '../common/app_snackbar.dart';
 import '../common/confirm_dialog.dart';
 import '../common/app_spacing.dart';
@@ -288,65 +285,18 @@ class _ObraPaseLista extends ConsumerWidget {
   /// se completa después en Equipo; pedirlo aquí convertiría "apuntar al que
   /// llegó" en un formulario de alta, que es justo lo que hace que la gente lo
   /// anote en un papel.
+  /// Abre el selector: traer a alguien del equipo o crear a quien no exista.
+  ///
+  /// Se enseña TODO el equipo, no solo el de esta obra, porque el "+" existe
+  /// justo para traer a quien no está aquí. Y traer a alguien que ya está en
+  /// otra obra lo MUEVE —`asignarObra` cierra la anterior—, así que la fila lo
+  /// avisa antes de que se toque.
   Future<void> _altaRapida(BuildContext context, WidgetRef ref) async {
-    final puestos = ref.read(puestosProvider).asData?.value ?? [];
-    if (puestos.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Primero crea un puesto en Configuración.')));
-      return;
-    }
-
-    final datos = await showModalBottomSheet<_AltaRapida>(
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      builder: (_) => _HojaAltaRapida(puestos: puestos, obraNombre: obraNombre),
+      builder: (_) => _HojaAgregarPersona(obraId: obraId, obraNombre: obraNombre),
     );
-    if (datos == null) return;
-
-    final id = const Uuid().v4();
-    final ahora = DateTime.now().millisecondsSinceEpoch;
-    final repo = ref.read(colaboradorRepositoryProvider);
-
-    await repo.upsert(ColaboradoresCompanion.insert(
-      id: id,
-      nombre: datos.nombre,
-      puestoId: datos.puestoId,
-      tipoPago: datos.tipoPago,
-      empresaId: Value(ref.read(empresaIdProvider) ?? ''),
-      createdAt: Value(ahora),
-      updatedAt: Value(ahora),
-    ));
-
-    // Sin sueldo capturado NO se crea fila: "sin fila = sin sueldo" es el
-    // contrato de `colaborador_sueldo`, y una fila vacía se subiría al servidor
-    // para no decir nada.
-    if (datos.salarioDia != null) {
-      // `salarioPersonalizado` es DERIVADO: la pantalla de Equipo lo recalcula
-      // desde el periodo. Si aquí solo se escribiera el diario, la fila quedaría
-      // incoherente y el primer que abriera Equipo lo pisaría con la cuenta de
-      // un periodo vacío. Se guarda el juego completo —semanal a 6 días— que
-      // devuelve exactamente el diario capturado.
-      const dias = 6;
-      final semanal = datos.salarioDia! * dias;
-      await repo.upsertSueldo(ColaboradorSueldoCompanion.insert(
-        colaboradorId: id,
-        periodoPago: const Value('SEMANAL'),
-        salarioPeriodo: Value(semanal),
-        diasSemana: const Value(dias),
-        salarioPersonalizado: Value(
-          salarioDiarioDesdePeriodo(semanal, PeriodoPago.semanal, dias),
-        ),
-        empresaId: Value(ref.read(empresaIdProvider) ?? ''),
-        createdAt: Value(ahora),
-        updatedAt: Value(ahora),
-      ));
-    }
-
-    await repo.asignarObra(obraId: obraId, colaboradorId: id);
-
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('${datos.nombre} agregado a $obraNombre.')));
   }
 }
 
@@ -697,135 +647,170 @@ class _PaseListaRowState extends ConsumerState<_PaseListaRow> {
   }
 }
 
-// ── Alta rápida desde el pase de lista ──────────────────────────────────────
+// ── Agregar personas a la obra desde el pase de lista ───────────────────────
 
-class _AltaRapida {
-  const _AltaRapida({
-    required this.nombre,
-    required this.puestoId,
-    required this.tipoPago,
-    this.salarioDia,
-  });
+/// Selector del "+": crear a alguien nuevo (solo el nombre) o traer a alguien
+/// que ya existe. Gemela del panel de la web (`campo/pase-lista.tsx`).
+class _HojaAgregarPersona extends ConsumerStatefulWidget {
+  const _HojaAgregarPersona({required this.obraId, required this.obraNombre});
 
-  final String nombre;
-  final String puestoId;
-  final String tipoPago;
-
-  /// `null` = sin sueldo capturado: la nómina cae al salario del puesto, que es
-  /// lo correcto cuando en campo nadie sabe cuánto se le acordó.
-  final double? salarioDia;
-}
-
-class _HojaAltaRapida extends StatefulWidget {
-  const _HojaAltaRapida({required this.puestos, required this.obraNombre});
-
-  final List<Puesto> puestos;
+  final String obraId;
   final String obraNombre;
 
   @override
-  State<_HojaAltaRapida> createState() => _HojaAltaRapidaState();
+  ConsumerState<_HojaAgregarPersona> createState() => _HojaAgregarPersonaState();
 }
 
-class _HojaAltaRapidaState extends State<_HojaAltaRapida> {
-  final _nombre = TextEditingController();
-  final _salario = TextEditingController();
-  late String _puestoId = widget.puestos.first.id;
-  String _tipoPago = 'DIA';
+class _HojaAgregarPersonaState extends ConsumerState<_HojaAgregarPersona> {
+  final _nuevo = TextEditingController();
+  final _filtro = TextEditingController();
+  bool _ocupado = false;
 
   @override
   void dispose() {
-    _nombre.dispose();
-    _salario.dispose();
+    _nuevo.dispose();
+    _filtro.dispose();
     super.dispose();
   }
 
-  /// Sugerencia por puesto: el salario que ya tiene configurado. Se enseña como
-  /// marcador, no como valor, para que dejarlo vacío siga significando "el del
-  /// puesto" en vez de clavarle una copia del número de hoy.
-  String get _sugerencia {
-    final p = widget.puestos.firstWhere((x) => x.id == _puestoId);
-    return p.salarioDiaDefault > 0 ? Fmt.money(p.salarioDiaDefault) : '';
+  Future<void> _crear() async {
+    final nombre = _nuevo.text.trim();
+    final empresaId = ref.read(empresaIdProvider);
+    if (nombre.isEmpty || empresaId == null) return;
+
+    setState(() => _ocupado = true);
+    await ref.read(colaboradorRepositoryProvider).crearPorNombre(
+          nombre: nombre,
+          obraId: widget.obraId,
+          empresaId: empresaId,
+        );
+    if (!mounted) return;
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('$nombre agregado. Te faltan sus datos.')));
+  }
+
+  Future<void> _traer(Colaborador c) async {
+    setState(() => _ocupado = true);
+    await ref
+        .read(colaboradorRepositoryProvider)
+        .asignarObra(obraId: widget.obraId, colaboradorId: c.id);
+    if (!mounted) return;
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${c.nombre} ahora está en ${widget.obraNombre}.')));
   }
 
   @override
   Widget build(BuildContext context) {
-    final valido = _nombre.text.trim().isNotEmpty;
+    final cs = Theme.of(context).colorScheme;
+    final equipo = ref.watch(colaboradoresProvider).asData?.value ?? [];
+    final enObra = ref.watch(colaboradoresPorObraProvider(widget.obraId)).asData?.value ?? [];
+    final obrasDe = ref.watch(obrasPorColaboradorProvider).asData?.value ?? {};
+    final incompletos = ref.watch(incompletosProvider).asData?.value ?? [];
+    final idsIncompletos = incompletos.map((c) => c.id).toSet();
+
+    final yaEstan = enObra.map((c) => c.id).toSet();
+    final filtro = _filtro.text.trim().toLowerCase();
+    final candidatos = equipo
+        .where((c) =>
+            c.activo &&
+            !yaEstan.contains(c.id) &&
+            c.nombre.toLowerCase().contains(filtro))
+        .toList();
 
     return Padding(
-      // El teclado no debe tapar los campos: se captura de pie, en la obra.
+      // El teclado no puede tapar los campos: se captura de pie, en la obra.
       padding: EdgeInsets.only(
         left: 16,
         right: 16,
         top: 16,
         bottom: MediaQuery.of(context).viewInsets.bottom + 16,
       ),
-      child: SingleChildScrollView(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text('Agregar a ${widget.obraNombre}',
-              style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _nombre,
-            autofocus: true,
-            textCapitalization: TextCapitalization.words,
-            onChanged: (_) => setState(() {}),
-            decoration: const InputDecoration(
-                labelText: 'Nombre *', hintText: 'Ej. Camilo Martínez'),
-          ),
-          const SizedBox(height: 10),
-          DropdownButtonFormField<String>(
-            initialValue: _puestoId,
-            decoration: const InputDecoration(labelText: 'Puesto *'),
-            items: widget.puestos
-                .map((p) => DropdownMenuItem(value: p.id, child: Text(p.nombre)))
-                .toList(),
-            onChanged: (v) => setState(() => _puestoId = v ?? _puestoId),
-          ),
-          const SizedBox(height: 10),
-          SegmentedButton<String>(
-            showSelectedIcon: false,
-            segments: const [
-              ButtonSegment(value: 'DIA', label: Text('Por día')),
-              ButtonSegment(value: 'DESTAJO', label: Text('Destajo')),
-            ],
-            selected: {_tipoPago},
-            onSelectionChanged: (v) => setState(() => _tipoPago = v.first),
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _salario,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              labelText: 'Sueldo por día',
-              hintText: _sugerencia,
-              helperText: 'Opcional. Vacío = el del puesto.',
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Text('Agregar a ${widget.obraNombre}',
+            style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 12),
+
+        // Crear va PRIMERO: quien abre esto en la obra suele ser porque llegó
+        // alguien que no está en la lista.
+        Row(children: [
+          Expanded(
+            child: TextField(
+              controller: _nuevo,
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(
+                labelText: 'Nombre de alguien nuevo',
+                helperText: 'Se crea solo con el nombre. Lo demás queda pendiente.',
+              ),
             ),
           ),
-          const SizedBox(height: 16),
-          Row(children: [
-            TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancelar')),
-            const Spacer(),
-            FilledButton.icon(
-              icon: const Icon(Icons.person_add_alt),
-              onPressed: valido
-                  ? () => Navigator.pop(
-                        context,
-                        _AltaRapida(
-                          nombre: _nombre.text.trim(),
-                          puestoId: _puestoId,
-                          tipoPago: _tipoPago,
-                          salarioDia:
-                              double.tryParse(_salario.text.trim().replaceAll(',', '')),
-                        ),
-                      )
-                  : null,
-              label: const Text('Agregar'),
-            ),
-          ]),
+          const SizedBox(width: 8),
+          FilledButton(
+            onPressed: _ocupado || _nuevo.text.trim().isEmpty ? null : _crear,
+            child: const Text('Crear'),
+          ),
         ]),
-      ),
+
+        const SizedBox(height: 14),
+        const Divider(height: 1),
+        const SizedBox(height: 10),
+
+        TextField(
+          controller: _filtro,
+          onChanged: (_) => setState(() {}),
+          decoration: const InputDecoration(
+            labelText: '…o busca a alguien del equipo',
+            prefixIcon: Icon(Icons.search),
+            isDense: true,
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 260),
+          child: candidatos.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text('Todo el equipo ya está en esta obra.',
+                      style: TextStyle(color: cs.onSurfaceVariant)),
+                )
+              : ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: candidatos.length,
+                  itemBuilder: (_, i) {
+                    final c = candidatos[i];
+                    final otras = (obrasDe[c.id] ?? [])
+                        .where((o) => o.id != widget.obraId)
+                        .map((o) => o.nombre)
+                        .toList();
+                    return ListTile(
+                      dense: true,
+                      title: Text(c.nombre),
+                      // Se dice de dónde viene: traerlo aquí lo DA DE BAJA de su
+                      // obra actual, y eso no debe pasar a ciegas.
+                      subtitle: otras.isEmpty
+                          ? null
+                          : Text('Hoy está en ${otras.join(', ')} · se moverá',
+                              style: TextStyle(fontSize: 11, color: cs.tertiary)),
+                      trailing: idsIncompletos.contains(c.id)
+                          ? Chip(
+                              label: const Text('Sin datos',
+                                  style: TextStyle(fontSize: 10)),
+                              visualDensity: VisualDensity.compact,
+                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              backgroundColor: cs.tertiaryContainer,
+                              side: BorderSide.none,
+                            )
+                          : null,
+                      onTap: _ocupado ? null : () => _traer(c),
+                    );
+                  },
+                ),
+        ),
+      ]),
     );
   }
 }

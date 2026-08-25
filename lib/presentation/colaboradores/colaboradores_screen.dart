@@ -23,7 +23,12 @@ import '../cuadrillas/cuadrillas_screen.dart';
 const _modoPuesto = 'puesto';
 
 class ColaboradoresScreen extends ConsumerStatefulWidget {
-  const ColaboradoresScreen({super.key});
+  const ColaboradoresScreen({super.key, this.soloIncompletos = false});
+
+  /// Entra ya filtrada a quienes tienen datos pendientes. La usa el aviso
+  /// global: llegar a la lista completa y tener que buscarlos a mano dejaría el
+  /// trabajo a medias.
+  final bool soloIncompletos;
 
   @override
   ConsumerState<ColaboradoresScreen> createState() => _ColaboradoresScreenState();
@@ -31,6 +36,12 @@ class ColaboradoresScreen extends ConsumerStatefulWidget {
 
 class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
   static const _uuid = Uuid();
+
+  /// Ids con datos pendientes, para el filtro de [ColaboradoresScreen.soloIncompletos].
+  Set<String> get _idsIncompletos =>
+      (ref.watch(incompletosProvider).asData?.value ?? [])
+          .map((c) => c.id)
+          .toSet();
   String _query = '';
   bool _mostrarInactivos = true;
 
@@ -137,6 +148,7 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
           var lista = todos
               .where((c) => _mostrarInactivos || c.activo)
               .where((c) => c.nombre.toLowerCase().contains(_query))
+              .where((c) => !widget.soloIncompletos || _idsIncompletos.contains(c.id))
               .toList();
           bool enObra(Colaborador c) => (obrasPorColab[c.id] ?? const <Obra>[])
               .any((o) => o.id == _obraId);

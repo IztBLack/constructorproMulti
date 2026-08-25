@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
 
 import '../core/db/app_database.dart';
 
@@ -192,6 +193,80 @@ class ColaboradorRepository {
   Future<void> setActivo(String id, bool activo) =>
       (db.update(db.colaboradores)..where((t) => t.id.equals(id)))
           .write(ColaboradoresCompanion(activo: Value(activo)));
+
+  // --- Alta por nombre desde el pase de lista ---
+
+  /// Nombre del puesto que marca a quien se dio de alta a las prisas, en campo.
+  /// Misma cadena que la web (`equipo/actions.ts`): si divergen, cada plataforma
+  /// contaría como incompletos a gente distinta.
+  static const puestoPorDefinir = 'Por definir';
+
+  /// Busca el puesto placeholder; lo crea la primera vez que hace falta.
+  ///
+  /// `puestoId` es NOT NULL y de él sale el salario cuando la persona no tiene
+  /// sueldo propio, así que "crear solo con el nombre" necesita un puesto real.
+  /// Va con salario 0 a propósito: el error queda RUIDOSO —esa persona sale en
+  /// la raya sin dinero— en vez de esconderse tras un número inventado que se
+  /// ve correcto y nadie revisa.
+  Future<String> _idPuestoPorDefinir(String empresaId) async {
+    final existente = await (db.select(db.puestos)
+          ..where((t) => t.nombre.equals(puestoPorDefinir) & t.deletedAt.isNull()))
+        .getSingleOrNull();
+    if (existente != null) return existente.id;
+
+    final id = const Uuid().v4();
+    final ahora = DateTime.now().millisecondsSinceEpoch;
+    await db.into(db.puestos).insert(PuestosCompanion.insert(
+          id: id,
+          nombre: puestoPorDefinir,
+          salarioDiaDefault: const Value(0),
+          empresaId: Value(empresaId),
+          createdAt: Value(ahora),
+          updatedAt: Value(ahora),
+        ));
+    return id;
+  }
+
+  /// Da de alta a alguien SOLO con su nombre y lo asigna a una obra, para no
+  /// detener el pase de lista cuando llega quien no estaba registrado. Devuelve
+  /// su id. Puesto, sueldo y contacto quedan pendientes.
+  Future<String> crearPorNombre({
+    required String nombre,
+    required String obraId,
+    required String empresaId,
+  }) async {
+    final id = const Uuid().v4();
+    final ahora = DateTime.now().millisecondsSinceEpoch;
+
+    await upsert(ColaboradoresCompanion.insert(
+      id: id,
+      nombre: nombre.trim(),
+      puestoId: await _idPuestoPorDefinir(empresaId),
+      tipoPago: 'DIA',
+      empresaId: Value(empresaId),
+      createdAt: Value(ahora),
+      updatedAt: Value(ahora),
+    ));
+
+    await asignarObra(obraId: obraId, colaboradorId: id);
+    return id;
+  }
+
+  /// Quienes quedaron a medio registrar, en vivo. "Incompleto" = tiene el puesto
+  /// placeholder; es una definición consultable y no una heurística. NO se
+  /// cuenta "sin sueldo" porque un sueldo vacío es legítimo: la nómina cae al
+  /// del puesto.
+  Stream<List<Colaborador>> watchIncompletos() {
+    final q = db.select(db.colaboradores).join([
+      innerJoin(db.puestos, db.puestos.id.equalsExp(db.colaboradores.puestoId)),
+    ])
+      ..where(db.puestos.nombre.equals(puestoPorDefinir) &
+          db.colaboradores.activo.equals(true) &
+          db.colaboradores.deletedAt.isNull())
+      ..orderBy([OrderingTerm(expression: db.colaboradores.nombre)]);
+
+    return q.watch().map((filas) => filas.map((f) => f.readTable(db.colaboradores)).toList());
+  }
 
   // --- Asignación N:N obra ↔ colaborador ---
   /// Asigna (o revive) la relación obra↔colaborador. Si ya existía con

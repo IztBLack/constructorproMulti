@@ -245,6 +245,17 @@ final notaObraProvider =
     StreamProvider.family<NotaConRenglones?, String>((ref, notaId) =>
         ref.watch(notaObraRepositoryProvider).watchUna(notaId));
 
+/// Colaboradores a medio registrar (alta por nombre sin completar). Alimenta el
+/// aviso global; se calcula de los DATOS, no de lo que pasó en esta sesión, así
+/// que vuelve a salir al abrir la app de nuevo mientras el pendiente siga ahí.
+/// `colaboradorId → obras activas donde está`. Lo usa el "+" del pase de lista
+/// para avisar de dónde se va a mover a alguien antes de tocarlo.
+final obrasPorColaboradorProvider = StreamProvider<Map<String, List<Obra>>>(
+    (ref) => ref.watch(colaboradorRepositoryProvider).watchObrasPorColaborador());
+
+final incompletosProvider = StreamProvider<List<Colaborador>>(
+    (ref) => ref.watch(colaboradorRepositoryProvider).watchIncompletos());
+
 typedef RangoObra = ({String obraId, int start, int end});
 
 final asistenciasRangoProvider =

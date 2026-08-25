@@ -6,6 +6,7 @@ import '../data/providers.dart';
 import 'colaboradores/colaboradores_screen.dart';
 import 'configuraciones/config_screen.dart';
 import 'cotizaciones/cotizaciones_screen.dart';
+import 'common/aviso_incompletos.dart';
 import 'obras/obras_screen.dart';
 import 'onboarding/tutorial_screen.dart';
 import 'resumen/resumen_screen.dart';
@@ -46,7 +47,12 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   Widget build(BuildContext context) {
     final index = ref.watch(homeTabProvider);
     return Scaffold(
-      body: IndexedStack(index: index, children: _screens),
+      // El aviso va FUERA del IndexedStack para que se vea en las cinco
+      // pestañas: el pendiente es del negocio, no de una pantalla.
+      body: Column(children: [
+        const AvisoIncompletos(),
+        Expanded(child: IndexedStack(index: index, children: _screens)),
+      ]),
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
         onDestinationSelected: (i) => ref.read(homeTabProvider.notifier).state = i,
