@@ -23,6 +23,7 @@ import { useArrastreOrden } from '@/components/use-arrastre-orden';
 import { ordenarPorModo } from '@/lib/data/ordenar';
 import { esModoPersonalizado } from '@/lib/data/orden-modos';
 import type { BadgeTone } from '@/components/ui';
+import { MenuFila } from '@/components/vista-rapida/menu-fila';
 
 const RUTA = '/admin/cotizaciones';
 
@@ -143,6 +144,7 @@ export default function FiltroEstadoCotizaciones({
             <Th>Proyecto</Th>
             <Th>Fecha</Th>
             <Th>Estado</Th>
+            <Th className="text-right">Acciones</Th>
           </THead>
           <TBody>
             {filtradas.map((c, i) => (
@@ -186,6 +188,26 @@ export default function FiltroEstadoCotizaciones({
                 <Td>{formatDate(c.fecha)}</Td>
                 <Td>
                   <Badge tone={ESTADO_TONE[c.estado]}>{ESTADO_LABEL[c.estado]}</Badge>
+                </Td>
+                {/* Las acciones que hoy exigen entrar a la ficha, asomadas en la
+                    lista. El menú ya sabe de qué cotización se trata, así que
+                    ninguna opción pide elegir nada después. */}
+                <Td className="text-right">
+                  <MenuFila
+                    etiqueta={tituloCotizacion(c)}
+                    acciones={[
+                      { etiqueta: 'Ver el PDF', href: `/admin/cotizaciones/${c.id}/pdf`, nuevaPestana: true },
+                      {
+                        etiqueta: 'Descargar el PDF',
+                        href: `/admin/cotizaciones/${c.id}/pdf/descargar`,
+                        nuevaPestana: true,
+                      },
+                      ...(c.obra_id
+                        ? [{ etiqueta: 'Ir a la obra vinculada', href: `/admin/obras/${c.obra_id}` }]
+                        : []),
+                      { etiqueta: 'Abrir la cotización', href: `/admin/cotizaciones/${c.id}` },
+                    ]}
+                  />
                 </Td>
               </Tr>
             ))}

@@ -9,6 +9,8 @@ import OrdenModoToggle from '@/components/orden-modo-toggle';
 import { useArrastreOrden } from '@/components/use-arrastre-orden';
 import { ordenarPorModo } from '@/lib/data/ordenar';
 import { esModoPersonalizado } from '@/lib/data/orden-modos';
+import { PanelObra } from '@/components/vista-rapida/panel-obra';
+import { MenuFila } from '@/components/vista-rapida/menu-fila';
 
 const COLUMNAS: DataColumn<Obra>[] = [
   { key: 'nombre', header: 'Nombre', primary: true, cell: (o) => o.nombre },
@@ -26,6 +28,21 @@ const COLUMNAS: DataColumn<Obra>[] = [
 
 const RUTA = '/admin/obras';
 
+/** Acciones de la fila. Las dos primeras son las que más se piden desde la lista. */
+function accionesDeObra(id: string) {
+  return [
+    { etiqueta: 'Pase de lista / asistencia', href: `/admin/obras/${id}/asistencia` },
+    { etiqueta: 'Nómina de la semana', href: `/admin/obras/${id}/nomina` },
+    { etiqueta: 'Notas de trato', href: `/admin/obras/${id}/notas` },
+    { etiqueta: 'PDF de caja', href: `/admin/obras/${id}/pdf`, nuevaPestana: true },
+    {
+      etiqueta: 'Estado de cuenta del cliente',
+      href: `/admin/obras/${id}/estado-cuenta-cliente/descargar`,
+      nuevaPestana: true,
+    },
+  ];
+}
+
 export default function BuscadorObras({
   obras,
   modo,
@@ -37,6 +54,8 @@ export default function BuscadorObras({
   onNuevaObra?: () => void;
 }) {
   const [query, setQuery] = useState('');
+  /// Obra abierta en la vista rápida. `null` = panel cerrado.
+  const [vistaRapida, setVistaRapida] = useState<Obra | null>(null);
 
   const filtradas = obras.filter((o) => {
     const q = query.trim().toLowerCase();
@@ -80,7 +99,37 @@ export default function BuscadorObras({
     ),
   };
 
-  const columnas = puedeMover ? [asaCol, ...COLUMNAS] : COLUMNAS;
+  /// Columna de accesos: la vista rápida (👁) y el menú de la fila (⋯).
+  /// `stopPropagation` en ambos porque la fila entera es un enlace a la obra.
+  const accionesCol: DataColumn<Obra> = {
+    key: 'accesos',
+    header: '',
+    align: 'right',
+    cell: (o) => (
+      <div className="flex items-center justify-end gap-1">
+        <button
+          type="button"
+          aria-label={`Vista rápida de ${o.nombre}`}
+          aria-pressed={vistaRapida?.id === o.id}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setVistaRapida((actual) => (actual?.id === o.id ? null : o));
+          }}
+          className={`inline-flex h-11 w-11 items-center justify-center rounded-lg transition ${
+            vistaRapida?.id === o.id
+              ? 'bg-neutral-900 text-white'
+              : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900'
+          }`}
+        >
+          👁
+        </button>
+        <MenuFila etiqueta={o.nombre} acciones={accionesDeObra(o.id)} />
+      </div>
+    ),
+  };
+
+  const columnas = [...(puedeMover ? [asaCol, ...COLUMNAS] : COLUMNAS), accionesCol];
 
   const sinResultados = filtradas.length === 0;
   const sinObras = obras.length === 0;
@@ -125,16 +174,33 @@ export default function BuscadorObras({
           }
         />
       ) : (
-        <DataTable
-          columns={columnas}
-          rows={listado}
-          rowKey={(o) => o.id}
-          // Al mover se quita el enlace de fila para que los botones ↑/↓ sean
-          // clicables (un enlace estirado los taparía).
-          href={puedeMover ? undefined : (o) => `/admin/obras/${o.id}`}
-          rowLabel={(o) => `Ver obra ${o.nombre}`}
-          rowProps={puedeMover ? (_, i) => propsFila(i) : undefined}
-        />
+        // El panel va AL LADO, no encima: la gracia es no perder la lista de
+        // vista. En pantallas angostas cae debajo, que es lo único que cabe.
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+          <div className="min-w-0 flex-1">
+            <DataTable
+              columns={columnas}
+              rows={listado}
+              rowKey={(o) => o.id}
+              // Al mover se quita el enlace de fila para que los botones ↑/↓ sean
+              // clicables (un enlace estirado los taparía).
+              href={puedeMover ? undefined : (o) => `/admin/obras/${o.id}`}
+              rowLabel={(o) => `Ver obra ${o.nombre}`}
+              rowProps={puedeMover ? (_, i) => propsFila(i) : undefined}
+            />
+          </div>
+
+          {vistaRapida && (
+            <PanelObra
+              // Remonta al cambiar de obra: el panel arranca en su estado de
+              // carga en vez de enseñar los números de la anterior.
+              key={vistaRapida.id}
+              obraId={vistaRapida.id}
+              obraNombre={vistaRapida.nombre}
+              onCerrar={() => setVistaRapida(null)}
+            />
+          )}
+        </div>
       )}
     </div>
   );
