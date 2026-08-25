@@ -17,6 +17,7 @@ import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
 import '../common/orden_modo_toggle.dart';
 import '../cuadrillas/cuadrillas_screen.dart';
+import '../common/esqueleto.dart';
 
 /// Criterio de orden propio de esta lista: por puesto. Los otros (nombre,
 /// recientes, modificados, personalizado) los da el botón de orden compartido.
@@ -136,7 +137,7 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
           await ref.read(syncServiceProvider).syncAll();
         },
         child: colaboradoresAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const EsqueletoLista(filas: 5),
         error: (e, _) => ErrorStateView(
           message: 'No se pudieron cargar los colaboradores.',
           onRetry: () => ref.invalidate(colaboradoresProvider),

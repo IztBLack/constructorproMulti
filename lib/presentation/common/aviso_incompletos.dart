@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/db/app_database.dart';
 import '../../data/providers.dart';
 import '../colaboradores/colaboradores_screen.dart';
+import 'movimiento.dart';
 
 /// Aviso global de gente a medio registrar. Gemelo de `AvisoIncompletos` de la
 /// web (`web/src/components/equipo/aviso-incompletos.tsx`).
@@ -33,8 +35,27 @@ class _AvisoIncompletosState extends ConsumerState<AvisoIncompletos> {
     final cs = Theme.of(context).colorScheme;
     final incompletos = ref.watch(incompletosProvider).asData?.value ?? [];
 
-    if (_oculto || incompletos.isEmpty) return const SizedBox.shrink();
+    // `AnimatedSize` + `AnimatedOpacity`: el aviso aterriza en vez de aparecer
+    // de golpe, y al descartarlo la pantalla se cierra en lugar de dar un salto.
+    // Con movimiento reducido las duraciones son cero: cambia igual, sin
+    // transición.
+    final visible = !_oculto && incompletos.isNotEmpty;
 
+    return AnimatedSize(
+      duration: duracion(context, Duraciones.aviso),
+      curve: curvaEntrada,
+      alignment: Alignment.topCenter,
+      child: !visible
+          ? const SizedBox(width: double.infinity)
+          : AnimatedOpacity(
+              opacity: 1,
+              duration: duracion(context, Duraciones.aviso),
+              child: _cuerpo(context, cs, incompletos),
+            ),
+    );
+  }
+
+  Widget _cuerpo(BuildContext context, ColorScheme cs, List<Colaborador> incompletos) {
     final nombres = incompletos.take(3).map((c) => c.nombre).toList();
     final resto = incompletos.length - nombres.length;
 

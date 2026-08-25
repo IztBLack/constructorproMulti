@@ -127,6 +127,9 @@ export default function PaseLista() {
   // `rol` queda en null y la pantalla no ofrece el alta (ver cargarExtrasCampo).
   const [extras, setExtras] = useState<ExtrasCampo>({ rol: null, puestos: [], equipo: [] });
   const [altaEnObra, setAltaEnObra] = useState<string | null>(null);
+  const [deshacer, setDeshacer] = useState<
+    { colaboradorId: string; obraId: string; nombre: string } | null
+  >(null);
   const [filtroEquipo, setFiltroEquipo] = useState('');
   const [nuevoNombre, setNuevoNombre] = useState('');
   const [altaPend, setAltaPend] = useState(false);
@@ -182,19 +185,35 @@ export default function PaseLista() {
 
   /// Quitar NO es eliminar: cierra la asignación (`fecha_salida`) y conserva el
   /// historial y la asistencia ya registrada. La baja real vive en Equipo.
+  /// Sin confirmación previa, con DESHACER: quitar es reversible —cierra la
+  /// asignación y conserva historial y asistencia—, así que confirmar costaría
+  /// un paso en el 100% de los casos para proteger de un error barato. El
+  /// diálogo se reserva para lo que no se puede deshacer, que vive en Equipo.
   async function quitarDeObra(colaboradorId: string, obraId: string, nombre: string) {
-    if (!confirm(`¿Quitar a ${nombre} de esta obra? Se conserva su historial y su asistencia ya registrada.`)) {
-      return;
-    }
     try {
       const r = await desvincularObraColaborador(colaboradorId, obraId);
       if (!r.ok) {
         setMovError(r.error ?? 'No se pudo quitar.');
         return;
       }
+      setDeshacer({ colaboradorId, obraId, nombre });
       setRecargar((n) => n + 1);
     } catch {
       setMovError('No se pudo quitar (¿sin conexión?).');
+    }
+  }
+
+  /// Revive la asignación. `asignarObraColaborador` reutiliza la misma relación
+  /// en vez de duplicarla, así que deshacer deja todo como estaba.
+  async function deshacerQuitar() {
+    if (!deshacer) return;
+    const { colaboradorId, obraId } = deshacer;
+    setDeshacer(null);
+    try {
+      await asignarObraColaborador(colaboradorId, obraId);
+      setRecargar((n) => n + 1);
+    } catch {
+      setMovError('No se pudo deshacer (¿sin conexión?).');
     }
   }
 
@@ -444,6 +463,32 @@ export default function PaseLista() {
               </p>
             </>
           )}
+        </div>
+      )}
+
+      {deshacer && (
+        <div
+          role="status"
+          className="fixed inset-x-3 bottom-3 z-40 flex items-center justify-between gap-3 rounded-xl bg-neutral-900 px-4 py-3 text-sm text-white shadow-lg motion-safe:animate-[aterrizar_.25s_ease-out]"
+        >
+          <span className="min-w-0 truncate">{deshacer.nombre} ya no está en esta obra.</span>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void deshacerQuitar()}
+              className="min-h-11 font-semibold underline underline-offset-2"
+            >
+              Deshacer
+            </button>
+            <button
+              type="button"
+              aria-label="Cerrar aviso"
+              onClick={() => setDeshacer(null)}
+              className="min-h-11 px-2 text-white/70 hover:text-white"
+            >
+              ✕
+            </button>
+          </div>
         </div>
       )}
 

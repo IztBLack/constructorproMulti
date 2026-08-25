@@ -20,6 +20,7 @@ import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
 import '../common/orden_modo_toggle.dart';
 import 'obra_detail_screen.dart';
+import '../common/esqueleto.dart';
 
 /// Filtro por estado de obra. En la BD el campo es `activa` (bool), pero en
 /// pantalla lo contrario de "activa" se nombra **archivada** y no "inactiva":
@@ -190,7 +191,7 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
           await ref.read(syncServiceProvider).syncAll();
         },
         child: obrasAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const EsqueletoLista(filas: 4),
           error: (e, _) => ErrorStateView(
             message: 'No se pudieron cargar las obras.',
             onRetry: () => ref.invalidate(obrasProvider),

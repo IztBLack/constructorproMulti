@@ -9,6 +9,7 @@ import '../../domain/logic/notas_obra_calculo.dart';
 import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
 import 'nota_obra_detail_screen.dart';
+import '../common/esqueleto.dart';
 
 /// Listado de NOTAS DE OBRA: las cuentas de los tratos de palabra con socios
 /// que no están en el sistema. Gemela de `/admin/obras/[id]/notas` en la web.
@@ -29,7 +30,7 @@ class NotasObraScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text('Notas · $obraNombre')),
       body: notasAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const EsqueletoLista(filas: 3),
         error: (e, _) => ErrorStateView(
           message: 'No se pudieron cargar las notas.',
           onRetry: () => ref.invalidate(notasDeObraProvider(obraId)),

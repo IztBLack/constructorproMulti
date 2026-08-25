@@ -8,7 +8,6 @@ import '../../core/sync/cloud_providers.dart';
 import '../../core/sync/rol_provider.dart';
 import '../../data/providers.dart';
 import '../common/app_snackbar.dart';
-import '../common/confirm_dialog.dart';
 import '../common/app_spacing.dart';
 import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
@@ -423,33 +422,35 @@ class _PaseListaRowState extends ConsumerState<_PaseListaRow> {
   /// Reasignación no destructiva: mueve al colaborador a otra obra activa
   /// (esa pasa a ser su última obra) y registra la asistencia de hoy ahí.
   /// Sigue perteneciendo a la obra anterior (historial).
-  /// Quita a la persona de ESTA obra. No la borra del sistema: marca
-  /// `fechaSalida` en la asignación, que es baja lógica.
+  /// Quita a la persona de ESTA obra. No la borra del sistema: cierra la
+  /// asignación (`fechaSalida`), que es baja lógica.
+  ///
+  /// SIN DIÁLOGO, con DESHACER. Confirmar cada quitada cuesta un paso en el 100%
+  /// de los casos para proteger del error en unos pocos; y aquí el error es
+  /// barato de revertir, porque `asignarObra` revive la misma relación. El
+  /// diálogo se reserva para lo que no se puede deshacer — dar de baja a alguien
+  /// de verdad, que vive en Equipo.
   ///
   /// La diferencia importa: eliminar al colaborador dejaría huérfanas sus
   /// asistencias y sus destajos, y la nómina de las semanas ya pagadas perdería
-  /// a su sujeto. "Ya no viene a esta obra" no es "nunca existió". Para dar de
-  /// baja a alguien de verdad está la pantalla de Equipo, donde se ven las
-  /// consecuencias. Y si vuelve, `asignarObra` revive la misma relación.
+  /// a su sujeto. "Ya no viene a esta obra" no es "nunca existió".
   Future<void> _quitarDeObra() async {
-    final ok = await confirmDialog(
-      context,
-      title: 'Quitar de la obra',
-      message: '¿Quitar a ${widget.nombre} de esta obra? '
-          'Se conserva su historial y su asistencia ya registrada. '
-          'Sigue dado de alta en Equipo y puedes volver a asignarlo cuando '
-          'regrese.',
-      actionLabel: 'Quitar',
-    );
-    if (!ok || !mounted) return;
-
-    await ref
-        .read(colaboradorRepositoryProvider)
-        .desvincular(widget.obraId, widget.colaboradorId);
-
+    final repo = ref.read(colaboradorRepositoryProvider);
+    await repo.desvincular(widget.obraId, widget.colaboradorId);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('${widget.nombre} ya no aparece en esta obra.')));
+
+    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+    messenger.showSnackBar(SnackBar(
+      content: Text('${widget.nombre} ya no está en esta obra.'),
+      duration: const Duration(seconds: 6),
+      action: SnackBarAction(
+        label: 'Deshacer',
+        onPressed: () => repo.asignarObra(
+          obraId: widget.obraId,
+          colaboradorId: widget.colaboradorId,
+        ),
+      ),
+    ));
   }
 
   Future<void> _moverAObra() async {

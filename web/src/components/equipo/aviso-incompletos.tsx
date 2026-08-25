@@ -40,7 +40,7 @@ export function AvisoIncompletos({ datos }: { datos: Incompletos }) {
   return (
     <div
       role="status"
-      className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900"
+      className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900 motion-safe:animate-[aterrizar_.34s_cubic-bezier(.2,.7,.3,1)]"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">

@@ -18,6 +18,7 @@ import '../common/error_state_view.dart';
 import '../common/orden_modo_toggle.dart';
 import 'cotizacion_detail_screen.dart';
 import 'estado_cotizacion_badge.dart';
+import '../common/esqueleto.dart';
 
 class CotizacionesScreen extends ConsumerStatefulWidget {
   const CotizacionesScreen({super.key});
@@ -106,7 +107,7 @@ class _CotizacionesScreenState extends ConsumerState<CotizacionesScreen> {
         ),
       ),
       body: cotsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const EsqueletoLista(filas: 4),
         error: (e, _) => ErrorStateView(
           message: 'No se pudieron cargar las cotizaciones.',
           onRetry: () => ref.invalidate(cotizacionesProvider),
