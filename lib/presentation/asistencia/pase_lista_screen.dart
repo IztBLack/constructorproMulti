@@ -1,11 +1,17 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/sync/cloud_providers.dart';
+import '../../core/sync/rol_provider.dart';
 import '../../data/providers.dart';
+import '../../domain/logic/salario_periodo.dart';
 import '../common/app_snackbar.dart';
+import '../common/confirm_dialog.dart';
 import '../common/app_spacing.dart';
 import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
@@ -248,12 +254,99 @@ class _ObraPaseLista extends ConsumerWidget {
       ));
     }
 
+    // Alta rápida al pie de la obra: en campo aparece gente que no está dada de
+    // alta y el pase de lista se detiene ahí. Solo para admin/supervisor porque
+    // es lo que permite la RLS (0014 y 0027): si se la enseñáramos a un
+    // colaborador, crearía la persona en su teléfono y el servidor la
+    // rechazaría al subir — una pérdida silenciosa.
+    if (ref.watch(puedeEditarOperacionProvider)) {
+      children.add(Align(
+        alignment: Alignment.centerLeft,
+        child: Padding(
+          padding: const EdgeInsets.only(left: 12, top: 4, bottom: 4),
+          child: TextButton.icon(
+            icon: const Icon(Icons.person_add_alt),
+            label: const Text('Agregar persona'),
+            onPressed: () => _altaRapida(context, ref),
+          ),
+        ),
+      ));
+    }
+
     return ExpansionTile(
       initiallyExpanded: true,
       title: Text(obraNombre, style: const TextStyle(fontWeight: FontWeight.bold)),
       subtitle: Text('${dia.length} trabajador(es)'),
       children: children,
     );
+  }
+
+  /// Da de alta a alguien y lo asigna a ESTA obra, sin salir del pase de lista.
+  ///
+  /// Pide lo mínimo para que la nómina salga bien: nombre, puesto y —si se
+  /// sabe— el sueldo por día. Todo lo demás (teléfono, contacto de emergencia)
+  /// se completa después en Equipo; pedirlo aquí convertiría "apuntar al que
+  /// llegó" en un formulario de alta, que es justo lo que hace que la gente lo
+  /// anote en un papel.
+  Future<void> _altaRapida(BuildContext context, WidgetRef ref) async {
+    final puestos = ref.read(puestosProvider).asData?.value ?? [];
+    if (puestos.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Primero crea un puesto en Configuración.')));
+      return;
+    }
+
+    final datos = await showModalBottomSheet<_AltaRapida>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _HojaAltaRapida(puestos: puestos, obraNombre: obraNombre),
+    );
+    if (datos == null) return;
+
+    final id = const Uuid().v4();
+    final ahora = DateTime.now().millisecondsSinceEpoch;
+    final repo = ref.read(colaboradorRepositoryProvider);
+
+    await repo.upsert(ColaboradoresCompanion.insert(
+      id: id,
+      nombre: datos.nombre,
+      puestoId: datos.puestoId,
+      tipoPago: datos.tipoPago,
+      empresaId: Value(ref.read(empresaIdProvider) ?? ''),
+      createdAt: Value(ahora),
+      updatedAt: Value(ahora),
+    ));
+
+    // Sin sueldo capturado NO se crea fila: "sin fila = sin sueldo" es el
+    // contrato de `colaborador_sueldo`, y una fila vacía se subiría al servidor
+    // para no decir nada.
+    if (datos.salarioDia != null) {
+      // `salarioPersonalizado` es DERIVADO: la pantalla de Equipo lo recalcula
+      // desde el periodo. Si aquí solo se escribiera el diario, la fila quedaría
+      // incoherente y el primer que abriera Equipo lo pisaría con la cuenta de
+      // un periodo vacío. Se guarda el juego completo —semanal a 6 días— que
+      // devuelve exactamente el diario capturado.
+      const dias = 6;
+      final semanal = datos.salarioDia! * dias;
+      await repo.upsertSueldo(ColaboradorSueldoCompanion.insert(
+        colaboradorId: id,
+        periodoPago: const Value('SEMANAL'),
+        salarioPeriodo: Value(semanal),
+        diasSemana: const Value(dias),
+        salarioPersonalizado: Value(
+          salarioDiarioDesdePeriodo(semanal, PeriodoPago.semanal, dias),
+        ),
+        empresaId: Value(ref.read(empresaIdProvider) ?? ''),
+        createdAt: Value(ahora),
+        updatedAt: Value(ahora),
+      ));
+    }
+
+    await repo.asignarObra(obraId: obraId, colaboradorId: id);
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('${datos.nombre} agregado a $obraNombre.')));
   }
 }
 
@@ -380,6 +473,35 @@ class _PaseListaRowState extends ConsumerState<_PaseListaRow> {
   /// Reasignación no destructiva: mueve al colaborador a otra obra activa
   /// (esa pasa a ser su última obra) y registra la asistencia de hoy ahí.
   /// Sigue perteneciendo a la obra anterior (historial).
+  /// Quita a la persona de ESTA obra. No la borra del sistema: marca
+  /// `fechaSalida` en la asignación, que es baja lógica.
+  ///
+  /// La diferencia importa: eliminar al colaborador dejaría huérfanas sus
+  /// asistencias y sus destajos, y la nómina de las semanas ya pagadas perdería
+  /// a su sujeto. "Ya no viene a esta obra" no es "nunca existió". Para dar de
+  /// baja a alguien de verdad está la pantalla de Equipo, donde se ven las
+  /// consecuencias. Y si vuelve, `asignarObra` revive la misma relación.
+  Future<void> _quitarDeObra() async {
+    final ok = await confirmDialog(
+      context,
+      title: 'Quitar de la obra',
+      message: '¿Quitar a ${widget.nombre} de esta obra? '
+          'Se conserva su historial y su asistencia ya registrada. '
+          'Sigue dado de alta en Equipo y puedes volver a asignarlo cuando '
+          'regrese.',
+      actionLabel: 'Quitar',
+    );
+    if (!ok || !mounted) return;
+
+    await ref
+        .read(colaboradorRepositoryProvider)
+        .desvincular(widget.obraId, widget.colaboradorId);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('${widget.nombre} ya no aparece en esta obra.')));
+  }
+
   Future<void> _moverAObra() async {
     final obras = (ref.read(obrasProvider).asData?.value ?? [])
         .where((o) => o.activa && o.id != widget.obraId)
@@ -522,11 +644,33 @@ class _PaseListaRowState extends ConsumerState<_PaseListaRow> {
             children: [
               Expanded(child: Text(widget.nombre)),
               _statusIcon(),
-              IconButton(
-                icon: const Icon(Icons.swap_horiz),
-                tooltip: 'Mover a otra obra',
-                visualDensity: VisualDensity.compact,
-                onPressed: _moverAObra,
+              // Un solo control para las dos acciones de la persona. Con dos
+              // iconos sueltos la fila se apretaba y el objetivo táctil bajaba
+              // de los 48 px que pide el trabajo con guantes.
+              PopupMenuButton<String>(
+                tooltip: 'Acciones',
+                onSelected: (v) {
+                  if (v == 'mover') _moverAObra();
+                  if (v == 'quitar') _quitarDeObra();
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(
+                    value: 'mover',
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.swap_horiz),
+                      title: Text('Mover a otra obra'),
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'quitar',
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.person_remove_outlined),
+                      title: Text('Quitar de esta obra'),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -548,6 +692,139 @@ class _PaseListaRowState extends ConsumerState<_PaseListaRow> {
             onSelectionChanged: (s) => _guardar(s.first),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Alta rápida desde el pase de lista ──────────────────────────────────────
+
+class _AltaRapida {
+  const _AltaRapida({
+    required this.nombre,
+    required this.puestoId,
+    required this.tipoPago,
+    this.salarioDia,
+  });
+
+  final String nombre;
+  final String puestoId;
+  final String tipoPago;
+
+  /// `null` = sin sueldo capturado: la nómina cae al salario del puesto, que es
+  /// lo correcto cuando en campo nadie sabe cuánto se le acordó.
+  final double? salarioDia;
+}
+
+class _HojaAltaRapida extends StatefulWidget {
+  const _HojaAltaRapida({required this.puestos, required this.obraNombre});
+
+  final List<Puesto> puestos;
+  final String obraNombre;
+
+  @override
+  State<_HojaAltaRapida> createState() => _HojaAltaRapidaState();
+}
+
+class _HojaAltaRapidaState extends State<_HojaAltaRapida> {
+  final _nombre = TextEditingController();
+  final _salario = TextEditingController();
+  late String _puestoId = widget.puestos.first.id;
+  String _tipoPago = 'DIA';
+
+  @override
+  void dispose() {
+    _nombre.dispose();
+    _salario.dispose();
+    super.dispose();
+  }
+
+  /// Sugerencia por puesto: el salario que ya tiene configurado. Se enseña como
+  /// marcador, no como valor, para que dejarlo vacío siga significando "el del
+  /// puesto" en vez de clavarle una copia del número de hoy.
+  String get _sugerencia {
+    final p = widget.puestos.firstWhere((x) => x.id == _puestoId);
+    return p.salarioDiaDefault > 0 ? Fmt.money(p.salarioDiaDefault) : '';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final valido = _nombre.text.trim().isNotEmpty;
+
+    return Padding(
+      // El teclado no debe tapar los campos: se captura de pie, en la obra.
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text('Agregar a ${widget.obraNombre}',
+              style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _nombre,
+            autofocus: true,
+            textCapitalization: TextCapitalization.words,
+            onChanged: (_) => setState(() {}),
+            decoration: const InputDecoration(
+                labelText: 'Nombre *', hintText: 'Ej. Camilo Martínez'),
+          ),
+          const SizedBox(height: 10),
+          DropdownButtonFormField<String>(
+            initialValue: _puestoId,
+            decoration: const InputDecoration(labelText: 'Puesto *'),
+            items: widget.puestos
+                .map((p) => DropdownMenuItem(value: p.id, child: Text(p.nombre)))
+                .toList(),
+            onChanged: (v) => setState(() => _puestoId = v ?? _puestoId),
+          ),
+          const SizedBox(height: 10),
+          SegmentedButton<String>(
+            showSelectedIcon: false,
+            segments: const [
+              ButtonSegment(value: 'DIA', label: Text('Por día')),
+              ButtonSegment(value: 'DESTAJO', label: Text('Destajo')),
+            ],
+            selected: {_tipoPago},
+            onSelectionChanged: (v) => setState(() => _tipoPago = v.first),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _salario,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              labelText: 'Sueldo por día',
+              hintText: _sugerencia,
+              helperText: 'Opcional. Vacío = el del puesto.',
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(children: [
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar')),
+            const Spacer(),
+            FilledButton.icon(
+              icon: const Icon(Icons.person_add_alt),
+              onPressed: valido
+                  ? () => Navigator.pop(
+                        context,
+                        _AltaRapida(
+                          nombre: _nombre.text.trim(),
+                          puestoId: _puestoId,
+                          tipoPago: _tipoPago,
+                          salarioDia:
+                              double.tryParse(_salario.text.trim().replaceAll(',', '')),
+                        ),
+                      )
+                  : null,
+              label: const Text('Agregar'),
+            ),
+          ]),
+        ]),
       ),
     );
   }
