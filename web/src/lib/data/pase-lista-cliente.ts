@@ -370,3 +370,125 @@ async function cargarAsistenciasDia(
     return p.year === d.year && p.month === d.month && p.day === d.day;
   });
 }
+
+// ── Extras para las acciones rápidas del pase de lista ─────────────────────
+
+export interface PuestoCampo {
+  id: string;
+  nombre: string;
+  salarioDiaDefault: number;
+}
+
+/** Alguien del equipo, para el selector del "+" del pase de lista. */
+export interface ColaboradorDisponible {
+  id: string;
+  nombre: string;
+  /** Obra donde está hoy, si está en alguna. Se enseña para que mover sea consciente. */
+  obraActual: string | null;
+  /** Tiene el puesto placeholder: le faltan datos. */
+  incompleto: boolean;
+}
+
+export interface ExtrasCampo {
+  /** Rol del usuario en su empresa. `null` si no se pudo resolver. */
+  rol: string | null;
+  puestos: PuestoCampo[];
+  /** TODO el equipo activo, esté o no en una obra. */
+  equipo: ColaboradorDisponible[];
+}
+
+/**
+ * Datos que solo necesita el ALTA RÁPIDA: el rol (para decidir si se enseña) y
+ * el catálogo de puestos (para el selector).
+ *
+ * Va aparte de [cargarPaseLista] a propósito y NO entra en el snapshot offline:
+ *
+ *  1. Dar de alta a alguien exige servidor (RLS decide), así que sin conexión la
+ *     acción no existe y guardar sus datos sería guardar lastre.
+ *  2. El snapshot ya tiene una forma que la pantalla sabe leer; añadirle campos
+ *     obligaría a versionarlo para las copias viejas que están en los teléfonos.
+ *
+ * Nunca lanza: si falla, se devuelve `rol: null` y la interfaz simplemente no
+ * ofrece el alta. Quedarse sin el botón es peor que nada; romper el pase de
+ * lista por no poder leer un catálogo sería mucho peor.
+ */
+export async function cargarExtrasCampo(): Promise<ExtrasCampo> {
+  const vacio: ExtrasCampo = { rol: null, puestos: [], equipo: [] };
+  if (typeof window === 'undefined') return vacio;
+
+  try {
+    const supabase = createClient();
+    const [{ data: filaRol }, { data: puestos }, { data: equipo }, { data: asignaciones }] =
+      await Promise.all([
+        supabase.from('usuarios_empresa').select('rol').limit(1).maybeSingle(),
+        supabase
+          .from('puestos')
+          .select('id, nombre, salario_dia_default')
+          .is('deleted_at', null)
+          .order('nombre'),
+        // TODO el equipo, no solo el de esta obra: el "+" existe justamente para
+        // traer a quien NO está aquí.
+        supabase
+          .from('colaboradores')
+          .select('id, nombre, puestos(nombre)')
+          .is('deleted_at', null)
+          .eq('activo', true)
+          .order('nombre'),
+        supabase
+          .from('obra_colaborador')
+          .select('colaborador_id, obras(nombre)')
+          .is('fecha_salida', null),
+      ]);
+
+    // PostgREST tipa las relaciones embebidas como ARREGLO aunque sean 1-a-1,
+    // así que se normaliza en un solo sitio en vez de pelear con el tipo.
+    const nombreEmbebido = (v: unknown): string | null => {
+      const uno = Array.isArray(v) ? v[0] : v;
+      const n = (uno as { nombre?: unknown } | null)?.nombre;
+      return typeof n === 'string' ? n : null;
+    };
+
+    const obraDe = new Map<string, string>();
+    for (const a of (asignaciones ?? []) as { colaborador_id: string; obras: unknown }[]) {
+      const n = nombreEmbebido(a.obras);
+      if (n) obraDe.set(a.colaborador_id, n);
+    }
+
+    return {
+      rol: (filaRol?.rol as string | undefined) ?? null,
+      puestos: (puestos ?? []).map((p) => ({
+        id: p.id as string,
+        nombre: p.nombre as string,
+        salarioDiaDefault: Number(p.salario_dia_default ?? 0),
+      })),
+      equipo: ((equipo ?? []) as { id: string; nombre: string; puestos: unknown }[]).map((c) => ({
+        id: c.id,
+        nombre: c.nombre,
+        obraActual: obraDe.get(c.id) ?? null,
+        incompleto: nombreEmbebido(c.puestos) === PUESTO_POR_DEFINIR_NOMBRE,
+      })),
+    };
+  } catch {
+    return vacio;
+  }
+}
+
+/**
+ * ¿Este rol puede dar de alta a alguien? Es la MISMA regla que la RLS de 0014 y
+ * 0027 (`colaboradores` y `colaborador_sueldo` solo aceptan INSERT de admin y
+ * supervisor) y que `puedeEditarOperacionSegunRol` del móvil.
+ *
+ * Ante la duda se NIEGA, al revés que en el móvil: aquí un rol sin resolver
+ * suele significar "sin conexión", y sin conexión el alta no puede funcionar de
+ * todas formas. Enseñar un botón que va a fallar es peor que no enseñarlo.
+ */
+/**
+ * Copia del nombre del puesto placeholder (`equipo/actions.ts`). Se duplica la
+ * cadena a propósito: importarla arrastraría un módulo `'use server'` al bundle
+ * del navegador.
+ */
+export const PUESTO_POR_DEFINIR_NOMBRE = 'Por definir';
+
+export function puedeAltaRapida(rol: string | null): boolean {
+  return rol === 'admin' || rol === 'supervisor';
+}

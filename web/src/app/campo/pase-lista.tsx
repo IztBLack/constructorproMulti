@@ -2,14 +2,18 @@
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui';
 import BarraOffline from '@/components/offline/barra-offline';
 import { OPCIONES, formatoJornadas } from '@/lib/asistencia/fracciones';
 import {
+  cargarExtrasCampo,
   cargarPaseLista,
   claveFraccion,
+  puedeAltaRapida,
   type ColaboradorPaseLista,
   type DatosPaseLista,
+  type ExtrasCampo,
 } from '@/lib/data/pase-lista-cliente';
 import {
   guardarSnapshotDia,
@@ -26,7 +30,11 @@ import {
   type EstadoOffline,
 } from '@/lib/offline/cola-asistencia';
 import { hoyMxMs, partesTz, medianocheMx, sumarDiasCalendario } from '@/lib/data/tz';
-import { asignarObraColaborador } from '@/app/admin/equipo/actions';
+import {
+  asignarObraColaborador,
+  crearColaboradorRapido,
+  desvincularObraColaborador,
+} from '@/app/admin/equipo/actions';
 
 /**
  * Instante en que la persona tocó el botón.
@@ -114,10 +122,88 @@ export default function PaseLista() {
   // "Mover a otra obra" desde el pase (paridad móvil). `recargar` fuerza recargar
   // el día tras mover, para que la persona reaparezca bajo la obra nueva.
   const [recargar, setRecargar] = useState(0);
+  const router = useRouter();
   const [moviendoKey, setMoviendoKey] = useState<string | null>(null);
+
+  // Extras del alta rápida. Se piden UNA vez y solo sirven en línea; si fallan,
+  // `rol` queda en null y la pantalla no ofrece el alta (ver cargarExtrasCampo).
+  const [extras, setExtras] = useState<ExtrasCampo>({ rol: null, puestos: [], equipo: [] });
+  const [altaEnObra, setAltaEnObra] = useState<string | null>(null);
+  const [filtroEquipo, setFiltroEquipo] = useState('');
+  const [nuevoNombre, setNuevoNombre] = useState('');
+  const [altaPend, setAltaPend] = useState(false);
+  const [altaError, setAltaError] = useState<string | null>(null);
+  /// Cuántos quedaron incompletos en esta sesión, para el aviso.
+  const [incompletos, setIncompletos] = useState<string[]>([]);
+  const [avisoOculto, setAvisoOculto] = useState(false);
   const [obraDestino, setObraDestino] = useState('');
   const [movPend, setMovPend] = useState(false);
   const [movError, setMovError] = useState<string | null>(null);
+
+  /// Trae a alguien del equipo a esta obra. `asignarObraColaborador` cierra sus
+  /// asignaciones anteriores por defecto, así que "agregar a otra obra" es en
+  /// realidad MOVER — que es lo que se espera al usarlo desde el pase de lista.
+  async function traerAObra(colaboradorId: string, obraId: string) {
+    setAltaPend(true);
+    setAltaError(null);
+    try {
+      const r = await asignarObraColaborador(colaboradorId, obraId);
+      if (!r.ok) {
+        setAltaError(r.error ?? 'No se pudo agregar.');
+        return;
+      }
+      setAltaEnObra(null);
+      setFiltroEquipo('');
+      setRecargar((n) => n + 1);
+    } catch {
+      setAltaError('No se pudo agregar (¿sin conexión?).');
+    } finally {
+      setAltaPend(false);
+    }
+  }
+
+  /// Alta con SOLO el nombre. El resto queda pendiente y la persona se marca
+  /// como incompleta; el aviso de abajo es el que empuja a completarla.
+  async function crearYAgregar(obraId: string) {
+    const nombre = nuevoNombre.trim();
+    if (!nombre) return;
+    setAltaPend(true);
+    setAltaError(null);
+    try {
+      const r = await crearColaboradorRapido(nombre, obraId);
+      if (!r.ok) {
+        setAltaError(r.error ?? 'No se pudo crear.');
+        return;
+      }
+      setIncompletos((prev) => [...prev, nombre]);
+      setAvisoOculto(false);
+      setNuevoNombre('');
+      setAltaEnObra(null);
+      setRecargar((n) => n + 1);
+    } catch {
+      setAltaError('No se pudo crear (¿sin conexión?).');
+    } finally {
+      setAltaPend(false);
+    }
+  }
+
+  /// Quitar NO es eliminar: cierra la asignación (`fecha_salida`) y conserva el
+  /// historial y la asistencia ya registrada. La baja real vive en Equipo.
+  async function quitarDeObra(colaboradorId: string, obraId: string, nombre: string) {
+    if (!confirm(`¿Quitar a ${nombre} de esta obra? Se conserva su historial y su asistencia ya registrada.`)) {
+      return;
+    }
+    try {
+      const r = await desvincularObraColaborador(colaboradorId, obraId);
+      if (!r.ok) {
+        setMovError(r.error ?? 'No se pudo quitar.');
+        return;
+      }
+      setRecargar((n) => n + 1);
+    } catch {
+      setMovError('No se pudo quitar (¿sin conexión?).');
+    }
+  }
 
   async function mover(colaboradorId: string, destinoId: string) {
     if (!destinoId) return;
@@ -154,6 +240,17 @@ export default function PaseLista() {
     setPendientes(pend);
     setConError(err);
   }, [dia]);
+
+  // Extras del "+": solo sirven en línea y no entran en el snapshot offline.
+  useEffect(() => {
+    let vivo = true;
+    void cargarExtrasCampo().then((e) => {
+      if (vivo) setExtras(e);
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [recargar]);
 
   useEffect(() => {
     const pararAutoFlush = iniciarAutoFlush();
@@ -357,6 +454,31 @@ export default function PaseLista() {
         </div>
       )}
 
+      {/* Aviso de datos pendientes. Se queda hasta que se cierre a mano: un
+          aviso que desaparece solo es un aviso que nadie vio. "Más tarde" lo
+          oculta en esta sesión; al recargar vuelve, porque el pendiente sigue
+          ahí. */}
+      {incompletos.length > 0 && !avisoOculto && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
+          <p className="text-sm font-medium text-amber-900">
+            {incompletos.length === 1
+              ? `A ${incompletos[0]} le faltan datos.`
+              : `Tienes ${incompletos.length} colaboradores con información incompleta.`}
+          </p>
+          <p className="mt-0.5 text-xs text-amber-800">
+            Sin puesto ni sueldo, la nómina los cuenta en $0.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => router.push('/admin/equipo?incompletos=1')}>
+              Ir a completar
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setAvisoOculto(true)}>
+              Dejar para más tarde
+            </Button>
+          </div>
+        </div>
+      )}
+
       {obras.map((obra) => {
         const sinMarcar = obra.colaboradores.filter(
           (c) => (fracciones[claveFraccion(obra.id, c.id)] ?? 0) === 0,
@@ -377,8 +499,109 @@ export default function PaseLista() {
                     {sinMarcar > 0 && ` · ${sinMarcar} sin marcar`}
                   </p>
                 </div>
+
+                {/* El "+" solo aparece para quien puede escribir: `colaboradores`
+                    y `colaborador_sueldo` únicamente aceptan alta de admin y
+                    supervisor (0014 y 0027). Enseñárselo a un usuario de campo
+                    sería ofrecerle una acción que el servidor va a rechazar. */}
+                {puedeAltaRapida(extras.rol) && (
+                  <button
+                    type="button"
+                    aria-label={`Agregar personas a ${obra.nombre}`}
+                    aria-expanded={altaEnObra === obra.id}
+                    onClick={(e) => {
+                      // El encabezado es un <summary>: sin esto, el clic también
+                      // pliega la obra entera.
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setAltaEnObra(altaEnObra === obra.id ? null : obra.id);
+                      setFiltroEquipo('');
+                      setNuevoNombre('');
+                      setAltaError(null);
+                    }}
+                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-neutral-300 text-xl leading-none text-neutral-700 transition hover:bg-neutral-100"
+                  >
+                    +
+                  </button>
+                )}
               </div>
             </summary>
+
+            {altaEnObra === obra.id && (
+              <div className="border-t border-neutral-200 bg-neutral-50 px-4 py-3">
+                {/* Crear va PRIMERO: cuando alguien abre esto en la obra suele
+                    ser porque llegó una persona que no está en la lista. */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    value={nuevoNombre}
+                    onChange={(e) => setNuevoNombre(e.target.value)}
+                    placeholder="Nombre de alguien nuevo"
+                    className="min-w-0 flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900"
+                  />
+                  <Button
+                    size="sm"
+                    disabled={altaPend || !nuevoNombre.trim()}
+                    onClick={() => void crearYAgregar(obra.id)}
+                  >
+                    {altaPend ? '…' : 'Crear y agregar'}
+                  </Button>
+                </div>
+                <p className="mt-1 text-xs text-neutral-500">
+                  Se crea solo con el nombre. El puesto y el sueldo quedan pendientes.
+                </p>
+
+                <div className="mt-3 border-t border-neutral-200 pt-3">
+                  <input
+                    value={filtroEquipo}
+                    onChange={(e) => setFiltroEquipo(e.target.value)}
+                    placeholder="…o busca a alguien del equipo"
+                    className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900"
+                  />
+                  <ul className="mt-2 max-h-56 divide-y divide-neutral-200 overflow-y-auto rounded-lg border border-neutral-200 bg-white">
+                    {extras.equipo
+                      .filter(
+                        (c) =>
+                          !obra.colaboradores.some((x) => x.id === c.id) &&
+                          c.nombre.toLowerCase().includes(filtroEquipo.trim().toLowerCase()),
+                      )
+                      .map((c) => (
+                        <li key={c.id}>
+                          <button
+                            type="button"
+                            disabled={altaPend}
+                            onClick={() => void traerAObra(c.id, obra.id)}
+                            className="flex min-h-11 w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-neutral-50"
+                          >
+                            <span className="min-w-0">
+                              <span className="block truncate text-neutral-900">{c.nombre}</span>
+                              {/* Se dice de dónde viene: agregarlo aquí lo DA DE
+                                  BAJA de su obra actual, y eso no debe pasar a
+                                  ciegas. */}
+                              {c.obraActual && (
+                                <span className="block truncate text-xs text-amber-700">
+                                  Hoy está en {c.obraActual} · se moverá
+                                </span>
+                              )}
+                            </span>
+                            {c.incompleto && (
+                              <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
+                                Sin datos
+                              </span>
+                            )}
+                          </button>
+                        </li>
+                      ))}
+                    {extras.equipo.length === 0 && (
+                      <li className="px-3 py-3 text-sm text-neutral-500">
+                        No se pudo cargar el equipo (¿sin conexión?).
+                      </li>
+                    )}
+                  </ul>
+                </div>
+
+                {altaError && <p className="mt-2 text-xs text-red-600">{altaError}</p>}
+              </div>
+            )}
 
             <div className="space-y-3 border-t border-neutral-100 px-3 py-3">
               {agruparPorCuadrilla(obra.colaboradores).map(([cuadrillaId, grupo]) => {
@@ -518,17 +741,29 @@ export default function PaseLista() {
                                   {movError && <p className="text-xs text-red-600">{movError}</p>}
                                 </div>
                               ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setMoviendoKey(k);
-                                    setObraDestino('');
-                                    setMovError(null);
-                                  }}
-                                  className="mt-2 text-xs text-neutral-500 underline underline-offset-2 hover:text-neutral-900"
-                                >
-                                  Mover a otra obra
-                                </button>
+                                <div className="mt-2 flex flex-wrap items-center gap-4">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setMoviendoKey(k);
+                                      setObraDestino('');
+                                      setMovError(null);
+                                    }}
+                                    className="text-xs text-neutral-500 underline underline-offset-2 hover:text-neutral-900"
+                                  >
+                                    Mover a otra obra
+                                  </button>
+                                  {/* Quitar NO elimina a la persona: cierra su
+                                      asignación y conserva historial y
+                                      asistencia. La baja real vive en Equipo. */}
+                                  <button
+                                    type="button"
+                                    onClick={() => void quitarDeObra(c.id, obra.id, c.nombre)}
+                                    className="text-xs text-neutral-500 underline underline-offset-2 hover:text-red-700"
+                                  >
+                                    Quitar de esta obra
+                                  </button>
+                                </div>
                               ))}
                           </li>
                         );

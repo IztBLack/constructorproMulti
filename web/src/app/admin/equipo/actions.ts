@@ -386,3 +386,108 @@ export async function desvincularObraColaborador(
   revalidatePath(`/admin/equipo/${colaboradorId}`);
   return { ok: true };
 }
+
+// ── Alta por nombre desde el pase de lista ──────────────────────────────────
+
+/**
+ * Nombre del puesto que marca a quien se dio de alta a las prisas, en campo.
+ *
+ * `puesto_id` es NOT NULL y de él sale el salario cuando la persona no tiene
+ * sueldo propio, así que "crear solo con el nombre" necesita un puesto real.
+ * Este placeholder cumple ese hueco Y sirve de marca: **incompleto = tiene este
+ * puesto**. Es una definición consultable, no una heurística.
+ *
+ * Va con salario 0 a propósito. Heredar el salario del puesto más común sería
+ * más cómodo y mucho peor: un número inventado se ve correcto y nadie lo
+ * revisa. En 0 el error es ruidoso — la persona sale en la raya sin dinero— y
+ * eso es exactamente lo que debe empujar a completar los datos.
+ */
+// Sin `export`: en un archivo `'use server'` solo pueden exportarse funciones
+// asíncronas. El cliente tiene su propia copia de la cadena en
+// `pase-lista-cliente.ts`, que también explica por qué se duplica.
+const PUESTO_POR_DEFINIR = 'Por definir';
+
+/** Busca el puesto placeholder; lo crea la primera vez que hace falta. */
+async function idPuestoPorDefinir(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  empresaId: string,
+): Promise<{ id: string } | { error: string }> {
+  const { data } = await supabase
+    .from('puestos')
+    .select('id')
+    .eq('nombre', PUESTO_POR_DEFINIR)
+    .is('deleted_at', null)
+    .maybeSingle();
+
+  if (data?.id) return { id: data.id as string };
+
+  const id = crypto.randomUUID();
+  const now = Date.now();
+  const { error } = await supabase.from('puestos').insert({
+    id,
+    nombre: PUESTO_POR_DEFINIR,
+    salario_dia_default: 0,
+    empresa_id: empresaId,
+    created_at: now,
+    updated_at: now,
+  });
+
+  if (error) return { error: error.message };
+  return { id };
+}
+
+export interface ResultadoAltaRapida extends ActionResult {
+  colaboradorId?: string;
+}
+
+/**
+ * Da de alta a alguien SOLO con su nombre y lo asigna a una obra, para no
+ * detener el pase de lista cuando llega alguien que no estaba registrado.
+ *
+ * Todo lo demás —puesto, sueldo, teléfono— queda pendiente y la persona se
+ * marca como incompleta con [PUESTO_POR_DEFINIR]. La interfaz avisa de cuántos
+ * hay así; este código no decide nada sobre eso, solo deja la marca.
+ */
+export async function crearColaboradorRapido(
+  nombre: string,
+  obraId: string,
+): Promise<ResultadoAltaRapida> {
+  const limpio = nombre.trim();
+  if (!limpio) return { ok: false, error: 'Escribe el nombre.' };
+  if (!obraId) return { ok: false, error: 'Falta la obra.' };
+
+  let empresaId: string;
+  try {
+    ({ empresaId } = await getEmpresaUsuario());
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Error de autenticación.' };
+  }
+
+  const supabase = await createClient();
+  const puesto = await idPuestoPorDefinir(supabase, empresaId);
+  if ('error' in puesto) return { ok: false, error: puesto.error };
+
+  const colaboradorId = crypto.randomUUID();
+  const now = Date.now();
+
+  const { error } = await supabase.from('colaboradores').insert({
+    id: colaboradorId,
+    nombre: limpio,
+    puesto_id: puesto.id,
+    tipo_pago: 'DIA',
+    empresa_id: empresaId,
+    created_at: now,
+    updated_at: now,
+  });
+
+  if (error) return { ok: false, error: error.message };
+
+  // Asignar es parte del alta: darlo de alta sin ponerlo en la obra dejaría el
+  // pase de lista igual que antes, que es el problema que se venía a resolver.
+  const asignacion = await asignarObraColaborador(colaboradorId, obraId);
+  if (!asignacion.ok) return { ok: false, error: asignacion.error };
+
+  revalidatePath('/admin/equipo');
+  revalidatePath('/admin/obras');
+  return { ok: true, colaboradorId };
+}
