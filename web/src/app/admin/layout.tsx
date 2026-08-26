@@ -5,6 +5,7 @@ import { getNombreEmpresa } from '@/lib/data/empresa';
 import { nombreUsuario } from '@/lib/data/usuario';
 import { contarIncompletos } from '@/lib/data/equipo';
 import { AvisoIncompletos } from '@/components/equipo/aviso-incompletos';
+import { PaletaComandos } from '@/components/paleta/paleta-comandos';
 import { NavLinks } from './nav-links';
 import { AvisoInstalar } from '@/components/pwa/aviso-instalar';
 import { ToggleTema } from '@/components/tema/toggle-tema';
@@ -82,6 +83,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
         {children}
       </main>
+
+      {/* Vive en el layout para responder desde CUALQUIER pantalla de /admin.
+          No pinta nada hasta que se abre con Ctrl/⌘+K. */}
+      <PaletaComandos />
     </div>
   );
 }
