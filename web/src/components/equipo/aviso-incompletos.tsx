@@ -58,8 +58,20 @@ export function AvisoIncompletos({ datos }: { datos: Incompletos }) {
         </div>
 
         <div className="flex shrink-0 flex-wrap gap-2">
-          <Button size="sm" onClick={() => router.push('/admin/equipo?incompletos=1')}>
-            Ir a completar
+          <Button
+            size="sm"
+            onClick={() =>
+              router.push(
+                // Con una sola persona no hay nada que elegir: se abre SU
+                // formulario. Con varias, la lista recortada — decidir por el
+                // usuario cuál completar primero sería adivinar.
+                datos.total === 1 && datos.ids[0]
+                  ? `/admin/equipo/${datos.ids[0]}?editar=1`
+                  : '/admin/equipo?incompletos=1',
+              )
+            }
+          >
+            {datos.total === 1 ? 'Completar sus datos' : 'Ir a completar'}
           </Button>
           <Button size="sm" variant="ghost" onClick={() => setOculto(true)}>
             Dejar para más tarde

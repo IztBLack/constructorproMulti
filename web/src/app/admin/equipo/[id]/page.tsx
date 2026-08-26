@@ -16,10 +16,15 @@ export const dynamic = 'force-dynamic';
 
 export default async function ColaboradorDetallePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ editar?: string }>;
 }) {
   const { id } = await params;
+  // `?editar=1` llega desde el aviso de datos pendientes: abre el formulario sin
+  // que haya que buscar el botón.
+  const { editar } = await searchParams;
   const { data: colaborador, error: colaboradorError } = await getColaborador(id);
 
   if (colaboradorError) {
@@ -62,7 +67,11 @@ export default async function ColaboradorDetallePage({
           </p>
         </div>
         {!puestosError && (
-          <EditarColaboradorForm colaborador={colaborador} puestos={puestos} />
+          <EditarColaboradorForm
+            abrirAlEntrar={editar === '1'}
+            colaborador={colaborador}
+            puestos={puestos}
+          />
         )}
       </header>
 

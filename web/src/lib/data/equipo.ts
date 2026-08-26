@@ -198,6 +198,11 @@ export interface Incompletos {
   total: number;
   /** Los primeros nombres, para poder decir "Juan y 2 más" en vez de un número seco. */
   nombres: string[];
+  /**
+   * Ids de TODOS los pendientes. Con uno solo, el aviso puede llevar derecho a
+   * su formulario en vez de dejar a la persona en una lista de un elemento.
+   */
+  ids: string[];
 }
 
 /**
@@ -213,7 +218,7 @@ export interface Incompletos {
  * que no avisar.
  */
 export async function contarIncompletos(): Promise<Incompletos> {
-  const vacio: Incompletos = { total: 0, nombres: [] };
+  const vacio: Incompletos = { total: 0, nombres: [], ids: [] };
   try {
     const supabase = await createClient();
     const { data: puesto } = await supabase
@@ -227,14 +232,18 @@ export async function contarIncompletos(): Promise<Incompletos> {
 
     const { data } = await supabase
       .from('colaboradores')
-      .select('nombre')
+      .select('id, nombre')
       .eq('puesto_id', puesto.id)
       .eq('activo', true)
       .is('deleted_at', null)
       .order('nombre');
 
-    const nombres = (data ?? []).map((c) => c.nombre as string);
-    return { total: nombres.length, nombres: nombres.slice(0, 3) };
+    const filas = (data ?? []) as { id: string; nombre: string }[];
+    return {
+      total: filas.length,
+      nombres: filas.slice(0, 3).map((c) => c.nombre),
+      ids: filas.map((c) => c.id),
+    };
   } catch {
     return vacio;
   }

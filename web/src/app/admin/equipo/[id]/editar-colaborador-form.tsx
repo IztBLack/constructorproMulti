@@ -8,14 +8,23 @@ import { actualizarColaborador } from '../actions';
 import SueldoFields from '../sueldo-fields';
 
 export default function EditarColaboradorForm({
+  abrirAlEntrar = false,
   colaborador,
   puestos,
 }: {
+  /** Llega con el formulario ya abierto (desde el aviso de datos pendientes). */
+  abrirAlEntrar?: boolean;
   colaborador: Colaborador;
   puestos: Puesto[];
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  // Se abre solo si se llegó con `?editar=1`, que es como entra el aviso de
+  // datos incompletos: llevar a la ficha y obligar a buscar el botón "Editar"
+  // dejaba el trabajo a medias justo cuando el aviso decía qué faltaba.
+  //
+  // Inicializador perezoso y no un efecto: el valor se conoce en el primer
+  // render, así que abrirlo después costaría un parpadeo.
+  const [open, setOpen] = useState(() => abrirAlEntrar);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);

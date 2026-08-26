@@ -1,4 +1,6 @@
+import Link from 'next/link';
 import {
+  contarIncompletos,
   listColaboradores,
   listObrasPorColaborador,
   listPuestos,
@@ -12,7 +14,13 @@ import TablaColaboradores from './tabla-colaboradores';
 
 export const dynamic = 'force-dynamic';
 
-export default async function EquipoPage() {
+export default async function EquipoPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ incompletos?: string }>;
+}) {
+  const { incompletos: soloIncompletos } = await searchParams;
+
   const [
     { data: colaboradores, error: colError },
     { data: puestos, error: puestoError },
@@ -26,6 +34,14 @@ export default async function EquipoPage() {
     listObras(),
     getUiOrden(),
   ]);
+
+  // `?incompletos=1` llega del aviso cuando hay VARIOS pendientes. Se filtra
+  // sobre la lista ya traída en vez de repetir la consulta: son las mismas
+  // filas, solo que recortadas.
+  const pendientes = soloIncompletos === '1' ? await contarIncompletos() : null;
+  const lista = pendientes
+    ? colaboradores.filter((c) => pendientes.ids.includes(c.id))
+    : colaboradores;
   // Solo obras activas: dar de alta a alguien en una obra archivada no tiene
   // sentido y ensuciaría el desplegable.
   const obrasActivas = obras.filter((o) => o.activa).map((o) => ({ id: o.id, nombre: o.nombre }));
@@ -49,9 +65,18 @@ export default async function EquipoPage() {
         </p>
       )}
 
+      {pendientes && (
+        <p className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Mostrando solo a quienes les faltan datos ({pendientes.total}).{' '}
+          <Link href="/admin/equipo" className="font-semibold underline underline-offset-2">
+            Ver a todo el equipo
+          </Link>
+        </p>
+      )}
+
       {!error && (
         <TablaColaboradores
-          colaboradores={colaboradores}
+          colaboradores={lista}
           puestos={puestos}
           modo={modo}
           obrasPorColab={obrasPorColab}
