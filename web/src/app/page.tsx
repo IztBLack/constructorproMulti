@@ -4,6 +4,7 @@ import type { ReactNode, SVGProps } from 'react';
 import { LinkButton } from '@/components/ui';
 import { enlaceApkAndroid, enlaceAppIos } from '@/lib/descargas';
 import { IconAndroid, IconApple } from '@/components/descargas/iconos';
+import { BrandMark } from '@/components/marca/brand-mark';
 
 export const metadata: Metadata = {
   title: { absolute: 'ConstructorPro — Lleva tus obras en orden' },
@@ -112,23 +113,8 @@ const IconArrow = (p: IconProps) => (
   </IconBase>
 );
 
-function BrandMark({ className = '' }: { className?: string }) {
-  return (
-    <span
-      className={`inline-flex h-9 w-9 items-center justify-center rounded-lg bg-neutral-900 text-white ${className}`}
-      aria-hidden="true"
-    >
-      <IconBase className="h-5 w-5">
-        <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z" />
-        <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2" />
-        <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2" />
-        <path d="M10 6h4" />
-        <path d="M10 10h4" />
-        <path d="M10 14h4" />
-      </IconBase>
-    </span>
-  );
-}
+// `BrandMark` vive en `@/components/marca/brand-mark`: lo comparten esta página
+// y el encabezado de las páginas legales (`/privacidad`, `/terminos`, `/soporte`).
 
 // Los íconos de marca Android/Apple y la configuración de descargas viven en
 // módulos compartidos (`@/components/descargas/iconos` y `@/lib/descargas`), la
@@ -635,13 +621,29 @@ export default function Home() {
             <Link href="/cliente" className="transition hover:text-neutral-900">
               Soy cliente
             </Link>
+            <Link href="/soporte" className="transition hover:text-neutral-900">
+              Soporte
+            </Link>
           </nav>
         </div>
         <div className="border-t border-neutral-200">
-          {/* neutral-600: el -400 daba 2.52:1 sobre blanco. */}
-          <p className="mx-auto max-w-6xl px-4 py-4 text-xs text-neutral-600 sm:px-6">
-            © {new Date().getFullYear()} ConstructorPro. Todos los derechos reservados.
-          </p>
+          <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-4 text-xs sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            {/* neutral-600: el -400 daba 2.52:1 sobre blanco. */}
+            <p className="text-neutral-600">
+              © {new Date().getFullYear()} ConstructorPro. Todos los derechos reservados.
+            </p>
+            {/* Los enlaces legales van en el pie porque es donde se buscan, y
+                porque un sitio que cobra por un servicio sin aviso de privacidad
+                visible incumple la LFPDPPP. */}
+            <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 text-neutral-600">
+              <Link href="/privacidad" className="transition hover:text-neutral-900">
+                Aviso de privacidad
+              </Link>
+              <Link href="/terminos" className="transition hover:text-neutral-900">
+                Términos del servicio
+              </Link>
+            </nav>
+          </div>
         </div>
       </footer>
     </div>
