@@ -2,12 +2,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PaginaLegal, Seccion } from '@/components/legal/pagina-legal';
 import { NombreResponsable, Pendiente } from '@/components/legal/pendiente';
-import { ARCHIVOS, CATEGORIAS_DATOS, RESPONSABLE, TERCEROS } from '@/lib/legal/datos';
+import { ARCHIVOS, CATEGORIAS_DATOS, RESPONSABLE, TERCEROS, metadataBorrador } from '@/lib/legal/datos';
 
 export const metadata: Metadata = {
   title: 'Aviso de privacidad',
   description:
     'Qué datos trata ConstructorPro, para qué, con quién se comparten y cómo ejercer tus derechos ARCO.',
+  ...metadataBorrador(),
 };
 
 /**

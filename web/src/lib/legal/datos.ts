@@ -218,3 +218,32 @@ export function legalIncompleto(): string[] {
 
 /** `true` mientras quede algún dato por decidir. Las páginas lo anuncian arriba. */
 export const BORRADOR_LEGAL = legalIncompleto().length > 0;
+
+/**
+ * Rutas cuyo texto sale de este archivo. Se listan aquí y no en `lib/sitio.ts`
+ * porque quien las quite del sitemap necesita saber POR QUÉ las quita, y ese
+ * porqué (`BORRADOR_LEGAL`) vive aquí.
+ */
+export const RUTAS_LEGALES = ['/privacidad', '/terminos', '/soporte'] as const;
+
+/**
+ * Metadata que impide indexar una página mientras falte algún dato legal.
+ *
+ * Se hace con `noindex` y NO con un `Disallow` en `robots.txt`, aunque a primera
+ * vista el segundo suene más contundente. Son cosas distintas: `Disallow` impide
+ * *rastrear*, y una página que no se rastrea es una página cuyo `noindex` nadie
+ * llega a leer — Google puede acabar listando la URL igual, si alguien la enlaza,
+ * y entonces ya no hay forma de pedirle que la quite. `noindex` sí se obedece,
+ * justamente porque para verlo hay que entrar.
+ *
+ * La página sigue existiendo y se puede abrir por enlace directo: eso es
+ * deliberado, porque el borrador es legible a propósito. Lo que no queremos es
+ * que un aviso de privacidad incompleto sea el resultado de buscar la empresa.
+ *
+ * Cuando `legalIncompleto()` se quede vacío, esto devuelve `{}` solo y las tres
+ * páginas vuelven a indexarse sin tocar nada más.
+ */
+export function metadataBorrador() {
+  if (!BORRADOR_LEGAL) return {};
+  return { robots: { index: false, follow: true } };
+}

@@ -2,12 +2,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PaginaLegal, Seccion } from '@/components/legal/pagina-legal';
 import { NombreResponsable, Pendiente } from '@/components/legal/pendiente';
-import { ARCHIVOS, RESPONSABLE } from '@/lib/legal/datos';
+import { ARCHIVOS, RESPONSABLE, metadataBorrador } from '@/lib/legal/datos';
 
 export const metadata: Metadata = {
   title: 'Términos del servicio',
   description:
     'Condiciones de uso de ConstructorPro: alcance del servicio, responsabilidades de cada parte y límites.',
+  ...metadataBorrador(),
 };
 
 /**

@@ -2,12 +2,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PaginaLegal, Seccion } from '@/components/legal/pagina-legal';
 import { Pendiente } from '@/components/legal/pendiente';
-import { COMPROMISO_RESPUESTA, RESPONSABLE } from '@/lib/legal/datos';
+import { COMPROMISO_RESPUESTA, RESPONSABLE, metadataBorrador } from '@/lib/legal/datos';
 
 export const metadata: Metadata = {
   title: 'Soporte y preguntas frecuentes',
   description:
     'Cómo contactarnos, en cuánto tiempo respondemos y las respuestas a las dudas más comunes sobre ConstructorPro.',
+  ...metadataBorrador(),
 };
 
 /**
