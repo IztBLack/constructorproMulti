@@ -74,10 +74,10 @@ String textoIntegrado(TipoDocumento tipo, ContextoTextoFinal ctx) {
 
 /// El texto que realmente se imprime. Documento → empresa → integrado.
 ///
-/// `textosEmpresa` llega vacío por ahora: esos textos viven en el jsonb
-/// `empresa_config.pdf_config` y el móvil todavía no sincroniza esa tabla —
-/// guarda su PdfConfig en SharedPreferences. El parámetro existe para que el
-/// día que se sincronice no haya que tocar a los llamadores.
+/// `textosEmpresa` los sirve [TextosPdfService] desde `empresa_config.pdf_textos`
+/// (migración 0033), con caché en SharedPreferences para que el PDF salga bien
+/// sin señal: lo que se escribe en la web aparece en el celular y al revés.
+/// Llega vacío solo si nadie ha escrito ninguno, y entonces manda el integrado.
 String resolverTextoFinal({
   required TipoDocumento tipo,
   String? documento,

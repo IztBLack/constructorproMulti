@@ -1,109 +1,136 @@
-# Paridad web ↔ móvil — lo que quedó disparejo
+# Paridad web ↔ móvil — el párrafo final de los PDF
 
-**2026-08-25**, tras desplegar `fcd9cc1` a producción.
-
-Comprobado contra el código y contra la base real, no de memoria: columnas de
-Postgres frente a las tablas de Drift, y qué PDF de cada plataforma imprime qué.
+**Abierto el 2026-08-25** tras desplegar `fcd9cc1`. **Cerrado el 2026-08-25**.
 
 ---
 
 ## Veredicto
 
-**La paridad de datos está casi cerrada; la que falta es de SALIDA.** Las tablas
-del móvil cubren todo lo que le toca cubrir. Lo que sigue disparejo es que el
-mismo documento sale distinto según desde dónde se emita — que es justo el
-problema que esta sesión vino a cerrar y quedó a medias en un caso.
+La paridad de datos ya estaba casi cerrada; la que faltaba era de **salida**: el
+mismo documento salía distinto según desde dónde se emitiera. Eso queda cerrado.
+
+**Los tres documentos que llevan párrafo final dicen ahora lo mismo en las dos
+plataformas, y se editan desde las dos.** Es la afirmación que al abrir este
+documento no se podía hacer.
+
+Por el camino salió un cuarto hueco que no estaba en la lista: la tarjeta de la
+cotización —la única que existía en el móvil— **no guardaba nada**. Ver G6.
 
 ---
 
-## G1 · El estado de cuenta del cliente sale distinto · **alto**
+## Lo que se cerró
 
-`PdfService.estadoCuentaCliente` (móvil) **no imprime el párrafo final**; el de
-la web sí. De los diez PDF del móvil, solo dos lo imprimen: `presupuesto` y
-`notaObra`.
+### G1 · El estado de cuenta del cliente salía sin párrafo · **alto**
 
-Es el mismo documento, para el mismo cliente, con distinto pie según quién lo
-mande. Exactamente lo que se corrigió para el presupuesto y se dejó sin corregir
-aquí.
+`PdfService.estadoCuentaCliente` no lo imprimía; el de la web sí. Mismo
+documento, mismo cliente, distinto pie según quién lo mandara.
 
-**Depende de G2**: el texto propio de ese documento vive en `obras.texto_final`,
-y esa columna no existe en el móvil.
+Ahora resuelve el texto igual que `presupuesto` y `notaObra`, y lo imprime
+**debajo de los totales**, que es donde la web pone su `.vigencia`: hasta dónde
+cae el párrafo en la hoja forma parte de que sea el mismo documento.
 
-## G2 · `obras.texto_final` no está en Drift · **alto**
+### G2 · `obras.texto_final` no estaba en Drift · **alto**
 
-| Columna de `obras` | ¿En el móvil? | ¿Correcto? |
-|---|---|---|
-| `avance` | no | sí — es de la web, el upsert la preserva |
-| `cliente_id` | no | sí — ídem |
-| **`texto_final`** | **no** | **no** — se me pasó en la 0032 |
+Se me pasó al añadir la columna en la 0032: al móvil solo le llegó la de
+`cotizaciones` y `nota_obra`. Ahora está, con su migración **v12 → v13**.
 
-Las dos primeras están documentadas como exclusivas de la web en
-`web/DEPLOY.md §5`. La tercera es un olvido: cuando añadí la columna a las tres
-tablas, al móvil solo le llegó la de `cotizaciones` y `nota_obra`.
+**Y con una guarda que no estaba prevista.** La columna existe en Supabase desde
+la 0032 y la oficina lleva meses pudiendo escribirla, mientras que `addColumn` la
+deja en NULL en todas las filas locales. Como el sync **empuja antes de traer**,
+una obra `pending` —editada en la obra, sin señal— habría subido ese NULL y
+borrado el párrafo de la web sin dar ningún error.
 
-**Trabajo**: columna en Drift (v12 → v13) + migración + prueba, y pasar el texto
-al PDF. La columna ya existe en el servidor, así que no hay migración de Supabase.
+Un pull adelantado no lo arregla: `_pullTabla` aplica LWW y **salta** justo las
+filas `pending`, que son las que corrían peligro. Lo que se hizo es un relleno
+dirigido: `AppDatabase.columnasPorLlenar` lo apunta, `SyncService` lo atiende
+antes del primer push y copia del servidor solo esa columna, solo donde está en
+NULL. El aviso se persiste, así que sobrevive a los días que pueden pasar entre
+actualizar la app y volver a tener señal.
 
-## G3 · El texto final de una NOTA no se edita desde el móvil · **medio**
+Es un mecanismo general: cualquier migración futura que añada una columna que el
+servidor ya tenga llena puede apuntarse ahí.
 
-El móvil ya **imprime** el texto propio de la nota y ya **sincroniza** la
-columna, pero no tiene dónde escribirlo: la tarjeta de edición solo está en la
-cotización. En la web está en los tres documentos.
+### G3 · El texto final de una NOTA no se editaba desde el móvil · **medio**
 
-Se nota poco porque el texto general suele bastar, pero deja una nota que se
-capturó entera en el celular sin poder ajustar su pie ahí mismo.
+Ya se imprimía y ya se sincronizaba, pero no había dónde escribirlo. Ahora sí.
 
-**Trabajo**: reusar la tarjeta que ya existe en `cotizacion_detail_screen`.
+### G6 · La tarjeta de la cotización no guardaba · **alto, y no estaba en la lista**
 
-## G4 · Los atajos nuevos son solo de la web · **bajo, y a propósito**
+Salió al escribir la prueba de guardado de la obra, que copiaba su patrón.
+Guardaba con un `insertOnConflictUpdate` de un companion con solo el `id` y el
+texto, y eso **nunca funcionó**: Drift valida la integridad del INSERT antes de
+mirar el conflicto, así que lanzaba `InvalidDataException` por las columnas
+obligatorias ausentes aunque la fila fuera a resolverse como UPDATE. La tarjeta
+se veía bien y "Guardar" no guardaba nada, desde que existe.
 
-Vista rápida, menú de fila y paleta de comandos no tienen gemelo móvil. **No es
-un descuido**: la paleta pide teclado, y el equivalente móvil de la vista rápida
-—la hoja inferior de consulta— se propuso y no se aprobó.
-
-Queda anotado para que la próxima revisión no lo lea como un olvido.
-
-## G5 · `clientes` no existe en el móvil · **bajo, y a propósito**
-
-Gestionar el portal del cliente es trabajo de oficina. El móvil no tiene pantalla
-ni tabla, y no hace falta que las tenga.
+La nota se salvó por casualidad: su repositorio ya escribía con `update`. Ahora
+las tres van por ahí, con `setTextoFinal` en cada repositorio.
 
 ---
 
-## Plan
+## Una sola tarjeta, no tres
 
-Por orden de lo que arregla frente a lo que cuesta.
+G1 tal como estaba anotado solo habría hecho que el móvil **imprimiera** el
+párrafo. Pero la web tiene su `TextoFinalCard` también en la obra, así que sin
+equivalente móvil el hueco seguía abierto, igual que G3.
 
-### 1. Cerrar G2 + G1 juntos
+Son el mismo hueco, y esta es su causa: el móvil tenía la tarjeta escrita como un
+método privado de la pantalla de cotización. Copiarla dos veces habría garantizado
+que las tres se comportaran distinto con el tiempo — que es exactamente lo que ya
+había pasado.
 
-Son la misma pieza. Drift v12 → v13 con `obras.textoFinal`, su migración con
-prueba —la columna nace NULL, así que ningún documento existente cambia— y
-`estadoCuentaCliente` resolviendo el texto igual que `presupuesto` y `notaObra`.
+Ahora hay **una** (`lib/presentation/common/texto_final_card.dart`), como en la
+web, y cada pantalla le pasa su tipo, su texto propio, su contexto y su forma de
+guardar.
 
-Al terminar, **los tres documentos que llevan párrafo dicen lo mismo en las dos
-plataformas**, que es la afirmación que hoy no se puede hacer.
-
-### 2. G3, la tarjeta en la nota del móvil
-
-Es copiar un widget que ya existe y engancharlo al repositorio de notas, que ya
-sabe escribir la columna.
-
-### 3. Nada más
-
-G4 y G5 se quedan como están, por decisión y no por falta de tiempo.
+Se le puso además el candado por rol (`puedeEditarOperacionProvider`), que la web
+ya tenía: el párrafo va en un documento que sale de la empresa. Concede mientras
+el rol carga, como el resto de la app, y un rol de solo lectura sigue viendo el
+texto — el candado es sobre editar, no sobre enterarse.
 
 ---
 
-## Lo que SÍ quedó parejo
+## Lo que queda como está, por decisión
 
-Para que el plan no se lea más grande de lo que es:
+### G4 · Los atajos nuevos son solo de la web · **bajo**
+
+Vista rápida, menú de fila y paleta de comandos no tienen gemelo móvil. La
+paleta pide teclado, y el equivalente móvil de la vista rápida —la hoja inferior
+de consulta— se propuso y no se aprobó.
+
+### G5 · `clientes` no existe en el móvil · **bajo**
+
+Gestionar el portal del cliente es trabajo de oficina.
+
+---
+
+## Cómo queda cubierto
+
+| Prueba | Qué fija |
+|---|---|
+| `test/data/migration_desde_v12_test.dart` | La obra sobrevive, el párrafo nace NULL, y la migración deja el aviso de relleno |
+| `test/data/relleno_columna_nueva_test.dart` | El párrafo de la web sobrevive a una obra `pending`, y el relleno no pisa lo que se escribió en el celular |
+| `test/data/texto_final_guardado_test.dart` | Los tres documentos guardan de verdad y quedan `pending` |
+| `test/pdf/estado_cuenta_texto_final_test.dart` | El párrafo llega a la hoja y no se cuela el de otro tipo de documento |
+| `test/widget/texto_final_card_test.dart` | Qué párrafo se lee, de dónde dice que salió y quién puede tocarlo |
+| `test/logic/textos_finales_test.dart` (ya existía) | La redacción, palabra por palabra contra la de la web |
+
+`flutter analyze` limpio salvo 7 avisos previos de `onReorder`; 267 pruebas en
+verde.
+
+---
+
+## Lo que ya estaba parejo
+
+Para que esto no se lea más grande de lo que fue:
 
 - **Notas de obra** completas en ambas: tablas, sincronización, cálculo con
   prueba de paridad, pantallas y PDF.
-- **Texto general de los PDF** compartido y editable desde los dos lados.
-- **Configuración del PDF** (contacto, color, pie, marca de agua, firmas) en
-  `empresa_config`, con el nombre de la empresa saliendo de una sola fuente.
+- **Texto general de los PDF** compartido y editable desde los dos lados
+  (`empresa_config.pdf_textos`, migración 0033).
+- **Configuración del PDF** (contacto, color, pie, marca de agua, firmas), con
+  el nombre de la empresa saliendo de una sola fuente.
 - **Alta rápida y quitar** en el pase de lista, con las mismas reglas de rol.
 - **Aviso de datos incompletos**, derivado de los datos en ambas.
 - **Movimiento**: esqueletos, deshacer y respeto al ajuste de movimiento
-  reducido, que el móvil no consultaba en ningún lado.
+  reducido.

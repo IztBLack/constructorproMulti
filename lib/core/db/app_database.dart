@@ -43,8 +43,22 @@ class AppDatabase extends _$AppDatabase {
 
   static const _uuid = Uuid();
 
+  /// Columnas que una migración acaba de AÑADIR y que el servidor ya tenía
+  /// llenas, como `"obras.texto_final"`.
+  ///
+  /// `addColumn` las deja en NULL en todas las filas locales, y el sync hace
+  /// PUSH ANTES QUE PULL. Una fila que estuviera `pending` en ese momento
+  /// —editada sin señal— subiría su NULL y BORRARÍA en el servidor un dato que
+  /// este teléfono nunca llegó a ver, sin dar ningún error.
+  ///
+  /// [SyncService] lo vacía en su primer ciclo: persiste la lista y rellena esas
+  /// columnas desde el servidor antes de empujar nada. Es estático porque la
+  /// migración corre al abrir la base, mucho antes de que exista un SyncService
+  /// al que avisarle.
+  static final Set<String> columnasPorLlenar = <String>{};
+
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -366,6 +380,18 @@ class AppDatabase extends _$AppDatabase {
               await m.createTable(notaObraRenglon);
             }
             await _instalarTriggersSync();
+          }
+
+          // v12 → v13: párrafo final propio del ESTADO DE CUENTA, que cuelga de
+          // la obra porque ese documento se emite por obra (Supabase 0032).
+          //
+          // A diferencia de la v10→v11, aquí la columna del servidor NO nace
+          // vacía: la web lleva escribiéndola desde la 0032. Por eso se apunta
+          // en [columnasPorLlenar] — sin eso, una obra `pending` se llevaría por
+          // delante el párrafo que escribió la oficina.
+          if (from < 13) {
+            await m.addColumn(obras, obras.textoFinal);
+            columnasPorLlenar.add('obras.texto_final');
           }
         },
       );

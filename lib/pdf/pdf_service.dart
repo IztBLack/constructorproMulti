@@ -826,6 +826,13 @@ class PdfService {
     // adrede: todo lo que llegue aquí SE PINTA como pago recibido.
     required List<({int fecha, String concepto, double monto})> pagos,
     PdfConfig config = const PdfConfig(),
+
+    /// El párrafo propio de ESTA obra (`obras.texto_final`). Cuelga de la obra
+    /// y no de un documento porque el estado de cuenta se emite por obra.
+    String? textoFinalObra,
+
+    /// Texto general de la empresa por tipo (`empresa_config.pdf_textos`).
+    Map<TipoDocumento, String> textosEmpresa = const {},
   }) async {
     final color = _hex(config.colorHex);
     final doc = pw.Document();
@@ -872,6 +879,15 @@ class PdfService {
         _totalLinea('Pagos recibidos', recibido, color: _verde),
         _totalLinea('SALDO POR COBRAR', pendiente,
             bold: true, color: pendiente > 0 ? _rojo : _verde),
+        // Debajo de los totales, igual que la web pone `.vigencia` después de
+        // `.totales`: es el MISMO documento para el MISMO cliente, y hasta
+        // dónde cae el párrafo en la hoja forma parte de que lo sea.
+        _textoFinal(resolverTextoFinal(
+          tipo: TipoDocumento.estadoCuenta,
+          documento: textoFinalObra,
+          textosEmpresa: textosEmpresa,
+          ctx: ContextoTextoFinal(nombreEmpresa: config.empresaNombre),
+        )),
       ],
     ));
     return doc.save();

@@ -4,12 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
+import '../../core/pdf/textos_finales.dart';
 import '../../core/sync/cloud_providers.dart';
 import '../../data/providers.dart';
 import '../../data/repositories_nota_obra.dart';
 import '../../domain/logic/notas_obra_calculo.dart';
 import '../../pdf/pdf_service.dart';
 import '../common/confirm_dialog.dart';
+import '../common/texto_final_card.dart';
 import '../pdf_preview_screen.dart';
 
 /// Editor de una NOTA DE OBRA. Gemelo de `/admin/obras/[id]/notas/[notaId]`.
@@ -146,6 +148,29 @@ class _Editor extends ConsumerWidget {
 
           const SizedBox(height: 12),
           _Cuentas(totales: t),
+
+          // El párrafo final, al cierre: es un DATO de la nota —viaja en su
+          // columna `texto_final` y se sincroniza con la web— y no una opción
+          // de impresión, así que vive donde se captura la nota.
+          const SizedBox(height: 12),
+          TextoFinalCard(
+            tipo: TipoDocumento.nota,
+            textoPropio: nota.nota.textoFinal,
+            margin: EdgeInsets.zero,
+            // El destinatario alimenta el texto integrado ("entre X y Y"), que
+            // es lo que hace que el de una nota no se lea como el de una
+            // cotización.
+            ctx: (cfg) => ContextoTextoFinal(
+              nombreEmpresa: cfg.empresaNombre,
+              destinatario: nota.nota.destinatario,
+            ),
+            onGuardar: (texto) => _repo(ref).actualizar(
+              NotaObraCompanion(
+                id: Value(nota.nota.id),
+                textoFinal: Value(texto),
+              ),
+            ),
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(

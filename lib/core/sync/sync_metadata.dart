@@ -23,6 +23,40 @@ class SyncMetadata {
     await _prefs.setString(_kId(table), id);
   }
 
+  // ── Columnas recién añadidas que hay que rellenar desde el servidor ──
+  //
+  // Las apunta una migración que acaba de crear una columna que el servidor ya
+  // tenía llena (ver `AppDatabase.columnasPorLlenar`, que explica qué se
+  // rompería sin esto). Cada entrada es `"tabla.columna"`.
+  //
+  // Se guardan en DISCO y no solo en memoria porque entre la migración y el
+  // primer sync con red pueden pasar días: el usuario actualiza la app en la
+  // obra, sin señal, y abre y cierra la app varias veces antes de sincronizar.
+
+  static const _kPorLlenar = 'sync_columnas_por_llenar';
+
+  /// Lo que sigue pendiente de rellenar.
+  Set<String> get porLlenar =>
+      _prefs.getStringList(_kPorLlenar)?.toSet() ?? const {};
+
+  /// Anota columnas sin pisar las que ya estuvieran apuntadas.
+  Future<void> marcarPorLlenar(Iterable<String> columnas) async {
+    if (columnas.isEmpty) return;
+    await _prefs.setStringList(_kPorLlenar, {...porLlenar, ...columnas}.toList());
+  }
+
+  /// Da una columna por atendida. Solo tras un relleno que terminó bien: si
+  /// falla, el aviso tiene que sobrevivir al siguiente intento.
+  Future<void> limpiarPorLlenar(String columna) async {
+    // Copia: sin nada anotado, el getter devuelve un `const {}` inmodificable.
+    final resto = {...porLlenar}..remove(columna);
+    if (resto.isEmpty) {
+      await _prefs.remove(_kPorLlenar);
+    } else {
+      await _prefs.setStringList(_kPorLlenar, resto.toList());
+    }
+  }
+
   /// Reinicia el cursor de una tabla (fuerza un pull completo la próxima vez).
   Future<void> reset(String table) async {
     await _prefs.remove(_kTs(table));

@@ -53,6 +53,15 @@ class Obras extends Table with SyncCols, Orderable {
   TextColumn get cotizacionOrigenId => text().nullable()();
   TextColumn get pdfConfigJson => text().nullable()();
 
+  /// Párrafo final del ESTADO DE CUENTA DEL CLIENTE de esta obra (0032).
+  ///
+  /// Cuelga de la obra y no de un documento propio porque el estado de cuenta
+  /// se emite POR OBRA: no existe una fila "estado de cuenta" que pueda llevar
+  /// el suyo. Mismo criterio que `texto-final.ts` en la web.
+  ///
+  /// NULL = "no tengo el mío", igual que en [Cotizaciones.textoFinal].
+  TextColumn get textoFinal => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }

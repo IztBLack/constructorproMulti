@@ -124,6 +124,15 @@ class SyncService {
       "SELECT * FROM $tabla WHERE sync_status IN ('pending', 'error') "
       "ORDER BY (deleted_at IS NULL) ASC";
 
+  /// El `UPDATE` con el que [_llenarColumnaNueva] copia a una fila local el
+  /// valor que el servidor ya tenía en una columna recién migrada.
+  ///
+  /// Expuesto —como [sqlCandidatosPush]— para que la prueba ejerza ESTA cadena
+  /// y no una copia a mano: lo que hay que garantizar es el `AND $col IS NULL`,
+  /// que es lo único que impide pisar lo que el usuario escribió sin señal.
+  static String sqlRellenoColumna(String tabla, String col, String idCol) =>
+      "UPDATE $tabla SET $col = ? WHERE $idCol = ? AND $col IS NULL";
+
   /// True si el fallo de push es la regla de "1 jornada/día" del servidor
   /// (CHECK, SQLSTATE 23514). PostgREST entrega el cuerpo del error como un JSON
   /// dentro de `message`, con el `code` real adentro, así que se busca en ambos.
@@ -156,7 +165,23 @@ class SyncService {
     var erroresPush = 0;
     ultimoErrorPush = null; // se llena si alguna fila falla en este ciclo
     try {
-      // 1) PUSH primero (padres→hijos) para no traer del server algo que aún
+      // 0) RELLENO de las columnas que una migración acaba de crear en NULL y
+      //    que el servidor ya tenía llenas (ver `AppDatabase.columnasPorLlenar`,
+      //    que explica qué se rompería sin esto). Va ANTES del push, que es lo
+      //    único que importa: después ya sería tarde.
+      //
+      //    El aviso se persiste ANTES de atenderlo: si el relleno falla a
+      //    medias, la marca sigue puesta y el próximo ciclo lo reintenta. El
+      //    mapa en memoria se vacía para no re-anotar lo ya atendido en otro
+      //    `syncAll` de esta misma sesión.
+      await metadata.marcarPorLlenar(AppDatabase.columnasPorLlenar);
+      AppDatabase.columnasPorLlenar.clear();
+      for (final pendiente in metadata.porLlenar) {
+        await _llenarColumnaNueva(pendiente);
+        await metadata.limpiarPorLlenar(pendiente);
+      }
+
+      // 1) PUSH (padres→hijos) para no traer del server algo que aún
       //    no subimos y perder la edición local.
       //
       //    Se aísla en su propio try/catch que NO propaga: los fallos de fila
@@ -268,6 +293,52 @@ class SyncService {
     if (value is! String) return false;
     if (value.isEmpty) return true;
     return _uuidRe.hasMatch(value);
+  }
+
+  // ---------------- RELLENO DE COLUMNA RECIÉN AÑADIDA ----------------
+
+  /// Baja del servidor el valor de una columna que la migración acaba de crear
+  /// y lo copia a las filas locales que la tienen en NULL.
+  ///
+  /// POR QUÉ NO BASTA UN PULL NORMAL: `_pullTabla` aplica LWW y **salta** las
+  /// filas `pending` cuya edición local es más nueva — que son exactamente las
+  /// que corren peligro. Un pull adelantado dejaría el NULL puesto en ellas y
+  /// el push lo subiría igual. Por eso esto va columna por columna en vez de
+  /// fila entera: toca SOLO el dato que la migración no pudo saber, sin pisar
+  /// nada de lo que el usuario escribió sin señal.
+  ///
+  /// [pendiente] llega como `"tabla.columna"`.
+  ///
+  /// El `UPDATE` dispara `mark_pending` y deja `pending` a filas que estaban
+  /// `synced`, así que el siguiente ciclo las vuelve a subir con el MISMO valor
+  /// que acaban de recibir. Es una vuelta de más sobre unas decenas de filas,
+  /// una sola vez; apagar el trigger para ahorrárselo costaría dejar la tabla
+  /// sin él si algo revienta en medio, que es mucho peor que el ruido.
+  Future<void> _llenarColumnaNueva(String pendiente) async {
+    final partes = pendiente.split('.');
+    if (partes.length != 2) return;
+    final (tabla, col) = (partes[0], partes[1]);
+
+    final t = _info(tabla);
+    final pk = _pk(t);
+    // Solo PK simple: no hay ninguna tabla con PK compuesta que necesite esto,
+    // y armar el WHERE para ese caso sin usarlo sería código sin probar.
+    if (pk.length != 1) return;
+    final idCol = pk.first;
+
+    final filas = await client.from(tabla).select('$idCol,$col');
+    var llenadas = 0;
+    for (final row in (filas as List).cast<Map<String, dynamic>>()) {
+      final valor = row[col];
+      if (valor == null) continue;
+      final n = await db.customUpdate(
+        sqlRellenoColumna(tabla, col, idCol),
+        variables: [Variable(valor), Variable(row[idCol])],
+        updates: {t},
+      );
+      llenadas += n;
+    }
+    debugPrint('[SyncService] $pendiente: $llenadas fila(s) rellenadas del servidor');
   }
 
   // ---------------- PUSH ----------------

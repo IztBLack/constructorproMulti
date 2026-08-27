@@ -80,6 +80,25 @@ class ObraRepository {
       ),
     );
   }
+
+  /// Fija el párrafo final del ESTADO DE CUENTA de esta obra. `null` borra el
+  /// propio y devuelve el documento al texto general de la empresa.
+  ///
+  /// Va por [setArchivada] y no por [upsert]: `insertOnConflictUpdate` valida la
+  /// integridad ANTES de mirar el conflicto, y `obras` tiene `nombre` y
+  /// `fecha_inicio` sin default, así que un companion con solo `id` y
+  /// `texto_final` no pasa. (En `cotizaciones` sí pasa —todas sus columnas
+  /// tienen default— y por eso la misma línea funciona allá.)
+  Future<void> setTextoFinal(String id, String? texto) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return (db.update(db.obras)..where((t) => t.id.equals(id))).write(
+      ObrasCompanion(
+        textoFinal: Value(texto),
+        updatedAt: Value(now),
+        syncStatus: const Value('pending'),
+      ),
+    );
+  }
 }
 
 class PuestoRepository {

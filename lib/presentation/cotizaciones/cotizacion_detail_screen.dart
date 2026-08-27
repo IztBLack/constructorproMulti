@@ -29,6 +29,7 @@ import '../common/async_action_button.dart';
 import '../common/confirm_dialog.dart';
 import '../common/empty_state_view.dart';
 import '../common/money_text.dart';
+import '../common/texto_final_card.dart';
 import '../common/error_state_view.dart';
 import '../pdf_pre_dialog.dart';
 
@@ -408,7 +409,12 @@ class _State extends ConsumerState<CotizacionDetailScreen>
                           // es un DATO de la cotización, no una opción de
                           // impresión, así que vive donde se capturan los datos
                           // y no en el diálogo de "Opciones del PDF".
-                          _tarjetaTextoFinal(),
+                          TextoFinalCard(
+                            tipo: TipoDocumento.cotizacion,
+                            textoPropio: _textoFinal,
+                            ctx: _ctxTexto,
+                            onGuardar: _guardarTextoFinal,
+                          ),
                           // Aire para que el FAB no tape la tarjeta.
                           const SizedBox(height: 80),
                         ],
@@ -442,158 +448,8 @@ class _State extends ConsumerState<CotizacionDetailScreen>
         ivaPct: widget.cotizacion.ivaPorcentaje,
       );
 
-  /// Tarjeta gemela de la de la web (`TextoFinalCard`): enseña el párrafo YA
-  /// RESUELTO —el que se va a imprimir— y deja editarlo o volver al general.
-  Widget _tarjetaTextoFinal() {
-    final cs = Theme.of(context).colorScheme;
-    final generales = ref.watch(textosPdfProvider);
-    final origen = origenTextoFinal(
-      tipo: TipoDocumento.cotizacion,
-      documento: _textoFinal,
-      textosEmpresa: generales,
-    );
-    final propio = origen == OrigenTexto.documento;
-
-    return FutureBuilder<PdfConfig>(
-      future: ref.read(pdfConfigEfectivaProvider.future),
-      builder: (context, snap) {
-        // Mientras carga la config no se pinta un texto a medias: cambiaría de
-        // contenido al llegar los datos, que se lee como un parpadeo raro.
-        if (!snap.hasData) return const SizedBox.shrink();
-        final cfg = snap.data!;
-        final resuelto = resolverTextoFinal(
-          tipo: TipoDocumento.cotizacion,
-          documento: _textoFinal,
-          textosEmpresa: generales,
-          ctx: _ctxTexto(cfg),
-        );
-
-        return Card(
-          margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Expanded(
-                      child: Text('Texto final del PDF',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                    Chip(
-                      label: Text(
-                          switch (origen) {
-                            OrigenTexto.documento => 'Editado aquí',
-                            OrigenTexto.empresa => 'Texto de tus ajustes',
-                            OrigenTexto.integrado => 'Texto por defecto',
-                          },
-                          style: const TextStyle(fontSize: 11)),
-                      visualDensity: VisualDensity.compact,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      backgroundColor:
-                          propio ? cs.tertiaryContainer : cs.surfaceContainerHighest,
-                      side: BorderSide.none,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.only(left: 10),
-                  decoration: BoxDecoration(
-                    border: Border(left: BorderSide(color: cs.outlineVariant, width: 2)),
-                  ),
-                  child: Text(resuelto,
-                      style: TextStyle(fontSize: 12.5, color: cs.onSurfaceVariant)),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text('Se imprime al pie, arriba de tu pie de página.',
-                          style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
-                    ),
-                    if (propio)
-                      TextButton(
-                        onPressed: () => _guardarTextoFinal(null),
-                        child: const Text('Restaurar'),
-                      ),
-                    TextButton(
-                      onPressed: () => _editarTextoFinal(resuelto, cfg),
-                      child: const Text('Editar'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _editarTextoFinal(String resuelto, PdfConfig cfg) async {
-    final ctrl = TextEditingController(text: resuelto);
-    // El punto de partida es el texto GENERAL de la empresa (o el integrado si
-    // no hay ninguno), no el integrado a secas: si el dueño ya escribió sus
-    // condiciones en Ajustes, volver "al de siempre" tiene que devolverlo ahí.
-    final general = resolverTextoFinal(
-      tipo: TipoDocumento.cotizacion,
-      textosEmpresa: ref.read(textosPdfProvider),
-      ctx: _ctxTexto(cfg),
-    );
-
-    final guardar = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Texto final del PDF'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Cambia lo que necesites. Se guarda solo en esta cotización.',
-                style: TextStyle(fontSize: 12),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: ctrl,
-                maxLines: 6,
-                minLines: 4,
-                maxLength: largoMaximoTextoFinal,
-                decoration: const InputDecoration(border: OutlineInputBorder()),
-              ),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  onPressed: () => ctrl.text = general,
-                  child: const Text('Volver al texto general'),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-          FilledButton(
-              onPressed: () => Navigator.pop(ctx, true), child: const Text('Guardar')),
-        ],
-      ),
-    );
-
-    if (guardar != true) return;
-    final texto = ctrl.text.trim();
-    // Vacío = "sin texto propio", igual que la web: no se guarda cadena vacía,
-    // se borra el propio y la cotización vuelve a seguir el general.
-    await _guardarTextoFinal(texto.isEmpty ? null : texto);
-  }
-
   Future<void> _guardarTextoFinal(String? texto) async {
-    await ref.read(cotizacionRepositoryProvider).upsert(
-          CotizacionesCompanion(id: Value(_cotId), textoFinal: Value(texto)),
-        );
+    await ref.read(cotizacionRepositoryProvider).setTextoFinal(_cotId, texto);
     if (!mounted) return;
     setState(() => _textoFinal = texto);
   }

@@ -12,6 +12,7 @@ import 'package:uuid/uuid.dart';
 import '../pdf_preview_screen.dart';
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
+import '../../core/pdf/textos_finales.dart';
 import '../../core/storage/comprobante_storage.dart';
 import '../../core/sync/cloud_providers.dart';
 import '../../core/sync/rol_provider.dart';
@@ -30,6 +31,7 @@ import '../common/app_snackbar.dart';
 import '../common/confirm_dialog.dart';
 import '../common/money_text.dart';
 import '../common/section_header.dart';
+import '../common/texto_final_card.dart';
 import '../notas/notas_obra_screen.dart';
 import '../pdf_pre_dialog.dart';
 import 'importar_movimientos_screen.dart';
@@ -50,7 +52,19 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
   int _inicioSemana = Semana.inicioSemana(DateTime.now());
   bool _asistVistaSemana = false;
 
+  /// El párrafo propio del estado de cuenta de esta obra. En estado local y no
+  /// leído de `widget.obra` porque esta pantalla recibe la obra ya cargada:
+  /// tras editarlo, el objeto de la ruta seguiría trayendo el valor viejo.
+  late String? _textoFinal = widget.obra.textoFinal;
+
   String get _obraId => widget.obra.id;
+
+  /// Guarda (o borra, con `null`) el párrafo propio del estado de cuenta.
+  Future<void> _guardarTextoFinal(String? texto) async {
+    await ref.read(obraRepositoryProvider).setTextoFinal(_obraId, texto);
+    if (!mounted) return;
+    setState(() => _textoFinal = texto);
+  }
 
   @override
   void dispose() {
@@ -263,6 +277,8 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
       pendiente: estado.pendiente,
       pagos: pagos,
       config: config,
+      textoFinalObra: _textoFinal,
+      textosEmpresa: ref.read(textosPdfProvider),
     );
     if (!mounted) return;
     await Navigator.of(context).push(MaterialPageRoute(
@@ -1037,6 +1053,18 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
                 child: _NotaConciliacionCard(obraId: _obraId),
+              ),
+              // El párrafo final del ESTADO DE CUENTA DEL CLIENTE de esta obra,
+              // junto a la nota de conciliación y no en Ajustes, igual que en la
+              // web: es lo que se imprime en ESE documento —el que se manda al
+              // cliente—, no en el PDF de caja interno.
+              TextoFinalCard(
+                tipo: TipoDocumento.estadoCuenta,
+                textoPropio: _textoFinal,
+                margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                ctx: (cfg) =>
+                    ContextoTextoFinal(nombreEmpresa: cfg.empresaNombre),
+                onGuardar: _guardarTextoFinal,
               ),
               const Divider(height: 1),
               if (movs.isEmpty)

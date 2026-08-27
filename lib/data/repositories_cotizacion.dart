@@ -23,8 +23,30 @@ class CotizacionRepository {
         ]))
       .watch();
 
+  /// Alta o reemplazo COMPLETO. Para cambiar un puñado de campos de una
+  /// cotización que ya existe hace falta un `update`, no esto: Drift valida la
+  /// integridad del INSERT antes de mirar el conflicto, así que un companion
+  /// sin `cliente`, `nombreProyecto` y `fecha` lanza `InvalidDataException`
+  /// aunque la fila fuera a resolverse como UPDATE. Ver [setTextoFinal].
   Future<void> upsert(CotizacionesCompanion c) =>
       db.into(db.cotizaciones).insertOnConflictUpdate(c);
+
+  /// Fija el párrafo final propio de esta cotización. `null` borra el propio y
+  /// devuelve el documento al texto general de la empresa.
+  ///
+  /// Gemelo de `ObraRepository.setTextoFinal`. Este pasó un tiempo escrito como
+  /// un [upsert] parcial, que en el teléfono lanzaba en cuanto se tocaba
+  /// "Guardar": la tarjeta se veía bien y el texto no llegaba a ninguna parte.
+  Future<void> setTextoFinal(String id, String? texto) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return (db.update(db.cotizaciones)..where((t) => t.id.equals(id))).write(
+      CotizacionesCompanion(
+        textoFinal: Value(texto),
+        updatedAt: Value(now),
+        syncStatus: const Value('pending'),
+      ),
+    );
+  }
 
   Future<Cotizacion?> getById(String id) => (db.select(db.cotizaciones)
         ..where((t) => t.id.equals(id) & t.deletedAt.isNull()))
