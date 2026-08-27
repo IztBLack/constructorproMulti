@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ToastProvider } from "@/components/ui";
 import { RegistrarSW } from "@/components/pwa/registrar-sw";
 import { ScriptTema } from "@/components/tema/script-tema";
+import { urlSitio } from "@/lib/sitio";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,6 +17,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  // Sin `metadataBase`, Next resuelve las URLs de Open Graph contra
+  // `localhost:3000` y avisa en cada build. Con ella, la imagen que genera
+  // `app/opengraph-image.tsx` se anuncia con su URL absoluta real, que es lo
+  // que WhatsApp y Facebook necesitan para poder descargarla.
+  metadataBase: new URL(urlSitio()),
   title: {
     default: "ConstructorPro",
     template: "%s · ConstructorPro",
@@ -30,6 +36,24 @@ export const metadata: Metadata = {
   appleWebApp: {
     title: "ConstructorPro",
     statusBarStyle: "default",
+  },
+  // Cómo se ve el enlace al compartirlo. La imagen NO se declara aquí: la toma
+  // sola de `app/opengraph-image.tsx`, y repetirla a mano acabaría apuntando a
+  // un archivo que ya no existe.
+  openGraph: {
+    type: "website",
+    siteName: "ConstructorPro",
+    locale: "es_MX",
+    title: "ConstructorPro — Lleva tus obras en orden",
+    description:
+      "Cotizaciones, tu gente, la raya y el dinero de cada obra en un solo lugar. Funciona sin internet en la obra.",
+    url: "/",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ConstructorPro — Lleva tus obras en orden",
+    description:
+      "Cotizaciones, tu gente, la raya y el dinero de cada obra en un solo lugar.",
   },
 };
 
