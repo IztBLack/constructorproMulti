@@ -515,11 +515,15 @@ class ProyeccionNotifier extends Notifier<ProyeccionEstado> {
     final s = state;
     if (!s.plazas.containsKey(plazaId)) return;
 
-    Map<K, V> renombrar<K, V>(Map<K, V> mapa) {
-      if (!mapa.containsKey(plazaId as K)) return mapa;
-      final copia = {...mapa};
-      copia[colaboradorId as K] = copia.remove(plazaId as K) as V;
-      return copia;
+    // Todas las llaves del escenario son `colaboradorId`, así que basta con
+    // parametrizar el VALOR: sin casts genéricos que puedan reventar en
+    // tiempo de ejecución.
+    Map<String, V> renombrar<V>(Map<String, V> mapa) {
+      final valor = mapa[plazaId];
+      if (valor == null) return mapa;
+      return {...mapa}
+        ..remove(plazaId)
+        ..[colaboradorId] = valor;
     }
 
     _escribir(s.copyWith(
@@ -548,6 +552,26 @@ class ProyeccionNotifier extends Notifier<ProyeccionEstado> {
   /// Guarda el sueldo capturado de alguien; `null` lo devuelve al del puesto.
   void setSueldo(String colaboradorId, SueldoProyectado? sueldo) =>
       _escribir(state.conSueldo(colaboradorId, sueldo));
+
+  /// Deja los días proyectados de alguien en los primeros [dias] de la semana,
+  /// respetando los que ya están capturados.
+  ///
+  /// Es lo que hace el enlace «Ajustar días a 6» de la ficha. Va aparte de
+  /// cambiar el divisor del sueldo a propósito: reacomodar las palomitas de
+  /// quien ya tiene media semana capturada solo sería correcto la mitad de las
+  /// veces.
+  void fijarDias(String colaboradorId, int dias,
+      {Set<int> bloqueados = const {}}) {
+    final n = dias.clamp(1, 7);
+    final nuevos = {
+      for (var d = 0; d < 7; d++)
+        if (d < n || bloqueados.contains(d)) d,
+    };
+    _escribir(state.copyWith(diasProyectados: {
+      ...state.diasProyectados,
+      colaboradorId: nuevos,
+    }));
+  }
 
   /// Cómo se enseñan las cifras. No pasa por el candado de solo lectura: mirar
   /// una proyección guardada con otro redondeo no la cambia, y prohibirlo

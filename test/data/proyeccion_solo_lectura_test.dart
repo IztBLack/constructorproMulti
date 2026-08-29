@@ -220,7 +220,102 @@ void main() {
     expect(container.read(sesionProyeccionProvider).nombre, 'Recién guardada');
   });
 
-  test('eliminar la abierta deja el escenario en la mano, sin archivo',
+  test('darla de alta conserva días, préstamos y ajustes de la plaza', () async {
+    notifier().cargar(ProyeccionEstado(
+      lunesMillis: DateTime(2026, 8, 24).millisecondsSinceEpoch,
+    ));
+    final plazas = notifier().agregarPlazas(
+      puestoId: 'pM',
+      puestoNombre: 'Maestro',
+      cuantas: 1,
+      sueldo: const SueldoProyectado(
+          periodo: PeriodoPago.semanal, monto: 3600, diasSemana: 6),
+      obraId: 'o1',
+    );
+    final plazaId = plazas.single.id;
+
+    notifier().moverDia(plazaId, 3, 'o2');
+    notifier().agregarAjuste(
+      tipo: TipoAjuste.anticipo,
+      destino: DestinoAjuste.colaborador,
+      destinoId: plazaId,
+      monto: 800,
+    );
+
+    notifier().sustituirPlazaPorColaborador(plazaId, 'colab-nuevo');
+
+    final e = estado();
+    expect(e.plazas, isEmpty, reason: 'ya no es hipótesis');
+    expect(e.participantes, ['colab-nuevo']);
+    expect(e.diasDe('colab-nuevo'), {0, 1, 2, 3, 4, 5},
+        reason: 'sus días viajan con él');
+    expect(e.prestamosDe('colab-nuevo'), {3: 'o2'},
+        reason: 'y el día que se prestó a otra obra también');
+    expect(e.ajustes.single.destinoId, 'colab-nuevo',
+        reason: 'el anticipo sigue apuntándole a él');
+    expect(e.salarioOverride['colab-nuevo'], 600,
+        reason: 'el diario se queda para que el total no brinque');
+    expect(e.sueldoOverride.containsKey('colab-nuevo'), isFalse,
+        reason: 'el sueldo capturado ya vive en su ficha del catálogo');
+    expect(e.diasDe(plazaId), isEmpty);
+  });
+
+  test('fijar los días respeta los que ya están capturados', () async {
+    notifier().cargar(ProyeccionEstado(
+      lunesMillis: DateTime(2026, 8, 24).millisecondsSinceEpoch,
+      participantes: const ['c1'],
+      diasProyectados: const {
+        'c1': {0, 1, 2, 3, 4, 5, 6}
+      },
+    ));
+    notifier().fijarDias('c1', 5, bloqueados: const {5});
+
+    expect(estado().diasDe('c1'), {0, 1, 2, 3, 4, 5},
+        reason: 'los cinco del contrato más el sábado, que ya está capturado');
+  });
+
+  test('agregar en masa es UN solo estado, deshacible de una vez', () async {
+    notifier().cargar(ProyeccionEstado(
+        lunesMillis: DateTime(2026, 8, 24).millisecondsSinceEpoch));
+    final antes = estado();
+
+    notifier().agregarVarios(const ['c1', 'c2', 'c3'],
+        diasPorColaborador: const {'c1': 6, 'c2': 5, 'c3': 6});
+    notifier().agregarPlazas(
+      puestoId: 'pM',
+      puestoNombre: 'Maestro',
+      cuantas: 4,
+      sueldo: const SueldoProyectado(
+          periodo: PeriodoPago.semanal, monto: 3600, diasSemana: 6),
+    );
+
+    expect(estado().participantes, hasLength(7));
+    expect(estado().diasDe('c2'), {0, 1, 2, 3, 4},
+        reason: 'cada quien con los días de su contrato');
+
+    // Un solo «Deshacer» devuelve las tres altas y las cuatro plazas.
+    notifier().restaurar(antes);
+    expect(estado().participantes, isEmpty);
+    expect(estado().plazas, isEmpty);
+  });
+
+  test('las plazas del mismo puesto se numeran sin repetirse', () async {
+    notifier().cargar(ProyeccionEstado(
+        lunesMillis: DateTime(2026, 8, 24).millisecondsSinceEpoch));
+    const sueldo = SueldoProyectado(
+        periodo: PeriodoPago.semanal, monto: 3600, diasSemana: 6);
+
+    notifier().agregarPlazas(
+        puestoId: 'pM', puestoNombre: 'Maestro', cuantas: 2, sueldo: sueldo);
+    final segundas = notifier().agregarPlazas(
+        puestoId: 'pM', puestoNombre: 'Maestro', cuantas: 2, sueldo: sueldo);
+
+    expect(segundas.map((p) => p.etiqueta), ['Maestro 3', 'Maestro 4'],
+        reason: 'la numeración continúa desde las que ya había');
+    expect(estado().plazas.values.map((p) => p.etiqueta).toSet(), hasLength(4));
+  });
+
+    test('eliminar la abierta deja el escenario en la mano, sin archivo',
       () async {
     notifier().cargar(ProyeccionEstado(
         lunesMillis: DateTime(2026, 8, 24).millisecondsSinceEpoch,

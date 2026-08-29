@@ -438,16 +438,9 @@ class _FichaPersonaState extends ConsumerState<_FichaPersona> {
         ? const <int>{}
         : (ref.read(proyeccionVistaProvider).diasBloqueados[colaboradorId] ??
             const <int>{});
-    final nuevos = {
-      for (var d = 0; d < 7; d++)
-        if (d < dias.clamp(1, 7) || bloqueados.contains(d)) d,
-    };
     ref
         .read(proyeccionEstadoProvider.notifier)
-        .restaurar(estado.copyWith(diasProyectados: {
-          ...estado.diasProyectados,
-          colaboradorId: nuevos,
-        }));
+        .fijarDias(colaboradorId, dias, bloqueados: bloqueados);
   }
 
   /// Ofrece propagar el sueldo capturado a la ficha del colaborador.

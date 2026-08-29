@@ -236,6 +236,27 @@ void main() {
     });
   });
 
+  group('conPlaza', () {
+    test('renombrar y cambiar el puesto no toca sus días ni su sueldo', () {
+      var estado = ProyeccionEstado(lunesMillis: lunes).conPlazas([plaza('1')]);
+      final id = '${prefijoPlaza}1';
+      final original = estado.plazas[id]!;
+
+      estado = estado.conPlaza(
+          original.copyWith(etiqueta: 'Maestro de acabados', puestoId: 'pA'));
+
+      expect(estado.plazas[id]!.etiqueta, 'Maestro de acabados');
+      expect(estado.plazas[id]!.puestoId, 'pA');
+      expect(estado.diasDe(id), {0, 1, 2, 3, 4, 5});
+      expect(estado.salarioOverride[id], 600);
+    });
+
+    test('una plaza que no está en el escenario se ignora', () {
+      final estado = ProyeccionEstado(lunesMillis: lunes);
+      expect(estado.conPlaza(plaza('9')).plazas, isEmpty);
+    });
+  });
+
   group('JSON del escenario', () {
     test('un escenario completo va y vuelve sin perder nada', () {
       var estado = ProyeccionEstado(
