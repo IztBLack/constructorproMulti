@@ -38,7 +38,7 @@ void main() {
     expect(regenerado, equals(crudo));
   });
 
-  test('las llaves de primer nivel son exactamente estas doce', () {
+  test('las llaves de primer nivel son exactamente estas trece', () {
     // Una llave NUEVA que no esté aquí es una que la web todavía no sabe
     // escribir: la lista se toca a la vez que su gemela, o no se toca.
     expect(
@@ -55,6 +55,7 @@ void main() {
         'ajustes',
         'simular',
         'obraPorDia',
+        'obraBase',
         'redondeo',
       }),
     );
@@ -76,6 +77,7 @@ void main() {
     expect(e.redondeo.activo, isTrue,
         reason: 'apagado no serializa modo ni campos de verdad');
     expect(e.obraPorDia, isNotEmpty, reason: 'el mapa anidado por índice de día');
+    expect(e.obraBase, isNotEmpty, reason: 'la obra asignada dentro del escenario');
     expect(e.simularCompleta, isTrue);
   });
 

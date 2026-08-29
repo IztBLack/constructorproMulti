@@ -91,6 +91,7 @@ class SyncMetadata {
       'movimientos',
       'catalogo_conceptos',
       'archivos_cotizacion',
+      'proyeccion_guardada',
     ];
     for (final t in tablas) {
       await reset(t);

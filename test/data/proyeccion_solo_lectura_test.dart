@@ -70,6 +70,7 @@ void main() {
     notifier().rellenar(RellenoSemana.lunesASabado, const ['c1'],
         diasPorColaborador: const {'c1': 6}, bloqueadosPorDia: const {});
     notifier().moverDia('c1', 1, 'o2');
+    notifier().asignarObra('c1', 'o2');
     notifier().agregar('c2');
     notifier().agregarVarios(const ['c3'],
         diasPorColaborador: const {'c3': 6});

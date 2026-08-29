@@ -399,6 +399,19 @@ class ProyeccionEstado {
   /// trabaja los mismos días— pero sí mueve el total de cada obra.
   final Map<String, Map<int, String>> obraPorDia;
 
+  /// `colaboradorId → obraId`: obra asignada SOLO dentro del escenario, encima
+  /// de la del catálogo.
+  ///
+  /// Para meter a alguien que todavía no está asignado a ninguna obra en el
+  /// sistema — el peón nuevo, el que se acaba de contratar. Sin esto sus días
+  /// no pertenecerían a ninguna parte y no sumarían a la raya de ninguna obra.
+  /// No escribe nada en `obra_colaborador`: es del escenario y muere con él.
+  ///
+  /// Espeja `ProyeccionEstado.obraBase` de la web. Llegó DESPUÉS que allá: la
+  /// web lo tenía y el móvil no, así que el mismo escenario daba un total
+  /// distinto en cada plataforma. Ver `docs/PARIDAD_PROYECCION_WEB.md`.
+  final Map<String, String> obraBase;
+
   const ProyeccionEstado({
     required this.lunesMillis,
     this.participantes = const [],
@@ -408,6 +421,7 @@ class ProyeccionEstado {
     this.ajustes = const [],
     this.simularCompleta = false,
     this.obraPorDia = const {},
+    this.obraBase = const {},
     this.sueldoOverride = const {},
     this.plazas = const {},
     this.redondeo = RedondeoConfig.apagado,
@@ -422,9 +436,18 @@ class ProyeccionEstado {
   Map<int, String> prestamosDe(String colaboradorId) =>
       obraPorDia[colaboradorId] ?? const <int, String>{};
 
-  /// A qué obra pertenece ESE día: la del préstamo si lo hay, si no la base.
-  String obraDelDia(String colaboradorId, int dia, String obraBase) =>
-      prestamosDe(colaboradorId)[dia] ?? obraBase;
+  /// La obra base de esta persona: la del catálogo, con lo que el escenario le
+  /// haya puesto encima. Un solo sitio para resolverlo, porque el cálculo, el
+  /// filtro por obra y la lista de participantes tienen que estar de acuerdo en
+  /// dónde trabaja alguien. Espeja `obraBaseEfectiva` de la web.
+  String obraBaseDe(String colaboradorId, String obraDelCatalogo) =>
+      obraBase[colaboradorId] ?? obraDelCatalogo;
+
+  /// A qué obra pertenece ESE día. Precedencia, de menos a más: la del
+  /// catálogo, la que el escenario asignó, y el préstamo de ese día concreto.
+  String obraDelDia(String colaboradorId, int dia, String obraDelCatalogo) =>
+      prestamosDe(colaboradorId)[dia] ??
+      obraBaseDe(colaboradorId, obraDelCatalogo);
 
   /// Ajustes que apuntan a un colaborador concreto.
   List<AjusteProyeccion> ajustesDeColaborador(String colaboradorId) => ajustes
@@ -447,6 +470,7 @@ class ProyeccionEstado {
     List<AjusteProyeccion>? ajustes,
     bool? simularCompleta,
     Map<String, Map<int, String>>? obraPorDia,
+    Map<String, String>? obraBase,
     Map<String, SueldoProyectado>? sueldoOverride,
     Map<String, PlazaProyectada>? plazas,
     RedondeoConfig? redondeo,
@@ -460,6 +484,7 @@ class ProyeccionEstado {
         ajustes: ajustes ?? this.ajustes,
         simularCompleta: simularCompleta ?? this.simularCompleta,
         obraPorDia: obraPorDia ?? this.obraPorDia,
+        obraBase: obraBase ?? this.obraBase,
         sueldoOverride: sueldoOverride ?? this.sueldoOverride,
         plazas: plazas ?? this.plazas,
         redondeo: redondeo ?? this.redondeo,
@@ -496,6 +521,7 @@ class ProyeccionEstado {
                 a.destinoId == colaboradorId))
             .toList(),
         obraPorDia: {...obraPorDia}..remove(colaboradorId),
+        obraBase: {...obraBase}..remove(colaboradorId),
         // Si es una plaza, se va también su ficha: nadie más la referencia y
         // dejarla sería un renglón fantasma que reaparece al guardar.
         sueldoOverride: {...sueldoOverride}..remove(colaboradorId),
@@ -528,6 +554,22 @@ class ProyeccionEstado {
       mapa[id] = actuales;
     }
     return copyWith(diasProyectados: mapa);
+  }
+
+  /// Asigna a alguien una obra SOLO dentro del escenario, o se la quita con
+  /// [obraId] en `null` para que vuelva a la del catálogo.
+  ///
+  /// A diferencia de [conDiaEnObra], esto NO prende ningún día: asignar obra
+  /// dice *dónde* trabaja, no *cuándo*. Quien la asigna suele venir de agregar a
+  /// alguien que ya trae sus días puestos.
+  ProyeccionEstado conObraBase(String colaboradorId, String? obraId) {
+    final mapa = {...obraBase};
+    // Misma higiene que en `conDiaEnObra`: no se deja una llave con cadena
+    // vacía, que haría ver el escenario «tocado» sin que nada cambiara.
+    obraId == null || obraId.isEmpty
+        ? mapa.remove(colaboradorId)
+        : mapa[colaboradorId] = obraId;
+    return copyWith(obraBase: mapa);
   }
 
   /// Presta (o devuelve) UN día de una persona a otra obra.
@@ -726,6 +768,7 @@ class ProyeccionEstado {
     for (final id in {...obraPorDia.keys, ...otro.obraPorDia.keys}) {
       if (!_mismoMapa(prestamosDe(id), otro.prestamosDe(id))) return false;
     }
+    if (!_mismoMapa(obraBase, otro.obraBase)) return false;
     // Las plazas se comparan campo por campo: son trabajo capturado a mano y
     // perderlas al cambiar de semana sin preguntar es justo lo que este método
     // existe para evitar.
@@ -774,6 +817,7 @@ class ProyeccionEstado {
               for (final d in e.value.entries) d.key.toString(): d.value,
             },
         },
+        'obraBase': obraBase,
         'redondeo': redondeo.toJson(),
       };
 
@@ -838,6 +882,10 @@ class ProyeccionEstado {
               if (d.value is String)
                 (int.tryParse(d.key) ?? -1): d.value as String,
           }..removeWhere((k, _) => k < 0),
+      },
+      obraBase: {
+        for (final e in mapa(json['obraBase']).entries)
+          if (e.value is String) e.key: e.value as String,
       },
       redondeo: RedondeoConfig.fromJson(mapa(json['redondeo'])),
     );

@@ -107,6 +107,13 @@ class SyncService {
     'movimientos',
     'catalogo_conceptos',
     'archivos_cotizacion',
+    // Escenarios de proyeccion guardados. Entra aqui al final porque no es
+    // padre de nadie: su unica FK es `empresa_id`. Estuvo FUERA de esta lista
+    // desde el esquema local v14 a proposito, porque empujar contra una tabla
+    // que el servidor no tenia habria tumbado el push del ciclo entero -y con
+    // el, la subida de asistencias y nomina-. Con la 0034 ya aplicada en
+    // produccion, entra.
+    'proyeccion_guardada',
   ];
 
   /// SQL de los candidatos a subir de una tabla: filas con cambios locales sin

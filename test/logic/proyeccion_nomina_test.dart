@@ -38,6 +38,7 @@ void main() {
     List<AjusteProyeccion> ajustes = const [],
     bool simular = false,
     Map<String, Map<int, String>> obraPorDia = const {},
+    Map<String, String> obraBase = const {},
   }) =>
       ProyeccionEstado(
         lunesMillis: lunes,
@@ -48,6 +49,7 @@ void main() {
         ajustes: ajustes,
         simularCompleta: simular,
         obraPorDia: obraPorDia,
+        obraBase: obraBase,
       );
 
   // ═════════════════════════════════════════════════════════════════════════
@@ -497,6 +499,93 @@ void main() {
 
       expect(estado.participantes, ['c2']);
       expect(estado.ajustes, isEmpty);
+    });
+  });
+
+  // ═════════════════════════════════════════════════════════════════════════
+  group('Obra asignada dentro del escenario (`obraBase`)', () {
+    // Llegó para cerrar una divergencia con la web, que lo tenía desde antes: el
+    // mismo escenario daba un total por obra distinto en cada plataforma porque
+    // el móvil no sabía leer el campo. Ver `docs/PARIDAD_PROYECCION_WEB.md`.
+    //
+    // Sirve para meter a quien todavía no está asignado a ninguna obra en el
+    // catálogo — el que se acaba de contratar. c1 cobra 700/día.
+    const semana = {'c1': {0, 1, 2, 3, 4, 5}};
+
+    test('sin obra en el catálogo, los días no son de ninguna obra', () {
+      final r = calc.calcular(
+        estado: escenario(participantes: const ['c1'], dias: semana),
+        colaboradores: colaboradores,
+        puestos: puestos,
+        obraPorColaborador: const {},
+        obraFiltro: 'o1',
+      );
+      expect(r.total, 0.0,
+          reason: 'nadie asignado a o1: es el hueco que `obraBase` viene a tapar');
+    });
+
+    test('la obra del escenario pisa a la del catálogo', () {
+      ProyeccionResultado enObra(String obra) => calc.calcular(
+            estado: escenario(
+              participantes: const ['c1'],
+              dias: semana,
+              obraBase: const {'c1': 'o2'},
+            ),
+            colaboradores: colaboradores,
+            puestos: puestos,
+            obraPorColaborador: const {'c1': 'o1'},
+            obraFiltro: obra,
+          );
+
+      expect(enObra('o2').total, 4200.0, reason: 'manda la del escenario');
+      expect(enObra('o1').total, 0.0, reason: 'la del catálogo ya no cuenta');
+    });
+
+    test('el préstamo de un día pisa a la obra del escenario', () {
+      // Precedencia completa: catálogo < escenario < préstamo del día.
+      final e = escenario(
+        participantes: const ['c1'],
+        dias: semana,
+        obraBase: const {'c1': 'o2'},
+        obraPorDia: const {
+          'c1': {3: 'o3'}
+        },
+      );
+      ProyeccionResultado enObra(String obra) => calc.calcular(
+            estado: e,
+            colaboradores: colaboradores,
+            puestos: puestos,
+            obraPorColaborador: const {'c1': 'o1'},
+            obraFiltro: obra,
+          );
+
+      expect(enObra('o3').total, 700.0, reason: 'solo el jueves prestado');
+      expect(enObra('o2').total, 3500.0, reason: 'los otros cinco días');
+      expect(enObra('o1').total, 0.0);
+      // Y el global no se mueve: la persona trabaja los mismos seis días.
+      expect(
+        calc
+            .calcular(
+              estado: e,
+              colaboradores: colaboradores,
+              puestos: puestos,
+              obraPorColaborador: const {'c1': 'o1'},
+            )
+            .total,
+        4200.0,
+      );
+    });
+
+    test('quitar a la persona se lleva su obra del escenario', () {
+      // El mismo contrato que el resto de campos por persona: si se queda, al
+      // volver a agregarla reaparece una obra fantasma que nadie puso.
+      final e = escenario(
+        participantes: const ['c1'],
+        dias: semana,
+        obraBase: const {'c1': 'o2'},
+      ).sinParticipante('c1');
+
+      expect(e.obraBase, isEmpty);
     });
   });
 

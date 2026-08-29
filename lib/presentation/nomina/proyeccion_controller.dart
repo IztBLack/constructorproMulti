@@ -435,6 +435,11 @@ class ProyeccionNotifier extends Notifier<ProyeccionEstado> {
   void moverDia(String colaboradorId, int dia, String? obraId) =>
       _escribir(state.conDiaEnObra(colaboradorId, dia, obraId));
 
+  /// Asigna obra dentro del escenario a quien no la tiene en el catálogo, o se
+  /// la quita con [obraId] en `null`.
+  void asignarObra(String colaboradorId, String? obraId) =>
+      _escribir(state.conObraBase(colaboradorId, obraId));
+
   // ── Participantes ────────────────────────────────────────────────────────
 
   void agregar(String colaboradorId, {int diasSemana = 6, int desdeDia = 0}) {

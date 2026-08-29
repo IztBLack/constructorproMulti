@@ -58,7 +58,7 @@ En producción **la 0034 no está aplicada**: de `proyeccion_guardada`,
 
 ### 1. El contrato JSON no lo verifica nadie · **es lo importante**
 
-`ProyeccionEstado.toJson` tiene doce llaves, tres de ellas mapas anidados de
+`ProyeccionEstado.toJson` tiene trece llaves, tres de ellas mapas anidados de
 objetos con su propio `toJson` (`sueldo`, `plazas`, `ajustes`). Hoy hay **un solo
 escritor**, así que el contrato se sostiene solo. En cuanto la web escriba,
 hay dos, y nada los ata.
@@ -75,7 +75,7 @@ verde mientras cada lado escribe su propio nombre de llave, porque cada una lee
 lo que ella misma escribió. El error vive justo en el punto ciego del patrón.
 
 **Propuesta: un fixture JSON commiteado que lean las dos.** Un escenario de
-ejemplo con las doce llaves pobladas, `test/fixtures/proyeccion_v1.json`. La
+ejemplo con las trece llaves pobladas, `test/fixtures/proyeccion_v1.json`. La
 prueba móvil lo parsea, lo vuelve a emitir y exige que salga idéntico; la de la
 web hace lo mismo. Si alguien renombra una llave de un lado, el fixture ya no
 cuadra y **el otro lado se pone rojo**. Es la única forma de que el punto ciego
@@ -107,7 +107,7 @@ mirar el JSON, ver la `'v'` y creer que ahí está la puerta. **La autoridad es 
 columna `esquema`.** La web tiene que comprobarla igual, y conviene decirlo aquí
 porque el código no lo dice en ninguna parte.
 
-### 4. `obraBase` existe en la web y NO existe en el móvil · **bloquea la Fase 1**
+### 4. `obraBase` existía en la web y NO en el móvil · **RESUELTO**
 
 Encontrado al ir a escribir el gemelo, y es justo la clase de cosa por la que
 este documento existe.
@@ -140,16 +140,25 @@ sirve:
   `fromJson` tolera llaves faltantes, así que un escenario viejo abre igual — y
   la llave nueva sería la decimotercera.
 
-Dentro de la tercera queda una decisión que no es técnica y que **no tomo yo**:
+**Se eligió la tercera, en su versión completa** (2026-08-29): el móvil gana el
+campo *y* la pantalla para ponerlo.
 
-- **Mínimo**: el móvil *respeta* `obraBase` al abrir un escenario hecho en la
-  web, pero no ofrece cómo ponerlo. Cierra el hueco de cálculo, es poco código.
-- **Completo**: además, la ficha del móvil deja asignar obra dentro del
-  escenario, como la web. Es paridad de verdad, y es pantalla.
+- `ProyeccionEstado.obraBase`, con la misma precedencia que la web
+  (`catálogo < escenario < préstamo del día`), resuelta en un solo sitio
+  (`obraBaseDe`, gemelo de `obraBaseEfectiva`).
+- `conObraBase` / `asignarObra`, con la higiene de llaves vacías de
+  `conDiaEnObra` y bajo el candado de solo lectura del notifier.
+- Se limpia en `sinParticipante`, como el resto de campos por persona.
+- La ficha estrena `_ObraDelEscenario`, que **solo aparece cuando hace falta**:
+  sin obra en el catálogo, o con una ya asignada aquí.
+- Es la decimotercera llave del JSON. Compatible hacia atrás: un escenario
+  viejo sin ella abre igual.
 
-Hasta que se decida, el punto 4 de la Fase 1 (el serializador de la web) queda
-parado: escribirlo contra un contrato con este agujero sería fijar el error en
-sitio.
+De paso destapó un segundo efecto que no estaba anotado: el bloque de préstamos
+se **esconde** cuando no hay obra base (`if (!nombreObra.containsKey(obraBaseId))
+return const SizedBox.shrink()`). Quien no tenía obra no solo no sumaba a
+ninguna raya: tampoco podía moverse ningún día. Asignarla desde el escenario
+destapa las dos cosas a la vez.
 
 ---
 
@@ -157,22 +166,26 @@ sitio.
 
 Ordenadas para que cada una entregue algo y ninguna deje el sistema a medias.
 
-### Fase 0 · Aplicar la 0034 · *requiere tu visto bueno*
+### Fase 0 · Aplicar la 0034 · ✅ **HECHA** (2026-08-29)
 
-Escritura en producción. Es aditiva e idempotente: crea tabla, índices, trigger y
-RLS; no toca nada existente. Con ella aplicada, la línea de `pushOrder` del móvil
-se puede añadir cuando queramos.
+Aplicada y verificada en producción: 15 columnas, RLS activa, las 3 policies
+(read admin/supervisor/contador · insert y update admin/supervisor), los 4
+índices y el trigger `trg_srv_upd`.
 
-Hasta que se aplique, los escenarios guardados **no salen de la tableta**.
+Con la tabla ya en el servidor entró también `'proyeccion_guardada'` en
+`SyncService.pushOrder` —la línea que la migración anticipaba— y en la lista
+espejo de `SyncMetadata.resetAll`. `pushOrder` gobierna push **y** pull, y
+`sync_status_conteo_test.dart` genera su SQL a partir de esa lista, así que la
+tabla nueva ya queda cubierta por esa prueba.
 
 ### Fase 1 · El contrato · *sin cambio visible, desbloquea todo lo demás*
 
-1. `test/fixtures/proyeccion_v1.json` — escenario de ejemplo, doce llaves.
-2. Prueba móvil de ida y vuelta contra el fixture.
-3. Endurecer `fromJson` contra valores mal tipados (punto 2 de arriba).
-4. *(parado — ver punto 4)* Tipos de la web + `serializarEstado` /
-   `deserializarEstado`, con su prueba
-   contra **el mismo fixture**.
+1. ✅ `test/fixtures/proyeccion_v1.json` — escenario de ejemplo, trece llaves.
+2. ✅ Prueba móvil de ida y vuelta contra el fixture.
+3. ✅ Endurecer `fromJson` contra valores mal tipados (punto 2 de arriba).
+4. ✅ `obraBase` en el móvil (punto 4), con su UI y la precedencia probada.
+5. ⏳ Tipos de la web + `serializarEstado` / `deserializarEstado`, con su prueba
+   contra **el mismo fixture**. Ya desbloqueado: el contrato está cerrado.
 
 Nada de esto se ve en pantalla. Es lo que hace que las fases 2–4 no puedan
 divergir en silencio.

@@ -75,6 +75,9 @@
       "1": "o-costa-verde"
     }
   },
+  "obraBase": {
+    "c-adrian": "o-alfaro"
+  },
   "redondeo": {
     "activo": true,
     "paso": 50,

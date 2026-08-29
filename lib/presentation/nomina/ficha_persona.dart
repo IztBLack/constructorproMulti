@@ -80,7 +80,11 @@ class _FichaPersonaState extends ConsumerState<_FichaPersona> {
     final c = context.colores;
     final t = Theme.of(context).textTheme;
     final id = renglon.colaborador.id;
-    final obraBase = vista.obraPorColaborador[id] ?? '';
+    // La del catálogo, con la que el escenario le haya puesto encima. Todo lo
+    // que cuelga de la obra —el subtítulo, los préstamos, el filtro— tiene que
+    // leer la MISMA, o la ficha diría una obra y el cálculo usaría otra.
+    final obraDelCatalogo = vista.obraPorColaborador[id] ?? '';
+    final obraBase = estado.obraBaseDe(id, obraDelCatalogo);
     final prestamos = estado.prestamosDe(id);
 
     if (!_prestamosInicializado) {
@@ -156,6 +160,14 @@ class _FichaPersonaState extends ConsumerState<_FichaPersona> {
             style: t.bodyMedium?.copyWith(color: c.text),
           ),
           const SizedBox(height: 12),
+          if (!esUnaPlaza)
+            _ObraDelEscenario(
+              colaboradorId: id,
+              obraDelCatalogo: obraDelCatalogo,
+              asignada: estado.obraBase[id],
+              nombreObra: vista.nombreObra,
+              soloLectura: soloLectura,
+            ),
           _Prestamos(
             colaboradorId: id,
             celdas: renglon.celdas,
@@ -792,6 +804,93 @@ class _AvisoBloqueado extends StatelessWidget {
             child: const Text('Simular la semana'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Obra asignada DENTRO del escenario, para quien no la tiene en el catálogo.
+///
+/// Sin esto, los días de quien se acaba de contratar no pertenecen a ninguna
+/// obra: no suman a la raya de ninguna y la persona desaparece al filtrar. Y
+/// como el bloque de préstamos se esconde cuando no hay obra base, esa persona
+/// se quedaba además sin poder moverse ningún día. Es el gemelo de `obraBase`
+/// de la web, que lo tenía desde antes.
+///
+/// Solo aparece cuando hace falta —sin obra en el catálogo, o con una ya puesta
+/// aquí— porque para el resto del equipo la obra ya viene del catálogo y un
+/// selector de más sería una pregunta que nadie hizo.
+class _ObraDelEscenario extends ConsumerWidget {
+  const _ObraDelEscenario({
+    required this.colaboradorId,
+    required this.obraDelCatalogo,
+    required this.asignada,
+    required this.nombreObra,
+    required this.soloLectura,
+  });
+
+  final String colaboradorId;
+  final String obraDelCatalogo;
+
+  /// Lo que puso el escenario, o `null` si no ha puesto nada.
+  final String? asignada;
+  final Map<String, String> nombreObra;
+  final bool soloLectura;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tieneDelCatalogo = nombreObra.containsKey(obraDelCatalogo);
+    if (tieneDelCatalogo && asignada == null) return const SizedBox.shrink();
+    if (nombreObra.isEmpty) return const SizedBox.shrink();
+
+    final c = context.colores;
+    final t = Theme.of(context).textTheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+        decoration: BoxDecoration(
+          border: Border.all(color: c.border),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('¿En qué obra va?',
+                style: t.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 2),
+            Text(
+              asignada != null
+                  ? 'Solo para esta proyección. No lo asigna a la obra de verdad.'
+                  : 'No está asignado a ninguna obra, así que sus días no suman '
+                      'a la raya de ninguna.',
+              style: t.bodySmall?.copyWith(color: c.textMuted),
+            ),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<String?>(
+              initialValue: asignada,
+              isExpanded: true,
+              decoration:
+                  const InputDecoration(labelText: 'Obra', isDense: true),
+              items: [
+                DropdownMenuItem<String?>(
+                  value: null,
+                  child: Text(tieneDelCatalogo
+                      ? 'La suya (${nombreObra[obraDelCatalogo]})'
+                      : 'Sin obra'),
+                ),
+                ...nombreObra.entries.map((e) => DropdownMenuItem<String?>(
+                    value: e.key, child: Text(e.value))),
+              ],
+              onChanged: soloLectura
+                  ? null
+                  : (v) => ref
+                      .read(proyeccionEstadoProvider.notifier)
+                      .asignarObra(colaboradorId, v),
+            ),
+          ],
+        ),
       ),
     );
   }
