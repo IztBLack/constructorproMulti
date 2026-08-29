@@ -17,6 +17,7 @@ import 'repositories_obra.dart';
 import 'repositories_cuadrilla.dart';
 import 'repositories_cotizacion.dart';
 import 'repositories_nota_obra.dart';
+import 'repositories_proyeccion.dart';
 
 /// Pestaña seleccionada del shell inferior (para accesos rápidos del dashboard).
 final homeTabProvider = StateProvider<int>((ref) => 0);
@@ -186,6 +187,15 @@ final obraCajaNotaRepositoryProvider = Provider<ObraCajaNotaRepository>(
 /// Notas de trato con socios (Supabase 0031).
 final notaObraRepositoryProvider = Provider<NotaObraRepository>(
     (ref) => NotaObraRepository(ref.watch(databaseProvider)));
+
+/// Proyecciones de nómina guardadas con nombre (esquema v14).
+final proyeccionRepositoryProvider = Provider<ProyeccionRepository>(
+    (ref) => ProyeccionRepository(ref.watch(databaseProvider)));
+
+/// La lista de proyecciones guardadas, la más reciente primero.
+final proyeccionesGuardadasProvider =
+    StreamProvider<List<ProyeccionGuardadaRow>>(
+        (ref) => ref.watch(proyeccionRepositoryProvider).watchTodas());
 
 // ---------------- Streams ----------------
 final obrasProvider = StreamProvider<List<Obra>>(

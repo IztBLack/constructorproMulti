@@ -16918,6 +16918,936 @@ class NotaObraRenglonCompanion extends UpdateCompanion<NotaObraRenglonRow> {
   }
 }
 
+class $ProyeccionGuardadaTable extends ProyeccionGuardada
+    with TableInfo<$ProyeccionGuardadaTable, ProyeccionGuardadaRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ProyeccionGuardadaTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _empresaIdMeta = const VerificationMeta(
+    'empresaId',
+  );
+  @override
+  late final GeneratedColumn<String> empresaId = GeneratedColumn<String>(
+    'empresa_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _serverUpdatedAtMeta = const VerificationMeta(
+    'serverUpdatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> serverUpdatedAt = GeneratedColumn<int>(
+    'server_updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _ordenMeta = const VerificationMeta('orden');
+  @override
+  late final GeneratedColumn<int> orden = GeneratedColumn<int>(
+    'orden',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nombreMeta = const VerificationMeta('nombre');
+  @override
+  late final GeneratedColumn<String> nombre = GeneratedColumn<String>(
+    'nombre',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lunesMillisMeta = const VerificationMeta(
+    'lunesMillis',
+  );
+  @override
+  late final GeneratedColumn<int> lunesMillis = GeneratedColumn<int>(
+    'lunes_millis',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _obraFiltroMeta = const VerificationMeta(
+    'obraFiltro',
+  );
+  @override
+  late final GeneratedColumn<String> obraFiltro = GeneratedColumn<String>(
+    'obra_filtro',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _escenarioMeta = const VerificationMeta(
+    'escenario',
+  );
+  @override
+  late final GeneratedColumn<String> escenario = GeneratedColumn<String>(
+    'escenario',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _esquemaMeta = const VerificationMeta(
+    'esquema',
+  );
+  @override
+  late final GeneratedColumn<int> esquema = GeneratedColumn<int>(
+    'esquema',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _totalSnapshotMeta = const VerificationMeta(
+    'totalSnapshot',
+  );
+  @override
+  late final GeneratedColumn<double> totalSnapshot = GeneratedColumn<double>(
+    'total_snapshot',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _personasSnapshotMeta = const VerificationMeta(
+    'personasSnapshot',
+  );
+  @override
+  late final GeneratedColumn<int> personasSnapshot = GeneratedColumn<int>(
+    'personas_snapshot',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _notasMeta = const VerificationMeta('notas');
+  @override
+  late final GeneratedColumn<String> notas = GeneratedColumn<String>(
+    'notas',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    orden,
+    id,
+    nombre,
+    lunesMillis,
+    obraFiltro,
+    escenario,
+    esquema,
+    totalSnapshot,
+    personasSnapshot,
+    notas,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'proyeccion_guardada';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ProyeccionGuardadaRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('empresa_id')) {
+      context.handle(
+        _empresaIdMeta,
+        empresaId.isAcceptableOrUnknown(data['empresa_id']!, _empresaIdMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('server_updated_at')) {
+      context.handle(
+        _serverUpdatedAtMeta,
+        serverUpdatedAt.isAcceptableOrUnknown(
+          data['server_updated_at']!,
+          _serverUpdatedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('orden')) {
+      context.handle(
+        _ordenMeta,
+        orden.isAcceptableOrUnknown(data['orden']!, _ordenMeta),
+      );
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('nombre')) {
+      context.handle(
+        _nombreMeta,
+        nombre.isAcceptableOrUnknown(data['nombre']!, _nombreMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nombreMeta);
+    }
+    if (data.containsKey('lunes_millis')) {
+      context.handle(
+        _lunesMillisMeta,
+        lunesMillis.isAcceptableOrUnknown(
+          data['lunes_millis']!,
+          _lunesMillisMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lunesMillisMeta);
+    }
+    if (data.containsKey('obra_filtro')) {
+      context.handle(
+        _obraFiltroMeta,
+        obraFiltro.isAcceptableOrUnknown(data['obra_filtro']!, _obraFiltroMeta),
+      );
+    }
+    if (data.containsKey('escenario')) {
+      context.handle(
+        _escenarioMeta,
+        escenario.isAcceptableOrUnknown(data['escenario']!, _escenarioMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_escenarioMeta);
+    }
+    if (data.containsKey('esquema')) {
+      context.handle(
+        _esquemaMeta,
+        esquema.isAcceptableOrUnknown(data['esquema']!, _esquemaMeta),
+      );
+    }
+    if (data.containsKey('total_snapshot')) {
+      context.handle(
+        _totalSnapshotMeta,
+        totalSnapshot.isAcceptableOrUnknown(
+          data['total_snapshot']!,
+          _totalSnapshotMeta,
+        ),
+      );
+    }
+    if (data.containsKey('personas_snapshot')) {
+      context.handle(
+        _personasSnapshotMeta,
+        personasSnapshot.isAcceptableOrUnknown(
+          data['personas_snapshot']!,
+          _personasSnapshotMeta,
+        ),
+      );
+    }
+    if (data.containsKey('notas')) {
+      context.handle(
+        _notasMeta,
+        notas.isAcceptableOrUnknown(data['notas']!, _notasMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ProyeccionGuardadaRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ProyeccionGuardadaRow(
+      empresaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}empresa_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      serverUpdatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}server_updated_at'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      orden: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}orden'],
+      )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      nombre: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}nombre'],
+      )!,
+      lunesMillis: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}lunes_millis'],
+      )!,
+      obraFiltro: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}obra_filtro'],
+      )!,
+      escenario: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}escenario'],
+      )!,
+      esquema: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}esquema'],
+      )!,
+      totalSnapshot: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}total_snapshot'],
+      )!,
+      personasSnapshot: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}personas_snapshot'],
+      )!,
+      notas: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notas'],
+      )!,
+    );
+  }
+
+  @override
+  $ProyeccionGuardadaTable createAlias(String alias) {
+    return $ProyeccionGuardadaTable(attachedDatabase, alias);
+  }
+}
+
+class ProyeccionGuardadaRow extends DataClass
+    implements Insertable<ProyeccionGuardadaRow> {
+  /// Llave multitenant + RLS. Vacío mientras no haya backend.
+  final String empresaId;
+
+  /// Alta (UTC ms). 0 en filas previas a la migración.
+  final int createdAt;
+
+  /// Última edición de cliente (UTC ms). Árbitro local de LWW + dirty flag.
+  final int updatedAt;
+
+  /// Lo pone Postgres; árbitro de LWW y cursor de pull. Null hasta sincronizar.
+  final int? serverUpdatedAt;
+
+  /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
+  final int? deletedAt;
+
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
+  final String syncStatus;
+  final int orden;
+  final String id;
+  final String nombre;
+
+  /// Lunes 00:00 de la semana proyectada, epoch millis. Se sube a columna —en
+  /// vez de dejarlo solo dentro del JSON— porque la lista se ordena y se agrupa
+  /// por semana, y hacerlo desde el texto obligaría a parsear todas las filas.
+  final int lunesMillis;
+
+  /// Obra que se estaba viendo, `''` si eran todas. Misma razón: la lista lo
+  /// muestra como etiqueta.
+  final String obraFiltro;
+
+  /// `ProyeccionEstado` serializado.
+  final String escenario;
+
+  /// Versión del formato de [escenario] (`ProyeccionEstado.versionEsquema`).
+  final int esquema;
+
+  /// Total y personas al momento de guardar. Son una FOTO para poder pintar la
+  /// lista sin recalcular 20 escenarios: el número de verdad se recalcula al
+  /// abrir, y por eso la lista los enseña como «al guardar».
+  final double totalSnapshot;
+  final int personasSnapshot;
+  final String notas;
+  const ProyeccionGuardadaRow({
+    required this.empresaId,
+    required this.createdAt,
+    required this.updatedAt,
+    this.serverUpdatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.orden,
+    required this.id,
+    required this.nombre,
+    required this.lunesMillis,
+    required this.obraFiltro,
+    required this.escenario,
+    required this.esquema,
+    required this.totalSnapshot,
+    required this.personasSnapshot,
+    required this.notas,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['empresa_id'] = Variable<String>(empresaId);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || serverUpdatedAt != null) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    map['orden'] = Variable<int>(orden);
+    map['id'] = Variable<String>(id);
+    map['nombre'] = Variable<String>(nombre);
+    map['lunes_millis'] = Variable<int>(lunesMillis);
+    map['obra_filtro'] = Variable<String>(obraFiltro);
+    map['escenario'] = Variable<String>(escenario);
+    map['esquema'] = Variable<int>(esquema);
+    map['total_snapshot'] = Variable<double>(totalSnapshot);
+    map['personas_snapshot'] = Variable<int>(personasSnapshot);
+    map['notas'] = Variable<String>(notas);
+    return map;
+  }
+
+  ProyeccionGuardadaCompanion toCompanion(bool nullToAbsent) {
+    return ProyeccionGuardadaCompanion(
+      empresaId: Value(empresaId),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      serverUpdatedAt: serverUpdatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverUpdatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      orden: Value(orden),
+      id: Value(id),
+      nombre: Value(nombre),
+      lunesMillis: Value(lunesMillis),
+      obraFiltro: Value(obraFiltro),
+      escenario: Value(escenario),
+      esquema: Value(esquema),
+      totalSnapshot: Value(totalSnapshot),
+      personasSnapshot: Value(personasSnapshot),
+      notas: Value(notas),
+    );
+  }
+
+  factory ProyeccionGuardadaRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ProyeccionGuardadaRow(
+      empresaId: serializer.fromJson<String>(json['empresaId']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      serverUpdatedAt: serializer.fromJson<int?>(json['serverUpdatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      orden: serializer.fromJson<int>(json['orden']),
+      id: serializer.fromJson<String>(json['id']),
+      nombre: serializer.fromJson<String>(json['nombre']),
+      lunesMillis: serializer.fromJson<int>(json['lunesMillis']),
+      obraFiltro: serializer.fromJson<String>(json['obraFiltro']),
+      escenario: serializer.fromJson<String>(json['escenario']),
+      esquema: serializer.fromJson<int>(json['esquema']),
+      totalSnapshot: serializer.fromJson<double>(json['totalSnapshot']),
+      personasSnapshot: serializer.fromJson<int>(json['personasSnapshot']),
+      notas: serializer.fromJson<String>(json['notas']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'empresaId': serializer.toJson<String>(empresaId),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'serverUpdatedAt': serializer.toJson<int?>(serverUpdatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'orden': serializer.toJson<int>(orden),
+      'id': serializer.toJson<String>(id),
+      'nombre': serializer.toJson<String>(nombre),
+      'lunesMillis': serializer.toJson<int>(lunesMillis),
+      'obraFiltro': serializer.toJson<String>(obraFiltro),
+      'escenario': serializer.toJson<String>(escenario),
+      'esquema': serializer.toJson<int>(esquema),
+      'totalSnapshot': serializer.toJson<double>(totalSnapshot),
+      'personasSnapshot': serializer.toJson<int>(personasSnapshot),
+      'notas': serializer.toJson<String>(notas),
+    };
+  }
+
+  ProyeccionGuardadaRow copyWith({
+    String? empresaId,
+    int? createdAt,
+    int? updatedAt,
+    Value<int?> serverUpdatedAt = const Value.absent(),
+    Value<int?> deletedAt = const Value.absent(),
+    String? syncStatus,
+    int? orden,
+    String? id,
+    String? nombre,
+    int? lunesMillis,
+    String? obraFiltro,
+    String? escenario,
+    int? esquema,
+    double? totalSnapshot,
+    int? personasSnapshot,
+    String? notas,
+  }) => ProyeccionGuardadaRow(
+    empresaId: empresaId ?? this.empresaId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    serverUpdatedAt: serverUpdatedAt.present
+        ? serverUpdatedAt.value
+        : this.serverUpdatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    orden: orden ?? this.orden,
+    id: id ?? this.id,
+    nombre: nombre ?? this.nombre,
+    lunesMillis: lunesMillis ?? this.lunesMillis,
+    obraFiltro: obraFiltro ?? this.obraFiltro,
+    escenario: escenario ?? this.escenario,
+    esquema: esquema ?? this.esquema,
+    totalSnapshot: totalSnapshot ?? this.totalSnapshot,
+    personasSnapshot: personasSnapshot ?? this.personasSnapshot,
+    notas: notas ?? this.notas,
+  );
+  ProyeccionGuardadaRow copyWithCompanion(ProyeccionGuardadaCompanion data) {
+    return ProyeccionGuardadaRow(
+      empresaId: data.empresaId.present ? data.empresaId.value : this.empresaId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      serverUpdatedAt: data.serverUpdatedAt.present
+          ? data.serverUpdatedAt.value
+          : this.serverUpdatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      orden: data.orden.present ? data.orden.value : this.orden,
+      id: data.id.present ? data.id.value : this.id,
+      nombre: data.nombre.present ? data.nombre.value : this.nombre,
+      lunesMillis: data.lunesMillis.present
+          ? data.lunesMillis.value
+          : this.lunesMillis,
+      obraFiltro: data.obraFiltro.present
+          ? data.obraFiltro.value
+          : this.obraFiltro,
+      escenario: data.escenario.present ? data.escenario.value : this.escenario,
+      esquema: data.esquema.present ? data.esquema.value : this.esquema,
+      totalSnapshot: data.totalSnapshot.present
+          ? data.totalSnapshot.value
+          : this.totalSnapshot,
+      personasSnapshot: data.personasSnapshot.present
+          ? data.personasSnapshot.value
+          : this.personasSnapshot,
+      notas: data.notas.present ? data.notas.value : this.notas,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProyeccionGuardadaRow(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
+          ..write('id: $id, ')
+          ..write('nombre: $nombre, ')
+          ..write('lunesMillis: $lunesMillis, ')
+          ..write('obraFiltro: $obraFiltro, ')
+          ..write('escenario: $escenario, ')
+          ..write('esquema: $esquema, ')
+          ..write('totalSnapshot: $totalSnapshot, ')
+          ..write('personasSnapshot: $personasSnapshot, ')
+          ..write('notas: $notas')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    orden,
+    id,
+    nombre,
+    lunesMillis,
+    obraFiltro,
+    escenario,
+    esquema,
+    totalSnapshot,
+    personasSnapshot,
+    notas,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ProyeccionGuardadaRow &&
+          other.empresaId == this.empresaId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.serverUpdatedAt == this.serverUpdatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.orden == this.orden &&
+          other.id == this.id &&
+          other.nombre == this.nombre &&
+          other.lunesMillis == this.lunesMillis &&
+          other.obraFiltro == this.obraFiltro &&
+          other.escenario == this.escenario &&
+          other.esquema == this.esquema &&
+          other.totalSnapshot == this.totalSnapshot &&
+          other.personasSnapshot == this.personasSnapshot &&
+          other.notas == this.notas);
+}
+
+class ProyeccionGuardadaCompanion
+    extends UpdateCompanion<ProyeccionGuardadaRow> {
+  final Value<String> empresaId;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int?> serverUpdatedAt;
+  final Value<int?> deletedAt;
+  final Value<String> syncStatus;
+  final Value<int> orden;
+  final Value<String> id;
+  final Value<String> nombre;
+  final Value<int> lunesMillis;
+  final Value<String> obraFiltro;
+  final Value<String> escenario;
+  final Value<int> esquema;
+  final Value<double> totalSnapshot;
+  final Value<int> personasSnapshot;
+  final Value<String> notas;
+  final Value<int> rowid;
+  const ProyeccionGuardadaCompanion({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
+    this.id = const Value.absent(),
+    this.nombre = const Value.absent(),
+    this.lunesMillis = const Value.absent(),
+    this.obraFiltro = const Value.absent(),
+    this.escenario = const Value.absent(),
+    this.esquema = const Value.absent(),
+    this.totalSnapshot = const Value.absent(),
+    this.personasSnapshot = const Value.absent(),
+    this.notas = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ProyeccionGuardadaCompanion.insert({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
+    required String id,
+    required String nombre,
+    required int lunesMillis,
+    this.obraFiltro = const Value.absent(),
+    required String escenario,
+    this.esquema = const Value.absent(),
+    this.totalSnapshot = const Value.absent(),
+    this.personasSnapshot = const Value.absent(),
+    this.notas = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       nombre = Value(nombre),
+       lunesMillis = Value(lunesMillis),
+       escenario = Value(escenario);
+  static Insertable<ProyeccionGuardadaRow> custom({
+    Expression<String>? empresaId,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? serverUpdatedAt,
+    Expression<int>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<int>? orden,
+    Expression<String>? id,
+    Expression<String>? nombre,
+    Expression<int>? lunesMillis,
+    Expression<String>? obraFiltro,
+    Expression<String>? escenario,
+    Expression<int>? esquema,
+    Expression<double>? totalSnapshot,
+    Expression<int>? personasSnapshot,
+    Expression<String>? notas,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (empresaId != null) 'empresa_id': empresaId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (serverUpdatedAt != null) 'server_updated_at': serverUpdatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (orden != null) 'orden': orden,
+      if (id != null) 'id': id,
+      if (nombre != null) 'nombre': nombre,
+      if (lunesMillis != null) 'lunes_millis': lunesMillis,
+      if (obraFiltro != null) 'obra_filtro': obraFiltro,
+      if (escenario != null) 'escenario': escenario,
+      if (esquema != null) 'esquema': esquema,
+      if (totalSnapshot != null) 'total_snapshot': totalSnapshot,
+      if (personasSnapshot != null) 'personas_snapshot': personasSnapshot,
+      if (notas != null) 'notas': notas,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ProyeccionGuardadaCompanion copyWith({
+    Value<String>? empresaId,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int?>? serverUpdatedAt,
+    Value<int?>? deletedAt,
+    Value<String>? syncStatus,
+    Value<int>? orden,
+    Value<String>? id,
+    Value<String>? nombre,
+    Value<int>? lunesMillis,
+    Value<String>? obraFiltro,
+    Value<String>? escenario,
+    Value<int>? esquema,
+    Value<double>? totalSnapshot,
+    Value<int>? personasSnapshot,
+    Value<String>? notas,
+    Value<int>? rowid,
+  }) {
+    return ProyeccionGuardadaCompanion(
+      empresaId: empresaId ?? this.empresaId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      orden: orden ?? this.orden,
+      id: id ?? this.id,
+      nombre: nombre ?? this.nombre,
+      lunesMillis: lunesMillis ?? this.lunesMillis,
+      obraFiltro: obraFiltro ?? this.obraFiltro,
+      escenario: escenario ?? this.escenario,
+      esquema: esquema ?? this.esquema,
+      totalSnapshot: totalSnapshot ?? this.totalSnapshot,
+      personasSnapshot: personasSnapshot ?? this.personasSnapshot,
+      notas: notas ?? this.notas,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (empresaId.present) {
+      map['empresa_id'] = Variable<String>(empresaId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (serverUpdatedAt.present) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (orden.present) {
+      map['orden'] = Variable<int>(orden.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (nombre.present) {
+      map['nombre'] = Variable<String>(nombre.value);
+    }
+    if (lunesMillis.present) {
+      map['lunes_millis'] = Variable<int>(lunesMillis.value);
+    }
+    if (obraFiltro.present) {
+      map['obra_filtro'] = Variable<String>(obraFiltro.value);
+    }
+    if (escenario.present) {
+      map['escenario'] = Variable<String>(escenario.value);
+    }
+    if (esquema.present) {
+      map['esquema'] = Variable<int>(esquema.value);
+    }
+    if (totalSnapshot.present) {
+      map['total_snapshot'] = Variable<double>(totalSnapshot.value);
+    }
+    if (personasSnapshot.present) {
+      map['personas_snapshot'] = Variable<int>(personasSnapshot.value);
+    }
+    if (notas.present) {
+      map['notas'] = Variable<String>(notas.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ProyeccionGuardadaCompanion(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
+          ..write('id: $id, ')
+          ..write('nombre: $nombre, ')
+          ..write('lunesMillis: $lunesMillis, ')
+          ..write('obraFiltro: $obraFiltro, ')
+          ..write('escenario: $escenario, ')
+          ..write('esquema: $esquema, ')
+          ..write('totalSnapshot: $totalSnapshot, ')
+          ..write('personasSnapshot: $personasSnapshot, ')
+          ..write('notas: $notas, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -16954,6 +17884,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $NotaObraRenglonTable notaObraRenglon = $NotaObraRenglonTable(
     this,
   );
+  late final $ProyeccionGuardadaTable proyeccionGuardada =
+      $ProyeccionGuardadaTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -16980,6 +17912,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     obraCajaNota,
     notaObra,
     notaObraRenglon,
+    proyeccionGuardada,
   ];
 }
 
@@ -24832,6 +25765,440 @@ typedef $$NotaObraRenglonTableProcessedTableManager =
       NotaObraRenglonRow,
       PrefetchHooks Function()
     >;
+typedef $$ProyeccionGuardadaTableCreateCompanionBuilder =
+    ProyeccionGuardadaCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      Value<int> orden,
+      required String id,
+      required String nombre,
+      required int lunesMillis,
+      Value<String> obraFiltro,
+      required String escenario,
+      Value<int> esquema,
+      Value<double> totalSnapshot,
+      Value<int> personasSnapshot,
+      Value<String> notas,
+      Value<int> rowid,
+    });
+typedef $$ProyeccionGuardadaTableUpdateCompanionBuilder =
+    ProyeccionGuardadaCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      Value<int> orden,
+      Value<String> id,
+      Value<String> nombre,
+      Value<int> lunesMillis,
+      Value<String> obraFiltro,
+      Value<String> escenario,
+      Value<int> esquema,
+      Value<double> totalSnapshot,
+      Value<int> personasSnapshot,
+      Value<String> notas,
+      Value<int> rowid,
+    });
+
+class $$ProyeccionGuardadaTableFilterComposer
+    extends Composer<_$AppDatabase, $ProyeccionGuardadaTable> {
+  $$ProyeccionGuardadaTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lunesMillis => $composableBuilder(
+    column: $table.lunesMillis,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get obraFiltro => $composableBuilder(
+    column: $table.obraFiltro,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get escenario => $composableBuilder(
+    column: $table.escenario,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get esquema => $composableBuilder(
+    column: $table.esquema,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get totalSnapshot => $composableBuilder(
+    column: $table.totalSnapshot,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get personasSnapshot => $composableBuilder(
+    column: $table.personasSnapshot,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notas => $composableBuilder(
+    column: $table.notas,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ProyeccionGuardadaTableOrderingComposer
+    extends Composer<_$AppDatabase, $ProyeccionGuardadaTable> {
+  $$ProyeccionGuardadaTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nombre => $composableBuilder(
+    column: $table.nombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lunesMillis => $composableBuilder(
+    column: $table.lunesMillis,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get obraFiltro => $composableBuilder(
+    column: $table.obraFiltro,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get escenario => $composableBuilder(
+    column: $table.escenario,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get esquema => $composableBuilder(
+    column: $table.esquema,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get totalSnapshot => $composableBuilder(
+    column: $table.totalSnapshot,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get personasSnapshot => $composableBuilder(
+    column: $table.personasSnapshot,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notas => $composableBuilder(
+    column: $table.notas,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ProyeccionGuardadaTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ProyeccionGuardadaTable> {
+  $$ProyeccionGuardadaTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get empresaId =>
+      $composableBuilder(column: $table.empresaId, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get orden =>
+      $composableBuilder(column: $table.orden, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get nombre =>
+      $composableBuilder(column: $table.nombre, builder: (column) => column);
+
+  GeneratedColumn<int> get lunesMillis => $composableBuilder(
+    column: $table.lunesMillis,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get obraFiltro => $composableBuilder(
+    column: $table.obraFiltro,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get escenario =>
+      $composableBuilder(column: $table.escenario, builder: (column) => column);
+
+  GeneratedColumn<int> get esquema =>
+      $composableBuilder(column: $table.esquema, builder: (column) => column);
+
+  GeneratedColumn<double> get totalSnapshot => $composableBuilder(
+    column: $table.totalSnapshot,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get personasSnapshot => $composableBuilder(
+    column: $table.personasSnapshot,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get notas =>
+      $composableBuilder(column: $table.notas, builder: (column) => column);
+}
+
+class $$ProyeccionGuardadaTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ProyeccionGuardadaTable,
+          ProyeccionGuardadaRow,
+          $$ProyeccionGuardadaTableFilterComposer,
+          $$ProyeccionGuardadaTableOrderingComposer,
+          $$ProyeccionGuardadaTableAnnotationComposer,
+          $$ProyeccionGuardadaTableCreateCompanionBuilder,
+          $$ProyeccionGuardadaTableUpdateCompanionBuilder,
+          (
+            ProyeccionGuardadaRow,
+            BaseReferences<
+              _$AppDatabase,
+              $ProyeccionGuardadaTable,
+              ProyeccionGuardadaRow
+            >,
+          ),
+          ProyeccionGuardadaRow,
+          PrefetchHooks Function()
+        > {
+  $$ProyeccionGuardadaTableTableManager(
+    _$AppDatabase db,
+    $ProyeccionGuardadaTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ProyeccionGuardadaTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ProyeccionGuardadaTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ProyeccionGuardadaTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String> nombre = const Value.absent(),
+                Value<int> lunesMillis = const Value.absent(),
+                Value<String> obraFiltro = const Value.absent(),
+                Value<String> escenario = const Value.absent(),
+                Value<int> esquema = const Value.absent(),
+                Value<double> totalSnapshot = const Value.absent(),
+                Value<int> personasSnapshot = const Value.absent(),
+                Value<String> notas = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ProyeccionGuardadaCompanion(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                orden: orden,
+                id: id,
+                nombre: nombre,
+                lunesMillis: lunesMillis,
+                obraFiltro: obraFiltro,
+                escenario: escenario,
+                esquema: esquema,
+                totalSnapshot: totalSnapshot,
+                personasSnapshot: personasSnapshot,
+                notas: notas,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
+                required String id,
+                required String nombre,
+                required int lunesMillis,
+                Value<String> obraFiltro = const Value.absent(),
+                required String escenario,
+                Value<int> esquema = const Value.absent(),
+                Value<double> totalSnapshot = const Value.absent(),
+                Value<int> personasSnapshot = const Value.absent(),
+                Value<String> notas = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ProyeccionGuardadaCompanion.insert(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                orden: orden,
+                id: id,
+                nombre: nombre,
+                lunesMillis: lunesMillis,
+                obraFiltro: obraFiltro,
+                escenario: escenario,
+                esquema: esquema,
+                totalSnapshot: totalSnapshot,
+                personasSnapshot: personasSnapshot,
+                notas: notas,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ProyeccionGuardadaTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ProyeccionGuardadaTable,
+      ProyeccionGuardadaRow,
+      $$ProyeccionGuardadaTableFilterComposer,
+      $$ProyeccionGuardadaTableOrderingComposer,
+      $$ProyeccionGuardadaTableAnnotationComposer,
+      $$ProyeccionGuardadaTableCreateCompanionBuilder,
+      $$ProyeccionGuardadaTableUpdateCompanionBuilder,
+      (
+        ProyeccionGuardadaRow,
+        BaseReferences<
+          _$AppDatabase,
+          $ProyeccionGuardadaTable,
+          ProyeccionGuardadaRow
+        >,
+      ),
+      ProyeccionGuardadaRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -24881,4 +26248,6 @@ class $AppDatabaseManager {
       $$NotaObraTableTableManager(_db, _db.notaObra);
   $$NotaObraRenglonTableTableManager get notaObraRenglon =>
       $$NotaObraRenglonTableTableManager(_db, _db.notaObraRenglon);
+  $$ProyeccionGuardadaTableTableManager get proyeccionGuardada =>
+      $$ProyeccionGuardadaTableTableManager(_db, _db.proyeccionGuardada);
 }

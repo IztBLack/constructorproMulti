@@ -464,3 +464,54 @@ class ObraCajaNota extends Table with SyncCols {
   @override
   Set<Column> get primaryKey => {obraId};
 }
+
+
+/// Una proyección de nómina guardada con nombre: «Simulación 20 de mayo».
+///
+/// El escenario vivía en memoria y moría con la pantalla. Guardarlo permite
+/// volver a la cuenta que se hizo antes de ir al banco, compararla con otra y
+/// duplicarla para probar una variante sin perder la original.
+///
+/// **El escenario entero va en una sola columna de texto, como JSON**, y no
+/// repartido en tres tablas relacionales. Es deliberado: el escenario es un
+/// árbol (mapas de conjuntos, plazas, ajustes, configuración de redondeo) que
+/// solo esta app entiende y que siempre se lee y se escribe COMPLETO; nadie va a
+/// consultar «todas las proyecciones donde Fulanito trabajó el jueves». Tres
+/// tablas serían tres migraciones, tres bloques de RLS y un borrado en cascada
+/// a mano, a cambio de una consulta que no existe. La forma del JSON la fija
+/// `ProyeccionEstado.toJson`, y `esquema` dice con qué versión se escribió.
+///
+/// Lo CAPTURADO (asistencias, destajos) no se guarda aquí. Al reabrir se vuelve
+/// a leer de la base: una proyección de hace dos semanas debe enseñar el pase de
+/// lista corregido, no la foto de entonces.
+@DataClassName('ProyeccionGuardadaRow')
+class ProyeccionGuardada extends Table with SyncCols, Orderable {
+  TextColumn get id => text()();
+  TextColumn get nombre => text()();
+
+  /// Lunes 00:00 de la semana proyectada, epoch millis. Se sube a columna —en
+  /// vez de dejarlo solo dentro del JSON— porque la lista se ordena y se agrupa
+  /// por semana, y hacerlo desde el texto obligaría a parsear todas las filas.
+  IntColumn get lunesMillis => integer()();
+
+  /// Obra que se estaba viendo, `''` si eran todas. Misma razón: la lista lo
+  /// muestra como etiqueta.
+  TextColumn get obraFiltro => text().withDefault(const Constant(''))();
+
+  /// `ProyeccionEstado` serializado.
+  TextColumn get escenario => text()();
+
+  /// Versión del formato de [escenario] (`ProyeccionEstado.versionEsquema`).
+  IntColumn get esquema => integer().withDefault(const Constant(1))();
+
+  /// Total y personas al momento de guardar. Son una FOTO para poder pintar la
+  /// lista sin recalcular 20 escenarios: el número de verdad se recalcula al
+  /// abrir, y por eso la lista los enseña como «al guardar».
+  RealColumn get totalSnapshot => real().withDefault(const Constant(0))();
+  IntColumn get personasSnapshot => integer().withDefault(const Constant(0))();
+
+  TextColumn get notas => text().withDefault(const Constant(''))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

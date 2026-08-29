@@ -34,6 +34,7 @@ part 'app_database.g.dart';
   ObraCajaNota,
   NotaObra,
   NotaObraRenglon,
+  ProyeccionGuardada,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -58,7 +59,7 @@ class AppDatabase extends _$AppDatabase {
   static final Set<String> columnasPorLlenar = <String>{};
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -392,6 +393,22 @@ class AppDatabase extends _$AppDatabase {
           if (from < 13) {
             await m.addColumn(obras, obras.textoFinal);
             columnasPorLlenar.add('obras.texto_final');
+          }
+
+          // v13 → v14: proyecciones de nómina guardadas con nombre. Tabla NUEVA
+          // y local: no está en `SyncService.pushOrder` todavía porque su tabla
+          // espejo (Supabase 0034) aún no está desplegada, y meterla antes haría
+          // fallar el push de TODO el ciclo. El día que se aplique la 0034, la
+          // única línea que cambia es la de `pushOrder`.
+          //
+          // `createTable` no instala el trigger `mark_pending`: sin reinstalar,
+          // renombrar una proyección no la marcaría `pending` y no subiría nunca
+          // cuando se conecte al sync.
+          if (from < 14) {
+            if (!await _tablaExiste('proyeccion_guardada')) {
+              await m.createTable(proyeccionGuardada);
+            }
+            await _instalarTriggersSync();
           }
         },
       );
