@@ -54,7 +54,7 @@ En producción **la 0034 no está aplicada**: de `proyeccion_guardada`,
 
 ---
 
-## Tres cosas que encontré revisando, y que el plan tiene que atender
+## Cuatro cosas que encontré revisando, y que el plan tiene que atender
 
 ### 1. El contrato JSON no lo verifica nadie · **es lo importante**
 
@@ -107,6 +107,50 @@ mirar el JSON, ver la `'v'` y creer que ahí está la puerta. **La autoridad es 
 columna `esquema`.** La web tiene que comprobarla igual, y conviene decirlo aquí
 porque el código no lo dice en ninguna parte.
 
+### 4. `obraBase` existe en la web y NO existe en el móvil · **bloquea la Fase 1**
+
+Encontrado al ir a escribir el gemelo, y es justo la clase de cosa por la que
+este documento existe.
+
+La `ProyeccionEstado` de la web tiene un campo por persona que el móvil no tiene:
+
+```ts
+/// `colaboradorId → obraId`: obra asignada SOLO dentro del escenario.
+/// Para meter a alguien que todavía no está asignado a ninguna obra en el
+/// sistema — el peón nuevo, el que se acaba de contratar.
+obraBase: Record<string, string>;
+```
+
+En el móvil no hay tal campo. Su `obraDelDia(colaboradorId, dia, obraBase)`
+recibe la obra base **como parámetro**, del catálogo, y el escenario no puede
+pisarla. Los dos `ProyeccionEstado` no son la misma forma, y no lo eran ya antes
+de que existiera ninguna serialización.
+
+Esto **no se puede resolver serializando y ya**. Hay tres salidas y solo una
+sirve:
+
+- **Que el móvil ignore la llave.** Es la tentadora y es la mala: el mismo
+  escenario daría un total distinto en cada plataforma, porque en el móvil los
+  días de esa persona no sumarían a ninguna obra. Es exactamente el fallo
+  silencioso que este plan intenta evitar, montado a propósito.
+- **Que la web pierda `obraBase`.** Quita una capacidad que la oficina ya usa
+  para dar de alta al que se acaba de contratar.
+- **Que el móvil gane el campo.** Es la única que deja las dos plataformas
+  calculando lo mismo. Añadirlo al escenario es compatible hacia atrás —
+  `fromJson` tolera llaves faltantes, así que un escenario viejo abre igual — y
+  la llave nueva sería la decimotercera.
+
+Dentro de la tercera queda una decisión que no es técnica y que **no tomo yo**:
+
+- **Mínimo**: el móvil *respeta* `obraBase` al abrir un escenario hecho en la
+  web, pero no ofrece cómo ponerlo. Cierra el hueco de cálculo, es poco código.
+- **Completo**: además, la ficha del móvil deja asignar obra dentro del
+  escenario, como la web. Es paridad de verdad, y es pantalla.
+
+Hasta que se decida, el punto 4 de la Fase 1 (el serializador de la web) queda
+parado: escribirlo contra un contrato con este agujero sería fijar el error en
+sitio.
+
 ---
 
 ## Fases
@@ -126,7 +170,8 @@ Hasta que se aplique, los escenarios guardados **no salen de la tableta**.
 1. `test/fixtures/proyeccion_v1.json` — escenario de ejemplo, doce llaves.
 2. Prueba móvil de ida y vuelta contra el fixture.
 3. Endurecer `fromJson` contra valores mal tipados (punto 2 de arriba).
-4. Tipos de la web + `serializarEstado` / `deserializarEstado`, con su prueba
+4. *(parado — ver punto 4)* Tipos de la web + `serializarEstado` /
+   `deserializarEstado`, con su prueba
    contra **el mismo fixture**.
 
 Nada de esto se ve en pantalla. Es lo que hace que las fases 2–4 no puedan
