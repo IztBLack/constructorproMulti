@@ -397,7 +397,11 @@ class PdfService {
       pageTheme: _pageThemeProyeccion(config),
       footer: _footer(config),
       build: (context) => [
-        _header('Proyección de nómina', '$alcance\nSemana: $rango', config, color),
+        // El título dice QUÉ proyección es. Con memoria de escenarios ya no
+        // basta «Proyección de nómina»: puede haber diez guardadas de la misma
+        // semana y dos impresiones tienen que distinguirse.
+        _header(nombre.isEmpty ? 'Proyección de nómina' : nombre,
+            '$alcance\nSemana: $rango', config, color),
 
         // El aviso va en el cuerpo y no solo en la marca de agua: si alguien
         // imprime la hoja en blanco y negro y la marca se pierde, el renglón

@@ -188,11 +188,22 @@ class _Guardadas extends ConsumerWidget {
     );
   }
 
+  /// El total y las personas que se están enseñando, para la lista. Lo pasa la
+  /// pantalla porque la sesión no puede leer la vista sin cerrar un círculo de
+  /// dependencias (ver `SesionNotifier.guardar`).
+  ({double total, int personas}) _foto(WidgetRef ref) {
+    final vista = ref.read(proyeccionVistaProvider);
+    return (
+      total: vista.redondeada.total.mostrado,
+      personas: vista.resultado.personas
+    );
+  }
+
   Future<void> _guardar(
       BuildContext context, WidgetRef ref, SesionProyeccion sesion) async {
     final notifier = ref.read(sesionProyeccionProvider.notifier);
     if (sesion.tieneArchivo) {
-      await notifier.guardar();
+      await notifier.guardar(foto: _foto(ref));
       if (context.mounted) {
         Navigator.pop(context);
         showAppSnack(context, 'Guardada: ${sesion.nombre}.');
@@ -204,7 +215,7 @@ class _Guardadas extends ConsumerWidget {
         inicial: SesionNotifier.nombreSugerido(
             ref.read(proyeccionEstadoProvider).lunesMillis));
     if (nombre == null || !context.mounted) return;
-    await notifier.guardar(nombre: nombre);
+    await notifier.guardar(nombre: nombre, foto: _foto(ref));
     if (context.mounted) {
       Navigator.pop(context);
       showAppSnack(context, 'Guardada: $nombre.');
@@ -223,7 +234,9 @@ class _Guardadas extends ConsumerWidget {
       accion: 'Guardar copia',
     );
     if (nombre == null || !context.mounted) return;
-    await ref.read(sesionProyeccionProvider.notifier).guardarComo(nombre);
+    await ref
+        .read(sesionProyeccionProvider.notifier)
+        .guardarComo(nombre, foto: _foto(ref));
     if (context.mounted) {
       Navigator.pop(context);
       showAppSnack(context, 'Guardada como $nombre. Es la que estás editando.');

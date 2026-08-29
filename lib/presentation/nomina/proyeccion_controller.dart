@@ -141,12 +141,20 @@ class SesionNotifier extends Notifier<SesionProyeccion> {
   ///
   /// [nombre] solo se usa al crear o al renombrar; guardar sobre una abierta sin
   /// pasar nombre conserva el suyo.
-  Future<void> guardar({String? nombre}) async {
+  ///
+  /// [foto] es el total y las personas que se están enseñando, para la lista.
+  /// Lo pasa quien llama y NO se lee de `proyeccionVistaProvider` aquí: la
+  /// vista depende de esta sesión (para saber si es de solo lectura), así que
+  /// leerla desde dentro cerraría el círculo y Riverpod lanzaría
+  /// `CircularDependencyError` justo al tocar «Guardar».
+  Future<void> guardar({
+    String? nombre,
+    ({double total, int personas})? foto,
+  }) async {
     final estado = ref.read(proyeccionEstadoProvider);
-    final vista = ref.read(proyeccionVistaProvider);
     final obraFiltro = ref.read(obraFiltroProyeccionProvider) ?? '';
-    final total = vista.redondeada.total.mostrado;
-    final personas = vista.resultado.personas;
+    final total = foto?.total ?? 0;
+    final personas = foto?.personas ?? estado.participantes.length;
 
     if (state.id == null) {
       final id = await _repo.crear(
@@ -165,6 +173,10 @@ class SesionNotifier extends Notifier<SesionProyeccion> {
             ? nombre!.trim()
             : nombreSugerido(estado.lunesMillis),
       );
+      // También al CREAR, no solo al reemplazar: si no, la pantalla seguiría
+      // avisando «tienes cambios sin guardar» justo después de guardar, y el
+      // aviso al cambiar de semana saltaría sin motivo.
+      ref.read(proyeccionEstadoProvider.notifier).marcarGuardado();
       return;
     }
 
@@ -186,15 +198,17 @@ class SesionNotifier extends Notifier<SesionProyeccion> {
 
   /// Guarda una copia con otro nombre y la deja abierta. Es el «Guardar como»:
   /// sirve para partir de una proyección buena sin pisarla.
-  Future<void> guardarComo(String nombre) async {
+  Future<void> guardarComo(
+    String nombre, {
+    ({double total, int personas})? foto,
+  }) async {
     final estado = ref.read(proyeccionEstadoProvider);
-    final vista = ref.read(proyeccionVistaProvider);
     final id = await _repo.crear(
       nombre: nombre.trim().isEmpty ? nombreSugerido(estado.lunesMillis) : nombre,
       estado: estado,
       obraFiltro: ref.read(obraFiltroProyeccionProvider) ?? '',
-      totalSnapshot: vista.redondeada.total.mostrado,
-      personasSnapshot: vista.resultado.personas,
+      totalSnapshot: foto?.total ?? 0,
+      personasSnapshot: foto?.personas ?? estado.participantes.length,
     );
     state = SesionProyeccion(
         modo: ModoProyeccion.editando, id: id, nombre: nombre.trim());
