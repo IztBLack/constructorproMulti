@@ -12,6 +12,10 @@ import '../common/app_snackbar.dart';
 import '../common/empty_state_view.dart';
 import 'ajuste_sheet.dart';
 import 'ficha_persona.dart';
+import '../../domain/logic/redondeo_proyeccion.dart';
+import 'agregar_masivo_sheet.dart';
+import 'proyecciones_guardadas_sheet.dart';
+import 'redondeo_sheet.dart';
 import 'proyeccion_controller.dart';
 import 'proyeccion_pdf.dart';
 import 'proyeccion_tabla.dart';
@@ -221,7 +225,15 @@ class _ProyeccionScreenState extends ConsumerState<ProyeccionScreen> {
               // dos escenarios distintos.
               key: ValueKey(ref.watch(semanaProyeccionProvider)),
               resultado: vista.resultado,
+              redondeada: vista.redondeada,
+              plazas: _resumenPlazas(vista),
               obraNombre: vista.nombreObraFiltro),
+          if (_resumenPlazas(vista).cuantas > 0)
+            _AvisoPlazas(
+              cuantas: _resumenPlazas(vista).cuantas,
+              monto: _resumenPlazas(vista).monto,
+              total: vista.redondeada.total.mostrado,
+            ),
           _Controles(vista: vista),
           Expanded(child: _cuerpo(context, vista)),
         ],
@@ -239,8 +251,27 @@ class _ProyeccionScreenState extends ConsumerState<ProyeccionScreen> {
     ref.watch(proyeccionEstadoProvider);
     final tocado = ref.read(proyeccionEstadoProvider.notifier).tocado;
 
+    final sesion = ref.watch(sesionProyeccionProvider);
+
     return AppBar(
-      title: const Text('Proyección de nómina'),
+      // El título dice QUÉ proyección se está viendo. Con memoria, «Proyección
+      // de nómina» a secas ya no identifica nada: puede haber diez guardadas.
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(sesion.tieneArchivo ? sesion.nombre : 'Proyección de nómina',
+              maxLines: 1, overflow: TextOverflow.ellipsis),
+          if (sesion.tieneArchivo)
+            Text(
+              sesion.soloLectura ? 'Solo lectura' : 'Editando',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: context.colores.textMuted, fontSize: 11),
+            ),
+        ],
+      ),
       actions: [
         IconButton(
           icon: const Icon(Icons.chevron_left),
@@ -286,10 +317,37 @@ class _ProyeccionScreenState extends ConsumerState<ProyeccionScreen> {
                   lunesDeLaSemana(DateTime.now());
             }
             if (v == 'reiniciar') _confirmarReinicio();
+            if (v == 'guardadas' && context.mounted) {
+              await mostrarProyeccionesGuardadas(context);
+            }
+            if (v == 'redondeo' && context.mounted) {
+              await mostrarRedondeoSheet(context);
+            }
           },
-          itemBuilder: (_) => const [
-            PopupMenuItem(value: 'hoy', child: Text('Ir a la semana actual')),
+          itemBuilder: (_) => [
+            const PopupMenuItem(
+                value: 'guardadas',
+                child: ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.folder_open_outlined, size: 20),
+                    title: Text('Proyecciones guardadas…'))),
             PopupMenuItem(
+              value: 'redondeo',
+              child: ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.calculate_outlined, size: 20),
+                title: const Text('Redondear cifras…'),
+                subtitle: Text(
+                    ref.read(proyeccionEstadoProvider).redondeo.resumenCorto,
+                    style: const TextStyle(fontSize: 11)),
+              ),
+            ),
+            const PopupMenuDivider(),
+            const PopupMenuItem(
+                value: 'hoy', child: Text('Ir a la semana actual')),
+            const PopupMenuItem(
                 value: 'reiniciar', child: Text('Reiniciar la proyección')),
           ],
         ),
@@ -361,7 +419,23 @@ class _ProyeccionScreenState extends ConsumerState<ProyeccionScreen> {
 
   // ── Cuerpo ────────────────────────────────────────────────────────────────
 
-  Widget _cuerpo(BuildContext context, ProyeccionVista vista) {
+  /// Cuántas plazas hipotéticas hay en pantalla y cuánto suman.
+  ///
+  /// Se calcula sobre los renglones YA calculados y con el redondeo aplicado,
+  /// para que la resta de la cinta («sin ellas la raya es de…») cuadre con lo
+  /// que se está enseñando arriba.
+  ({int cuantas, double monto}) _resumenPlazas(ProyeccionVista vista) {
+    var cuantas = 0;
+    var monto = 0.0;
+    for (final r in vista.resultado.renglones) {
+      if (!esPlaza(r.colaborador.id)) continue;
+      cuantas++;
+      monto += vista.redondeada.raya(r).mostrado;
+    }
+    return (cuantas: cuantas, monto: monto);
+  }
+
+    Widget _cuerpo(BuildContext context, ProyeccionVista vista) {
     if (vista.cargando && vista.resultado.renglones.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -402,7 +476,10 @@ class _ProyeccionScreenState extends ConsumerState<ProyeccionScreen> {
           renglones: _renglones(context, vista, anchos),
           pieFijo: const _PieFijo(),
           pieDesplazable:
-              _PieTotales(resultado: vista.resultado, anchos: anchos),
+              _PieTotales(
+                  resultado: vista.resultado,
+                  redondeada: vista.redondeada,
+                  anchos: anchos),
         );
 
         if (anchos.total >= restricciones.maxWidth) return tabla;
@@ -450,14 +527,16 @@ class _ProyeccionScreenState extends ConsumerState<ProyeccionScreen> {
         final nombre = agrupar == AgruparPor.obra
             ? (vista.nombreObra[clave] ?? 'Sin obra')
             : (vista.nombreCuadrilla[clave] ?? 'Sin cuadrilla');
-        final subtotal = items.fold<double>(0, (a, r) => a + r.total);
+        // Se suma lo MOSTRADO y no lo exacto: con redondeo activo, un subtotal
+        // exacto debajo de renglones redondeados no cuadraría con lo que se ve.
+        final subtotal = vista.redondeada.subtotalDe(items);
 
         salida.add(RenglonTabla(
           alto: _altoGrupo,
           esGrupo: true,
           fijo: _EtiquetaGrupo(nombre: nombre, cuantos: items.length),
           desplazable: _SubtotalGrupo(
-            subtotal: subtotal,
+            subtotal: subtotal.mostrado,
             // Solo una cuadrilla real admite un ajuste dirigido a ella; un
             // grupo por obra o el cajón de «sin cuadrilla» no tienen a quién
             // cargárselo.
@@ -512,6 +591,37 @@ class _BannerModo extends ConsumerWidget {
     final c = context.colores;
     final simulando = ref.watch(
         proyeccionEstadoProvider.select((e) => e.simularCompleta));
+    final sesion = ref.watch(sesionProyeccionProvider);
+
+    // El aviso de solo lectura manda sobre los demás: es la información que
+    // explica por qué la pantalla no responde a los toques, y llega antes que
+    // cualquier matiz sobre lo capturado.
+    if (sesion.soloLectura) {
+      return Container(
+        width: double.infinity,
+        color: c.neutralSoft,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          children: [
+            Icon(Icons.visibility_outlined, size: 17, color: c.textMuted),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Solo lectura. Estás consultando «${sesion.nombre}» sin poder '
+                'cambiarla.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: c.text, fontWeight: FontWeight.w600),
+              ),
+            ),
+            TextButton(
+              onPressed: () =>
+                  ref.read(sesionProyeccionProvider.notifier).editarLaAbierta(),
+              child: const Text('Editar'),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Container(
       width: double.infinity,
@@ -551,8 +661,20 @@ class _BannerModo extends ConsumerWidget {
 /// derivado.
 class _CintaTotales extends StatefulWidget {
   const _CintaTotales(
-      {super.key, required this.resultado, required this.obraNombre});
+      {super.key,
+      required this.resultado,
+      required this.obraNombre,
+      required this.redondeada,
+      required this.plazas});
   final ProyeccionResultado resultado;
+
+  /// El mismo resultado, visto con el redondeo del escenario.
+  final ProyeccionRedondeada redondeada;
+
+  /// Cuántas plazas hipotéticas hay y cuánto suman. Es la cifra que la cinta
+  /// tiene que confesar: un total que mezcla gente real con gente imaginaria y
+  /// se presenta como uno solo es un número que alguien lleva al banco.
+  final ({int cuantas, double monto}) plazas;
 
   /// Nombre de la obra que se está viendo, vacío si son todas.
   final String obraNombre;
@@ -603,9 +725,14 @@ class _CintaTotalesState extends State<_CintaTotales> {
               etiqueta: widget.obraNombre.isEmpty
                   ? 'Raya proyectada'
                   : 'Raya de ${widget.obraNombre}',
-              valor: Fmt.money(resultado.total),
+              valor: Fmt.money(widget.redondeada.total.mostrado),
               grande: true,
               delta: _delta,
+              // Con redondeo activo, el exacto viaja debajo: nunca se enseña
+              // una cifra redondeada sin decir de dónde salió.
+              original: widget.redondeada.total.redondeado
+                  ? widget.redondeada.total.exacto
+                  : null,
               detalle: '${Fmt.money(resultado.totalCapturado)} en firme + '
                   '${Fmt.money(resultado.totalProyectado)} estimado',
             ),
@@ -634,6 +761,40 @@ class _CintaTotalesState extends State<_CintaTotales> {
   }
 }
 
+/// Aviso de que parte del total no es gente contratada.
+class _AvisoPlazas extends StatelessWidget {
+  const _AvisoPlazas(
+      {required this.cuantas, required this.monto, required this.total});
+  final int cuantas;
+  final double monto;
+  final double total;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colores;
+    return Container(
+      width: double.infinity,
+      color: c.accentSoft,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        children: [
+          Icon(Icons.groups_2_outlined, size: 17, color: c.accent),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Incluye ${cuantas == 1 ? '1 plaza' : '\$cuantas plazas'} '
+              'todavía sin contratar por ${Fmt.money(monto)}. '
+              'Sin ellas la raya es de ${Fmt.money(total - monto)}.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: c.accent, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 String _sinCeros(double v) =>
     v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
 
@@ -645,6 +806,7 @@ class _Metrica extends StatelessWidget {
     this.grande = false,
     this.color,
     this.delta,
+    this.original,
   });
 
   final String etiqueta;
@@ -652,6 +814,9 @@ class _Metrica extends StatelessWidget {
   final String? detalle;
   final bool grande;
   final Color? color;
+
+  /// Cifra exacta, cuando [valor] viene redondeado. Se pinta en chiquito.
+  final double? original;
 
   /// Cuánto se movió el total con el último toque. Se muestra unos segundos.
   final double? delta;
@@ -703,6 +868,12 @@ class _Metrica extends StatelessWidget {
             ],
           ],
         ),
+        if (original != null)
+          Text('antes ${Fmt.money(original!)}',
+              style: t.bodySmall?.copyWith(
+                  color: c.textMuted,
+                  fontSize: 10.5,
+                  fontFeatures: const [FontFeature.tabularFigures()])),
         if (detalle != null)
           Text(detalle!,
               style: t.bodySmall?.copyWith(color: c.textMuted, fontSize: 11)),
@@ -1013,13 +1184,38 @@ class _CeldaNombre extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(renglon.colaborador.nombre,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: t.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: c.textStrong,
-                            fontSize: 13.5)),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(renglon.colaborador.nombre,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: t.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: c.textStrong,
+                                  fontSize: 13.5)),
+                        ),
+                        // Una plaza se distingue SIEMPRE de una persona: el
+                        // renglón se ve igual y el dinero cuenta igual, pero
+                        // detrás no hay nadie contratado.
+                        if (esPlaza(renglon.colaborador.id)) ...[
+                          const SizedBox(width: 5),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: c.accentSoft,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text('plaza',
+                                style: t.bodySmall?.copyWith(
+                                    color: c.accent,
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w700)),
+                          ),
+                        ],
+                      ],
+                    ),
                     Text(
                         visitante
                             ? 'prestado de $obra'
@@ -1102,11 +1298,12 @@ class _CeldaDatos extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(Fmt.money(renglon.total),
-                      style: t.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: c.textStrong,
-                          fontFeatures: const [FontFeature.tabularFigures()])),
+                  MontoConRedondeo(
+                    monto: vista.redondeada.raya(renglon),
+                    alineacion: CrossAxisAlignment.end,
+                    estilo: t.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600, color: c.textStrong),
+                  ),
                   if (renglon.ajustes != 0)
                     Text(
                         '${renglon.ajustes > 0 ? '+' : ''}${Fmt.money(renglon.ajustes)}',
@@ -1540,8 +1737,12 @@ class _PieFijo extends StatelessWidget {
 }
 
 class _PieTotales extends StatelessWidget {
-  const _PieTotales({required this.resultado, required this.anchos});
+  const _PieTotales(
+      {required this.resultado,
+      required this.redondeada,
+      required this.anchos});
   final ProyeccionResultado resultado;
+  final ProyeccionRedondeada redondeada;
   final _Anchos anchos;
 
   @override
@@ -1563,7 +1764,7 @@ class _PieTotales extends StatelessWidget {
                   Text(
                       resultado.personasPorDia[d] == 0
                           ? '—'
-                          : _compacto(resultado.totalPorDia[d]),
+                          : _compacto(redondeada.costoDia(d).mostrado),
                       style: t.labelSmall?.copyWith(
                           fontSize: 10.5,
                           fontWeight: FontWeight.bold,
@@ -1635,14 +1836,17 @@ class _BarraAcciones extends ConsumerWidget {
               child: TextButton.icon(
                 icon: const Icon(Icons.person_add_alt, size: 18),
                 label: const Text('Agregar'),
-                onPressed: vista.candidatos.isEmpty
+                // Ya no se apaga cuando no quedan candidatos: aunque el equipo
+                // entero esté adentro, siempre se pueden crear plazas nuevas.
+                onPressed: vista.soloLectura
                     ? null
-                    : () => _agregar(context, ref),
+                    : () => mostrarAgregarMasivo(context),
               ),
             ),
             Expanded(
               child: PopupMenuButton<RellenoSemana>(
                 tooltip: 'Rellenos rápidos',
+                enabled: !vista.soloLectura,
                 onSelected: (r) => _rellenar(ref, r),
                 itemBuilder: (_) => const [
                   PopupMenuItem(
@@ -1703,54 +1907,4 @@ class _BarraAcciones extends ConsumerWidget {
         );
   }
 
-  Future<void> _agregar(BuildContext context, WidgetRef ref) async {
-    final lunes = ref.read(semanaProyeccionProvider);
-    final hoy = indiceDiaSemana(lunes, Semana.inicioDia(DateTime.now()));
-
-    // Los días/semana salen de `colaborador_sueldo` desde el esquema v10; sin
-    // fila, el default de la tabla (6).
-    final sueldos = ref.read(sueldosPorColaboradorProvider).asData?.value ??
-        const <String, db.ColaboradorSueldoRow>{};
-    int diasSemanaDe(String id) => sueldos[id]?.diasSemana ?? 6;
-
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (ctx) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.6,
-        builder: (_, scroll) => ListView.builder(
-          controller: scroll,
-          itemCount: vista.candidatos.length + 1,
-          itemBuilder: (_, i) {
-            if (i == 0) {
-              return Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-                child: Text('Agregar a la proyección',
-                    style: Theme.of(ctx).textTheme.titleMedium),
-              );
-            }
-            final c = vista.candidatos[i - 1];
-            return ListTile(
-              title: Text(c.nombre),
-              subtitle: Text(c.tipoPago == 'DESTAJO'
-                  ? 'A destajo'
-                  : '${diasSemanaDe(c.id)} días por semana'),
-              trailing: const Icon(Icons.add),
-              onTap: () {
-                ref.read(proyeccionEstadoProvider.notifier).agregar(
-                      c.id,
-                      diasSemana: diasSemanaDe(c.id),
-                      // Quien entra a media semana arranca de hoy, no del lunes.
-                      desdeDia: hoy ?? 0,
-                    );
-                Navigator.pop(ctx);
-              },
-            );
-          },
-        ),
-      ),
-    );
-  }
 }

@@ -13,6 +13,7 @@ import '../domain/logic/flujo_calculator.dart';
 import '../domain/logic/nomina_calculator.dart';
 import '../domain/logic/presupuesto_calculator.dart';
 import '../domain/logic/proyeccion_nomina.dart';
+import '../domain/logic/redondeo_proyeccion.dart';
 import '../domain/models/models.dart' as dom;
 
 /// Genera los reportes PDF (equivalente a PdfGenerator.kt, con el paquete `pdf`),
@@ -376,7 +377,17 @@ class PdfService {
     required ProyeccionResultado resultado,
     Map<String, String> nombreCuadrilla = const {},
     PdfConfig config = const PdfConfig(),
+
+    /// Cómo se enseñan las cifras. El PDF imprime lo MISMO que la pantalla: si
+    /// el papel dijera el exacto y la pantalla el redondeado, uno de los dos
+    /// estaría mintiendo. La leyenda al pie dice con qué regla se redondeó.
+    ProyeccionRedondeada? redondeada,
+
+    /// Nombre de la proyección guardada, si viene de una. Va en el encabezado
+    /// para que dos impresiones de la misma semana se distingan.
+    String nombre = '',
   }) async {
+    final vista = redondeada ?? ProyeccionRedondeada.exacta(resultado);
     final color = _hex(config.colorHex);
     final doc = pw.Document();
 
@@ -432,12 +443,16 @@ class PdfService {
             'Total',
           ],
           data: resultado.renglones.map((r) {
+            // La daga marca a las plazas: un renglón que cuenta dinero de
+            // alguien que todavía no existe tiene que distinguirse en el papel,
+            // no solo en la pantalla.
+            final plaza = esPlaza(r.colaborador.id);
             return [
-              r.colaborador.nombre,
+              plaza ? '${r.colaborador.nombre} +' : r.colaborador.nombre,
               // Los caracteres se limitan a Latin-1 a propósito: la Helvetica
               // base del PDF no tiene Unicode y una raya larga (U+2013/2014)
               // sale como un hueco en blanco, no como un guion.
-              r.esDestajista ? '-' : Fmt.money(r.salarioDia),
+              r.esDestajista ? '-' : Fmt.money(vista.salarioDia(r).mostrado),
               // Se distingue lo capturado de lo estimado también aquí: X es un
               // día que ya ocurrió, · es una expectativa.
               for (final celda in r.celdas)
@@ -453,7 +468,7 @@ class PdfService {
                   ? 'destajo'
                   : _sinDecimalesInutiles(r.diasTotales),
               r.ajustes == 0 ? '' : Fmt.money(r.ajustes),
-              Fmt.money(r.total),
+              Fmt.money(vista.raya(r).mostrado),
             ];
           }).toList(),
         ),
@@ -488,9 +503,16 @@ class PdfService {
         pw.Padding(
           padding: const pw.EdgeInsets.only(top: 4),
           child: pw.Text(
-              'X = capturado   ·   · = estimado   ·   F = falta capturada',
+              'X = capturado   ·   · = estimado   ·   F = falta capturada'
+              '${_hayPlazas(resultado) ? "   ·   + = plaza sin contratar" : ""}',
               style: const pw.TextStyle(fontSize: 7.5, color: _gris400)),
         ),
+        if (vista.activo)
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(top: 2),
+            child: pw.Text(vista.leyenda,
+                style: const pw.TextStyle(fontSize: 7.5, color: _gris400)),
+          ),
 
         pw.SizedBox(height: 10),
         _totalLinea('Pago por día', resultado.totalDia),
@@ -501,12 +523,32 @@ class PdfService {
               color: resultado.totalAjustes < 0 ? _rojo : _verde),
         _totalLinea('Ya capturado (en firme)', resultado.totalCapturado),
         _totalLinea('Estimado', resultado.totalProyectado),
-        _totalLinea('TOTAL PROYECTADO', resultado.total,
+        // Lo que NO es gente contratada se declara antes del total, no en una
+        // nota al pie: es la resta que alguien va a querer hacer al leerlo.
+        if (_hayPlazas(resultado))
+          _totalLinea('De plazas sin contratar', _totalPlazas(resultado, vista),
+              color: _gris500),
+        _totalLinea('TOTAL PROYECTADO', vista.total.mostrado,
             bold: true, color: color),
+        if (vista.total.redondeado)
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(top: 2),
+            child: pw.Text('Sin redondear: ${Fmt.money(vista.total.exacto)}',
+                style: const pw.TextStyle(fontSize: 7.5, color: _gris400)),
+          ),
       ],
     ));
     return doc.save();
   }
+
+  static bool _hayPlazas(ProyeccionResultado r) =>
+      r.renglones.any((x) => esPlaza(x.colaborador.id));
+
+  static double _totalPlazas(
+          ProyeccionResultado r, ProyeccionRedondeada vista) =>
+      r.renglones
+          .where((x) => esPlaza(x.colaborador.id))
+          .fold<double>(0, (a, x) => a + vista.raya(x).mostrado);
 
   static String _sinDecimalesInutiles(double v) =>
       v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(2);

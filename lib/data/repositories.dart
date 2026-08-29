@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../core/db/app_database.dart';
+import '../domain/logic/salario_periodo.dart';
 
 /// Repositorios delgados sobre Drift, espejo de la capa `domain/` del proyecto
 /// Kotlin. Aíslan a la UI de las consultas SQL.
@@ -196,6 +197,60 @@ class ColaboradorRepository {
 
   Future<void> upsertSueldo(ColaboradorSueldoCompanion sueldo) =>
       db.into(db.colaboradorSueldo).insertOnConflictUpdate(sueldo);
+
+  /// Da de alta a alguien a partir de una PLAZA de la proyección: crea al
+  /// colaborador, escribe su sueldo y, si se dijo, lo asigna a la obra.
+  /// Devuelve el id nuevo.
+  ///
+  /// Las tres escrituras van juntas porque juntas son la operación que el
+  /// usuario pidió («esta plaza ya es una persona»). Si el sueldo se escribiera
+  /// aparte y fallara, quedaría un colaborador nuevo cobrando el salario del
+  /// puesto y nadie lo notaría hasta la raya.
+  Future<String> crearDesdePlaza({
+    required String nombre,
+    required String puestoId,
+    required double salarioDia,
+    required PeriodoPago periodo,
+    required double montoPeriodo,
+    required int diasSemana,
+    String? obraId,
+  }) async {
+    final id = const Uuid().v4();
+    await db.transaction(() async {
+      await db.into(db.colaboradores).insert(
+            ColaboradoresCompanion.insert(
+              id: id,
+              nombre: nombre.trim(),
+              puestoId: puestoId,
+              // Una plaza siempre es de pago por día; un alzado hipotético se
+              // modela con un ajuste de destajo a la cuadrilla.
+              tipoPago: 'DIA',
+              activo: const Value(true),
+            ),
+          );
+      await db.into(db.colaboradorSueldo).insertOnConflictUpdate(
+            ColaboradorSueldoCompanion(
+              colaboradorId: Value(id),
+              salarioPersonalizado: Value(salarioDia > 0 ? salarioDia : null),
+              periodoPago: Value(periodo.code),
+              salarioPeriodo: Value(montoPeriodo > 0 ? montoPeriodo : null),
+              diasSemana: Value(diasSemana),
+            ),
+          );
+      if (obraId != null && obraId.isNotEmpty) {
+        await db.into(db.obraColaborador).insertOnConflictUpdate(
+              ObraColaboradorCompanion(
+                obraId: Value(obraId),
+                colaboradorId: Value(id),
+                fechaIngreso:
+                    Value(DateTime.now().millisecondsSinceEpoch),
+                fechaSalida: const Value(null),
+              ),
+            );
+      }
+    });
+    return id;
+  }
 
   Future<void> delete(String id) {
     final now = DateTime.now().millisecondsSinceEpoch;

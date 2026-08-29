@@ -35,6 +35,9 @@ Future<void> exportarProyeccionPdf(
       alcance: alcance,
       rango: rango,
       resultado: vista.resultado,
+      // El papel imprime lo MISMO que la pantalla, redondeo incluido.
+      redondeada: vista.redondeada,
+      nombre: ref.read(sesionProyeccionProvider).nombre,
       nombreCuadrilla: vista.nombreCuadrilla,
       config: cfg,
     );

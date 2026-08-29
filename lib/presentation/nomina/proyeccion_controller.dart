@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/legacy.dart'; // StateProvider
 import 'package:uuid/uuid.dart';
 
 import '../../core/db/app_database.dart' as db;
+import '../../core/settings/settings_provider.dart';
 import '../../data/providers.dart';
+import '../../data/repositories_proyeccion.dart';
 import '../../domain/logic/proyeccion_nomina.dart';
+import '../../domain/logic/redondeo_proyeccion.dart';
 import '../../domain/mappers.dart';
 import '../../domain/models/models.dart' as dom;
 
@@ -41,6 +44,200 @@ final agruparProyeccionProvider =
     StateProvider<AgruparPor>((ref) => AgruparPor.cuadrilla);
 
 // ═══════════════════════════════════════════════════════════════════════════
+// La sesión: qué proyección se está trabajando y cómo
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// En qué modo está la pantalla.
+enum ModoProyeccion {
+  /// Un escenario nuevo, sin nombre y sin fila en la base. Es como arrancaba
+  /// siempre la pantalla antes de que hubiera memoria.
+  nueva,
+
+  /// Se está editando una proyección guardada: los cambios se pueden guardar
+  /// sobre ella.
+  editando,
+
+  /// Se está CONSULTANDO una guardada. Nada se puede mover.
+  soloLectura,
+}
+
+/// Qué proyección hay abierta y en qué modo.
+class SesionProyeccion {
+  final ModoProyeccion modo;
+
+  /// Id de la fila guardada; `null` cuando el escenario todavía no se guarda.
+  final String? id;
+
+  final String nombre;
+
+  const SesionProyeccion({
+    this.modo = ModoProyeccion.nueva,
+    this.id,
+    this.nombre = '',
+  });
+
+  bool get soloLectura => modo == ModoProyeccion.soloLectura;
+
+  /// ¿Está atada a una fila guardada? Decide si «Guardar» reemplaza o pregunta
+  /// un nombre.
+  bool get tieneArchivo => id != null;
+}
+
+final sesionProyeccionProvider =
+    NotifierProvider<SesionNotifier, SesionProyeccion>(SesionNotifier.new);
+
+/// Dueño del modo de trabajo y de la ida y vuelta con la base.
+///
+/// Vive aparte de [ProyeccionNotifier] a propósito: el escenario es un valor de
+/// dominio puro y no tiene por qué saber si está guardado, cómo se llama ni si
+/// alguien lo está viendo sin permiso de tocarlo.
+class SesionNotifier extends Notifier<SesionProyeccion> {
+  @override
+  SesionProyeccion build() => const SesionProyeccion();
+
+  ProyeccionRepository get _repo => ref.read(proyeccionRepositoryProvider);
+
+  /// Empieza de cero: escenario nuevo sembrado de la semana actual.
+  void nueva() {
+    state = const SesionProyeccion();
+    ref.read(proyeccionEstadoProvider.notifier).reiniciar();
+  }
+
+  /// Abre una proyección guardada.
+  ///
+  /// El orden importa: primero la semana y el filtro de obra —que reconstruyen
+  /// el escenario desde cero— y solo después se carga el guardado. Al revés, el
+  /// rebuild por cambio de semana se llevaría por delante lo que se acaba de
+  /// cargar.
+  ///
+  /// Devuelve `false` si el escenario no se pudo leer (se guardó con una
+  /// versión más nueva de la app, o la fila está corrupta), para que la pantalla
+  /// lo diga en vez de abrir una proyección vacía que parecería un borrado.
+  bool abrir(db.ProyeccionGuardadaRow fila, {required bool soloLectura}) {
+    final estado = escenarioDe(fila);
+    if (estado == null) return false;
+
+    ref.read(semanaProyeccionProvider.notifier).state = estado.lunesMillis;
+    ref.read(obraFiltroProyeccionProvider.notifier).state =
+        fila.obraFiltro.isEmpty ? null : fila.obraFiltro;
+    ref.read(proyeccionEstadoProvider.notifier).cargar(estado);
+
+    state = SesionProyeccion(
+      modo: soloLectura ? ModoProyeccion.soloLectura : ModoProyeccion.editando,
+      id: fila.id,
+      nombre: fila.nombre,
+    );
+    return true;
+  }
+
+  /// Pasa de consultar a editar la misma proyección.
+  void editarLaAbierta() {
+    if (state.modo != ModoProyeccion.soloLectura) return;
+    state = SesionProyeccion(
+        modo: ModoProyeccion.editando, id: state.id, nombre: state.nombre);
+  }
+
+  /// Guarda: crea una fila nueva si no había, o reemplaza la abierta.
+  ///
+  /// [nombre] solo se usa al crear o al renombrar; guardar sobre una abierta sin
+  /// pasar nombre conserva el suyo.
+  Future<void> guardar({String? nombre}) async {
+    final estado = ref.read(proyeccionEstadoProvider);
+    final vista = ref.read(proyeccionVistaProvider);
+    final obraFiltro = ref.read(obraFiltroProyeccionProvider) ?? '';
+    final total = vista.redondeada.total.mostrado;
+    final personas = vista.resultado.personas;
+
+    if (state.id == null) {
+      final id = await _repo.crear(
+        nombre: nombre?.trim().isNotEmpty == true
+            ? nombre!
+            : nombreSugerido(estado.lunesMillis),
+        estado: estado,
+        obraFiltro: obraFiltro,
+        totalSnapshot: total,
+        personasSnapshot: personas,
+      );
+      state = SesionProyeccion(
+        modo: ModoProyeccion.editando,
+        id: id,
+        nombre: nombre?.trim().isNotEmpty == true
+            ? nombre!.trim()
+            : nombreSugerido(estado.lunesMillis),
+      );
+      return;
+    }
+
+    await _repo.actualizar(
+      id: state.id!,
+      estado: estado,
+      nombre: nombre,
+      obraFiltro: obraFiltro,
+      totalSnapshot: total,
+      personasSnapshot: personas,
+    );
+    state = SesionProyeccion(
+      modo: ModoProyeccion.editando,
+      id: state.id,
+      nombre: nombre?.trim().isNotEmpty == true ? nombre!.trim() : state.nombre,
+    );
+    ref.read(proyeccionEstadoProvider.notifier).marcarGuardado();
+  }
+
+  /// Guarda una copia con otro nombre y la deja abierta. Es el «Guardar como»:
+  /// sirve para partir de una proyección buena sin pisarla.
+  Future<void> guardarComo(String nombre) async {
+    final estado = ref.read(proyeccionEstadoProvider);
+    final vista = ref.read(proyeccionVistaProvider);
+    final id = await _repo.crear(
+      nombre: nombre.trim().isEmpty ? nombreSugerido(estado.lunesMillis) : nombre,
+      estado: estado,
+      obraFiltro: ref.read(obraFiltroProyeccionProvider) ?? '',
+      totalSnapshot: vista.redondeada.total.mostrado,
+      personasSnapshot: vista.resultado.personas,
+    );
+    state = SesionProyeccion(
+        modo: ModoProyeccion.editando, id: id, nombre: nombre.trim());
+    ref.read(proyeccionEstadoProvider.notifier).marcarGuardado();
+  }
+
+  Future<String?> duplicar(String id, {String? nombre}) =>
+      _repo.duplicar(id, nombre: nombre);
+
+  Future<void> renombrar(String id, String nombre) async {
+    await _repo.renombrar(id, nombre);
+    if (state.id == id) {
+      state = SesionProyeccion(
+          modo: state.modo, id: id, nombre: nombre.trim());
+    }
+  }
+
+  /// Elimina una guardada. Si era la abierta, la pantalla se queda con el
+  /// escenario en la mano pero ya sin archivo: así el usuario puede volver a
+  /// guardarla si se arrepiente, en vez de perderla dos veces.
+  Future<void> eliminar(String id) async {
+    await _repo.eliminar(id);
+    if (state.id == id) {
+      state = SesionProyeccion(
+          modo: ModoProyeccion.nueva, nombre: state.nombre);
+    }
+  }
+
+  Future<void> restaurar(String id) => _repo.restaurar(id);
+
+  /// Nombre que se propone al guardar por primera vez: «Simulación 20 de
+  /// mayo», con la fecha del lunes de la semana proyectada.
+  static String nombreSugerido(int lunesMillis) {
+    final d = DateTime.fromMillisecondsSinceEpoch(lunesMillis);
+    const meses = [
+      'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+      'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+    ];
+    return 'Simulación ${d.day} de ${meses[d.month - 1]}';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // El escenario
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -72,7 +269,12 @@ class ProyeccionNotifier extends Notifier<ProyeccionEstado> {
     // note.
     final lunes = ref.watch(semanaProyeccionProvider);
     _sembrado = false;
-    return _inicial = ProyeccionEstado(lunesMillis: lunes);
+    // El redondeo arranca con la preferencia del usuario: quien trabaja siempre
+    // al peso no debería prenderlo en cada proyección nueva.
+    return _inicial = ProyeccionEstado(
+      lunesMillis: lunes,
+      redondeo: ref.read(redondeoPorDefectoProvider),
+    );
   }
 
   /// ¿Falta sembrar? La pantalla lo consulta cuando ya tiene datos.
@@ -99,6 +301,8 @@ class ProyeccionNotifier extends Notifier<ProyeccionEstado> {
     _sembrado = true;
     state = _inicial = ProyeccionEstado(
       lunesMillis: state.lunesMillis,
+      // Se conserva lo que ya hubiera: sembrar solo rellena participantes.
+      redondeo: state.redondeo,
       participantes: participantes,
       diasProyectados: {
         for (final id in participantes)
@@ -119,13 +323,46 @@ class ProyeccionNotifier extends Notifier<ProyeccionEstado> {
   /// Vuelve a sembrar desde cero, tirando lo que el usuario haya movido.
   void reiniciar() {
     _sembrado = false;
-    state = _inicial = ProyeccionEstado(lunesMillis: state.lunesMillis);
+    state = _inicial = ProyeccionEstado(
+        lunesMillis: state.lunesMillis, redondeo: state.redondeo);
+  }
+
+  /// Carga un escenario guardado tal cual, sin sembrar nada encima.
+  ///
+  /// Marca el escenario como ya sembrado —si no, la pantalla lo pisaría con los
+  /// participantes sugeridos en cuanto llegaran los datos de la base— y fija la
+  /// línea base de [tocado] en lo cargado: al abrir una proyección guardada no
+  /// hay trabajo sin guardar todavía.
+  void cargar(ProyeccionEstado escenario) {
+    _sembrado = true;
+    state = _inicial = escenario;
+  }
+
+  /// Reconoce el estado actual como «lo último guardado», para que [tocado]
+  /// deje de reportar cambios pendientes justo después de guardar.
+  void marcarGuardado() => _inicial = state;
+
+  // ── El candado de solo lectura ───────────────────────────────────────────
+
+  /// Una proyección abierta para consultar no se toca. El candado vive AQUÍ y
+  /// no en cada botón de la pantalla: hay más de treinta puntos que mutan el
+  /// escenario, y el que se olvide sería una edición silenciosa sobre algo que
+  /// el usuario abrió «solo para ver». La UI además apaga los controles, pero
+  /// eso es cortesía; esto es la garantía.
+  bool get _bloqueado =>
+      ref.read(sesionProyeccionProvider).modo == ModoProyeccion.soloLectura;
+
+  /// Escribe el escenario si la sesión lo permite. Devuelve si escribió.
+  bool _escribir(ProyeccionEstado nuevo) {
+    if (_bloqueado) return false;
+    state = nuevo;
+    return true;
   }
 
   // ── Días ─────────────────────────────────────────────────────────────────
 
   void alternarDia(String colaboradorId, int dia) =>
-      state = state.alternarDia(colaboradorId, dia);
+      _escribir(state.alternarDia(colaboradorId, dia));
 
   /// Toque en el encabezado de la columna: prende la columna completa si había
   /// algún día apagado, y la apaga si ya estaba toda prendida.
@@ -138,8 +375,8 @@ class ProyeccionNotifier extends Notifier<ProyeccionEstado> {
         colaboradorIds.where((id) => !bloqueados.contains(id)).toList();
     final todosPrendidos =
         movibles.isNotEmpty && movibles.every((id) => state.tieneDia(id, dia));
-    state = state.fijarColumna(dia, movibles,
-        prender: !todosPrendidos, bloqueados: bloqueados);
+    _escribir(state.fijarColumna(dia, movibles,
+        prender: !todosPrendidos, bloqueados: bloqueados));
   }
 
   /// Aplica un relleno rápido a los colaboradores dados.
@@ -177,12 +414,12 @@ class ProyeccionNotifier extends Notifier<ProyeccionEstado> {
       }
       mapa[id] = actuales;
     }
-    state = state.copyWith(diasProyectados: mapa);
+    _escribir(state.copyWith(diasProyectados: mapa));
   }
 
   /// Presta un día de alguien a otra obra, o lo devuelve con [obraId] en `null`.
   void moverDia(String colaboradorId, int dia, String? obraId) =>
-      state = state.conDiaEnObra(colaboradorId, dia, obraId);
+      _escribir(state.conDiaEnObra(colaboradorId, dia, obraId));
 
   // ── Participantes ────────────────────────────────────────────────────────
 
@@ -192,26 +429,138 @@ class ProyeccionNotifier extends Notifier<ProyeccionEstado> {
     final dias = {
       for (var d = desdeDia; d < diasSemana.clamp(1, 7); d++) d,
     };
-    state = state.conParticipante(colaboradorId, dias: dias);
+    _escribir(state.conParticipante(colaboradorId, dias: dias));
+  }
+
+  /// Mete a varios del equipo de un solo golpe.
+  ///
+  /// Un solo estado nuevo y, por tanto, un solo «Deshacer»: llamar ocho veces a
+  /// [agregar] dejaría ocho estados intermedios y el aviso solo podría quitar al
+  /// último, que es peor que no ofrecer deshacer.
+  void agregarVarios(
+    Iterable<String> ids, {
+    required Map<String, int> diasPorColaborador,
+    int desdeDia = 0,
+  }) {
+    final mapa = <String, Set<int>>{};
+    for (final id in ids) {
+      final n = (diasPorColaborador[id] ?? 6).clamp(1, 7);
+      mapa[id] = {for (var d = desdeDia; d < n; d++) d};
+    }
+    if (mapa.isEmpty) return;
+    _escribir(state.conParticipantes(mapa));
+  }
+
+  /// Crea plazas nuevas (puestos sin nadie todavía) y las mete al escenario.
+  ///
+  /// [cuantas] renglones del mismo puesto y sueldo se numeran «Maestro 1…n»
+  /// continuando desde las que ya haya de ese puesto: si se quitan la 2 y la 3,
+  /// las demás NO se renumeran, porque un renglón que cambia de nombre solo es
+  /// un renglón que se deja de reconocer.
+  List<PlazaProyectada> agregarPlazas({
+    required String puestoId,
+    required String puestoNombre,
+    required int cuantas,
+    required SueldoProyectado sueldo,
+    String? obraId,
+    String? cuadrillaId,
+  }) {
+    if (cuantas <= 0) return const [];
+    final yaDeEstePuesto =
+        state.plazas.values.where((p) => p.puestoId == puestoId).length;
+    final nuevas = [
+      for (var i = 0; i < cuantas; i++)
+        PlazaProyectada(
+          id: '$prefijoPlaza${_uuid.v4()}',
+          etiqueta: '$puestoNombre ${yaDeEstePuesto + i + 1}',
+          puestoId: puestoId,
+          obraId: obraId,
+          cuadrillaId: cuadrillaId,
+          sueldo: sueldo,
+        ),
+    ];
+    return _escribir(state.conPlazas(nuevas)) ? nuevas : const [];
+  }
+
+  /// Reemplaza la ficha de una plaza (nombre, puesto, obra, cuadrilla, sueldo).
+  void actualizarPlaza(PlazaProyectada plaza) =>
+      _escribir(state.conPlaza(plaza));
+
+  /// Cambia el id de una plaza por el de un colaborador ya dado de alta,
+  /// conservando TODO lo que el escenario tenía de ella.
+  ///
+  /// Es lo que hace «darla de alta»: si en vez de esto se quitara la plaza y se
+  /// agregara al colaborador, se perderían sus días, sus préstamos y sus
+  /// ajustes — y el usuario tendría que volver a capturarlos justo después de
+  /// una acción que sonaba a «ya quedó».
+  ///
+  /// El sueldo capturado se BORRA a propósito: ya quedó escrito en la ficha del
+  /// colaborador, y dejarlo también como override del escenario haría que
+  /// cambiarlo en la ficha no se reflejara aquí.
+  void sustituirPlazaPorColaborador(String plazaId, String colaboradorId) {
+    final s = state;
+    if (!s.plazas.containsKey(plazaId)) return;
+
+    Map<K, V> renombrar<K, V>(Map<K, V> mapa) {
+      if (!mapa.containsKey(plazaId as K)) return mapa;
+      final copia = {...mapa};
+      copia[colaboradorId as K] = copia.remove(plazaId as K) as V;
+      return copia;
+    }
+
+    _escribir(s.copyWith(
+      participantes: [
+        for (final id in s.participantes) id == plazaId ? colaboradorId : id,
+      ],
+      diasProyectados: renombrar(s.diasProyectados),
+      obraPorDia: renombrar(s.obraPorDia),
+      destajoEstimado: renombrar(s.destajoEstimado),
+      // El diario se queda mientras dure este escenario, para que el total no
+      // brinque en el momento del alta; el sueldo capturado se va porque ya
+      // vive en la ficha.
+      salarioOverride: renombrar(s.salarioOverride),
+      sueldoOverride: {...s.sueldoOverride}..remove(plazaId),
+      plazas: {...s.plazas}..remove(plazaId),
+      ajustes: [
+        for (final a in s.ajustes)
+          if (a.destino == DestinoAjuste.colaborador && a.destinoId == plazaId)
+            a.copyWith(destinoId: colaboradorId)
+          else
+            a,
+      ],
+    ));
+  }
+
+  /// Guarda el sueldo capturado de alguien; `null` lo devuelve al del puesto.
+  void setSueldo(String colaboradorId, SueldoProyectado? sueldo) =>
+      _escribir(state.conSueldo(colaboradorId, sueldo));
+
+  /// Cómo se enseñan las cifras. No pasa por el candado de solo lectura: mirar
+  /// una proyección guardada con otro redondeo no la cambia, y prohibirlo
+  /// obligaría a duplicarla solo para ver los números al peso.
+  void setRedondeo(RedondeoConfig config) {
+    state = state.conRedondeo(config);
+    // Y se recuerda como preferencia: el siguiente escenario nuevo arranca así.
+    ref.read(redondeoPorDefectoProvider.notifier).set(config);
   }
 
   void quitar(String colaboradorId) =>
-      state = state.sinParticipante(colaboradorId);
+      _escribir(state.sinParticipante(colaboradorId));
 
   /// Vuelve a un escenario anterior tal cual. Es lo que hace el «Deshacer» del
   /// aviso al quitar a alguien: restaurar el participante con `agregar` no
   /// serviría, porque perdería sus días, su salario y sus ajustes — y quitar a
   /// alguien por error para volver a meterlo peor de como estaba es exactamente
   /// el tipo de pérdida silenciosa que hace desconfiar de la pantalla.
-  void restaurar(ProyeccionEstado anterior) => state = anterior;
+  void restaurar(ProyeccionEstado anterior) => _escribir(anterior);
 
   // ── Montos ───────────────────────────────────────────────────────────────
 
   void setSalario(String colaboradorId, double? salario) =>
-      state = state.conSalario(colaboradorId, salario);
+      _escribir(state.conSalario(colaboradorId, salario));
 
   void setDestajo(String colaboradorId, double monto) =>
-      state = state.conDestajo(colaboradorId, monto);
+      _escribir(state.conDestajo(colaboradorId, monto));
 
   // ── Ajustes ──────────────────────────────────────────────────────────────
 
@@ -225,7 +574,7 @@ class ProyeccionNotifier extends Notifier<ProyeccionEstado> {
     RepartoAjuste reparto = RepartoAjuste.partesIguales,
   }) {
     final id = _uuid.v4();
-    state = state.conAjuste(AjusteProyeccion(
+    _escribir(state.conAjuste(AjusteProyeccion(
       id: id,
       tipo: tipo,
       destino: destino,
@@ -233,14 +582,14 @@ class ProyeccionNotifier extends Notifier<ProyeccionEstado> {
       monto: monto.abs(),
       nota: nota,
       reparto: reparto,
-    ));
+    )));
     return id;
   }
 
   void guardarAjuste(AjusteProyeccion ajuste) =>
-      state = state.conAjuste(ajuste.copyWith(monto: ajuste.monto.abs()));
+      _escribir(state.conAjuste(ajuste.copyWith(monto: ajuste.monto.abs())));
 
-  void borrarAjuste(String ajusteId) => state = state.sinAjuste(ajusteId);
+  void borrarAjuste(String ajusteId) => _escribir(state.sinAjuste(ajusteId));
 
   /// Tira los ajustes que apuntan a alguien que ya no está en el escenario.
   void limpiarAjustesHuerfanos(Iterable<String> ids) {
@@ -248,13 +597,13 @@ class ProyeccionNotifier extends Notifier<ProyeccionEstado> {
     for (final id in ids) {
       s = s.sinAjuste(id);
     }
-    state = s;
+    _escribir(s);
   }
 
   // ── Hipótesis ────────────────────────────────────────────────────────────
 
   void setSimularCompleta(bool valor) =>
-      state = state.copyWith(simularCompleta: valor);
+      _escribir(state.copyWith(simularCompleta: valor));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -292,6 +641,18 @@ class ProyeccionVista {
   /// Está cargando algo de la base.
   final bool cargando;
 
+  /// El mismo [resultado], visto a través de la configuración de redondeo del
+  /// escenario. La pantalla pinta SIEMPRE desde aquí; el `resultado` crudo queda
+  /// para quien necesite la cifra exacta.
+  final ProyeccionRedondeada redondeada;
+
+  /// Puestos del catálogo, para la hoja de alta masiva (crear plazas necesita
+  /// elegir puesto y proponer su sueldo).
+  final List<db.Puesto> puestos;
+
+  /// La proyección abierta es de solo consulta.
+  final bool soloLectura;
+
   const ProyeccionVista({
     required this.resultado,
     required this.candidatos,
@@ -302,6 +663,9 @@ class ProyeccionVista {
     required this.diasBloqueados,
     required this.obraFiltro,
     required this.cargando,
+    required this.redondeada,
+    required this.puestos,
+    required this.soloLectura,
   });
 
   /// Nombre de la obra filtrada, vacío si son todas.
@@ -357,14 +721,24 @@ final proyeccionVistaProvider = Provider<ProyeccionVista>((ref) {
   final sueldos = ref.watch(sueldosPorColaboradorProvider).asData?.value ??
       const <String, db.ColaboradorSueldoRow>{};
 
+  // Las plazas entran al cálculo como colaboradores sintéticos: mismo id, misma
+  // forma. Es lo que permite que `ProyeccionCalculator` no sepa que existen y
+  // que días, préstamos, ajustes y subtotales les funcionen sin código nuevo.
+  final plazas = estado.plazas.values.toList();
+
   final obraPorColaborador = <String, String>{
     for (final e in ultimaObra.entries) e.key: e.value.id,
+    for (final p in plazas)
+      if (p.obraId != null) p.id: p.obraId!,
   };
   final cuadrillaPorColaborador = <String, String>{
     for (final e in cuadrillaDe.entries) e.key: e.value.id,
+    for (final p in plazas)
+      if (p.cuadrillaId != null) p.id: p.cuadrillaId!,
   };
   final diasPorColaborador = <String, int>{
     for (final c in colabs) c.id: sueldos[c.id]?.diasSemana ?? 6,
+    for (final p in plazas) p.id: p.sueldo.diasSemana,
   };
 
   // Días ya capturados por persona: la UI los bloquea y los rellenos los saltan.
@@ -386,6 +760,7 @@ final proyeccionVistaProvider = Provider<ProyeccionVista>((ref) {
     estado: estado.copyWith(participantes: visibles),
     colaboradores: [
       for (final c in colabs) colaboradorToDomain(c, sueldo: sueldos[c.id]),
+      for (final p in plazas) p.comoColaborador,
     ],
     puestos: puestos.map(puestoToDomain).toList(),
     asistenciasReales: asistencias.map(asistenciaToDomain).toList(),
@@ -414,6 +789,9 @@ final proyeccionVistaProvider = Provider<ProyeccionVista>((ref) {
     diasBloqueados: diasBloqueados,
     obraFiltro: obraFiltro,
     cargando: colabsAsync.isLoading || puestosAsync.isLoading,
+    redondeada: ProyeccionRedondeada(resultado, estado.redondeo),
+    puestos: puestos,
+    soloLectura: ref.watch(sesionProyeccionProvider).soloLectura,
   );
 });
 

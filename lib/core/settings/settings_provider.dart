@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../domain/logic/redondeo.dart';
 import '../notifications/notification_service.dart';
 
 /// SharedPreferences ya cargado. Se sobreescribe en main() con la instancia real
@@ -116,5 +117,54 @@ class ReminderNotifier extends Notifier<ReminderState> {
     if (state.enabled) {
       await NotificationService.scheduleWeekly(weekday: weekday, hour: hour);
     }
+  }
+}
+
+
+// ---------------- Redondeo de cifras ----------------
+/// Cómo quiere el usuario ver las cifras de dinero, por defecto.
+///
+/// El redondeo se guarda DENTRO de cada proyección (ver `ProyeccionEstado`),
+/// porque una simulación que se imprimió redondeada a \$100 tiene que reabrirse
+/// igual. Esto de aquí es otra cosa: con qué configuración arranca una
+/// proyección NUEVA. Sin ella, quien trabaja siempre al peso tendría que
+/// prender el redondeo cada vez.
+///
+/// Se guarda en SharedPreferences y no en la nube: es una preferencia de cómo
+/// se LEE la pantalla, no un dato del negocio.
+final redondeoPorDefectoProvider =
+    NotifierProvider<RedondeoPorDefectoNotifier, RedondeoConfig>(
+        RedondeoPorDefectoNotifier.new);
+
+class RedondeoPorDefectoNotifier extends Notifier<RedondeoConfig> {
+  static const _keyActivo = 'redondeo_activo';
+  static const _keyPaso = 'redondeo_paso';
+  static const _keyModo = 'redondeo_modo';
+  static const _keyCampos = 'redondeo_campos';
+
+  @override
+  RedondeoConfig build() {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final campos = prefs.getStringList(_keyCampos);
+    return RedondeoConfig(
+      activo: prefs.getBool(_keyActivo) ?? false,
+      paso: prefs.getDouble(_keyPaso) ?? 1,
+      modo: modoRedondeoFromCode(prefs.getString(_keyModo)),
+      // Sin lista guardada se usa el default de la clase; una lista guardada
+      // VACÍA es una elección legítima y se respeta.
+      campos: campos == null
+          ? const RedondeoConfig().campos
+          : {for (final c in campos) ?campoRedondeoFromCode(c)},
+    );
+  }
+
+  Future<void> set(RedondeoConfig config) async {
+    state = config;
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setBool(_keyActivo, config.activo);
+    await prefs.setDouble(_keyPaso, config.paso);
+    await prefs.setString(_keyModo, config.modo.code);
+    await prefs.setStringList(
+        _keyCampos, config.campos.map((c) => c.code).toList());
   }
 }

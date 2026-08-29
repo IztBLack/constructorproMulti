@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:drift/drift.dart' show Value;
+
+import '../../core/db/app_database.dart' as db;
 import '../../core/format/format.dart';
 import '../../core/theme/app_colors.dart';
+import '../../data/providers.dart';
 import '../../domain/logic/proyeccion_nomina.dart';
 import '../common/app_snackbar.dart';
 import 'ajuste_sheet.dart';
 import 'proyeccion_controller.dart';
+import 'redondeo_sheet.dart';
+import 'sueldo_editor.dart';
 
 const _diasCortos = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const _diasLargos = [
@@ -83,6 +89,14 @@ class _FichaPersonaState extends ConsumerState<_FichaPersona> {
     }
 
     final ajustes = estado.ajustesDeColaborador(id);
+    final soloLectura = vista.soloLectura;
+    final esUnaPlaza = estado.esPlazaDelEscenario(id);
+    final plaza = estado.plazas[id];
+
+    // Lo capturado en ESTA proyección y lo que tiene en su ficha del catálogo.
+    // Se distinguen para poder decir en qué difieren y ofrecer propagarlo.
+    final sueldoCapturado = estado.sueldoDe(id);
+    final sueldoDeLaFicha = _sueldoDeLaFicha(id);
     final subtitulo = [
       renglon.esDestajista ? 'A destajo' : renglon.puestoNombre,
       vista.nombreObra[obraBase] ?? '',
@@ -158,67 +172,96 @@ class _FichaPersonaState extends ConsumerState<_FichaPersona> {
         // ── Dinero ────────────────────────────────────────────────────────
         _Titulo(renglon.esDestajista
             ? 'Destajo estimado de la semana'
-            : 'Salario por día'),
+            : 'Sueldo'),
         const SizedBox(height: 8),
         if (renglon.esDestajista)
           _BotonMonto(
             valor: renglon.destajo,
             color: c.accent,
-            onTap: () async {
-              final monto = await pedirMonto(
-                context,
-                titulo: 'Destajo estimado de la semana',
-                ayuda: '${renglon.colaborador.nombre} · es el TOTAL de la '
-                    'semana, no un extra sobre lo ya registrado.',
-                inicial: renglon.destajo,
-              );
-              if (monto != null) {
-                ref
-                    .read(proyeccionEstadoProvider.notifier)
-                    .setDestajo(id, monto);
-              }
-            },
+            onTap: soloLectura
+                ? null
+                : () async {
+                    final monto = await pedirMonto(
+                      context,
+                      titulo: 'Destajo estimado de la semana',
+                      ayuda: '${renglon.colaborador.nombre} · es el TOTAL de la '
+                          'semana, no un extra sobre lo ya registrado.',
+                      inicial: renglon.destajo,
+                    );
+                    if (monto != null) {
+                      ref
+                          .read(proyeccionEstadoProvider.notifier)
+                          .setDestajo(id, monto);
+                    }
+                  },
           )
-        else
-          Row(
-            children: [
-              _BotonMonto(
-                valor: renglon.salarioDia,
-                color: c.textStrong,
-                onTap: () async {
-                  final monto = await pedirMonto(
-                    context,
-                    titulo: 'Salario por día',
-                    ayuda: '${renglon.colaborador.nombre} · solo dentro de '
-                        'esta proyección. No cambia su sueldo en el catálogo.',
-                    inicial: renglon.salarioDia,
-                  );
-                  if (monto != null) {
-                    ref
-                        .read(proyeccionEstadoProvider.notifier)
-                        .setSalario(id, monto);
-                  }
-                },
+        else ...[
+          // Se captura el sueldo del PERIODO y el diario se calcula al lado, que
+          // es como ya se captura en el alta de colaboradores. Antes aquí se
+          // tecleaba el diario y la división se hacía en la calculadora del
+          // teléfono: dos formas distintas de decir lo mismo en la misma app.
+          SueldoEditor(
+            key: ValueKey('sueldo-$id-${sueldoCapturado?.monto}'),
+            valor: sueldoCapturado ?? sueldoDeLaFicha,
+            salarioDelPuesto: renglon.salarioDia,
+            habilitado: !soloLectura,
+            onCambio: (s) =>
+                ref.read(proyeccionEstadoProvider.notifier).setSueldo(id, s),
+          ),
+          if (sueldoDeLaFicha != null &&
+              sueldoCapturado != null &&
+              !sueldoCapturado.mismoQue(sueldoDeLaFicha))
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                'En su ficha tiene ${Fmt.money(sueldoDeLaFicha.monto)} '
+                '${sueldoDeLaFicha.periodo.label.toLowerCase()}es '
+                '(${Fmt.money(sueldoDeLaFicha.salarioDia ?? 0)}/día).',
+                style: t.bodySmall?.copyWith(color: c.warning),
               ),
-              // La vuelta atrás del override: `setSalario(id, null)` existía
+            ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 12,
+            children: [
+              // La vuelta atrás del override: `setSueldo(id, null)` existía
               // desde el principio y ninguna pantalla la ofrecía, así que un
               // salario cambiado por error solo se arreglaba a ojo.
-              if (estado.salarioOverride.containsKey(id))
+              if (estado.salarioOverride.containsKey(id) && !soloLectura)
                 TextButton(
-                  onPressed: () => ref
-                      .read(proyeccionEstadoProvider.notifier)
-                      .setSalario(id, null),
+                  onPressed: () {
+                    ref.read(proyeccionEstadoProvider.notifier)
+                      ..setSueldo(id, null)
+                      ..setSalario(id, null);
+                  },
                   child: const Text('Restablecer el del puesto'),
+                ),
+              // Cambiar los días/semana mueve el divisor del sueldo, NO las
+              // palomitas de arriba: reacomodarlas solo sería correcto la mitad
+              // de las veces. Se ofrece aparte, para quien sí lo quiera.
+              if (!soloLectura &&
+                  sueldoCapturado != null &&
+                  renglon.diasTotales != sueldoCapturado.diasSemana)
+                TextButton(
+                  onPressed: () => _ajustarDias(id, sueldoCapturado.diasSemana),
+                  child: Text('Ajustar días a ${sueldoCapturado.diasSemana}'),
+                ),
+              if (!soloLectura && esUnaPlaza == false && sueldoCapturado != null)
+                TextButton(
+                  onPressed: () =>
+                      _ofrecerGuardarEnFicha(renglon, sueldoCapturado),
+                  child: const Text('Guardar también en su ficha'),
                 ),
             ],
           ),
+        ],
         const SizedBox(height: 4),
         Text(
           renglon.esDestajista
               ? 'Es el TOTAL de la semana, no un extra sobre lo ya registrado. '
                   'La asistencia no lo mueve.'
-              : 'Solo dentro de esta proyección. No cambia su sueldo en el '
-                  'catálogo.',
+              : 'Solo dentro de esta proyección mientras no lo guardes en su '
+                  'ficha.',
           style: t.bodySmall?.copyWith(color: c.textMuted),
         ),
         if (renglon.destajoIncongruente)
@@ -274,11 +317,13 @@ class _FichaPersonaState extends ConsumerState<_FichaPersona> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _Titulo('Su raya de la semana'),
-              Text(Fmt.money(renglon.total),
-                  style: t.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: c.textStrong,
-                      fontFeatures: const [FontFeature.tabularFigures()])),
+              // Con redondeo activo se enseña la cifra redondeada en grande y
+              // la exacta en chiquito debajo: nunca una sin la otra.
+              MontoConRedondeo(
+                monto: vista.redondeada.raya(renglon),
+                estilo: t.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold, color: c.textStrong),
+              ),
               if (renglon.ajustes != 0)
                 Text('incluye ${Fmt.money(renglon.ajustes)} de ajustes',
                     style: t.bodySmall?.copyWith(color: c.textMuted)),
@@ -287,29 +332,266 @@ class _FichaPersonaState extends ConsumerState<_FichaPersona> {
         ),
         const SizedBox(height: 16),
 
+        // ── Si es una plaza: su identidad y la puerta a la realidad ───────
+        if (esUnaPlaza && plaza != null && !soloLectura) ...[
+          Divider(color: c.border),
+          const SizedBox(height: 8),
+          _Titulo('Esta plaza'),
+          const SizedBox(height: 8),
+          TextFormField(
+            key: ValueKey('etiqueta-${plaza.id}'),
+            initialValue: plaza.etiqueta,
+            decoration: const InputDecoration(
+                labelText: 'Se anota como', isDense: true),
+            onChanged: (v) => ref
+                .read(proyeccionEstadoProvider.notifier)
+                .actualizarPlaza(plaza.copyWith(etiqueta: v.trim())),
+          ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.person_add_alt, size: 18),
+              label: const Text('Darla de alta como colaborador…'),
+              onPressed: () => _darDeAlta(plaza),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Crea a la persona con este puesto y este sueldo, la asigna a la '
+            'obra y el renglón deja de ser hipótesis. Conserva sus días y sus '
+            'ajustes.',
+            style: t.bodySmall?.copyWith(color: c.textMuted),
+          ),
+          const SizedBox(height: 16),
+        ],
+
         // Destructivo, separado del resto y en color de peligro: sacar a
         // alguien mueve el total y no debe quedar a un dedo de «guardar».
-        Divider(color: c.border),
-        const SizedBox(height: 4),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            icon: Icon(Icons.person_remove_outlined, size: 18, color: c.danger),
-            label: Text('Quitar de la proyección',
-                style: TextStyle(color: c.danger)),
-            onPressed: () => _quitar(renglon),
+        if (!soloLectura) ...[
+          Divider(color: c.border),
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              icon:
+                  Icon(Icons.person_remove_outlined, size: 18, color: c.danger),
+              label: Text(
+                  esUnaPlaza ? 'Quitar la plaza' : 'Quitar de la proyección',
+                  style: TextStyle(color: c.danger)),
+              onPressed: () => _quitar(renglon),
+            ),
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(left: 12),
-          child: Text('Solo lo saca de esta cuenta. Sigue dado de alta en la app.',
-              style: t.bodySmall?.copyWith(color: c.textMuted)),
-        ),
+          Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: Text(
+                esUnaPlaza
+                    ? 'La plaza no existe fuera de esta proyección: al quitarla '
+                        'se va del todo.'
+                    : 'Solo lo saca de esta cuenta. Sigue dado de alta en la app.',
+                style: t.bodySmall?.copyWith(color: c.textMuted)),
+          ),
+        ] else
+          Container(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+            decoration: BoxDecoration(
+              color: c.infoSoft,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              'Esta proyección está abierta solo para consultar. Para cambiar '
+              'algo, ábrela con «Editar».',
+              style: t.bodySmall?.copyWith(color: c.info),
+            ),
+          ),
       ],
     );
   }
 
-  void _tocarDia(ProyeccionRenglon renglon, CeldaDia celda) {
+  /// El sueldo que esta persona tiene REGISTRADO en su ficha del catálogo.
+  ///
+  /// `null` cuando no hay fila de sueldo (o cuando el dispositivo no tiene
+  /// permiso de leer sueldos por la RLS: ahí el mapa llega vacío y todo cae al
+  /// salario del puesto, que es justo lo que debe pasar).
+  SueldoProyectado? _sueldoDeLaFicha(String colaboradorId) {
+    if (esPlaza(colaboradorId)) return null;
+    final sueldos = ref.read(sueldosPorColaboradorProvider).asData?.value ??
+        const <String, db.ColaboradorSueldoRow>{};
+    final fila = sueldos[colaboradorId];
+    final monto = fila?.salarioPeriodo;
+    if (fila == null || monto == null || monto <= 0) return null;
+    return SueldoProyectado(
+      periodo: periodoPagoFromCode(fila.periodoPago),
+      monto: monto,
+      diasSemana: fila.diasSemana,
+    );
+  }
+
+  /// Pone los días proyectados en los que dice el contrato del sueldo.
+  ///
+  /// Va como acción aparte y no automática al cambiar «días/semana»: quien ya
+  /// tiene tres días capturados no quiere que se los muevan por haber tocado el
+  /// divisor del sueldo.
+  void _ajustarDias(String colaboradorId, int dias) {
+    final estado = ref.read(proyeccionEstadoProvider);
+    final bloqueados = estado.simularCompleta
+        ? const <int>{}
+        : (ref.read(proyeccionVistaProvider).diasBloqueados[colaboradorId] ??
+            const <int>{});
+    final nuevos = {
+      for (var d = 0; d < 7; d++)
+        if (d < dias.clamp(1, 7) || bloqueados.contains(d)) d,
+    };
+    ref
+        .read(proyeccionEstadoProvider.notifier)
+        .restaurar(estado.copyWith(diasProyectados: {
+          ...estado.diasProyectados,
+          colaboradorId: nuevos,
+        }));
+  }
+
+  /// Ofrece propagar el sueldo capturado a la ficha del colaborador.
+  ///
+  /// Es la pregunta que pidió el usuario: la proyección puede quedarse con el
+  /// sueldo nuevo solo para esta cuenta, o actualizarlo también en el sistema.
+  /// La opción que no escribe nada es la marcada por defecto, y la frase sobre
+  /// las semanas capturadas es la que quita el miedo a tocar el botón.
+  Future<void> _ofrecerGuardarEnFicha(
+      ProyeccionRenglon renglon, SueldoProyectado sueldo) async {
+    final actual = _sueldoDeLaFicha(renglon.colaborador.id);
+    final diario = sueldo.salarioDia ?? 0;
+    if (diario <= 0) return;
+
+    final c = context.colores;
+    final guardar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Este sueldo también está en su ficha'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              actual == null
+                  ? '${renglon.colaborador.nombre} no tiene sueldo propio '
+                      'registrado: usa el del puesto.'
+                  : '${renglon.colaborador.nombre} tiene registrados '
+                      '${Fmt.money(actual.monto)} '
+                      '${actual.periodo.label.toLowerCase()}es '
+                      '(${Fmt.money(actual.salarioDia ?? 0)}/día).',
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Aquí le pusiste ${Fmt.money(sueldo.monto)} '
+              '${sueldo.periodo.label.toLowerCase()}es '
+              '(${Fmt.money(diario)}/día).',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Si lo guardas, su sueldo cambia en el sistema y la nómina y las '
+              'proyecciones siguientes lo usarán. Las semanas ya capturadas no '
+              'se mueven.',
+              style: Theme.of(ctx)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: c.textMuted),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Solo en esta proyección')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Actualizar su ficha')),
+        ],
+      ),
+    );
+    if (guardar != true || !mounted) return;
+
+    await ref.read(colaboradorRepositoryProvider).upsertSueldo(
+          db.ColaboradorSueldoCompanion(
+            colaboradorId: Value(renglon.colaborador.id),
+            salarioPersonalizado: Value(diario),
+            periodoPago: Value(sueldo.periodo.code),
+            salarioPeriodo: Value(sueldo.monto),
+            diasSemana: Value(sueldo.diasSemana),
+          ),
+        );
+    if (mounted) {
+      showAppSnack(context,
+          'Sueldo actualizado en la ficha de ${renglon.colaborador.nombre}.');
+    }
+  }
+
+  /// Convierte una plaza en una persona de verdad.
+  ///
+  /// Es la única puerta entre la hipótesis y el catálogo, y hay que tocarla a
+  /// propósito. El escenario conserva los días y los ajustes: se sustituye el
+  /// id de la plaza por el del colaborador nuevo en todo el escenario, en vez de
+  /// quitar la plaza y agregar a alguien desde cero.
+  Future<void> _darDeAlta(PlazaProyectada plaza) async {
+    final nombre = await _pedirNombreReal(plaza.etiqueta);
+    if (nombre == null || !mounted) return;
+
+    final repo = ref.read(colaboradorRepositoryProvider);
+    final nuevoId = await repo.crearDesdePlaza(
+      nombre: nombre,
+      puestoId: plaza.puestoId,
+      salarioDia: plaza.salarioDia,
+      periodo: plaza.sueldo.periodo,
+      montoPeriodo: plaza.sueldo.monto,
+      diasSemana: plaza.sueldo.diasSemana,
+      obraId: plaza.obraId,
+    );
+
+    if (!mounted) return;
+    final notifier = ref.read(proyeccionEstadoProvider.notifier);
+    notifier.sustituirPlazaPorColaborador(plaza.id, nuevoId);
+    Navigator.pop(context);
+    showAppSnack(context, '$nombre quedó dado de alta y sigue en la proyección.');
+  }
+
+  Future<String?> _pedirNombreReal(String sugerido) async {
+    final ctrl = TextEditingController();
+    final nombre = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Dar de alta al colaborador'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('«$sugerido» pasa a ser una persona del equipo. ¿Cómo se llama?',
+                style: Theme.of(ctx).textTheme.bodySmall),
+            const SizedBox(height: 10),
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(labelText: 'Nombre completo'),
+              onSubmitted: (v) => Navigator.pop(ctx, v),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancelar')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, ctrl.text),
+              child: const Text('Dar de alta')),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    final limpio = nombre?.trim();
+    return (limpio == null || limpio.isEmpty) ? null : limpio;
+  }
+
+    void _tocarDia(ProyeccionRenglon renglon, CeldaDia celda) {
     if (celda.prestado) {
       // Se abre el desplegable de préstamos en vez de avisar con un snack: un
       // snack aparece DEBAJO de esta hoja y no se vería. Además lleva a la
@@ -779,7 +1061,10 @@ class _BotonMonto extends StatelessWidget {
 
   final double valor;
   final Color color;
-  final VoidCallback onTap;
+
+  /// `null` deja el botón inerte: es lo que hace una proyección abierta solo
+  /// para consultar.
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
