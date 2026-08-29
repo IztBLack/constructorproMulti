@@ -119,16 +119,19 @@ class AjusteProyeccion {
             : 'PARTES_IGUALES',
       };
 
+  /// Tolerante a valores mal tipados: ver la nota de `ProyeccionEstado.fromJson`.
+  /// El `id` sí es obligatorio, y quien llama salta el ajuste que no lo traiga.
   factory AjusteProyeccion.fromJson(Map<String, Object?> json) =>
       AjusteProyeccion(
         id: json['id'] as String,
-        tipo: tipoAjusteFromCode(json['tipo'] as String?),
+        tipo: tipoAjusteFromCode(
+            json['tipo'] is String ? json['tipo'] as String : null),
         destino: json['destino'] == 'CUADRILLA'
             ? DestinoAjuste.cuadrilla
             : DestinoAjuste.colaborador,
-        destinoId: (json['destinoId'] as String?) ?? '',
-        monto: (json['monto'] as num?)?.toDouble() ?? 0,
-        nota: (json['nota'] as String?) ?? '',
+        destinoId: json['destinoId'] is String ? json['destinoId'] as String : '',
+        monto: json['monto'] is num ? (json['monto'] as num).toDouble() : 0,
+        nota: json['nota'] is String ? json['nota'] as String : '',
         reparto: json['reparto'] == 'A_LA_CUADRILLA'
             ? RepartoAjuste.aLaCuadrilla
             : RepartoAjuste.partesIguales,
@@ -211,11 +214,14 @@ class SueldoProyectado {
         'diasSemana': diasSemana,
       };
 
+  /// Tolerante a valores mal tipados: ver la nota de `ProyeccionEstado.fromJson`.
   factory SueldoProyectado.fromJson(Map<String, Object?> json) =>
       SueldoProyectado(
-        periodo: periodoPagoFromCode(json['periodo'] as String?),
-        monto: (json['monto'] as num?)?.toDouble() ?? 0,
-        diasSemana: (json['diasSemana'] as num?)?.toInt() ?? 6,
+        periodo: periodoPagoFromCode(
+            json['periodo'] is String ? json['periodo'] as String : null),
+        monto: json['monto'] is num ? (json['monto'] as num).toDouble() : 0,
+        diasSemana:
+            json['diasSemana'] is num ? (json['diasSemana'] as num).toInt() : 6,
       );
 }
 
@@ -313,15 +319,20 @@ class PlazaProyectada {
         'sueldo': sueldo.toJson(),
       };
 
+  /// Tolerante a valores mal tipados: ver la nota de `ProyeccionEstado.fromJson`.
+  /// El `id` sí es obligatorio, y quien llama salta la plaza que no lo traiga.
   factory PlazaProyectada.fromJson(Map<String, Object?> json) =>
       PlazaProyectada(
         id: json['id'] as String,
-        etiqueta: (json['etiqueta'] as String?) ?? 'Plaza',
-        puestoId: (json['puestoId'] as String?) ?? '',
-        obraId: json['obraId'] as String?,
-        cuadrillaId: json['cuadrillaId'] as String?,
+        etiqueta: json['etiqueta'] is String ? json['etiqueta'] as String : 'Plaza',
+        puestoId: json['puestoId'] is String ? json['puestoId'] as String : '',
+        obraId: json['obraId'] is String ? json['obraId'] as String : null,
+        cuadrillaId:
+            json['cuadrillaId'] is String ? json['cuadrillaId'] as String : null,
         sueldo: SueldoProyectado.fromJson(
-            (json['sueldo'] as Map?)?.cast<String, Object?>() ?? const {}),
+            json['sueldo'] is Map
+                ? (json['sueldo'] as Map).cast<String, Object?>()
+                : const {}),
       );
 }
 
@@ -769,46 +780,63 @@ class ProyeccionEstado {
   /// Reconstruye un escenario guardado. Tolerante a llaves faltantes: un
   /// escenario de una versión anterior tiene que abrir, no reventar.
   factory ProyeccionEstado.fromJson(Map<String, Object?> json) {
+    // Tolerante a llaves faltantes Y a valores mal tipados. Lo segundo dejó de
+    // ser teórico al aparecer un SEGUNDO escritor: la web serializa desde
+    // JavaScript, donde un `undefined` se convierte en `null` sin que nadie se
+    // entere. Antes, un `null` dentro de `destajo` no rompía esa proyección: se
+    // llevaba por delante la pantalla ENTERA de proyecciones guardadas, porque
+    // el `as num` lanzaba al construir la lista.
+    //
+    // La regla es SALTAR lo que no se entiende, no sustituirlo por un default:
+    // en una raya, una cifra ausente se ve; una cifra inventada, no.
     Map<String, Object?> mapa(Object? v) =>
-        (v as Map?)?.cast<String, Object?>() ?? const {};
+        v is Map ? v.cast<String, Object?>() : const {};
+    List<Object?> lista(Object? v) => v is List ? v : const [];
 
     return ProyeccionEstado(
       lunesMillis: (json['lunes'] as num?)?.toInt() ?? 0,
       participantes: [
-        for (final p in (json['participantes'] as List?) ?? const []) p as String,
+        for (final p in lista(json['participantes']))
+          if (p is String) p,
       ],
       diasProyectados: {
         for (final e in mapa(json['dias']).entries)
           e.key: {
-            for (final d in (e.value as List?) ?? const []) (d as num).toInt(),
+            for (final d in lista(e.value))
+              if (d is num) d.toInt(),
           },
       },
       destajoEstimado: {
         for (final e in mapa(json['destajo']).entries)
-          e.key: (e.value as num).toDouble(),
+          if (e.value is num) e.key: (e.value as num).toDouble(),
       },
       salarioOverride: {
         for (final e in mapa(json['salario']).entries)
-          e.key: (e.value as num).toDouble(),
+          if (e.value is num) e.key: (e.value as num).toDouble(),
       },
       sueldoOverride: {
         for (final e in mapa(json['sueldo']).entries)
           e.key: SueldoProyectado.fromJson(mapa(e.value)),
       },
       plazas: {
+        // Sin `id` de texto no hay plaza que reconstruir: `PlazaProyectada`
+        // lo exige y lanzaría.
         for (final e in mapa(json['plazas']).entries)
-          e.key: PlazaProyectada.fromJson(mapa(e.value)),
+          if (mapa(e.value)['id'] is String)
+            e.key: PlazaProyectada.fromJson(mapa(e.value)),
       },
       ajustes: [
-        for (final a in (json['ajustes'] as List?) ?? const [])
-          AjusteProyeccion.fromJson(mapa(a)),
+        // Mismo motivo que las plazas: `AjusteProyeccion` exige `id`.
+        for (final a in lista(json['ajustes']))
+          if (mapa(a)['id'] is String) AjusteProyeccion.fromJson(mapa(a)),
       ],
       simularCompleta: json['simular'] == true,
       obraPorDia: {
         for (final e in mapa(json['obraPorDia']).entries)
           e.key: {
             for (final d in mapa(e.value).entries)
-              (int.tryParse(d.key) ?? -1): d.value as String,
+              if (d.value is String)
+                (int.tryParse(d.key) ?? -1): d.value as String,
           }..removeWhere((k, _) => k < 0),
       },
       redondeo: RedondeoConfig.fromJson(mapa(json['redondeo'])),

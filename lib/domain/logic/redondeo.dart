@@ -204,13 +204,19 @@ class RedondeoConfig {
         'campos': campos.map((c) => c.code).toList(),
       };
 
+  /// Tolerante a valores mal tipados, no solo a llaves faltantes: desde que la
+  /// web escribe escenarios hay dos serializadores, y un `paso` que llegue como
+  /// texto no puede tumbar la lista entera de proyecciones guardadas.
   factory RedondeoConfig.fromJson(Map<String, Object?> json) => RedondeoConfig(
         activo: json['activo'] == true,
-        paso: (json['paso'] as num?)?.toDouble() ?? 1,
-        modo: modoRedondeoFromCode(json['modo'] as String?),
+        paso: json['paso'] is num ? (json['paso'] as num).toDouble() : 1,
+        modo: modoRedondeoFromCode(
+            json['modo'] is String ? json['modo'] as String : null),
         campos: {
-          for (final c in (json['campos'] as List?) ?? const [])
-            ?campoRedondeoFromCode(c as String?),
+          for (final c in (json['campos'] is List
+              ? json['campos'] as List
+              : const []))
+            if (c is String) ?campoRedondeoFromCode(c),
         },
       );
 }

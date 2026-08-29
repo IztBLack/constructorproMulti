@@ -1,0 +1,84 @@
+{
+  "v": 1,
+  "lunes": 1787356800000,
+  "participantes": ["c-adrian", "c-camilo", "plaza:pl-1"],
+  "dias": {
+    "c-adrian": [0, 1, 2, 3, 4, 5],
+    "c-camilo": [0, 1, 2],
+    "plaza:pl-1": [0, 1, 2, 3, 4, 5]
+  },
+  "destajo": {
+    "c-adrian": 1500.5
+  },
+  "salario": {
+    "c-camilo": 620.75
+  },
+  "sueldo": {
+    "c-adrian": {
+      "periodo": "SEMANAL",
+      "monto": 3800,
+      "diasSemana": 6
+    },
+    "c-camilo": {
+      "periodo": "QUINCENAL",
+      "monto": 7600,
+      "diasSemana": 5
+    }
+  },
+  "plazas": {
+    "plaza:pl-1": {
+      "id": "plaza:pl-1",
+      "etiqueta": "Maestro 1",
+      "puestoId": "pu-maestro",
+      "obraId": "o-boticaria",
+      "cuadrillaId": null,
+      "sueldo": {
+        "periodo": "MENSUAL",
+        "monto": 15600,
+        "diasSemana": 7
+      }
+    }
+  },
+  "ajustes": [
+    {
+      "id": "aj-1",
+      "tipo": "DESTAJO",
+      "destino": "COLABORADOR",
+      "destinoId": "c-adrian",
+      "monto": 900.25,
+      "nota": "Pretil",
+      "reparto": "PARTES_IGUALES"
+    },
+    {
+      "id": "aj-2",
+      "tipo": "ANTICIPO",
+      "destino": "CUADRILLA",
+      "destinoId": "cu-martin",
+      "monto": 2000,
+      "nota": "Adelanto del viernes",
+      "reparto": "A_LA_CUADRILLA"
+    },
+    {
+      "id": "aj-3",
+      "tipo": "DESCUENTO",
+      "destino": "COLABORADOR",
+      "destinoId": "c-camilo",
+      "monto": 350,
+      "nota": "",
+      "reparto": "PARTES_IGUALES"
+    }
+  ],
+  "simular": true,
+  "obraPorDia": {
+    "c-camilo": {
+      "0": "o-boticaria",
+      "1": "o-costa-verde"
+    }
+  },
+  "redondeo": {
+    "activo": true,
+    "paso": 50,
+    "modo": "ARRIBA",
+    "campos": ["RAYA", "TOTAL"]
+  }
+}
