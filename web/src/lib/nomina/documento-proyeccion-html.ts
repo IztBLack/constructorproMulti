@@ -12,6 +12,7 @@
 
 import { esc, envolverDocumento, type OpcionesDocumento } from '@/lib/pdf/documento-base';
 import { ETIQUETA_AJUSTE, type ProyeccionResultado } from '@/lib/data/proyeccion-nomina';
+import type { VistaRedondeada } from '@/lib/data/redondeo';
 
 const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
@@ -50,11 +51,15 @@ export function construirProyeccionDocumentoHtml(p: {
   rangoSemana: string;
   obraNombre: string | null;
   resultado: ProyeccionResultado;
+  /// El mismo resultado visto a través del redondeo. El papel imprime lo que
+  /// enseña la pantalla: un PDF que redondea distinto son dos cifras para la
+  /// misma semana, y la que se lleva la gente es la del papel.
+  vista: VistaRedondeada;
   nombreObra: Record<string, string>;
   pdf: OpcionesDocumento;
   moneda: (v: number) => string;
 }): string {
-  const { resultado: r, moneda } = p;
+  const { resultado: r, vista, moneda } = p;
 
   const filas = r.renglones
     .map((ren) => {
@@ -69,11 +74,11 @@ export function construirProyeccionDocumentoHtml(p: {
       return `<tr>
         <td>${esc(ren.colaborador.nombre)}</td>
         <td>${esc(ren.esDestajista ? 'A destajo' : ren.puestoNombre)}</td>
-        <td class="n">${ren.esDestajista ? '' : moneda(ren.salarioDia)}</td>
+        <td class="n">${ren.esDestajista ? '' : moneda(vista.salarioDia(ren).mostrado)}</td>
         ${dias}
         <td class="n">${ren.esDestajista ? '' : ren.diasTotales}</td>
         <td class="n">${ren.ajustes !== 0 ? moneda(ren.ajustes) : ''}</td>
-        <td class="n">${moneda(ren.total)}</td>
+        <td class="n">${moneda(vista.raya(ren).mostrado)}</td>
       </tr>`;
     })
     .join('\n');
@@ -112,9 +117,9 @@ export function construirProyeccionDocumentoHtml(p: {
   </div>
 
   <div class="resumen">
-    <div>Raya proyectada<b>${moneda(r.total)}</b></div>
-    <div>En firme<b>${moneda(r.totalCapturado)}</b></div>
-    <div>Estimado<b>${moneda(r.totalProyectado)}</b></div>
+    <div>Raya proyectada<b>${moneda(vista.total.mostrado)}</b></div>
+    <div>En firme<b>${moneda(vista.totalCapturado.mostrado)}</b></div>
+    <div>Estimado<b>${moneda(vista.totalProyectado.mostrado)}</b></div>
     <div>Días-hombre<b>${r.diasHombre}</b></div>
     <div>Personas<b>${r.personas}</b></div>
   </div>
@@ -141,12 +146,12 @@ export function construirProyeccionDocumentoHtml(p: {
         ${r.totalPorDia
           .map(
             (m, i) =>
-              `<td class="c">${r.personasPorDia[i] === 0 ? '' : moneda(m)}</td>`,
+              `<td class="c">${r.personasPorDia[i] === 0 ? '' : moneda(vista.costoDia(i).mostrado)}</td>`,
           )
           .join('')}
         <td class="n">${r.diasHombre}</td>
         <td class="n">${r.totalAjustes !== 0 ? moneda(r.totalAjustes) : ''}</td>
-        <td class="n">${moneda(r.total)}</td>
+        <td class="n">${moneda(vista.total.mostrado)}</td>
       </tr>
     </tfoot>
   </table>
@@ -155,7 +160,19 @@ export function construirProyeccionDocumentoHtml(p: {
     X = asistió (ya capturado) · F = faltó (ya capturado) · o = se espera que asista
     · P = ese día se va prestado a otra obra · . = no cuenta.
     Los días prestados no suman a la obra de este documento.
-  </p>`;
+  </p>
+  ${
+    // Con redondeo, el papel DICE con qué regla. Un documento que enseña cifras
+    // ajustadas sin declararlo invita a que alguien las sume por su cuenta y no
+    // le cuadren.
+    vista.activo
+      ? `<p class="nota">${esc(vista.leyenda)}${
+          vista.totalCuadra
+            ? ''
+            : ' El total se redondea por encima de rayas ya redondeadas, así que no es exactamente su suma.'
+        }</p>`
+      : ''
+  }`;
 
   return envolverDocumento({
     titulo: 'Proyección de nómina',

@@ -16,8 +16,10 @@ import {
   fechaDelDia,
   participantesDeObra,
   obraBaseEfectiva,
-  type ProyeccionEstado,
+  plazasComoColaboradores,
 } from '@/lib/data/proyeccion-nomina';
+import { deserializarEscenario } from '@/lib/data/proyeccion-contrato';
+import { vistaRedondeada } from '@/lib/data/redondeo';
 import { cargarDatosProyeccion } from '@/lib/data/proyeccion-nomina-server';
 import { puedeVerSueldos } from '@/lib/auth/sueldos';
 import { construirProyeccionDocumentoHtml } from '@/lib/nomina/documento-proyeccion-html';
@@ -29,26 +31,6 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-/// Valida lo que llega por la red. Un escenario mal formado no debe reventar el
-/// render ni colarse como `any` hasta el cálculo.
-function leerEstado(x: unknown): ProyeccionEstado | null {
-  if (typeof x !== 'object' || x === null) return null;
-  const e = x as Record<string, unknown>;
-  if (typeof e.lunesMs !== 'number' || !Number.isFinite(e.lunesMs)) return null;
-  if (!Array.isArray(e.participantes)) return null;
-  const mapa = (v: unknown) => (typeof v === 'object' && v !== null ? v : {});
-  return {
-    lunesMs: e.lunesMs,
-    participantes: e.participantes.filter((p): p is string => typeof p === 'string'),
-    diasProyectados: mapa(e.diasProyectados) as Record<string, number[]>,
-    destajoEstimado: mapa(e.destajoEstimado) as Record<string, number>,
-    salarioOverride: mapa(e.salarioOverride) as Record<string, number>,
-    ajustes: Array.isArray(e.ajustes) ? e.ajustes : [],
-    simularCompleta: e.simularCompleta === true,
-    obraPorDia: mapa(e.obraPorDia) as Record<string, Record<number, string>>,
-    obraBase: mapa(e.obraBase) as Record<string, string>,
-  } as ProyeccionEstado;
-}
 
 function rangoTexto(lunesMs: number): string {
   const l = partesTz(lunesMs);
@@ -80,8 +62,13 @@ export async function POST(request: NextRequest) {
   }
 
   const payload = cuerpo as { estado?: unknown; obraFiltro?: unknown };
-  const estado = leerEstado(payload.estado);
-  if (!estado) {
+  // Un solo lector, el mismo que abre las proyecciones guardadas: tolerante a
+  // llaves faltantes y a valores mal tipados, y probado contra el fixture que
+  // comparten las dos plataformas. El lector a mano que vivía aquí se quedó sin
+  // `plazas`, `sueldoOverride` ni `redondeo` cuando aparecieron, y un `as` lo
+  // dejó compilar en silencio: el papel salía sin las plazas y sin redondear.
+  const estado = deserializarEscenario(payload.estado);
+  if (!Number.isFinite(estado.lunesMs) || estado.lunesMs <= 0) {
     return NextResponse.json({ error: 'Escenario inválido.' }, { status: 400 });
   }
   const obraFiltro =
@@ -99,7 +86,9 @@ export async function POST(request: NextRequest) {
       ...estado,
       participantes: participantesDeObra(estado, obraDe, obraFiltro),
     },
-    colaboradores: datos.colaboradores,
+    // Las plazas van disfrazadas de colaborador, igual que en la pantalla: sin
+    // esto el papel no las imprime y su costo desaparece del total.
+    colaboradores: [...datos.colaboradores, ...plazasComoColaboradores(estado)],
     puestos: datos.puestos,
     asistenciasReales: datos.asistencias,
     destajosReales: datos.destajos,
@@ -117,6 +106,9 @@ export async function POST(request: NextRequest) {
 
   const html = construirProyeccionDocumentoHtml({
     empresa,
+    // El papel imprime lo MISMO que la pantalla, y dice con qué regla. Un PDF
+    // que redondea distinto a la pantalla es dos cifras para la misma semana.
+    vista: vistaRedondeada(resultado, estado.redondeo),
     rangoSemana: rangoTexto(estado.lunesMs),
     obraNombre: obraFiltro ? datos.nombreObra[obraFiltro] ?? null : null,
     resultado,

@@ -27,6 +27,7 @@ import { abrirProyeccion } from './actions';
 import { ProyeccionesGuardadas } from './proyecciones-guardadas';
 import type { ProyeccionResumen } from '@/lib/data/proyeccion-guardada';
 import { FOCO } from './estilos';
+import { serializarEscenario } from '@/lib/data/proyeccion-contrato';
 import { ModalRedondeo } from './modal-redondeo';
 import { ModalAgregarMasivo } from './modal-agregar-masivo';
 import { fueRedondeado, resumenCorto, vistaRedondeada } from '@/lib/data/redondeo';
@@ -522,7 +523,14 @@ export function TablaProyeccion(props: Props) {
       const res = await fetch('/admin/proyeccion/pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ estado, obraFiltro: obraFiltro || null }),
+        // Se manda SERIALIZADO, con el mismo formato que la columna guardada:
+        // asi el servidor lo lee con `deserializarEscenario`, que ya esta
+        // probado, en vez de con un segundo lector escrito a mano —que fue
+        // justo como el PDF se quedo sin plazas ni redondeo.
+        body: JSON.stringify({
+          estado: serializarEscenario(estado),
+          obraFiltro: obraFiltro || null,
+        }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({ error: 'No se pudo generar el PDF.' }));

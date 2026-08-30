@@ -164,6 +164,11 @@ export interface VistaRedondeada {
   subtotalDe: (renglones: ProyeccionRenglon[]) => MontoMostrado;
   costoDia: (indice: number) => MontoMostrado;
   total: MontoMostrado;
+  /// Las dos mitades del total: lo ya capturado y lo que se espera. Siguen la
+  /// MISMA regla que el total, porque se imprimen a su lado: una cifra grande
+  /// redondeada junto a dos exactas se lee como un error de suma.
+  totalCapturado: MontoMostrado;
+  totalProyectado: MontoMostrado;
   /// ¿El total que se enseña es exactamente la suma de los renglones que se
   /// enseñan? Deja de serlo cuando se redondea el total POR ENCIMA de rayas ya
   /// redondeadas, y entonces la pantalla tiene que decirlo.
@@ -258,6 +263,14 @@ export function vistaRedondeada(
 
   return {
     activo: config.activo,
+    totalCapturado: {
+      exacto: resultado.totalCapturado,
+      mostrado: aplicar(config, resultado.totalCapturado, 'TOTAL'),
+    },
+    totalProyectado: {
+      exacto: resultado.totalProyectado,
+      mostrado: aplicar(config, resultado.totalProyectado, 'TOTAL'),
+    },
     salarioDia,
     raya,
     subtotalDe,

@@ -201,24 +201,33 @@ antes de que exista la pantalla que los edita.
 Nada de esto se ve en pantalla. Es lo que hace que las fases 2–4 no puedan
 divergir en silencio.
 
-### Fase 2 · La web lee
+### Fase 2 · La web lee · ✅ **HECHA**
 
 Lista de escenarios guardados y abrir para consultar. Solo lectura: la web
 empieza leyendo lo que la tableta guardó, que es el sentido natural (se arma en
 la obra, se revisa en la oficina). Sin UI de escritura no hay forma de corromper
 nada mientras se valida el contrato con datos reales.
 
-### Fase 3 · La web escribe · *y el móvil empuja*
+### Fase 3 · La web escribe · ✅ **HECHA** *(y el móvil ya empuja)*
 
 Guardar, guardar como, duplicar, renombrar, eliminar. Aquí entra la línea de
 `SyncService.pushOrder` en el móvil: es el momento en que el ida y vuelta se
 cierra de verdad.
 
-### Fase 4 · Las funciones que faltan
+### Fase 4 · Las funciones que faltan · ✅ **HECHA**
 
-Plazas, redondeo, sueldo por periodo y alta masiva en la UI de la web. Va al
+Plazas, redondeo, sueldo por periodo y alta masiva en la UI de la web. Fue al
 final a propósito: son las cuatro que **más código** piden y **menos riesgo**
-tienen: si una sale mal, se ve en pantalla. Las de antes fallan calladas.
+tienen —si una sale mal, se ve en pantalla; las de antes fallan calladas.
+
+Y una que no estaba en la lista: **el PDF**. La ruta tenía su propio lector del
+escenario, escrito a mano, que se quedó sin `plazas`, `sueldoOverride` ni
+`redondeo` cuando aparecieron; un `as ProyeccionEstado` lo dejó compilar en
+silencio. El papel salía **sin las plazas y sin redondear**: un número distinto
+al de la pantalla, y el que se lleva la gente es el del papel. Ahora el cliente
+manda el escenario serializado y la ruta lo lee con `deserializarEscenario`, el
+mismo lector probado contra el fixture compartido. Un segundo lector escrito a
+mano fue exactamente el problema.
 
 ---
 
