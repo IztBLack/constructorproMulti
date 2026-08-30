@@ -20,7 +20,8 @@
 
 
 import { calcularNomina } from './nomina-calculo';
-import type { Asistencia, Colaborador, Destajo, Puesto } from './types';
+import type { Asistencia, Colaborador, Destajo, PeriodoPago, Puesto } from './types';
+import { salarioDiarioDesdePeriodo } from './salario';
 import { partesTz, medianocheMx, sumarDiasCalendario } from './tz';
 
 // Los permisos viven en `lib/auth/sueldos.ts`: gobiernan también la nómina, que
@@ -95,7 +96,11 @@ export interface AjusteProyeccion {
 // Sueldo capturado, plazas y redondeo
 // ═══════════════════════════════════════════════════════════════════════════
 
-export type PeriodoPago = 'SEMANAL' | 'QUINCENAL' | 'MENSUAL';
+/// `PeriodoPago` NO se redefine aquí: vive en `./types` desde que existe el
+/// sueldo por periodo en el catálogo, y tener dos definiciones del mismo
+/// concepto es como empiezan a separarse. Se reexporta para que quien use el
+/// escenario no tenga que importarlo de dos sitios.
+export type { PeriodoPago } from './types';
 export type ModoRedondeo = 'CERCANO' | 'ARRIBA' | 'ABAJO';
 export type CampoRedondeo = 'SALARIO_DIA' | 'RAYA' | 'SUBTOTALES' | 'TOTAL';
 
@@ -131,6 +136,48 @@ export interface PlazaProyectada {
   obraId: string | null;
   cuadrillaId: string | null;
   sueldo: SueldoProyectado;
+}
+
+/// El colaborador SINTÉTICO que ve el calculador.
+///
+/// Una plaza no existe en el catálogo, pero dentro del escenario tiene que
+/// comportarse como una persona más: días, sueldo, obra y ajustes. En vez de
+/// enseñarle al calculador qué es una plaza —y arriesgar que la trate distinto
+/// en alguno de los sitios donde recorre gente—, la plaza se disfraza de
+/// colaborador y el calculador no se entera. Espeja `comoColaborador` del móvil.
+///
+/// Quien llama a `calcularProyeccion` tiene que meterlas en `colaboradores`:
+/// el calculador solo arma renglones de los participantes que encuentra ahí.
+export function plazaComoColaborador(plaza: PlazaProyectada): Colaborador {
+  return {
+    id: plaza.id,
+    empresa_id: '',
+    nombre: plaza.etiqueta,
+    puesto_id: plaza.puestoId || null,
+    tipo_pago: 'DIA',
+    telefono: null,
+    contacto_nombre: null,
+    contacto_telefono: null,
+    contacto_parentesco: null,
+    activo: true,
+    salario_personalizado: salarioDiarioDesdePeriodo(
+      plaza.sueldo.monto,
+      plaza.sueldo.periodo,
+      plaza.sueldo.diasSemana,
+    ),
+    periodo_pago: plaza.sueldo.periodo,
+    salario_periodo: plaza.sueldo.monto,
+    dias_semana: plaza.sueldo.diasSemana,
+    created_at: 0,
+    updated_at: 0,
+    server_updated_at: null,
+    deleted_at: null,
+  };
+}
+
+/// Las plazas del escenario, ya disfrazadas, para concatenar al catálogo.
+export function plazasComoColaboradores(estado: ProyeccionEstado): Colaborador[] {
+  return Object.values(estado.plazas).map(plazaComoColaborador);
 }
 
 /// Redondeo de presentación: no cambia lo capturado, ajusta cómo se enseña.
@@ -257,6 +304,105 @@ export function sinParticipante(
     ajustes: estado.ajustes.filter(
       (a) => !(a.destino === 'COLABORADOR' && a.destinoId === colaboradorId),
     ),
+  };
+}
+
+/// Guarda el sueldo capturado y, con él, el diario que consume el cálculo.
+///
+/// Se escriben SIEMPRE los dos. Separarlos es la manera segura de que un día
+/// queden en desacuerdo y la ficha enseñe $3,600 semanales mientras la tabla
+/// cobra un diario viejo. Espeja `ProyeccionEstado.conSueldo` del móvil.
+export function conSueldo(
+  estado: ProyeccionEstado,
+  colaboradorId: string,
+  sueldo: SueldoProyectado | null,
+): ProyeccionEstado {
+  const sueldoOverride = { ...estado.sueldoOverride };
+  const salarioOverride = { ...estado.salarioOverride };
+  const plazas = { ...estado.plazas };
+
+  if (sueldo === null) {
+    delete sueldoOverride[colaboradorId];
+    delete salarioOverride[colaboradorId];
+  } else {
+    sueldoOverride[colaboradorId] = sueldo;
+    const diario = salarioDiarioDesdePeriodo(
+      sueldo.monto,
+      sueldo.periodo,
+      sueldo.diasSemana,
+    );
+    if (diario === null) delete salarioOverride[colaboradorId];
+    else salarioOverride[colaboradorId] = diario;
+
+    // Si es una plaza, su ficha lleva el mismo sueldo: son la misma cosa vista
+    // desde dos sitios, y dejarlas separadas las desincroniza al guardar.
+    const plaza = plazas[colaboradorId];
+    if (plaza) plazas[colaboradorId] = { ...plaza, sueldo };
+  }
+
+  return { ...estado, sueldoOverride, salarioOverride, plazas };
+}
+
+/// Da de alta N plazas de un puesto y las mete al escenario con sus días.
+///
+/// La numeración mira las que YA existen del mismo puesto para no repetir
+/// «Maestro 1» dos veces: la lista dejaría de poder distinguirlas.
+export function conPlazas(
+  estado: ProyeccionEstado,
+  params: {
+    puestoId: string;
+    puestoNombre: string;
+    cuantas: number;
+    sueldo: SueldoProyectado;
+    obraId: string | null;
+    cuadrillaId?: string | null;
+    dias: number[];
+  },
+): { estado: ProyeccionEstado; nuevas: PlazaProyectada[] } {
+  const { puestoId, puestoNombre, cuantas, sueldo, obraId, dias } = params;
+  const usadas = Object.values(estado.plazas).filter((p) => p.puestoId === puestoId).length;
+
+  let siguiente = { ...estado };
+  const nuevas: PlazaProyectada[] = [];
+
+  for (let i = 0; i < Math.max(0, cuantas); i++) {
+    const id = `${PREFIJO_PLAZA}${crypto.randomUUID()}`;
+    const plaza: PlazaProyectada = {
+      id,
+      etiqueta: `${puestoNombre} ${usadas + i + 1}`,
+      puestoId,
+      obraId,
+      cuadrillaId: params.cuadrillaId ?? null,
+      sueldo,
+    };
+    nuevas.push(plaza);
+    siguiente = {
+      ...siguiente,
+      participantes: [...siguiente.participantes, id],
+      diasProyectados: { ...siguiente.diasProyectados, [id]: [...dias].sort((a, b) => a - b) },
+      plazas: { ...siguiente.plazas, [id]: plaza },
+      obraBase: obraId
+        ? { ...siguiente.obraBase, [id]: obraId }
+        : siguiente.obraBase,
+    };
+    siguiente = conSueldo(siguiente, id, sueldo);
+  }
+
+  return { estado: siguiente, nuevas };
+}
+
+/// Cambia la etiqueta de una plaza. NO le mueve el sueldo: renombrar es
+/// renombrar, y que de paso se recalculara algo sería una sorpresa cara.
+export function conEtiquetaDePlaza(
+  estado: ProyeccionEstado,
+  plazaId: string,
+  etiqueta: string,
+): ProyeccionEstado {
+  const plaza = estado.plazas[plazaId];
+  if (!plaza) return estado;
+  return {
+    ...estado,
+    plazas: { ...estado.plazas, [plazaId]: { ...plaza, etiqueta: etiqueta.trim() || plaza.etiqueta } },
   };
 }
 

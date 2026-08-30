@@ -8,7 +8,9 @@ import {
   signoAjuste,
   type AjusteProyeccion,
   type ProyeccionRenglon,
+  type SueldoProyectado,
 } from '@/lib/data/proyeccion-nomina';
+import { EditorSueldo } from './editor-sueldo';
 
 const DIAS_LARGOS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -28,8 +30,12 @@ interface Props {
   /// `obraId === null` devuelve el día a su obra base.
   onMoverDia: (dia: number, obraId: string | null) => void;
   onAlternarDia: (dia: number) => void;
-  /// `null` restablece el salario del puesto.
-  onSalario: (valor: number | null) => void;
+  /// El sueldo CAPTURADO en el escenario, si lo hay. `null` = usa el del
+  /// catálogo o el del puesto.
+  sueldo: SueldoProyectado | null;
+  /// Guarda el sueldo capturado; `null` restablece el del puesto. Escribe
+  /// también el diario derivado, que es lo que consume el cálculo.
+  onSueldo: (sueldo: SueldoProyectado | null) => void;
   onDestajo: (valor: number) => void;
   onSimularCompleta: (valor: boolean) => void;
   onNuevoAjuste: () => void;
@@ -54,7 +60,6 @@ export function FichaPersona(props: Props) {
     simularCompleta,
   } = props;
 
-  const [salario, setSalario] = useState(String(r.salarioDia));
   const [destajo, setDestajo] = useState(String(r.destajo));
   const [avisoBloqueado, setAvisoBloqueado] = useState<number[]>([]);
 
@@ -168,25 +173,28 @@ export function FichaPersona(props: Props) {
               )}
             </>
           ) : (
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                type="number"
-                value={salario}
-                min={0}
-                step={10}
-                onChange={(e) => setSalario(e.target.value)}
-                // Se guarda al SALIR del campo, no en cada tecla: al seleccionar
-                // todo y teclear, un `onChange` deja el salario en 0 por un
-                // instante y el gran total se desploma a media captura.
-                onBlur={() => props.onSalario(Math.abs(Number(salario) || 0))}
-                className="w-32 rounded-lg border border-neutral-300 px-3 py-2 text-right tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
-                aria-label={`Salario por día de ${r.colaborador.nombre}`}
+            <div className="space-y-2">
+              {/* Se captura el sueldo del PERIODO y el diario se deriva. Antes se
+                  tecleaba el diario a mano, y al reabrir la ficha no había forma
+                  de saber si $600 venían de $3,600 semanales o de $15,600
+                  mensuales. */}
+              <EditorSueldo
+                valor={
+                  props.sueldo ?? {
+                    periodo: r.colaborador.periodo_pago,
+                    monto:
+                      r.colaborador.salario_periodo ??
+                      r.salarioDia * (r.colaborador.dias_semana || 6),
+                    diasSemana: r.colaborador.dias_semana || 6,
+                  }
+                }
+                onCambiar={props.onSueldo}
               />
               {tieneSalarioPropio && (
                 <button
                   type="button"
                   onClick={() => {
-                    props.onSalario(null);
+                    props.onSueldo(null);
                     props.onCerrar();
                   }}
                   className="min-h-9 rounded-lg px-2 text-sm text-neutral-500 underline hover:text-neutral-900 outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"

@@ -11,11 +11,15 @@ import {
   fechaDelDia,
   indiceDiaSemana,
   obraBaseEfectiva,
+  conPlazas,
+  conSueldo,
+  plazasComoColaboradores,
   participantesDeObra,
   sinParticipante,
   type AjusteProyeccion,
   type DestinoAjuste,
   type ProyeccionEstado,
+  type SueldoProyectado,
 } from '@/lib/data/proyeccion-nomina';
 import type { Asistencia, Colaborador, Destajo, Puesto } from '@/lib/data/types';
 import { medianocheMx, partesTz, sumarDiasCalendario } from '@/lib/data/tz';
@@ -24,6 +28,7 @@ import { ProyeccionesGuardadas } from './proyecciones-guardadas';
 import type { ProyeccionResumen } from '@/lib/data/proyeccion-guardada';
 import { FOCO } from './estilos';
 import { ModalRedondeo } from './modal-redondeo';
+import { ModalAgregarMasivo } from './modal-agregar-masivo';
 import { fueRedondeado, resumenCorto, vistaRedondeada } from '@/lib/data/redondeo';
 import { FichaPersona } from './ficha-persona';
 import { GestorParticipantes } from './gestor-participantes';
@@ -118,6 +123,7 @@ export function TablaProyeccion(props: Props) {
   } | null>(null);
   const [guardadasAbierto, setGuardadasAbierto] = useState(false);
   const [redondeoAbierto, setRedondeoAbierto] = useState(false);
+  const [masivoAbierto, setMasivoAbierto] = useState(false);
   const [errorSesion, setErrorSesion] = useState<string | null>(null);
 
   const soloLectura = sesion?.soloLectura ?? false;
@@ -156,11 +162,19 @@ export function TablaProyeccion(props: Props) {
     [estado, obraFiltro, obraDe],
   );
 
+  /// El catálogo MÁS las plazas disfrazadas de colaborador. El calculador solo
+  /// arma renglones de los participantes que encuentra aquí, así que una plaza
+  /// que no se cuele en esta lista simplemente no existiría para el total.
+  const colaboradoresConPlazas = useMemo(
+    () => [...colaboradores, ...plazasComoColaboradores(estado)],
+    [colaboradores, estado],
+  );
+
   const resultado = useMemo(
     () =>
       calcularProyeccion({
         estado: { ...estado, participantes: participantesVisibles },
-        colaboradores,
+        colaboradores: colaboradoresConPlazas,
         puestos,
         asistenciasReales: asistencias,
         destajosReales: destajos,
@@ -171,7 +185,7 @@ export function TablaProyeccion(props: Props) {
     [
       estado,
       participantesVisibles,
-      colaboradores,
+      colaboradoresConPlazas,
       puestos,
       asistencias,
       destajos,
@@ -294,16 +308,6 @@ export function TablaProyeccion(props: Props) {
     }));
   }
 
-  function setSalario(colaboradorId: string, valor: number | null) {
-    setEstado((e) => ({
-      ...e,
-      salarioOverride:
-        valor === null
-          ? sinClave(e.salarioOverride, colaboradorId)
-          : { ...e.salarioOverride, [colaboradorId]: valor },
-    }));
-  }
-
   /// Presta (o devuelve) un día de una persona a otra obra.
   ///
   /// Mover un día lo marca además como asistido: si dices «el jueves se va a
@@ -389,6 +393,52 @@ export function TablaProyeccion(props: Props) {
       }
       return { ...e, diasProyectados: mapa };
     });
+  }
+
+  /// Aplica el carrito de la hoja masiva en UN solo cambio de estado.
+  ///
+  /// Uno y no N: si cada persona y cada plaza fuera su propio `setEstado`, el
+  /// «Deshacer» de quien se arrepiente tendría que tocarse siete veces para
+  /// revertir «cuatro maestros y tres ayudantes».
+  function agregarEnMasa(params: {
+    personas: string[];
+    plazas: { puestoId: string; cuantas: number; sueldo: SueldoProyectado }[];
+    obraId: string | null;
+  }) {
+    const diasBase = Array.from({ length: 6 }, (_, i) => i);
+    setEstado((e) => {
+      let siguiente = e;
+
+      for (const id of params.personas) {
+        const c = colaboradores.find((x) => x.id === id);
+        const dias = Array.from(
+          { length: Math.min(Math.max(c?.dias_semana ?? 6, 1), 7) },
+          (_, i) => i,
+        );
+        siguiente = {
+          ...siguiente,
+          participantes: [...siguiente.participantes, id],
+          diasProyectados: { ...siguiente.diasProyectados, [id]: dias },
+          obraBase: params.obraId
+            ? { ...siguiente.obraBase, [id]: params.obraId }
+            : siguiente.obraBase,
+        };
+      }
+
+      for (const r of params.plazas) {
+        siguiente = conPlazas(siguiente, {
+          puestoId: r.puestoId,
+          puestoNombre: puestos.find((p) => p.id === r.puestoId)?.nombre ?? 'Plaza',
+          cuantas: r.cuantas,
+          sueldo: r.sueldo,
+          obraId: params.obraId,
+          dias: diasBase,
+        }).estado;
+      }
+
+      return siguiente;
+    });
+    setMasivoAbierto(false);
   }
 
   // ── Abrir una proyección guardada ────────────────────────────────────────
@@ -578,6 +628,9 @@ export function TablaProyeccion(props: Props) {
 
         <Button variant="secondary" size="sm" onClick={() => setGestorAbierto(true)}>
           Participantes · {estado.participantes.length}
+        </Button>
+        <Button variant="secondary" size="sm" onClick={() => setMasivoAbierto(true)}>
+          Agregar varios
         </Button>
 
         <span className="ml-auto flex flex-wrap gap-2">
@@ -858,7 +911,10 @@ export function TablaProyeccion(props: Props) {
           prestamos={estado.obraPorDia[renglonAbierto.colaborador.id] ?? {}}
           onMoverDia={(d, obra) => moverDia(renglonAbierto.colaborador.id, d, obra)}
           onAlternarDia={(d) => alternarDia(renglonAbierto.colaborador.id, d)}
-          onSalario={(v) => setSalario(renglonAbierto.colaborador.id, v)}
+          sueldo={estado.sueldoOverride[renglonAbierto.colaborador.id] ?? null}
+          onSueldo={(sueldo) =>
+            setEstado((e) => conSueldo(e, renglonAbierto.colaborador.id, sueldo))
+          }
           onDestajo={(v) => setDestajo(renglonAbierto.colaborador.id, v)}
           onSimularCompleta={(v) => setEstado((e) => ({ ...e, simularCompleta: v }))}
           onNuevoAjuste={() =>
@@ -881,6 +937,19 @@ export function TablaProyeccion(props: Props) {
             setFichaAbierta(null);
           }}
           onCerrar={() => setFichaAbierta(null)}
+        />
+      )}
+
+      {masivoAbierto && (
+        <ModalAgregarMasivo
+          colaboradores={colaboradores}
+          puestos={puestos}
+          participantes={estado.participantes}
+          obras={Object.entries(nombreObra).map(([id, nombre]) => ({ id, nombre }))}
+          obraSugerida={obraFiltro || null}
+          diasPorDefecto={[0, 1, 2, 3, 4, 5]}
+          onAplicar={agregarEnMasa}
+          onCerrar={() => setMasivoAbierto(false)}
         />
       )}
 
@@ -1338,8 +1407,3 @@ function compacto(v: number): string {
 
 /// Copia del objeto sin una clave, sin dejar variables sueltas que el linter
 /// marque como no usadas.
-function sinClave<T>(obj: Record<string, T>, clave: string): Record<string, T> {
-  const copia = { ...obj };
-  delete copia[clave];
-  return copia;
-}
