@@ -7,6 +7,7 @@ import { formatCurrency } from '@/lib/data/format';
 import {
   ETIQUETA_AJUSTE,
   calcularProyeccion,
+  escenarioVacio,
   fechaDelDia,
   indiceDiaSemana,
   obraBaseEfectiva,
@@ -81,7 +82,7 @@ export function TablaProyeccion(props: Props) {
       destajoCapturado[d.colaborador_id] = (destajoCapturado[d.colaborador_id] ?? 0) + d.monto;
     }
     return {
-      lunesMs,
+      ...escenarioVacio(lunesMs),
       participantes: activos.map((c) => c.id),
       // Cada quien arranca con los días que de verdad trabaja, no con «todos
       // L–S»: así el número de la primera pantalla ya es defendible.
@@ -92,11 +93,6 @@ export function TablaProyeccion(props: Props) {
         ]),
       ),
       destajoEstimado: destajoCapturado,
-      salarioOverride: {},
-      ajustes: [],
-      simularCompleta: false,
-      obraPorDia: {},
-      obraBase: {},
     };
   }, [colaboradores, obraPorColaborador, destajos, lunesMs]);
 

@@ -92,6 +92,66 @@ export interface AjusteProyeccion {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// Sueldo capturado, plazas y redondeo
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type PeriodoPago = 'SEMANAL' | 'QUINCENAL' | 'MENSUAL';
+export type ModoRedondeo = 'CERCANO' | 'ARRIBA' | 'ABAJO';
+export type CampoRedondeo = 'SALARIO_DIA' | 'RAYA' | 'SUBTOTALES' | 'TOTAL';
+
+/// El sueldo tal como se capturó, no solo el diario que salió de él.
+///
+/// El escenario ya guarda un `salarioOverride` con el salario POR DÍA, que es lo
+/// que consume el cálculo. Eso alcanzaba mientras el diario se capturaba a mano;
+/// con el sueldo por periodo hace falta recordar de DÓNDE salió ese diario: si
+/// solo se guardara el resultado, al reabrir la ficha habría que adivinar si
+/// $600 vinieron de $3,600 semanales o de $15,600 mensuales.
+///
+/// Los dos conviven: esto es lo capturado, `salarioOverride` es lo derivado.
+export interface SueldoProyectado {
+  periodo: PeriodoPago;
+  monto: number;
+  diasSemana: number;
+}
+
+/// Prefijo del id de una plaza: lo que la distingue de un colaborador real en
+/// cualquier mapa del escenario sin llevar una lista aparte.
+export const PREFIJO_PLAZA = 'plaza:';
+
+export function esPlaza(id: string): boolean {
+  return id.startsWith(PREFIJO_PLAZA);
+}
+
+/// Un puesto sin cubrir: «4 × Maestro a $3,600». No existe en el catálogo y
+/// muere con el escenario; sirve para preguntar cuánto costaría contratarlos.
+export interface PlazaProyectada {
+  id: string;
+  etiqueta: string;
+  puestoId: string;
+  obraId: string | null;
+  cuadrillaId: string | null;
+  sueldo: SueldoProyectado;
+}
+
+/// Redondeo de presentación: no cambia lo capturado, ajusta cómo se enseña.
+export interface RedondeoConfig {
+  activo: boolean;
+  /// Múltiplo al que se redondea, en pesos.
+  paso: number;
+  modo: ModoRedondeo;
+  /// Qué cifras se redondean. Vacío con `activo` en true es válido aunque
+  /// inútil: la UI lo evita apagando el interruptor.
+  campos: CampoRedondeo[];
+}
+
+export const REDONDEO_APAGADO: RedondeoConfig = {
+  activo: false,
+  paso: 1,
+  modo: 'CERCANO',
+  campos: [],
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
 // Escenario
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -129,6 +189,36 @@ export interface ProyeccionEstado {
   /// pertenecerían a ninguna parte y no sumarían a la raya de ninguna obra.
   /// No escribe nada en `obra_colaborador`: es del escenario y muere con él.
   obraBase: Record<string, string>;
+
+  /// `colaboradorId → sueldo capturado`. Convive con `salarioOverride`, que es
+  /// el diario derivado y lo que consume el cálculo.
+  sueldoOverride: Record<string, SueldoProyectado>;
+
+  /// `plazaId → plaza`. La llave lleva el prefijo `plaza:` y es la misma que se
+  /// usa en `participantes`, `diasProyectados` y el resto de mapas por persona:
+  /// una plaza se comporta como alguien más en todo salvo en que no existe.
+  plazas: Record<string, PlazaProyectada>;
+
+  redondeo: RedondeoConfig;
+}
+
+/// Escenario recién nacido, sin nadie dentro. Los campos que se agregaron
+/// después viven aquí con su vacío para que ningún sitio tenga que acordarse.
+export function escenarioVacio(lunesMs: number): ProyeccionEstado {
+  return {
+    lunesMs,
+    participantes: [],
+    diasProyectados: {},
+    destajoEstimado: {},
+    salarioOverride: {},
+    ajustes: [],
+    simularCompleta: false,
+    obraPorDia: {},
+    obraBase: {},
+    sueldoOverride: {},
+    plazas: {},
+    redondeo: REDONDEO_APAGADO,
+  };
 }
 
 /// Saca a alguien del escenario y borra TODO lo que colgaba de esa persona.
@@ -158,6 +248,10 @@ export function sinParticipante(
     salarioOverride: sin(estado.salarioOverride),
     obraPorDia: sin(estado.obraPorDia),
     obraBase: sin(estado.obraBase),
+    sueldoOverride: sin(estado.sueldoOverride),
+    // Si es una plaza, se va también su ficha: nadie más la referencia y
+    // dejarla sería un renglón fantasma que reaparece al guardar.
+    plazas: sin(estado.plazas),
     // Un anticipo colgando de alguien que ya no está sumaría al total sin que
     // se vea de dónde sale.
     ajustes: estado.ajustes.filter(

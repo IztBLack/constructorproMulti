@@ -26,8 +26,14 @@
 
 import type {
   AjusteProyeccion,
+  CampoRedondeo,
   DestinoAjuste,
+  ModoRedondeo,
+  PeriodoPago,
+  PlazaProyectada,
+  ProyeccionEstado,
   RepartoAjuste,
+  SueldoProyectado,
   TipoAjuste,
 } from './proyeccion-nomina';
 
@@ -35,63 +41,15 @@ import type {
 /// Espeja `ProyeccionEstado.versionEsquema`.
 export const VERSION_ESQUEMA = 1;
 
-export type PeriodoPago = 'SEMANAL' | 'QUINCENAL' | 'MENSUAL';
-export type ModoRedondeo = 'CERCANO' | 'ARRIBA' | 'ABAJO';
-export type CampoRedondeo = 'SALARIO_DIA' | 'RAYA' | 'SUBTOTALES' | 'TOTAL';
-
-/// Prefijo del id de una plaza: lo que la distingue de un colaborador real en
-/// cualquier mapa del escenario sin llevar una lista aparte.
-export const PREFIJO_PLAZA = 'plaza:';
-
-export function esPlaza(id: string): boolean {
-  return id.startsWith(PREFIJO_PLAZA);
-}
-
-/// El sueldo tal como se capturó, no solo el diario que salió de él.
-export interface SueldoProyectado {
-  periodo: PeriodoPago;
-  monto: number;
-  diasSemana: number;
-}
-
-/// Un puesto sin cubrir: «4 x Maestro a $3,600».
-export interface PlazaProyectada {
-  id: string;
-  etiqueta: string;
-  puestoId: string;
-  obraId: string | null;
-  cuadrillaId: string | null;
-  sueldo: SueldoProyectado;
-}
-
-export interface RedondeoConfig {
-  activo: boolean;
-  paso: number;
-  modo: ModoRedondeo;
-  campos: CampoRedondeo[];
-}
-
-/// El escenario completo, tal como viaja en la columna.
+/// El escenario que viaja en la columna es EL MISMO que la pantalla tiene en la
+/// mano: un solo tipo, no dos que haya que mantener de acuerdo.
 ///
-/// Incluye campos que la web todavía no usa en pantalla (`plazas`,
-/// `sueldoOverride`, `redondeo`). **Eso es a propósito**: si el tipo los
-/// ignorara, abrir en la oficina un escenario armado en la tableta y volver a
-/// guardarlo borraría las plazas y el redondeo sin decir nada. Un ida y vuelta
-/// tiene que ser fiel antes de que exista la pantalla que los edita.
-export interface EscenarioGuardado {
-  lunesMs: number;
-  participantes: string[];
-  diasProyectados: Record<string, number[]>;
-  destajoEstimado: Record<string, number>;
-  salarioOverride: Record<string, number>;
-  sueldoOverride: Record<string, SueldoProyectado>;
-  plazas: Record<string, PlazaProyectada>;
-  ajustes: AjusteProyeccion[];
-  simularCompleta: boolean;
-  obraPorDia: Record<string, Record<number, string>>;
-  obraBase: Record<string, string>;
-  redondeo: RedondeoConfig;
-}
+/// `ProyeccionEstado` lleva `plazas`, `sueldoOverride` y `redondeo` desde antes
+/// de que la web tenga pantalla para editarlos (eso es la Fase 4), y eso es a
+/// propósito: si el tipo los ignorara, abrir en la oficina un escenario armado
+/// en la tableta y volver a guardarlo los borraría sin decir nada. Un ida y
+/// vuelta tiene que ser fiel antes de que exista la pantalla que los edita.
+export type EscenarioGuardado = ProyeccionEstado;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Lectura

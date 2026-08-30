@@ -8,6 +8,7 @@ import {
   signoAjuste,
   sinParticipante,
   type AjusteProyeccion,
+  escenarioVacio,
   type ProyeccionEstado,
 } from './proyeccion-nomina';
 import { calcularNomina } from './nomina-calculo';
@@ -40,15 +41,8 @@ const colaboradores = [albanil, ayudante, destajista];
 
 function escenario(p: Partial<ProyeccionEstado> = {}): ProyeccionEstado {
   return {
-    lunesMs: lunes,
+    ...escenarioVacio(lunes),
     participantes: ['c1'],
-    diasProyectados: {},
-    destajoEstimado: {},
-    salarioOverride: {},
-    ajustes: [],
-    simularCompleta: false,
-    obraPorDia: {},
-    obraBase: {},
     ...p,
   };
 }
