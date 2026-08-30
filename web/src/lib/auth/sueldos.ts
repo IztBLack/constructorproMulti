@@ -40,3 +40,19 @@ const ROLES_SUELDOS: readonly string[] = ['admin', 'supervisor', 'contador'];
 export function puedeVerSueldos(rol: Rol): boolean {
   return ROLES_SUELDOS.includes(rol);
 }
+
+/**
+ * Quién puede GUARDAR escenarios de proyección.
+ *
+ * Es más estrecho que `puedeVerSueldos`: el contador entra a la pantalla porque
+ * necesita el panorama de lo que va a costar la semana, pero no arma escenarios
+ * —eso es decisión de obra— y no debería poder pisar el de alguien más.
+ *
+ * Misma puerta que las policies de `supabase/migrations/0034`, que son la
+ * barrera real: aquí solo se evita ofrecer botones que el servidor rechazaría.
+ */
+const ROLES_EDITAN_PROYECCION: readonly string[] = ['admin', 'supervisor'];
+
+export function puedeEditarProyeccion(rol: Rol): boolean {
+  return ROLES_EDITAN_PROYECCION.includes(rol);
+}
