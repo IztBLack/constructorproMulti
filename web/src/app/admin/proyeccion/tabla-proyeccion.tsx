@@ -23,6 +23,8 @@ import { abrirProyeccion } from './actions';
 import { ProyeccionesGuardadas } from './proyecciones-guardadas';
 import type { ProyeccionResumen } from '@/lib/data/proyeccion-guardada';
 import { FOCO } from './estilos';
+import { ModalRedondeo } from './modal-redondeo';
+import { fueRedondeado, resumenCorto, vistaRedondeada } from '@/lib/data/redondeo';
 import { FichaPersona } from './ficha-persona';
 import { GestorParticipantes } from './gestor-participantes';
 import { ModalAjuste } from './modal-ajuste';
@@ -115,6 +117,7 @@ export function TablaProyeccion(props: Props) {
     soloLectura: boolean;
   } | null>(null);
   const [guardadasAbierto, setGuardadasAbierto] = useState(false);
+  const [redondeoAbierto, setRedondeoAbierto] = useState(false);
   const [errorSesion, setErrorSesion] = useState<string | null>(null);
 
   const soloLectura = sesion?.soloLectura ?? false;
@@ -176,6 +179,14 @@ export function TablaProyeccion(props: Props) {
       obraDe,
       obraFiltro,
     ],
+  );
+
+  /// El resultado visto a traves del redondeo. `resultado` sigue siendo el
+  /// exacto: esto solo decide QUE numero se enseña en cada lugar, y guarda los
+  /// dos para poder poner el original debajo del redondeado.
+  const vista = useMemo(
+    () => vistaRedondeada(resultado, estado.redondeo),
+    [resultado, estado.redondeo],
   );
 
   // ── Delta: decir QUÉ cambió, no solo cambiar el número ───────────────────
@@ -528,6 +539,7 @@ export function TablaProyeccion(props: Props) {
     <div className="space-y-4">
       <TarjetaEscenario
         resultado={resultado}
+        vista={vista}
         delta={delta}
         rangoTexto={rangoTexto}
         obraNombre={obraFiltro ? nombreObra[obraFiltro] ?? '' : ''}
@@ -593,6 +605,9 @@ export function TablaProyeccion(props: Props) {
         </Button>
         <Button variant="secondary" size="sm" onClick={irASemanaActual}>
           Ir a la semana actual
+        </Button>
+        <Button variant="secondary" size="sm" onClick={() => setRedondeoAbierto(true)}>
+          {resumenCorto(estado.redondeo)}
         </Button>
         <Button variant="secondary" size="sm" onClick={() => setGuardadasAbierto(true)}>
           Guardadas
@@ -719,6 +734,7 @@ export function TablaProyeccion(props: Props) {
                 key={g.clave || 'todos'}
                 nombre={g.nombre}
                 items={g.items}
+                vista={vista}
                 agrupar={agrupar}
                 nombreObra={nombreObra}
                 onAlternarDia={alternarDia}
@@ -773,10 +789,12 @@ export function TablaProyeccion(props: Props) {
                 Total por día
               </td>
               <td />
-              {resultado.totalPorDia.map((monto, i) => (
+              {resultado.totalPorDia.map((_, i) => (
                 <td key={i} className="px-1 py-2 text-center">
                   <span className="block text-xs font-bold tabular-nums text-neutral-900">
-                    {resultado.personasPorDia[i] === 0 ? '—' : compacto(monto)}
+                    {resultado.personasPorDia[i] === 0
+                      ? '—'
+                      : compacto(vista.costoDia(i).mostrado)}
                   </span>
                   <span className="block text-[10px] text-neutral-500">
                     {resultado.personasPorDia[i] === 0 ? '' : `${resultado.personasPorDia[i]}p`}
@@ -787,12 +805,32 @@ export function TablaProyeccion(props: Props) {
                 {sinCeros(resultado.diasHombre)}
               </td>
               <td className="px-3 py-2 text-right text-base font-bold tabular-nums text-neutral-900">
-                {formatCurrency(resultado.total)}
+                {formatCurrency(vista.total.mostrado)}
+                {/* El exacto NO desaparece: se queda debajo, chiquito. Guardar
+                    solo la cifra redondeada y perder la buena es el error
+                    clasico de esto. */}
+                {fueRedondeado(vista.total) && (
+                  <span className="block text-[10px] font-normal text-neutral-500">
+                    exacto {formatCurrency(vista.total.exacto)}
+                  </span>
+                )}
               </td>
             </tr>
           </tfoot>
         </table>
       </div>
+
+      {vista.activo && (
+        <p className="text-xs text-neutral-500">
+          {vista.leyenda}
+          {!vista.totalCuadra && (
+            <span className="ml-1 text-amber-700">
+              El total se redondea por encima de rayas ya redondeadas, así que no
+              es exactamente su suma.
+            </span>
+          )}
+        </p>
+      )}
 
       <p className="text-xs text-neutral-500">
         La proyección trae a todos los colaboradores asignados a una obra activa.
@@ -843,6 +881,19 @@ export function TablaProyeccion(props: Props) {
             setFichaAbierta(null);
           }}
           onCerrar={() => setFichaAbierta(null)}
+        />
+      )}
+
+      {redondeoAbierto && (
+        <ModalRedondeo
+          config={estado.redondeo}
+          resultado={resultado}
+          soloLectura={soloLectura}
+          onGuardar={(redondeo) => {
+            setEstado((e) => ({ ...e, redondeo }));
+            setRedondeoAbierto(false);
+          }}
+          onCerrar={() => setRedondeoAbierto(false)}
         />
       )}
 
@@ -952,6 +1003,7 @@ export function TablaProyeccion(props: Props) {
 /// la pantalla antes del primer renglón, y la leyenda no existía en ningún lado.
 function TarjetaEscenario(props: {
   resultado: ReturnType<typeof calcularProyeccion>;
+  vista: ReturnType<typeof vistaRedondeada>;
   delta: number | null;
   rangoTexto: string;
   /// Nombre de la obra que se está viendo, o vacío si son todas.
@@ -961,7 +1013,7 @@ function TarjetaEscenario(props: {
   onSimularCompleta: (v: boolean) => void;
   onSemana: (dir: number) => void;
 }) {
-  const { resultado: r, delta, simularCompleta } = props;
+  const { resultado: r, vista, delta, simularCompleta } = props;
   const [leyendaAbierta, setLeyendaAbierta] = useState(false);
 
   return (
@@ -1003,8 +1055,13 @@ function TarjetaEscenario(props: {
           {props.obraNombre ? `Raya de ${props.obraNombre}` : 'Raya proyectada'}
         </span>
         <span className="text-3xl font-bold tabular-nums text-neutral-900">
-          {formatCurrency(r.total)}
+          {formatCurrency(vista.total.mostrado)}
         </span>
+        {fueRedondeado(vista.total) && (
+          <span className="text-xs text-neutral-500">
+            exacto {formatCurrency(vista.total.exacto)}
+          </span>
+        )}
         {/* Decir QUÉ cambió, no solo cambiar el número. */}
         {delta !== null && (
           <span
@@ -1093,14 +1150,17 @@ function Muestra(props: { clase: string; simbolo: string; texto: string }) {
 function GrupoFilas(props: {
   nombre: string | null;
   items: ReturnType<typeof calcularProyeccion>['renglones'];
+  vista: ReturnType<typeof vistaRedondeada>;
   agrupar: Agrupar;
   nombreObra: Record<string, string>;
   onAlternarDia: (id: string, dia: number) => void;
   onAbrirFicha: (id: string) => void;
   onAjusteCuadrilla: (id: string, nombre: string) => void;
 }) {
-  const { nombre, items, agrupar } = props;
-  const subtotal = items.reduce((a, r) => a + r.total, 0);
+  const { nombre, items, agrupar, vista } = props;
+  // El subtotal suma lo que se ENSEÑA en cada renglón, no los exactos: si no,
+  // no cuadraría con los renglones que tiene encima.
+  const subtotal = vista.subtotalDe(items).mostrado;
   const cuadrillaId = agrupar === 'cuadrilla' ? items[0]?.cuadrillaId ?? null : null;
 
   return (
@@ -1189,7 +1249,12 @@ function GrupoFilas(props: {
           </td>
 
           <td className="px-3 py-2 text-right font-semibold tabular-nums text-neutral-900">
-            {formatCurrency(r.total)}
+            {formatCurrency(vista.raya(r).mostrado)}
+            {fueRedondeado(vista.raya(r)) && (
+              <span className="block text-[10px] font-normal text-neutral-500">
+                {formatCurrency(vista.raya(r).exacto)}
+              </span>
+            )}
           </td>
         </tr>
       ))}
