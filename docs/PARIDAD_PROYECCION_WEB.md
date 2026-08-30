@@ -184,8 +184,19 @@ tabla nueva ya queda cubierta por esa prueba.
 2. ✅ Prueba móvil de ida y vuelta contra el fixture.
 3. ✅ Endurecer `fromJson` contra valores mal tipados (punto 2 de arriba).
 4. ✅ `obraBase` en el móvil (punto 4), con su UI y la precedencia probada.
-5. ⏳ Tipos de la web + `serializarEstado` / `deserializarEstado`, con su prueba
-   contra **el mismo fixture**. Ya desbloqueado: el contrato está cerrado.
+5. ✅ `web/src/lib/data/proyeccion-contrato.ts` + su prueba contra **el mismo
+   fixture**.
+
+**La Fase 1 queda cerrada.** El mecanismo se verificó a propósito: renombrar
+`salario` → `salarios` en el serializador de la web pone rojas 2 pruebas con el
+diff exacto, y revertirlo las devuelve a verde. Ese es justo el fallo que antes
+habría pasado callado.
+
+El tipo de la web incluye `plazas`, `sueldoOverride` y `redondeo` aunque todavía
+no tengan pantalla allá (eso es la Fase 4). Es deliberado: si el tipo los
+ignorara, abrir en la oficina un escenario armado en la tableta y volver a
+guardarlo los **borraría sin decir nada**. Un ida y vuelta tiene que ser fiel
+antes de que exista la pantalla que los edita.
 
 Nada de esto se ve en pantalla. Es lo que hace que las fases 2–4 no puedan
 divergir en silencio.
