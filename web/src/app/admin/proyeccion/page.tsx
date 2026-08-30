@@ -2,7 +2,7 @@ import { PageHeader } from '@/components/ui';
 import { getEmpresaUsuario } from '@/lib/data/empresa';
 import { navegarSemana, semanaDe } from '@/lib/data/nomina';
 import { indiceDiaSemana } from '@/lib/data/proyeccion-nomina';
-import { puedeVerSueldos } from '@/lib/auth/sueldos';
+import { puedeEditarProyeccion, puedeVerSueldos } from '@/lib/auth/sueldos';
 import { cargarDatosProyeccion } from '@/lib/data/proyeccion-nomina-server';
 // `hoyMxMs` y no `Date.now()`: en Vercel el servidor corre en UTC, y calcular
 // «hoy» con el reloj del proceso adelanta el día durante la tarde-noche de
@@ -13,8 +13,13 @@ import { TablaProyeccion } from './tabla-proyeccion';
 export const dynamic = 'force-dynamic';
 
 interface PageProps {
-  /** `?semana=<epoch ms del lunes>`; sin ella, la semana en curso. */
-  searchParams: Promise<{ semana?: string }>;
+  /**
+   * `?semana=<epoch ms del lunes>`; sin ella, la semana en curso.
+   * `?abrir=<id>&modo=ver|editar`: proyección guardada que hay que cargar al
+   * entrar. Viaja por la URL porque abrir una de otra semana obliga a navegar,
+   * y el escenario en memoria no sobrevive a la navegación.
+   */
+  searchParams: Promise<{ semana?: string; abrir?: string; modo?: string }>;
 }
 
 export default async function ProyeccionPage({ searchParams }: PageProps) {
@@ -34,7 +39,7 @@ export default async function ProyeccionPage({ searchParams }: PageProps) {
     );
   }
 
-  const { semana } = await searchParams;
+  const { semana, abrir, modo } = await searchParams;
   const anclaMs = semana ? Number(semana) : NaN;
   const rango = Number.isFinite(anclaMs)
     ? navegarSemana(anclaMs, 0)
@@ -65,6 +70,8 @@ export default async function ProyeccionPage({ searchParams }: PageProps) {
           cuadrillaPorColaborador={datos.cuadrillaPorColaborador}
           nombreObra={datos.nombreObra}
           nombreCuadrilla={datos.nombreCuadrilla}
+          puedeEditar={puedeEditarProyeccion(rol)}
+          abrirAlEntrar={abrir ? { id: abrir, soloLectura: modo !== 'editar' } : null}
         />
       )}
     </div>

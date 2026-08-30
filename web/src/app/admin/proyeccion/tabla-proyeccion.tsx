@@ -19,6 +19,10 @@ import {
 } from '@/lib/data/proyeccion-nomina';
 import type { Asistencia, Colaborador, Destajo, Puesto } from '@/lib/data/types';
 import { medianocheMx, partesTz, sumarDiasCalendario } from '@/lib/data/tz';
+import { abrirProyeccion } from './actions';
+import { ProyeccionesGuardadas } from './proyecciones-guardadas';
+import type { ProyeccionResumen } from '@/lib/data/proyeccion-guardada';
+import { FOCO } from './estilos';
 import { FichaPersona } from './ficha-persona';
 import { GestorParticipantes } from './gestor-participantes';
 import { ModalAjuste } from './modal-ajuste';
@@ -41,6 +45,12 @@ interface Props {
   cuadrillaPorColaborador: Record<string, string>;
   nombreObra: Record<string, string>;
   nombreCuadrilla: Record<string, string>;
+  /// ¿El rol puede GUARDAR escenarios? El contador entra a mirar y no arma.
+  puedeEditar: boolean;
+  /// `?abrir=<id>&modo=ver|editar`: la proyección que hay que cargar al entrar.
+  /// Llega por la URL porque abrir una de OTRA semana obliga a navegar, y el
+  /// estado en memoria no sobrevive a la navegación.
+  abrirAlEntrar: { id: string; soloLectura: boolean } | null;
 }
 
 export function TablaProyeccion(props: Props) {
@@ -56,6 +66,8 @@ export function TablaProyeccion(props: Props) {
     cuadrillaPorColaborador,
     nombreObra,
     nombreCuadrilla,
+    puedeEditar,
+    abrirAlEntrar,
   } = props;
 
   const router = useRouter();
@@ -96,7 +108,30 @@ export function TablaProyeccion(props: Props) {
     };
   }, [colaboradores, obraPorColaborador, destajos, lunesMs]);
 
-  const [estado, setEstado] = useState<ProyeccionEstado>(estadoInicial);
+  /// La proyección guardada que está abierta, si hay alguna.
+  const [sesion, setSesion] = useState<{
+    id: string;
+    nombre: string;
+    soloLectura: boolean;
+  } | null>(null);
+  const [guardadasAbierto, setGuardadasAbierto] = useState(false);
+  const [errorSesion, setErrorSesion] = useState<string | null>(null);
+
+  const soloLectura = sesion?.soloLectura ?? false;
+
+  const [estado, setEstadoCrudo] = useState<ProyeccionEstado>(estadoInicial);
+
+  /// **EL CANDADO DE SOLO LECTURA VIVE AQUÍ**, no en cada botón.
+  ///
+  /// Hay catorce puntos que mutan el escenario, y el que se olvidara sería una
+  /// edición silenciosa sobre una cuenta que alguien ya dio por buena. Con el
+  /// candado en el único setter, una mutación nueva nace protegida sin que nadie
+  /// tenga que acordarse. La UI además apaga los controles, pero eso es cortesía.
+  /// Mismo razonamiento que el notifier del móvil.
+  const setEstado: typeof setEstadoCrudo = (accion) => {
+    if (soloLectura) return;
+    setEstadoCrudo(accion);
+  };
 
   /// Dónde trabaja cada quien, ya con lo que el escenario haya asignado encima
   /// (para quien no tenía obra en el sistema). Todo lo demás parte de aquí.
@@ -345,10 +380,65 @@ export function TablaProyeccion(props: Props) {
     });
   }
 
+  // ── Abrir una proyección guardada ────────────────────────────────────────
+
+  /// Carga el escenario de una fila en la pantalla.
+  ///
+  /// `setEstadoCrudo` y no `setEstado`: cargar NO es mutar. Abrir una proyección
+  /// para consultar tiene que poder escribir el escenario una vez, o el candado
+  /// impediría justo la operación que lo enciende.
+  async function cargar(id: string, soloLecturaPedida: boolean) {
+    setErrorSesion(null);
+    const r = await abrirProyeccion(id);
+    if (!r.proyeccion) {
+      setErrorSesion(r.error ?? 'No se pudo abrir.');
+      return;
+    }
+    setEstadoCrudo(r.proyeccion.estado);
+    setObraFiltro(r.proyeccion.obraFiltro);
+    setSesion({
+      id: r.proyeccion.id,
+      nombre: r.proyeccion.nombre,
+      // Quien no puede editar abre siempre para consultar, aunque pida editar:
+      // el servidor lo rechazaría igual y es mejor decirlo antes.
+      soloLectura: soloLecturaPedida || !puedeEditar,
+    });
+    setGuardadasAbierto(false);
+  }
+
+  /// Se ejecuta una sola vez, cuando la URL trae `?abrir=`.
+  const yaAbrio = useRef(false);
+  useEffect(() => {
+    if (!abrirAlEntrar || yaAbrio.current) return;
+    yaAbrio.current = true;
+    void cargar(abrirAlEntrar.id, abrirAlEntrar.soloLectura);
+    // `cargar` depende de props estables durante la vida del componente y el
+    // guard de `yaAbrio` garantiza una sola pasada.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [abrirAlEntrar]);
+
+  /// Abrir desde la lista. Si la proyección es de OTRA semana hay que navegar,
+  /// porque la semana vive en la URL y los datos capturados se leen en el
+  /// servidor. El id viaja en la URL para que al volver a montar se cargue sola;
+  /// intentar conservarlo en memoria no funcionaría: la navegación la tira.
+  function abrirDesdeLista(resumen: ProyeccionResumen, soloLecturaPedida: boolean) {
+    if (resumen.lunesMs !== lunesMs) {
+      const modo = soloLecturaPedida ? 'ver' : 'editar';
+      router.push(
+        `/admin/proyeccion?semana=${resumen.lunesMs}&abrir=${resumen.id}&modo=${modo}`,
+      );
+      return;
+    }
+    void cargar(resumen.id, soloLecturaPedida);
+  }
+
   /// Tira el escenario y vuelve a la siembra. Pregunta, porque se lleva por
   /// delante los días, los salarios, los préstamos y los ajustes.
   function reiniciar() {
-    setEstado(estadoInicial);
+    // `setEstadoCrudo`: empezar de nuevo SALE de la proyección abierta, así que
+    // el candado no aplica — no se está editando la guardada, se está soltando.
+    setEstadoCrudo(estadoInicial);
+    setSesion(null);
     setConfirmarReinicio(false);
   }
 
@@ -504,15 +594,58 @@ export function TablaProyeccion(props: Props) {
         <Button variant="secondary" size="sm" onClick={irASemanaActual}>
           Ir a la semana actual
         </Button>
+        <Button variant="secondary" size="sm" onClick={() => setGuardadasAbierto(true)}>
+          Guardadas
+        </Button>
         <Button
           variant="secondary"
           size="sm"
           onClick={() => setConfirmarReinicio(true)}
-          disabled={!tocado}
+          disabled={!tocado && !sesion}
         >
-          Reiniciar la proyección
+          {sesion ? 'Empezar de nuevo' : 'Reiniciar la proyección'}
         </Button>
       </div>
+
+      {/* Qué proyección se está viendo, y si se puede tocar. Va arriba de la
+          tabla porque el candado explica por qué los controles no responden:
+          sin este renglón, «no me deja palomear» parece una falla. */}
+      {sesion && (
+        <div
+          className={`flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+            soloLectura
+              ? 'border-amber-200 bg-amber-50 text-amber-900'
+              : 'border-neutral-200 bg-neutral-50 text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200'
+          }`}
+        >
+          <span>
+            {soloLectura ? 'Consultando' : 'Editando'} <strong>«{sesion.nombre}»</strong>
+            {soloLectura && ' · abierta solo para mirar, no se puede modificar'}
+          </span>
+          {soloLectura && puedeEditar && (
+            <button
+              type="button"
+              onClick={() => setSesion({ ...sesion, soloLectura: false })}
+              className={`rounded border border-amber-300 px-2 py-0.5 text-xs ${FOCO}`}
+            >
+              Editarla
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setSesion(null)}
+            className={`ml-auto rounded border border-neutral-300 px-2 py-0.5 text-xs dark:border-neutral-700 ${FOCO}`}
+          >
+            Cerrar
+          </button>
+        </div>
+      )}
+
+      {errorSesion && (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {errorSesion}
+        </p>
+      )}
 
       {avisoColumna && (
         <p role="status" className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
@@ -710,6 +843,28 @@ export function TablaProyeccion(props: Props) {
             setFichaAbierta(null);
           }}
           onCerrar={() => setFichaAbierta(null)}
+        />
+      )}
+
+      {guardadasAbierto && (
+        <ProyeccionesGuardadas
+          estado={estado}
+          obraFiltro={obraFiltro}
+          totalActual={resultado.total}
+          personasActuales={estado.participantes.length}
+          sesionId={sesion?.id ?? null}
+          sesionNombre={sesion?.nombre ?? null}
+          soloLectura={soloLectura}
+          puedeEditar={puedeEditar}
+          onAbrir={abrirDesdeLista}
+          onSesion={(id, nombre) =>
+            setSesion(
+              id && nombre !== null
+                ? { id, nombre, soloLectura: false }
+                : null,
+            )
+          }
+          onCerrar={() => setGuardadasAbierto(false)}
         />
       )}
 
