@@ -10,7 +10,7 @@ import {
   type NotaConRenglones,
 } from '@/lib/data/notas-obra-calculo';
 import { msAFechaInput } from '@/lib/data/tz';
-import { actualizarNotaAction, eliminarNotaAction } from '../actions';
+import { actualizarNotaAction, eliminarNotaAction, type SeccionNota } from '../actions';
 import RenglonesNota from './renglones-nota';
 
 interface ColaboradorLite {
@@ -28,6 +28,17 @@ interface FormNota {
   saldo_override: string;
   notas: string;
 }
+
+/**
+ * Qué campos manda cada tarjeta al guardar. Es lo único que hace independientes
+ * a las tres: el botón de la nota al pie no acarrea el destinatario, así que no
+ * puede tropezar con una validación que no es suya.
+ */
+const CAMPOS_SECCION: Record<SeccionNota, readonly (keyof FormNota)[]> = {
+  datos: ['destinatario', 'colaborador_id', 'titulo', 'fecha', 'estado'],
+  cuentas: ['total_override', 'saldo_override'],
+  pie: ['notas'],
+};
 
 function aForm(nota: NotaConRenglones): FormNota {
   return {
@@ -50,8 +61,9 @@ function numeroONull(v: string): number | null {
 }
 
 /**
- * Editor de una nota de obra. El encabezado, los totales fijados y el pie se
- * guardan juntos (son la misma fila); los renglones se guardan solos.
+ * Editor de una nota de obra. Aunque el encabezado, los totales fijados y el
+ * pie son la misma fila, cada tarjeta se guarda por su cuenta —igual que los
+ * renglones—: manda solo sus campos y solo ella se valida.
  *
  * Los totales se recalculan en vivo con lo que hay escrito, no con lo guardado:
  * la gracia de fijar un total a mano es ver de inmediato qué saldo deja.
@@ -69,12 +81,17 @@ export default function EditorNota({
 }) {
   const router = useRouter();
   const [form, setForm] = useState<FormNota>(() => aForm(nota));
-  const [guardando, setGuardando] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [aviso, setAviso] = useState(false);
+  const [guardando, setGuardando] = useState<SeccionNota | null>(null);
+  const [eliminando, setEliminando] = useState(false);
+  const [error, setError] = useState<{ seccion: SeccionNota | 'nota'; mensaje: string } | null>(null);
+  const [aviso, setAviso] = useState<SeccionNota | null>(null);
 
-  const guardado = useMemo(() => JSON.stringify(aForm(nota)), [nota]);
-  const sinCambios = JSON.stringify(form) === guardado;
+  const guardado = useMemo(() => aForm(nota), [nota]);
+  const ocupado = guardando !== null || eliminando;
+
+  function sinCambios(seccion: SeccionNota) {
+    return CAMPOS_SECCION[seccion].every((campo) => form[campo] === guardado[campo]);
+  }
 
   const totales = useMemo(
     () =>
@@ -92,58 +109,75 @@ export default function EditorNota({
     setForm((f) => ({ ...f, [campo]: valor }));
   }
 
-  async function guardar() {
-    setGuardando(true);
+  async function guardar(seccion: SeccionNota) {
+    setGuardando(seccion);
     setError(null);
-    setAviso(false);
+    setAviso(null);
 
     const fd = new FormData();
-    for (const [k, v] of Object.entries(form)) fd.set(k, v);
+    for (const campo of CAMPOS_SECCION[seccion]) fd.set(campo, form[campo]);
 
-    const r = await actualizarNotaAction(obraId, nota.id, fd);
-    setGuardando(false);
+    const r = await actualizarNotaAction(obraId, nota.id, seccion, fd);
+    setGuardando(null);
 
     if (!r.ok) {
-      setError(r.error ?? 'No se pudo guardar la nota.');
+      setError({ seccion, mensaje: r.error ?? 'No se pudo guardar.' });
       return;
     }
 
-    setAviso(true);
-    window.setTimeout(() => setAviso(false), 2500);
+    setAviso(seccion);
+    window.setTimeout(() => setAviso((s) => (s === seccion ? null : s)), 2500);
     router.refresh();
   }
 
   async function eliminar() {
-    if (!confirm(`¿Eliminar la nota de ${nota.destinatario}? No se puede deshacer.`)) return;
-    setGuardando(true);
+    const aQuien = nota.destinatario ? ` de ${nota.destinatario}` : '';
+    if (!confirm(`¿Eliminar la nota${aQuien}? No se puede deshacer.`)) return;
+    setEliminando(true);
     setError(null);
     const r = await eliminarNotaAction(obraId, nota.id);
-    setGuardando(false);
+    setEliminando(false);
     if (!r.ok) {
-      setError(r.error ?? 'No se pudo eliminar la nota.');
+      setError({ seccion: 'nota', mensaje: r.error ?? 'No se pudo eliminar la nota.' });
       return;
     }
     router.push(`/admin/obras/${obraId}/notas`);
   }
 
-  const botonGuardar = (
-    <div className="flex items-center gap-3">
-      <Button type="button" size="sm" disabled={guardando || sinCambios} onClick={guardar}>
-        {guardando ? 'Guardando…' : 'Guardar'}
-      </Button>
-      {aviso && (
-        <span role="status" className="text-sm text-green-700">
-          Guardado.
-        </span>
-      )}
-    </div>
-  );
+  /**
+   * El botón de una tarjeta: se apaga si esa tarjeta no cambió, y su aviso y su
+   * error salen junto a él y no arriba, para que se vea cuál sección guardó.
+   */
+  function botonGuardar(seccion: SeccionNota) {
+    return (
+      <div className="flex flex-wrap items-center gap-3">
+        <Button
+          type="button"
+          size="sm"
+          disabled={ocupado || sinCambios(seccion)}
+          onClick={() => guardar(seccion)}
+        >
+          {guardando === seccion ? 'Guardando…' : 'Guardar'}
+        </Button>
+        {aviso === seccion && (
+          <span role="status" className="text-sm text-green-700">
+            Guardado.
+          </span>
+        )}
+        {error?.seccion === seccion && (
+          <span role="alert" className="text-sm text-red-700">
+            {error.mensaje}
+          </span>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
-      {error && (
+      {error?.seccion === 'nota' && (
         <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {error}
+          {error.mensaje}
         </p>
       )}
 
@@ -214,7 +248,7 @@ export default function EditorNota({
           )}
         </div>
 
-        {puedeEditar && <div className="mt-4">{botonGuardar}</div>}
+        {puedeEditar && <div className="mt-4">{botonGuardar('datos')}</div>}
       </Card>
 
       {/* ── Renglones ──────────────────────────────────────────────────── */}
@@ -281,7 +315,7 @@ export default function EditorNota({
           )}
         </dl>
 
-        {puedeEditar && <div className="mt-4">{botonGuardar}</div>}
+        {puedeEditar && <div className="mt-4">{botonGuardar('cuentas')}</div>}
       </Card>
 
       {/* ── Pie ────────────────────────────────────────────────────────── */}
@@ -297,12 +331,12 @@ export default function EditorNota({
           maxLength={2000}
           placeholder="Lo que quieras aclararle al socio. Sale impreso en el PDF."
         />
-        {puedeEditar && <div className="mt-3">{botonGuardar}</div>}
+        {puedeEditar && <div className="mt-3">{botonGuardar('pie')}</div>}
       </Card>
 
       {puedeEditar && (
         <div className="flex justify-end">
-          <Button type="button" variant="danger" size="sm" disabled={guardando} onClick={eliminar}>
+          <Button type="button" variant="danger" size="sm" disabled={ocupado} onClick={eliminar}>
             Eliminar nota
           </Button>
         </div>

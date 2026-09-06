@@ -45,7 +45,22 @@ function revalidar(obraId: string, notaId?: string) {
   if (notaId) revalidatePath(`/admin/obras/${obraId}/notas/${notaId}`);
 }
 
-function parseNota(fd: FormData): NotaInput | { error: string } {
+/**
+ * Las tres tarjetas del editor son la misma fila, pero se guardan por separado:
+ * cada una manda SOLO sus campos y se valida sola.
+ *
+ * Antes las tres mandaban el formulario entero por el mismo `parseNota`, así
+ * que guardar la nota al pie exigía el destinatario —un campo de otra tarjeta—
+ * y una nota sin nombre no dejaba guardar nada más.
+ */
+export type SeccionNota = 'datos' | 'cuentas' | 'pie';
+
+type DatosNota = Pick<
+  NotaInput,
+  'destinatario' | 'colaborador_id' | 'titulo' | 'fecha' | 'estado'
+>;
+
+function parseDatos(fd: FormData): DatosNota | { error: string } {
   const destinatario = texto(fd, 'destinatario');
   if (!destinatario) return { error: 'Escribe a nombre de quién va la nota.' };
 
@@ -66,10 +81,32 @@ function parseNota(fd: FormData): NotaInput | { error: string } {
     titulo: texto(fd, 'titulo'),
     fecha,
     estado,
+  };
+}
+
+function parseCuentas(fd: FormData): Pick<NotaInput, 'total_override' | 'saldo_override'> {
+  return {
     total_override: numeroOpcional(fd, 'total_override'),
     saldo_override: numeroOpcional(fd, 'saldo_override'),
-    notas: texto(fd, 'notas').slice(0, 2000),
   };
+}
+
+function parsePie(fd: FormData): Pick<NotaInput, 'notas'> {
+  return { notas: texto(fd, 'notas').slice(0, 2000) };
+}
+
+function parseSeccion(fd: FormData, seccion: SeccionNota): Partial<NotaInput> | { error: string } {
+  if (seccion === 'cuentas') return parseCuentas(fd);
+  if (seccion === 'pie') return parsePie(fd);
+  return parseDatos(fd);
+}
+
+/** El alta sí arma la nota completa: nace con las tres partes de una vez. */
+function parseNota(fd: FormData): NotaInput | { error: string } {
+  const datos = parseDatos(fd);
+  if ('error' in datos) return datos;
+
+  return { ...datos, ...parseCuentas(fd), ...parsePie(fd) };
 }
 
 export async function crearNotaAction(
@@ -92,9 +129,10 @@ export async function crearNotaAction(
 export async function actualizarNotaAction(
   obraId: string,
   notaId: string,
+  seccion: SeccionNota,
   formData: FormData,
 ): Promise<ActionResult> {
-  const parsed = parseNota(formData);
+  const parsed = parseSeccion(formData, seccion);
   if ('error' in parsed) return { ok: false, error: parsed.error };
 
   const resultado = await actualizarNotaObra(notaId, parsed);
