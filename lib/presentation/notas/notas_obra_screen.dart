@@ -8,6 +8,7 @@ import '../../data/repositories_nota_obra.dart';
 import '../../domain/logic/notas_obra_calculo.dart';
 import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
+import 'campo_a_nombre_de.dart';
 import 'nota_obra_detail_screen.dart';
 import '../common/esqueleto.dart';
 
@@ -64,29 +65,35 @@ class NotasObraScreen extends ConsumerWidget {
   Future<void> _nuevaNota(BuildContext context, WidgetRef ref) async {
     final destinatario = TextEditingController();
     final titulo = TextEditingController();
+    final colaboradores =
+        ref.read(colaboradoresProvider).asData?.value ?? const [];
+    // Mutables porque los escribe el campo desde adentro del diálogo; solo se
+    // leen al aceptar.
+    String? colaboradorId;
+    var mostrarPara = true;
 
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Nueva nota'),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(
-            controller: destinatario,
-            autofocus: true,
-            textCapitalization: TextCapitalization.characters,
-            decoration: const InputDecoration(
-              labelText: 'A nombre de *',
-              hintText: 'Ej. ORLANDO RAMOZ',
-              helperText: 'Como lo conoces. No necesita estar dado de alta.',
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            CampoANombreDe(
+              controller: destinatario,
+              colaboradores: colaboradores,
+              autofocus: true,
+              onColaborador: (id) => colaboradorId = id,
+              mostrarParaInicial: mostrarPara,
+              onMostrarPara: (v) => mostrarPara = v,
             ),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: titulo,
-            decoration: const InputDecoration(
-                labelText: 'Título', hintText: 'Ej. MZ 2 LT 1'),
-          ),
-        ]),
+            const SizedBox(height: 8),
+            TextField(
+              controller: titulo,
+              decoration: const InputDecoration(
+                  labelText: 'Título', hintText: 'Ej. MZ 2 LT 1'),
+            ),
+          ]),
+        ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -98,7 +105,9 @@ class NotasObraScreen extends ConsumerWidget {
       ),
     );
 
-    if (ok != true || destinatario.text.trim().isEmpty) return;
+    // El nombre ya NO es obligatorio (0034): la nota se abre y se le pone
+    // después, o nunca. Lo que se captura es el trato, no la ficha del socio.
+    if (ok != true) return;
 
     final empresaId = ref.read(empresaIdProvider);
     if (empresaId == null) return;
@@ -108,6 +117,8 @@ class NotasObraScreen extends ConsumerWidget {
           obraId: obraId,
           empresaId: empresaId,
           destinatario: destinatario.text.trim(),
+          colaboradorId: colaboradorId,
+          mostrarPara: mostrarPara,
           titulo: titulo.text.trim(),
           orden: (cuantas + 1) * pasoOrdenRenglon,
         );
@@ -138,10 +149,8 @@ class _TarjetaNota extends StatelessWidget {
         contentPadding: const EdgeInsets.fromLTRB(16, 10, 12, 10),
         title: Row(children: [
           Expanded(
-            child: Text(
-              nota.nota.destinatario.isEmpty
-                  ? 'Sin destinatario'
-                  : nota.nota.destinatario,
+            child: NombreDeNota(
+              nota.nota.destinatario,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ),

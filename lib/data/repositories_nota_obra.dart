@@ -27,6 +27,7 @@ class NotaConRenglones {
             monto: r.monto,
             montoBase: r.montoBase,
             porcentaje: r.porcentaje,
+            mostrarPorcentaje: r.mostrarPorcentaje,
           ))
       .toList();
 
@@ -93,12 +94,16 @@ class NotaObraRepository {
 
   // ── Escritura: la nota ────────────────────────────────────────────────
 
+  /// [destinatario] puede ir vacío: desde 0034 el nombre no es obligatorio —la
+  /// nota se abre y el nombre se pone después, o nunca—. [mostrarPara] solo
+  /// cuenta mientras siga vacío.
   Future<String> crear({
     required String obraId,
     required String empresaId,
-    required String destinatario,
+    String destinatario = '',
     String titulo = '',
     String? colaboradorId,
+    bool mostrarPara = true,
     int? fecha,
     required int orden,
   }) async {
@@ -110,6 +115,7 @@ class NotaObraRepository {
           destinatario: Value(destinatario),
           titulo: Value(titulo),
           colaboradorId: Value(colaboradorId),
+          mostrarPara: Value(mostrarPara),
           orden: Value(orden),
           empresaId: Value(empresaId),
           createdAt: Value(_ahora),
@@ -145,6 +151,7 @@ class NotaObraRepository {
     double? monto,
     double? montoBase,
     double? porcentaje,
+    bool mostrarPorcentaje = false,
     String texto = '',
     int? fecha,
     required int orden,
@@ -157,6 +164,7 @@ class NotaObraRepository {
             monto: Value(monto),
             montoBase: Value(montoBase),
             porcentaje: Value(porcentaje),
+            mostrarPorcentaje: Value(mostrarPorcentaje),
             texto: Value(texto),
             fecha: Value(fecha),
             orden: Value(orden),

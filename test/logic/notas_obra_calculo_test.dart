@@ -144,6 +144,56 @@ void main() {
     });
   });
 
+  /// Paridad con `muestraDesglose` de la web (0034). Decide una sola cosa —si
+  /// debajo del concepto sale la cuenta «62,000 − 4% = 2,480»— y la decide para
+  /// la pantalla Y para el PDF, que es lo que impide que lo que el dueño ve al
+  /// capturar no sea lo que el socio recibe impreso.
+  group('muestraDesglose', () {
+    test('sin bruto no hay cuenta que enseñar, sea del tipo que sea', () {
+      for (final tipo in TipoRenglon.values) {
+        expect(
+          muestraDesglose(RenglonCalc(tipo: tipo, monto: 1000)),
+          isFalse,
+        );
+      }
+    });
+
+    test('una DEDUCCIÓN solo enseña el valor, salvo que se pida el %', () {
+      const callada =
+          RenglonCalc(tipo: TipoRenglon.deduccion, montoBase: 62000, porcentaje: 4);
+      expect(muestraDesglose(callada), isFalse,
+          reason: 'el default false es el encargo del dueño');
+      expect(
+        muestraDesglose(const RenglonCalc(
+            tipo: TipoRenglon.deduccion,
+            montoBase: 62000,
+            porcentaje: 4,
+            mostrarPorcentaje: true)),
+        isTrue,
+      );
+    });
+
+    test('CONCEPTO y PAGO enseñan su cuenta siempre: explica el neto', () {
+      for (final tipo in [TipoRenglon.concepto, TipoRenglon.pago]) {
+        expect(
+          muestraDesglose(
+              RenglonCalc(tipo: tipo, montoBase: 62000, porcentaje: 4)),
+          isTrue,
+          reason: 'en $tipo el desglose dice de dónde sale lo que se cobra',
+        );
+        // `mostrarPorcentaje` es cosa de las DEDUCCION: aquí ni se mira.
+        expect(
+          muestraDesglose(RenglonCalc(
+              tipo: tipo,
+              montoBase: 62000,
+              porcentaje: 4,
+              mostrarPorcentaje: false)),
+          isTrue,
+        );
+      }
+    });
+  });
+
   group('cadenas que viajan a Supabase', () {
     test('ida y vuelta de los cuatro tipos', () {
       for (final t in TipoRenglon.values) {

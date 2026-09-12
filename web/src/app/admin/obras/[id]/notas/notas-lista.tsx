@@ -3,24 +3,21 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Badge, Button, Card, EmptyState, Field, Input, Modal, Select } from '@/components/ui';
+import { Badge, Button, Card, EmptyState, Field, Input, Modal } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/lib/data/format';
 import { calcularTotales, type NotaConRenglones } from '@/lib/data/notas-obra-calculo';
 import { msAFechaInput } from '@/lib/data/tz';
 import { crearNotaAction } from './actions';
-
-interface ColaboradorLite {
-  id: string;
-  nombre: string;
-}
+import BuscadorDestinatario, { type ColaboradorLite } from './buscador-destinatario';
 
 /**
  * Listado de las notas de una obra, una por socio. Cada tarjeta enseña de un
  * vistazo lo que importa al abrirla: total acordado y cuánto falta.
  *
- * El alta pide solo el destinatario y la fecha; los renglones se capturan
- * dentro. Pedir todo de golpe convertiría "apuntar rápido un trato" en un
- * formulario largo, que es justo lo que hoy se resuelve con una tabla de Word.
+ * El alta no pide nada obligatorio: los renglones —y hasta el nombre— se
+ * capturan dentro. Pedir todo de golpe convertiría "apuntar rápido un trato" en
+ * un formulario largo, que es justo lo que hoy se resuelve con una tabla de
+ * Word.
  */
 export default function NotasLista({
   obraId,
@@ -48,19 +45,6 @@ export default function NotasLista({
     setColaboradorId('');
     setTitulo('');
     setError(null);
-  }
-
-  /**
-   * Al elegir un colaborador se copia su nombre al destinatario si está vacío:
-   * el nombre libre sigue mandando (el socio puede firmar distinto a como está
-   * dado de alta), pero no hay que teclearlo dos veces.
-   */
-  function elegirColaborador(id: string) {
-    setColaboradorId(id);
-    if (!destinatario.trim()) {
-      const c = colaboradores.find((x) => x.id === id);
-      if (c) setDestinatario(c.nombre);
-    }
   }
 
   async function crear() {
@@ -121,7 +105,11 @@ export default function NotasLista({
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate font-semibold text-neutral-900">
-                          {nota.destinatario || 'Sin destinatario'}
+                          {nota.destinatario || (
+                            <span className="text-neutral-400" title="Por completar">
+                              *
+                            </span>
+                          )}
                         </p>
                         {nota.titulo && (
                           <p className="truncate text-sm text-neutral-600">{nota.titulo}</p>
@@ -168,37 +156,22 @@ export default function NotasLista({
             <Button type="button" variant="ghost" onClick={cerrar} disabled={guardando}>
               Cancelar
             </Button>
-            <Button type="button" onClick={crear} disabled={guardando || !destinatario.trim()}>
+            <Button type="button" onClick={crear} disabled={guardando}>
               {guardando ? 'Creando…' : 'Crear y capturar'}
             </Button>
           </div>
         }
       >
         <div className="space-y-3">
-          <Field label="A nombre de *" hint="Como lo conoces. No necesita estar dado de alta.">
-            <Input
-              value={destinatario}
-              onChange={(e) => setDestinatario(e.target.value)}
-              placeholder="Ej. Orlando Ramoz"
-              required
-            />
-          </Field>
-
-          {colaboradores.length > 0 && (
-            <Field
-              label="¿Está en el equipo?"
-              hint="Opcional: liga la nota a alguien ya registrado."
-            >
-              <Select value={colaboradorId} onChange={(e) => elegirColaborador(e.target.value)}>
-                <option value="">No está en el sistema</option>
-                {colaboradores.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nombre}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          )}
+          <BuscadorDestinatario
+            valor={destinatario}
+            colaboradorId={colaboradorId}
+            colaboradores={colaboradores}
+            onChange={(nombre, id) => {
+              setDestinatario(nombre);
+              setColaboradorId(id);
+            }}
+          />
 
           <Field label="Título" hint="Opcional. Ej. el lote o la etapa.">
             <Input

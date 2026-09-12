@@ -415,6 +415,12 @@ class NotaObra extends Table with SyncCols, Orderable {
   TextColumn get titulo => text().withDefault(const Constant(''))();
   IntColumn get fecha => integer()();
   TextColumn get estado => text().withDefault(const Constant('ABIERTA'))();
+
+  /// Solo cuenta cuando [destinatario] está vacío (0034): si el PDF imprime el
+  /// apartado «Para» con una raya para llenarlo a mano o lo quita del todo.
+  /// Con nombre el apartado se imprime siempre y esto ni se pregunta.
+  BoolColumn get mostrarPara => boolean().withDefault(const Constant(true))();
+
   RealColumn get totalOverride => real().nullable()();
   RealColumn get saldoOverride => real().nullable()();
   TextColumn get notas => text().withDefault(const Constant(''))();
@@ -442,6 +448,13 @@ class NotaObraRenglon extends Table with SyncCols, Orderable {
   RealColumn get monto => real().nullable()();
   RealColumn get montoBase => real().nullable()();
   RealColumn get porcentaje => real().nullable()();
+
+  /// Solo lo miran las DEDUCCION (0034): si enseñan la cuenta («62,000 − 4% =
+  /// 2,480») debajo del concepto o nada más el valor. Default `false` a
+  /// propósito: al socio le basta cuánto se le descontó. Ver [muestraDesglose].
+  BoolColumn get mostrarPorcentaje =>
+      boolean().withDefault(const Constant(false))();
+
   TextColumn get texto => text().withDefault(const Constant(''))();
   IntColumn get fecha => integer().nullable()();
 

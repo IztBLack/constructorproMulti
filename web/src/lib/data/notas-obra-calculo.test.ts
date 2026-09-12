@@ -3,6 +3,7 @@ import {
   calcularTotales,
   montoEfectivo,
   montoSugerido,
+  muestraDesglose,
   type NotaObra,
   type RenglonNota,
   type TipoRenglon,
@@ -29,6 +30,7 @@ function renglon(tipo: TipoRenglon, etiqueta: string, extra: Partial<RenglonNota
     monto: null,
     monto_base: null,
     porcentaje: null,
+    mostrar_porcentaje: false,
     texto: '',
     fecha: null,
     orden: n * 100,
@@ -168,5 +170,44 @@ describe('calcularTotales — deducciones y valores fijados', () => {
       renglon('CONCEPTO', 'B', { monto: 0.2 }),
     ]);
     expect(t.subtotal).toBe(0.3);
+  });
+});
+
+describe('muestraDesglose — qué renglones enseñan su cuenta', () => {
+  test('sin bruto no hay nada que desglosar', () => {
+    expect(muestraDesglose(renglon('DEDUCCION', 'RETENCIÓN', { monto: 2_480 }))).toBe(false);
+    expect(muestraDesglose(renglon('CONCEPTO', 'PRETIL', { monto: 25_000 }))).toBe(false);
+  });
+
+  test('una DEDUCCION esconde su cuenta: al socio le basta cuánto se le descontó', () => {
+    const r = renglon('DEDUCCION', 'RETENCIÓN', { monto_base: 62_000, porcentaje: 4 });
+    expect(muestraDesglose(r)).toBe(false);
+  });
+
+  test('la DEDUCCION la enseña cuando el dueño lo pide', () => {
+    const r = renglon('DEDUCCION', 'RETENCIÓN', {
+      monto_base: 62_000,
+      porcentaje: 4,
+      mostrar_porcentaje: true,
+    });
+    expect(muestraDesglose(r)).toBe(true);
+  });
+
+  test('un PAGO enseña su cuenta siempre: explica de dónde sale el neto', () => {
+    const r = renglon('PAGO', 'PROYECCIÓN', { monto_base: 62_000, porcentaje: 4 });
+    expect(muestraDesglose(r)).toBe(true);
+    expect(muestraDesglose(renglon('CONCEPTO', 'BASE', { monto_base: 10_000 }))).toBe(true);
+  });
+
+  test('el interruptor de la deducción no toca los totales', () => {
+    const escondida = renglon('DEDUCCION', 'RETENCIÓN', { monto_base: 62_000, porcentaje: 4 });
+    const ensenada = renglon('DEDUCCION', 'RETENCIÓN', {
+      monto_base: 62_000,
+      porcentaje: 4,
+      mostrar_porcentaje: true,
+    });
+    expect(calcularTotales(notaBase, [escondida]).deducciones).toBe(
+      calcularTotales(notaBase, [ensenada]).deducciones,
+    );
   });
 });

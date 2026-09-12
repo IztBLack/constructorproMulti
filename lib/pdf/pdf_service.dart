@@ -644,7 +644,22 @@ class PdfService {
           _header(
             'Nota de trabajos',
             [
-              'Para: ${n.destinatario.isEmpty ? '—' : n.destinatario}',
+              // El apartado «Para» (0034): con nombre se imprime siempre; sin
+              // él, o sale con una raya para llenarlo a mano o no sale. El
+              // asterisco de «por completar» es SOLO de pantalla y aquí no
+              // aparece nunca: un documento que se manda por WhatsApp no puede
+              // llevar una marca interna de la app.
+              //
+              // La raya va con guiones bajos y NO con una raya larga (U+2014,
+              // que es la que usa la web): la Helvetica base de este PDF no
+              // tiene Unicode y la dibujaría como un hueco en blanco —el mismo
+              // tropiezo que ya documenta la proyección de nómina—, así que el
+              // apartado saldría sin dónde escribir, que es justo para lo que
+              // existe.
+              if (n.destinatario.trim().isNotEmpty)
+                'Para: ${n.destinatario}'
+              else if (n.mostrarPara)
+                'Para: ____________________',
               'Obra: $obraNombre',
               if (n.titulo.isNotEmpty) 'Referencia: ${n.titulo}',
               'Fecha: ${Fmt.date(n.fecha)}',
@@ -677,11 +692,15 @@ class PdfService {
                 monto: r.monto,
                 montoBase: r.montoBase,
                 porcentaje: r.porcentaje,
+                mostrarPorcentaje: r.mostrarPorcentaje,
               );
               final detalle = <String>[
                 if (r.fecha != null) Fmt.date(r.fecha!),
                 if (r.texto.isNotEmpty) r.texto,
-                if (r.montoBase != null)
+                // Mismo criterio que en la pantalla de captura, y por el mismo
+                // módulo: lo que el dueño ve al capturar es lo que el socio ve
+                // impreso. En las DEDUCCION el desglose es opcional.
+                if (muestraDesglose(calc))
                   '${Fmt.money(r.montoBase!)}'
                       '${r.porcentaje != null ? ' - ${r.porcentaje!.toStringAsFixed(0)}%' : ''}'
                       ' = ${Fmt.money(montoEfectivo(calc))}',

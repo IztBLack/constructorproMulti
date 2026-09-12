@@ -15147,6 +15147,21 @@ class $NotaObraTable extends NotaObra
     requiredDuringInsert: false,
     defaultValue: const Constant('ABIERTA'),
   );
+  static const VerificationMeta _mostrarParaMeta = const VerificationMeta(
+    'mostrarPara',
+  );
+  @override
+  late final GeneratedColumn<bool> mostrarPara = GeneratedColumn<bool>(
+    'mostrar_para',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("mostrar_para" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
   static const VerificationMeta _totalOverrideMeta = const VerificationMeta(
     'totalOverride',
   );
@@ -15206,6 +15221,7 @@ class $NotaObraTable extends NotaObra
     titulo,
     fecha,
     estado,
+    mostrarPara,
     totalOverride,
     saldoOverride,
     notas,
@@ -15319,6 +15335,15 @@ class $NotaObraTable extends NotaObra
         estado.isAcceptableOrUnknown(data['estado']!, _estadoMeta),
       );
     }
+    if (data.containsKey('mostrar_para')) {
+      context.handle(
+        _mostrarParaMeta,
+        mostrarPara.isAcceptableOrUnknown(
+          data['mostrar_para']!,
+          _mostrarParaMeta,
+        ),
+      );
+    }
     if (data.containsKey('total_override')) {
       context.handle(
         _totalOverrideMeta,
@@ -15414,6 +15439,10 @@ class $NotaObraTable extends NotaObra
         DriftSqlType.string,
         data['${effectivePrefix}estado'],
       )!,
+      mostrarPara: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}mostrar_para'],
+      )!,
       totalOverride: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}total_override'],
@@ -15473,6 +15502,11 @@ class NotaObraRow extends DataClass implements Insertable<NotaObraRow> {
   final String titulo;
   final int fecha;
   final String estado;
+
+  /// Solo cuenta cuando [destinatario] está vacío (0034): si el PDF imprime el
+  /// apartado «Para» con una raya para llenarlo a mano o lo quita del todo.
+  /// Con nombre el apartado se imprime siempre y esto ni se pregunta.
+  final bool mostrarPara;
   final double? totalOverride;
   final double? saldoOverride;
   final String notas;
@@ -15494,6 +15528,7 @@ class NotaObraRow extends DataClass implements Insertable<NotaObraRow> {
     required this.titulo,
     required this.fecha,
     required this.estado,
+    required this.mostrarPara,
     this.totalOverride,
     this.saldoOverride,
     required this.notas,
@@ -15522,6 +15557,7 @@ class NotaObraRow extends DataClass implements Insertable<NotaObraRow> {
     map['titulo'] = Variable<String>(titulo);
     map['fecha'] = Variable<int>(fecha);
     map['estado'] = Variable<String>(estado);
+    map['mostrar_para'] = Variable<bool>(mostrarPara);
     if (!nullToAbsent || totalOverride != null) {
       map['total_override'] = Variable<double>(totalOverride);
     }
@@ -15557,6 +15593,7 @@ class NotaObraRow extends DataClass implements Insertable<NotaObraRow> {
       titulo: Value(titulo),
       fecha: Value(fecha),
       estado: Value(estado),
+      mostrarPara: Value(mostrarPara),
       totalOverride: totalOverride == null && nullToAbsent
           ? const Value.absent()
           : Value(totalOverride),
@@ -15590,6 +15627,7 @@ class NotaObraRow extends DataClass implements Insertable<NotaObraRow> {
       titulo: serializer.fromJson<String>(json['titulo']),
       fecha: serializer.fromJson<int>(json['fecha']),
       estado: serializer.fromJson<String>(json['estado']),
+      mostrarPara: serializer.fromJson<bool>(json['mostrarPara']),
       totalOverride: serializer.fromJson<double?>(json['totalOverride']),
       saldoOverride: serializer.fromJson<double?>(json['saldoOverride']),
       notas: serializer.fromJson<String>(json['notas']),
@@ -15614,6 +15652,7 @@ class NotaObraRow extends DataClass implements Insertable<NotaObraRow> {
       'titulo': serializer.toJson<String>(titulo),
       'fecha': serializer.toJson<int>(fecha),
       'estado': serializer.toJson<String>(estado),
+      'mostrarPara': serializer.toJson<bool>(mostrarPara),
       'totalOverride': serializer.toJson<double?>(totalOverride),
       'saldoOverride': serializer.toJson<double?>(saldoOverride),
       'notas': serializer.toJson<String>(notas),
@@ -15636,6 +15675,7 @@ class NotaObraRow extends DataClass implements Insertable<NotaObraRow> {
     String? titulo,
     int? fecha,
     String? estado,
+    bool? mostrarPara,
     Value<double?> totalOverride = const Value.absent(),
     Value<double?> saldoOverride = const Value.absent(),
     String? notas,
@@ -15659,6 +15699,7 @@ class NotaObraRow extends DataClass implements Insertable<NotaObraRow> {
     titulo: titulo ?? this.titulo,
     fecha: fecha ?? this.fecha,
     estado: estado ?? this.estado,
+    mostrarPara: mostrarPara ?? this.mostrarPara,
     totalOverride: totalOverride.present
         ? totalOverride.value
         : this.totalOverride,
@@ -15692,6 +15733,9 @@ class NotaObraRow extends DataClass implements Insertable<NotaObraRow> {
       titulo: data.titulo.present ? data.titulo.value : this.titulo,
       fecha: data.fecha.present ? data.fecha.value : this.fecha,
       estado: data.estado.present ? data.estado.value : this.estado,
+      mostrarPara: data.mostrarPara.present
+          ? data.mostrarPara.value
+          : this.mostrarPara,
       totalOverride: data.totalOverride.present
           ? data.totalOverride.value
           : this.totalOverride,
@@ -15722,6 +15766,7 @@ class NotaObraRow extends DataClass implements Insertable<NotaObraRow> {
           ..write('titulo: $titulo, ')
           ..write('fecha: $fecha, ')
           ..write('estado: $estado, ')
+          ..write('mostrarPara: $mostrarPara, ')
           ..write('totalOverride: $totalOverride, ')
           ..write('saldoOverride: $saldoOverride, ')
           ..write('notas: $notas, ')
@@ -15746,6 +15791,7 @@ class NotaObraRow extends DataClass implements Insertable<NotaObraRow> {
     titulo,
     fecha,
     estado,
+    mostrarPara,
     totalOverride,
     saldoOverride,
     notas,
@@ -15769,6 +15815,7 @@ class NotaObraRow extends DataClass implements Insertable<NotaObraRow> {
           other.titulo == this.titulo &&
           other.fecha == this.fecha &&
           other.estado == this.estado &&
+          other.mostrarPara == this.mostrarPara &&
           other.totalOverride == this.totalOverride &&
           other.saldoOverride == this.saldoOverride &&
           other.notas == this.notas &&
@@ -15790,6 +15837,7 @@ class NotaObraCompanion extends UpdateCompanion<NotaObraRow> {
   final Value<String> titulo;
   final Value<int> fecha;
   final Value<String> estado;
+  final Value<bool> mostrarPara;
   final Value<double?> totalOverride;
   final Value<double?> saldoOverride;
   final Value<String> notas;
@@ -15810,6 +15858,7 @@ class NotaObraCompanion extends UpdateCompanion<NotaObraRow> {
     this.titulo = const Value.absent(),
     this.fecha = const Value.absent(),
     this.estado = const Value.absent(),
+    this.mostrarPara = const Value.absent(),
     this.totalOverride = const Value.absent(),
     this.saldoOverride = const Value.absent(),
     this.notas = const Value.absent(),
@@ -15831,6 +15880,7 @@ class NotaObraCompanion extends UpdateCompanion<NotaObraRow> {
     this.titulo = const Value.absent(),
     required int fecha,
     this.estado = const Value.absent(),
+    this.mostrarPara = const Value.absent(),
     this.totalOverride = const Value.absent(),
     this.saldoOverride = const Value.absent(),
     this.notas = const Value.absent(),
@@ -15854,6 +15904,7 @@ class NotaObraCompanion extends UpdateCompanion<NotaObraRow> {
     Expression<String>? titulo,
     Expression<int>? fecha,
     Expression<String>? estado,
+    Expression<bool>? mostrarPara,
     Expression<double>? totalOverride,
     Expression<double>? saldoOverride,
     Expression<String>? notas,
@@ -15875,6 +15926,7 @@ class NotaObraCompanion extends UpdateCompanion<NotaObraRow> {
       if (titulo != null) 'titulo': titulo,
       if (fecha != null) 'fecha': fecha,
       if (estado != null) 'estado': estado,
+      if (mostrarPara != null) 'mostrar_para': mostrarPara,
       if (totalOverride != null) 'total_override': totalOverride,
       if (saldoOverride != null) 'saldo_override': saldoOverride,
       if (notas != null) 'notas': notas,
@@ -15898,6 +15950,7 @@ class NotaObraCompanion extends UpdateCompanion<NotaObraRow> {
     Value<String>? titulo,
     Value<int>? fecha,
     Value<String>? estado,
+    Value<bool>? mostrarPara,
     Value<double?>? totalOverride,
     Value<double?>? saldoOverride,
     Value<String>? notas,
@@ -15919,6 +15972,7 @@ class NotaObraCompanion extends UpdateCompanion<NotaObraRow> {
       titulo: titulo ?? this.titulo,
       fecha: fecha ?? this.fecha,
       estado: estado ?? this.estado,
+      mostrarPara: mostrarPara ?? this.mostrarPara,
       totalOverride: totalOverride ?? this.totalOverride,
       saldoOverride: saldoOverride ?? this.saldoOverride,
       notas: notas ?? this.notas,
@@ -15972,6 +16026,9 @@ class NotaObraCompanion extends UpdateCompanion<NotaObraRow> {
     if (estado.present) {
       map['estado'] = Variable<String>(estado.value);
     }
+    if (mostrarPara.present) {
+      map['mostrar_para'] = Variable<bool>(mostrarPara.value);
+    }
     if (totalOverride.present) {
       map['total_override'] = Variable<double>(totalOverride.value);
     }
@@ -16007,6 +16064,7 @@ class NotaObraCompanion extends UpdateCompanion<NotaObraRow> {
           ..write('titulo: $titulo, ')
           ..write('fecha: $fecha, ')
           ..write('estado: $estado, ')
+          ..write('mostrarPara: $mostrarPara, ')
           ..write('totalOverride: $totalOverride, ')
           ..write('saldoOverride: $saldoOverride, ')
           ..write('notas: $notas, ')
@@ -16174,6 +16232,21 @@ class $NotaObraRenglonTable extends NotaObraRenglon
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _mostrarPorcentajeMeta = const VerificationMeta(
+    'mostrarPorcentaje',
+  );
+  @override
+  late final GeneratedColumn<bool> mostrarPorcentaje = GeneratedColumn<bool>(
+    'mostrar_porcentaje',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("mostrar_porcentaje" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _textoMeta = const VerificationMeta('texto');
   @override
   late final GeneratedColumn<String> texto = GeneratedColumn<String>(
@@ -16209,6 +16282,7 @@ class $NotaObraRenglonTable extends NotaObraRenglon
     monto,
     montoBase,
     porcentaje,
+    mostrarPorcentaje,
     texto,
     fecha,
   ];
@@ -16312,6 +16386,15 @@ class $NotaObraRenglonTable extends NotaObraRenglon
         porcentaje.isAcceptableOrUnknown(data['porcentaje']!, _porcentajeMeta),
       );
     }
+    if (data.containsKey('mostrar_porcentaje')) {
+      context.handle(
+        _mostrarPorcentajeMeta,
+        mostrarPorcentaje.isAcceptableOrUnknown(
+          data['mostrar_porcentaje']!,
+          _mostrarPorcentajeMeta,
+        ),
+      );
+    }
     if (data.containsKey('texto')) {
       context.handle(
         _textoMeta,
@@ -16389,6 +16472,10 @@ class $NotaObraRenglonTable extends NotaObraRenglon
         DriftSqlType.double,
         data['${effectivePrefix}porcentaje'],
       ),
+      mostrarPorcentaje: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}mostrar_porcentaje'],
+      )!,
       texto: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}texto'],
@@ -16437,6 +16524,11 @@ class NotaObraRenglonRow extends DataClass
   final double? monto;
   final double? montoBase;
   final double? porcentaje;
+
+  /// Solo lo miran las DEDUCCION (0034): si enseñan la cuenta («62,000 − 4% =
+  /// 2,480») debajo del concepto o nada más el valor. Default `false` a
+  /// propósito: al socio le basta cuánto se le descontó. Ver [muestraDesglose].
+  final bool mostrarPorcentaje;
   final String texto;
   final int? fecha;
   const NotaObraRenglonRow({
@@ -16454,6 +16546,7 @@ class NotaObraRenglonRow extends DataClass
     this.monto,
     this.montoBase,
     this.porcentaje,
+    required this.mostrarPorcentaje,
     required this.texto,
     this.fecha,
   });
@@ -16484,6 +16577,7 @@ class NotaObraRenglonRow extends DataClass
     if (!nullToAbsent || porcentaje != null) {
       map['porcentaje'] = Variable<double>(porcentaje);
     }
+    map['mostrar_porcentaje'] = Variable<bool>(mostrarPorcentaje);
     map['texto'] = Variable<String>(texto);
     if (!nullToAbsent || fecha != null) {
       map['fecha'] = Variable<int>(fecha);
@@ -16517,6 +16611,7 @@ class NotaObraRenglonRow extends DataClass
       porcentaje: porcentaje == null && nullToAbsent
           ? const Value.absent()
           : Value(porcentaje),
+      mostrarPorcentaje: Value(mostrarPorcentaje),
       texto: Value(texto),
       fecha: fecha == null && nullToAbsent
           ? const Value.absent()
@@ -16544,6 +16639,7 @@ class NotaObraRenglonRow extends DataClass
       monto: serializer.fromJson<double?>(json['monto']),
       montoBase: serializer.fromJson<double?>(json['montoBase']),
       porcentaje: serializer.fromJson<double?>(json['porcentaje']),
+      mostrarPorcentaje: serializer.fromJson<bool>(json['mostrarPorcentaje']),
       texto: serializer.fromJson<String>(json['texto']),
       fecha: serializer.fromJson<int?>(json['fecha']),
     );
@@ -16566,6 +16662,7 @@ class NotaObraRenglonRow extends DataClass
       'monto': serializer.toJson<double?>(monto),
       'montoBase': serializer.toJson<double?>(montoBase),
       'porcentaje': serializer.toJson<double?>(porcentaje),
+      'mostrarPorcentaje': serializer.toJson<bool>(mostrarPorcentaje),
       'texto': serializer.toJson<String>(texto),
       'fecha': serializer.toJson<int?>(fecha),
     };
@@ -16586,6 +16683,7 @@ class NotaObraRenglonRow extends DataClass
     Value<double?> monto = const Value.absent(),
     Value<double?> montoBase = const Value.absent(),
     Value<double?> porcentaje = const Value.absent(),
+    bool? mostrarPorcentaje,
     String? texto,
     Value<int?> fecha = const Value.absent(),
   }) => NotaObraRenglonRow(
@@ -16605,6 +16703,7 @@ class NotaObraRenglonRow extends DataClass
     monto: monto.present ? monto.value : this.monto,
     montoBase: montoBase.present ? montoBase.value : this.montoBase,
     porcentaje: porcentaje.present ? porcentaje.value : this.porcentaje,
+    mostrarPorcentaje: mostrarPorcentaje ?? this.mostrarPorcentaje,
     texto: texto ?? this.texto,
     fecha: fecha.present ? fecha.value : this.fecha,
   );
@@ -16630,6 +16729,9 @@ class NotaObraRenglonRow extends DataClass
       porcentaje: data.porcentaje.present
           ? data.porcentaje.value
           : this.porcentaje,
+      mostrarPorcentaje: data.mostrarPorcentaje.present
+          ? data.mostrarPorcentaje.value
+          : this.mostrarPorcentaje,
       texto: data.texto.present ? data.texto.value : this.texto,
       fecha: data.fecha.present ? data.fecha.value : this.fecha,
     );
@@ -16652,6 +16754,7 @@ class NotaObraRenglonRow extends DataClass
           ..write('monto: $monto, ')
           ..write('montoBase: $montoBase, ')
           ..write('porcentaje: $porcentaje, ')
+          ..write('mostrarPorcentaje: $mostrarPorcentaje, ')
           ..write('texto: $texto, ')
           ..write('fecha: $fecha')
           ..write(')'))
@@ -16674,6 +16777,7 @@ class NotaObraRenglonRow extends DataClass
     monto,
     montoBase,
     porcentaje,
+    mostrarPorcentaje,
     texto,
     fecha,
   );
@@ -16695,6 +16799,7 @@ class NotaObraRenglonRow extends DataClass
           other.monto == this.monto &&
           other.montoBase == this.montoBase &&
           other.porcentaje == this.porcentaje &&
+          other.mostrarPorcentaje == this.mostrarPorcentaje &&
           other.texto == this.texto &&
           other.fecha == this.fecha);
 }
@@ -16714,6 +16819,7 @@ class NotaObraRenglonCompanion extends UpdateCompanion<NotaObraRenglonRow> {
   final Value<double?> monto;
   final Value<double?> montoBase;
   final Value<double?> porcentaje;
+  final Value<bool> mostrarPorcentaje;
   final Value<String> texto;
   final Value<int?> fecha;
   final Value<int> rowid;
@@ -16732,6 +16838,7 @@ class NotaObraRenglonCompanion extends UpdateCompanion<NotaObraRenglonRow> {
     this.monto = const Value.absent(),
     this.montoBase = const Value.absent(),
     this.porcentaje = const Value.absent(),
+    this.mostrarPorcentaje = const Value.absent(),
     this.texto = const Value.absent(),
     this.fecha = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -16751,6 +16858,7 @@ class NotaObraRenglonCompanion extends UpdateCompanion<NotaObraRenglonRow> {
     this.monto = const Value.absent(),
     this.montoBase = const Value.absent(),
     this.porcentaje = const Value.absent(),
+    this.mostrarPorcentaje = const Value.absent(),
     this.texto = const Value.absent(),
     this.fecha = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -16771,6 +16879,7 @@ class NotaObraRenglonCompanion extends UpdateCompanion<NotaObraRenglonRow> {
     Expression<double>? monto,
     Expression<double>? montoBase,
     Expression<double>? porcentaje,
+    Expression<bool>? mostrarPorcentaje,
     Expression<String>? texto,
     Expression<int>? fecha,
     Expression<int>? rowid,
@@ -16790,6 +16899,7 @@ class NotaObraRenglonCompanion extends UpdateCompanion<NotaObraRenglonRow> {
       if (monto != null) 'monto': monto,
       if (montoBase != null) 'monto_base': montoBase,
       if (porcentaje != null) 'porcentaje': porcentaje,
+      if (mostrarPorcentaje != null) 'mostrar_porcentaje': mostrarPorcentaje,
       if (texto != null) 'texto': texto,
       if (fecha != null) 'fecha': fecha,
       if (rowid != null) 'rowid': rowid,
@@ -16811,6 +16921,7 @@ class NotaObraRenglonCompanion extends UpdateCompanion<NotaObraRenglonRow> {
     Value<double?>? monto,
     Value<double?>? montoBase,
     Value<double?>? porcentaje,
+    Value<bool>? mostrarPorcentaje,
     Value<String>? texto,
     Value<int?>? fecha,
     Value<int>? rowid,
@@ -16830,6 +16941,7 @@ class NotaObraRenglonCompanion extends UpdateCompanion<NotaObraRenglonRow> {
       monto: monto ?? this.monto,
       montoBase: montoBase ?? this.montoBase,
       porcentaje: porcentaje ?? this.porcentaje,
+      mostrarPorcentaje: mostrarPorcentaje ?? this.mostrarPorcentaje,
       texto: texto ?? this.texto,
       fecha: fecha ?? this.fecha,
       rowid: rowid ?? this.rowid,
@@ -16881,6 +16993,9 @@ class NotaObraRenglonCompanion extends UpdateCompanion<NotaObraRenglonRow> {
     if (porcentaje.present) {
       map['porcentaje'] = Variable<double>(porcentaje.value);
     }
+    if (mostrarPorcentaje.present) {
+      map['mostrar_porcentaje'] = Variable<bool>(mostrarPorcentaje.value);
+    }
     if (texto.present) {
       map['texto'] = Variable<String>(texto.value);
     }
@@ -16910,6 +17025,7 @@ class NotaObraRenglonCompanion extends UpdateCompanion<NotaObraRenglonRow> {
           ..write('monto: $monto, ')
           ..write('montoBase: $montoBase, ')
           ..write('porcentaje: $porcentaje, ')
+          ..write('mostrarPorcentaje: $mostrarPorcentaje, ')
           ..write('texto: $texto, ')
           ..write('fecha: $fecha, ')
           ..write('rowid: $rowid')
@@ -23965,6 +24081,7 @@ typedef $$NotaObraTableCreateCompanionBuilder =
       Value<String> titulo,
       required int fecha,
       Value<String> estado,
+      Value<bool> mostrarPara,
       Value<double?> totalOverride,
       Value<double?> saldoOverride,
       Value<String> notas,
@@ -23987,6 +24104,7 @@ typedef $$NotaObraTableUpdateCompanionBuilder =
       Value<String> titulo,
       Value<int> fecha,
       Value<String> estado,
+      Value<bool> mostrarPara,
       Value<double?> totalOverride,
       Value<double?> saldoOverride,
       Value<String> notas,
@@ -24070,6 +24188,11 @@ class $$NotaObraTableFilterComposer
 
   ColumnFilters<String> get estado => $composableBuilder(
     column: $table.estado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get mostrarPara => $composableBuilder(
+    column: $table.mostrarPara,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -24173,6 +24296,11 @@ class $$NotaObraTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get mostrarPara => $composableBuilder(
+    column: $table.mostrarPara,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<double> get totalOverride => $composableBuilder(
     column: $table.totalOverride,
     builder: (column) => ColumnOrderings(column),
@@ -24253,6 +24381,11 @@ class $$NotaObraTableAnnotationComposer
   GeneratedColumn<String> get estado =>
       $composableBuilder(column: $table.estado, builder: (column) => column);
 
+  GeneratedColumn<bool> get mostrarPara => $composableBuilder(
+    column: $table.mostrarPara,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<double> get totalOverride => $composableBuilder(
     column: $table.totalOverride,
     builder: (column) => column,
@@ -24317,6 +24450,7 @@ class $$NotaObraTableTableManager
                 Value<String> titulo = const Value.absent(),
                 Value<int> fecha = const Value.absent(),
                 Value<String> estado = const Value.absent(),
+                Value<bool> mostrarPara = const Value.absent(),
                 Value<double?> totalOverride = const Value.absent(),
                 Value<double?> saldoOverride = const Value.absent(),
                 Value<String> notas = const Value.absent(),
@@ -24337,6 +24471,7 @@ class $$NotaObraTableTableManager
                 titulo: titulo,
                 fecha: fecha,
                 estado: estado,
+                mostrarPara: mostrarPara,
                 totalOverride: totalOverride,
                 saldoOverride: saldoOverride,
                 notas: notas,
@@ -24359,6 +24494,7 @@ class $$NotaObraTableTableManager
                 Value<String> titulo = const Value.absent(),
                 required int fecha,
                 Value<String> estado = const Value.absent(),
+                Value<bool> mostrarPara = const Value.absent(),
                 Value<double?> totalOverride = const Value.absent(),
                 Value<double?> saldoOverride = const Value.absent(),
                 Value<String> notas = const Value.absent(),
@@ -24379,6 +24515,7 @@ class $$NotaObraTableTableManager
                 titulo: titulo,
                 fecha: fecha,
                 estado: estado,
+                mostrarPara: mostrarPara,
                 totalOverride: totalOverride,
                 saldoOverride: saldoOverride,
                 notas: notas,
@@ -24423,6 +24560,7 @@ typedef $$NotaObraRenglonTableCreateCompanionBuilder =
       Value<double?> monto,
       Value<double?> montoBase,
       Value<double?> porcentaje,
+      Value<bool> mostrarPorcentaje,
       Value<String> texto,
       Value<int?> fecha,
       Value<int> rowid,
@@ -24443,6 +24581,7 @@ typedef $$NotaObraRenglonTableUpdateCompanionBuilder =
       Value<double?> monto,
       Value<double?> montoBase,
       Value<double?> porcentaje,
+      Value<bool> mostrarPorcentaje,
       Value<String> texto,
       Value<int?> fecha,
       Value<int> rowid,
@@ -24524,6 +24663,11 @@ class $$NotaObraRenglonTableFilterComposer
 
   ColumnFilters<double> get porcentaje => $composableBuilder(
     column: $table.porcentaje,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get mostrarPorcentaje => $composableBuilder(
+    column: $table.mostrarPorcentaje,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -24617,6 +24761,11 @@ class $$NotaObraRenglonTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get mostrarPorcentaje => $composableBuilder(
+    column: $table.mostrarPorcentaje,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get texto => $composableBuilder(
     column: $table.texto,
     builder: (column) => ColumnOrderings(column),
@@ -24685,6 +24834,11 @@ class $$NotaObraRenglonTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<bool> get mostrarPorcentaje => $composableBuilder(
+    column: $table.mostrarPorcentaje,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get texto =>
       $composableBuilder(column: $table.texto, builder: (column) => column);
 
@@ -24743,6 +24897,7 @@ class $$NotaObraRenglonTableTableManager
                 Value<double?> monto = const Value.absent(),
                 Value<double?> montoBase = const Value.absent(),
                 Value<double?> porcentaje = const Value.absent(),
+                Value<bool> mostrarPorcentaje = const Value.absent(),
                 Value<String> texto = const Value.absent(),
                 Value<int?> fecha = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -24761,6 +24916,7 @@ class $$NotaObraRenglonTableTableManager
                 monto: monto,
                 montoBase: montoBase,
                 porcentaje: porcentaje,
+                mostrarPorcentaje: mostrarPorcentaje,
                 texto: texto,
                 fecha: fecha,
                 rowid: rowid,
@@ -24781,6 +24937,7 @@ class $$NotaObraRenglonTableTableManager
                 Value<double?> monto = const Value.absent(),
                 Value<double?> montoBase = const Value.absent(),
                 Value<double?> porcentaje = const Value.absent(),
+                Value<bool> mostrarPorcentaje = const Value.absent(),
                 Value<String> texto = const Value.absent(),
                 Value<int?> fecha = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -24799,6 +24956,7 @@ class $$NotaObraRenglonTableTableManager
                 monto: monto,
                 montoBase: montoBase,
                 porcentaje: porcentaje,
+                mostrarPorcentaje: mostrarPorcentaje,
                 texto: texto,
                 fecha: fecha,
                 rowid: rowid,

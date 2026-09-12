@@ -33,6 +33,7 @@ export interface NotaInput {
   titulo: string;
   fecha: number;
   estado: EstadoNota;
+  mostrar_para: boolean;
   total_override: number | null;
   saldo_override: number | null;
   notas: string;
@@ -44,15 +45,16 @@ export interface RenglonInput {
   monto: number | null;
   monto_base: number | null;
   porcentaje: number | null;
+  mostrar_porcentaje: boolean;
   texto: string;
   fecha: number | null;
   orden: number;
 }
 
 const CAMPOS_NOTA =
-  'id, obra_id, destinatario, colaborador_id, titulo, fecha, estado, total_override, saldo_override, notas, orden, texto_final';
+  'id, obra_id, destinatario, colaborador_id, titulo, fecha, estado, mostrar_para, total_override, saldo_override, notas, orden, texto_final';
 const CAMPOS_RENGLON =
-  'id, nota_id, tipo, etiqueta, monto, monto_base, porcentaje, texto, fecha, orden';
+  'id, nota_id, tipo, etiqueta, monto, monto_base, porcentaje, mostrar_porcentaje, texto, fecha, orden';
 
 // ── Lectura ─────────────────────────────────────────────────────────────────
 

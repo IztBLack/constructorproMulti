@@ -11,12 +11,8 @@ import {
 } from '@/lib/data/notas-obra-calculo';
 import { msAFechaInput } from '@/lib/data/tz';
 import { actualizarNotaAction, eliminarNotaAction, type SeccionNota } from '../actions';
+import BuscadorDestinatario, { type ColaboradorLite } from '../buscador-destinatario';
 import RenglonesNota from './renglones-nota';
-
-interface ColaboradorLite {
-  id: string;
-  nombre: string;
-}
 
 interface FormNota {
   destinatario: string;
@@ -24,6 +20,7 @@ interface FormNota {
   titulo: string;
   fecha: string;
   estado: EstadoNota;
+  mostrar_para: boolean;
   total_override: string;
   saldo_override: string;
   notas: string;
@@ -35,7 +32,7 @@ interface FormNota {
  * puede tropezar con una validación que no es suya.
  */
 const CAMPOS_SECCION: Record<SeccionNota, readonly (keyof FormNota)[]> = {
-  datos: ['destinatario', 'colaborador_id', 'titulo', 'fecha', 'estado'],
+  datos: ['destinatario', 'colaborador_id', 'titulo', 'fecha', 'estado', 'mostrar_para'],
   cuentas: ['total_override', 'saldo_override'],
   pie: ['notas'],
 };
@@ -47,6 +44,7 @@ function aForm(nota: NotaConRenglones): FormNota {
     titulo: nota.titulo,
     fecha: msAFechaInput(nota.fecha),
     estado: nota.estado,
+    mostrar_para: nota.mostrar_para,
     total_override: nota.total_override === null ? '' : String(nota.total_override),
     saldo_override: nota.saldo_override === null ? '' : String(nota.saldo_override),
     notas: nota.notas,
@@ -115,7 +113,9 @@ export default function EditorNota({
     setAviso(null);
 
     const fd = new FormData();
-    for (const campo of CAMPOS_SECCION[seccion]) fd.set(campo, form[campo]);
+    // `String` y no el valor crudo porque `mostrar_para` es booleano: FormData
+    // solo transporta texto, y la acción lo vuelve a leer como interruptor.
+    for (const campo of CAMPOS_SECCION[seccion]) fd.set(campo, String(form[campo]));
 
     const r = await actualizarNotaAction(obraId, nota.id, seccion, fd);
     setGuardando(null);
@@ -188,14 +188,34 @@ export default function EditorNota({
         </CardTitle>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="A nombre de *">
-            <Input
-              value={form.destinatario}
-              onChange={(e) => set('destinatario', e.target.value)}
+          <div className="sm:col-span-2">
+            <BuscadorDestinatario
+              valor={form.destinatario}
+              colaboradorId={form.colaborador_id}
+              colaboradores={colaboradores}
+              onChange={(destinatario, colaboradorId) =>
+                setForm((f) => ({ ...f, destinatario, colaborador_id: colaboradorId }))
+              }
               disabled={!puedeEditar}
-              required
             />
-          </Field>
+
+            {puedeEditar && !form.destinatario.trim() && (
+              <label className="mt-2 flex items-start gap-2 text-sm text-neutral-600">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 rounded border-neutral-300"
+                  checked={form.mostrar_para}
+                  onChange={(e) => set('mostrar_para', e.target.checked)}
+                />
+                <span>
+                  Imprimir el apartado «Para» en blanco
+                  <span className="block text-xs text-neutral-500">
+                    Apagado, el PDF no lo enseña. El asterisco nunca se imprime.
+                  </span>
+                </span>
+              </label>
+            )}
+          </div>
 
           <Field label="Título" hint="Ej. el lote o la etapa.">
             <Input
@@ -225,27 +245,6 @@ export default function EditorNota({
               <option value="LIQUIDADA">Liquidada</option>
             </Select>
           </Field>
-
-          {colaboradores.length > 0 && (
-            <Field
-              label="Ligada a"
-              hint="Opcional: alguien del equipo ya registrado."
-              className="sm:col-span-2"
-            >
-              <Select
-                value={form.colaborador_id}
-                onChange={(e) => set('colaborador_id', e.target.value)}
-                disabled={!puedeEditar}
-              >
-                <option value="">No está en el sistema</option>
-                {colaboradores.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.nombre}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          )}
         </div>
 
         {puedeEditar && <div className="mt-4">{botonGuardar('datos')}</div>}

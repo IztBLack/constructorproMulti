@@ -13,6 +13,7 @@ import '../../pdf/pdf_service.dart';
 import '../common/confirm_dialog.dart';
 import '../common/texto_final_card.dart';
 import '../pdf_preview_screen.dart';
+import 'campo_a_nombre_de.dart';
 
 /// Editor de una NOTA DE OBRA. Gemelo de `/admin/obras/[id]/notas/[notaId]`.
 ///
@@ -69,9 +70,9 @@ class _Editor extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(nota.nota.destinatario.isEmpty
-            ? 'Nota'
-            : nota.nota.destinatario),
+        // Sin nombre el título es el asterisco de «por completar», igual que en
+        // la lista: así se ve desde la barra que a esta nota le falta el dato.
+        title: NombreDeNota(nota.nota.destinatario),
         actions: [
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
@@ -193,11 +194,15 @@ class _Editor extends ConsumerWidget {
   }
 
   Future<void> _eliminar(BuildContext context, WidgetRef ref) async {
+    // Una nota sin nombre no puede presentarse como «la nota de »: se pregunta
+    // sin el nombre y ya.
+    final aQuien = nota.nota.destinatario.trim();
     final ok = await confirmDialog(
       context,
       title: 'Eliminar nota',
-      message: '¿Eliminar la nota de ${nota.nota.destinatario}? '
-          'No se puede deshacer.',
+      message: aQuien.isEmpty
+          ? '¿Eliminar esta nota? No se puede deshacer.'
+          : '¿Eliminar la nota de $aQuien? No se puede deshacer.',
     );
     if (!ok) return;
     await _repo(ref).eliminar(nota.nota.id);
@@ -208,6 +213,12 @@ class _Editor extends ConsumerWidget {
     final destinatario = TextEditingController(text: nota.nota.destinatario);
     final titulo = TextEditingController(text: nota.nota.titulo);
     final pie = TextEditingController(text: nota.nota.notas);
+    final colaboradores =
+        ref.read(colaboradoresProvider).asData?.value ?? const [];
+    // Mutables porque los escribe el campo desde adentro del diálogo; solo se
+    // leen al aceptar.
+    String? colaboradorId = nota.nota.colaboradorId;
+    var mostrarPara = nota.nota.mostrarPara;
 
     final ok = await showDialog<bool>(
       context: context,
@@ -215,10 +226,13 @@ class _Editor extends ConsumerWidget {
         title: const Text('Datos de la nota'),
         content: SingleChildScrollView(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(
+            CampoANombreDe(
               controller: destinatario,
-              textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(labelText: 'A nombre de'),
+              colaboradores: colaboradores,
+              colaboradorIdInicial: colaboradorId,
+              onColaborador: (id) => colaboradorId = id,
+              mostrarParaInicial: mostrarPara,
+              onMostrarPara: (v) => mostrarPara = v,
             ),
             const SizedBox(height: 8),
             TextField(
@@ -252,6 +266,10 @@ class _Editor extends ConsumerWidget {
     await _repo(ref).actualizar(NotaObraCompanion(
       id: Value(nota.nota.id),
       destinatario: Value(destinatario.text.trim()),
+      // Se guarda SIEMPRE, también cuando quedó en null: es como se desliga una
+      // nota del padrón al reescribirle el nombre a mano.
+      colaboradorId: Value(colaboradorId),
+      mostrarPara: Value(mostrarPara),
       titulo: Value(titulo.text.trim()),
       notas: Value(pie.text.trim()),
       updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
@@ -278,6 +296,7 @@ class _Editor extends ConsumerWidget {
         monto: resultado.monto,
         montoBase: resultado.montoBase,
         porcentaje: resultado.porcentaje,
+        mostrarPorcentaje: resultado.mostrarPorcentaje,
         texto: resultado.texto,
         orden: (nota.renglones.length + 1) * pasoOrdenRenglon,
       );
@@ -289,6 +308,7 @@ class _Editor extends ConsumerWidget {
         monto: Value(resultado.monto),
         montoBase: Value(resultado.montoBase),
         porcentaje: Value(resultado.porcentaje),
+        mostrarPorcentaje: Value(resultado.mostrarPorcentaje),
         texto: Value(resultado.texto),
         updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
       ));
@@ -390,12 +410,16 @@ class _FilaRenglon extends StatelessWidget {
       monto: renglon.monto,
       montoBase: renglon.montoBase,
       porcentaje: renglon.porcentaje,
+      mostrarPorcentaje: renglon.mostrarPorcentaje,
     );
     final negativo = tipo == TipoRenglon.deduccion || tipo == TipoRenglon.pago;
 
     final detalle = <String>[
       if (renglon.texto.isNotEmpty) renglon.texto,
-      if (renglon.montoBase != null)
+      // La cuenta solo se enseña donde toca: en una DEDUCCION es opcional. La
+      // decide `muestraDesglose`, el mismo que usa el PDF, para que lo que se
+      // ve aquí sea lo que sale impreso.
+      if (muestraDesglose(calc))
         '${Fmt.money(renglon.montoBase!)}'
             '${renglon.porcentaje != null ? ' − ${renglon.porcentaje!.toStringAsFixed(0)}%' : ''}'
             ' = ${Fmt.money(montoEfectivo(calc))}',
@@ -497,6 +521,7 @@ class _DatosRenglon {
     this.monto,
     this.montoBase,
     this.porcentaje,
+    this.mostrarPorcentaje = false,
     this.texto = '',
   });
 
@@ -505,6 +530,7 @@ class _DatosRenglon {
   final double? monto;
   final double? montoBase;
   final double? porcentaje;
+  final bool mostrarPorcentaje;
   final String texto;
 }
 
@@ -523,6 +549,7 @@ class _HojaRenglonState extends State<_HojaRenglon> {
   late final _base = TextEditingController(text: _num(widget.actual?.montoBase));
   late final _pct = TextEditingController(text: _num(widget.actual?.porcentaje));
   late final _texto = TextEditingController(text: widget.actual?.texto ?? '');
+  late bool _mostrarPct = widget.actual?.mostrarPorcentaje ?? false;
 
   /// Sin formato de moneda: es un campo donde se teclea, y un "$123,000.00"
   /// dentro del input obliga a borrar los símbolos antes de corregir el número.
@@ -549,7 +576,9 @@ class _HojaRenglonState extends State<_HojaRenglon> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final esTexto = _tipo == TipoRenglon.texto;
+    final esDeduccion = _tipo == TipoRenglon.deduccion;
     final sugerido = montoSugerido(_tipo, _leer(_base), _leer(_pct));
 
     return Padding(
@@ -576,7 +605,13 @@ class _HojaRenglonState extends State<_HojaRenglon> {
               DropdownMenuItem(
                   value: TipoRenglon.texto, child: Text('Apunte sin monto')),
             ],
-            onChanged: (v) => setState(() => _tipo = v ?? TipoRenglon.concepto),
+            // Dejar de ser DEDUCCION apaga la casilla del %: es el mismo
+            // criterio que ya se sigue con los montos al pasar a TEXTO —no
+            // dejar ajustes fantasma de un tipo que ya no aplica.
+            onChanged: (v) => setState(() {
+              _tipo = v ?? TipoRenglon.concepto;
+              if (_tipo != TipoRenglon.deduccion) _mostrarPct = false;
+            }),
           ),
           const SizedBox(height: 8),
           TextField(
@@ -618,6 +653,25 @@ class _HojaRenglonState extends State<_HojaRenglon> {
                 ),
               ),
             ]),
+            // Solo en las DEDUCCION: al socio le basta cuánto se le descontó, y
+            // enseñarle el «− 4%» invita a discutir la fórmula en vez del
+            // trato. En los demás tipos el desglose explica de dónde sale el
+            // neto que se cobra, así que ahí no se ofrece apagarlo.
+            if (esDeduccion)
+              CheckboxListTile(
+                value: _mostrarPct,
+                onChanged: (v) => setState(() => _mostrarPct = v ?? false),
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+                title: const Text('Mostrar el %'),
+                subtitle: Text(
+                  _mostrarPct
+                      ? 'Se imprime la cuenta completa debajo del concepto.'
+                      : 'Solo se ve el valor descontado.',
+                  style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                ),
+              ),
             const SizedBox(height: 8),
             TextField(
               controller: _monto,
@@ -655,6 +709,7 @@ class _HojaRenglonState extends State<_HojaRenglon> {
                           monto: esTexto ? null : _leer(_monto),
                           montoBase: esTexto ? null : _leer(_base),
                           porcentaje: esTexto ? null : _leer(_pct),
+                          mostrarPorcentaje: _mostrarPct,
                           texto: _texto.text.trim(),
                         ),
                       ),
