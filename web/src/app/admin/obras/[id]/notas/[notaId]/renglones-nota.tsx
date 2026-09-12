@@ -8,6 +8,7 @@ import { formatCurrency, formatDate } from '@/lib/data/format';
 import {
   montoEfectivo,
   montoSugerido,
+  muestraDesglose,
   PASO_ORDEN,
   type RenglonNota,
   type TipoRenglon,
@@ -48,6 +49,7 @@ interface FormRenglon {
   monto: string;
   monto_base: string;
   porcentaje: string;
+  mostrar_porcentaje: boolean;
   texto: string;
   fecha: string;
 }
@@ -58,6 +60,7 @@ const FORM_VACIO: FormRenglon = {
   monto: '',
   monto_base: '',
   porcentaje: '',
+  mostrar_porcentaje: false,
   texto: '',
   fecha: '',
 };
@@ -69,6 +72,7 @@ function aForm(r: RenglonNota): FormRenglon {
     monto: r.monto === null ? '' : String(r.monto),
     monto_base: r.monto_base === null ? '' : String(r.monto_base),
     porcentaje: r.porcentaje === null ? '' : String(r.porcentaje),
+    mostrar_porcentaje: r.mostrar_porcentaje,
     texto: r.texto,
     fecha: r.fecha === null ? '' : msAFechaInput(r.fecha),
   };
@@ -81,10 +85,16 @@ function aFormData(form: FormRenglon, orden: number): FormData {
   fd.set('monto', form.monto);
   fd.set('monto_base', form.monto_base);
   fd.set('porcentaje', form.porcentaje);
+  fd.set('mostrar_porcentaje', String(form.mostrar_porcentaje));
   fd.set('texto', form.texto);
   fd.set('fecha', form.fecha);
   fd.set('orden', String(orden));
   return fd;
+}
+
+/** ¿El importe de este renglón lo puso el dueño en vez de salir de la cuenta? */
+function fijadoAMano(r: RenglonNota): boolean {
+  return r.monto !== null && montoSugerido(r.tipo, r.monto_base, r.porcentaje) !== r.monto;
 }
 
 function numeroONull(v: string): number | null {
@@ -236,16 +246,21 @@ export default function RenglonesNota({
                   )}
                 </div>
                 {r.texto && <p className="mt-1 text-sm text-neutral-600">{r.texto}</p>}
-                {r.monto_base !== null && (
+                {muestraDesglose(r) && r.monto_base !== null ? (
                   <p className="mt-1 text-xs text-neutral-500">
                     {formatCurrency(r.monto_base)}
                     {r.porcentaje !== null && ` − ${r.porcentaje}%`}
                     {' = '}
                     {formatCurrency(montoEfectivo(r))}
-                    {r.monto !== null &&
-                      montoSugerido(r.tipo, r.monto_base, r.porcentaje) !== r.monto &&
-                      ' (fijado a mano)'}
+                    {fijadoAMano(r) && ' (fijado a mano)'}
                   </p>
+                ) : (
+                  // Con el desglose escondido el aviso de "fijado a mano" se iría
+                  // con él, y quien captura tiene que poder ver que ese importe
+                  // no sale de la cuenta. En el PDF nunca ha salido.
+                  fijadoAMano(r) && (
+                    <p className="mt-1 text-xs text-neutral-500">Importe fijado a mano</p>
+                  )
                 )}
               </div>
 
@@ -342,6 +357,7 @@ function FormularioRenglon({
   }
 
   const esTexto = form.tipo === 'TEXTO';
+  const esDeduccion = form.tipo === 'DEDUCCION';
   const sugerido = montoSugerido(form.tipo, numeroONull(form.monto_base), numeroONull(form.porcentaje));
 
   return (
@@ -418,6 +434,24 @@ function FormularioRenglon({
               />
             </Field>
           </div>
+
+          {esDeduccion && (
+            <label className="flex items-start gap-2 text-sm text-neutral-600">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 rounded border-neutral-300"
+                checked={form.mostrar_porcentaje}
+                onChange={(e) => set('mostrar_porcentaje', e.target.checked)}
+              />
+              <span>
+                Mostrar el % de la retención
+                <span className="block text-xs text-neutral-500">
+                  Apagado, la deducción solo enseña su valor. Encendido, enseña la cuenta
+                  completa en la pantalla y en el PDF.
+                </span>
+              </span>
+            </label>
+          )}
 
           <Field label="Aclaración" hint="Opcional. Aparece debajo del concepto.">
             <Input

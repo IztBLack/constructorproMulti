@@ -38,6 +38,11 @@ export interface RenglonNota {
   monto_base: number | null;
   /** Retención en % sobre `monto_base`. */
   porcentaje: number | null;
+  /**
+   * Solo lo miran las DEDUCCION (0034): si enseñan su cuenta debajo del
+   * concepto o solo el valor. Ver `muestraDesglose`.
+   */
+  mostrar_porcentaje: boolean;
   texto: string;
   fecha: number | null;
   orden: number;
@@ -51,6 +56,11 @@ export interface NotaObra {
   titulo: string;
   fecha: number;
   estado: EstadoNota;
+  /**
+   * Sin destinatario (0034): si el PDF imprime el apartado «Para» en blanco o
+   * lo quita. Con destinatario no aplica: siempre se imprime.
+   */
+  mostrar_para: boolean;
   total_override: number | null;
   saldo_override: number | null;
   notas: string;
@@ -106,6 +116,26 @@ export function montoSugerido(
   }
   const parte = (montoBase * porcentaje) / 100;
   return tipo === 'DEDUCCION' ? parte : montoBase - parte;
+}
+
+/**
+ * ¿Este renglón enseña su cuenta («62,000 − 4% = 2,480») debajo del concepto?
+ *
+ * La regla no es la misma para todos los tipos, y la diferencia es de fondo:
+ *   DEDUCCION → el desglose es OPCIONAL (`mostrar_porcentaje`, 0034). Al socio
+ *               le basta cuánto se le descontó; enseñar el «− 4%» invita a
+ *               discutir la fórmula en vez del trato.
+ *   los demás → el desglose SIEMPRE, porque ahí explica de dónde sale el número
+ *               que se está cobrando: «62,000 − 4% = 59,520» es un pago neto.
+ *
+ * Vive aquí y no en cada pantalla para que el editor y el PDF no puedan
+ * contradecirse: lo que se ve al capturar es lo que sale impreso.
+ */
+export function muestraDesglose(
+  r: Pick<RenglonNota, 'tipo' | 'monto_base' | 'mostrar_porcentaje'>,
+): boolean {
+  if (r.monto_base === null || r.monto_base === undefined) return false;
+  return r.tipo === 'DEDUCCION' ? r.mostrar_porcentaje : true;
 }
 
 /**

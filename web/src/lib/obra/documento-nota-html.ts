@@ -4,6 +4,7 @@ import { formatCurrency, formatDate } from '@/lib/data/format';
 import {
   calcularTotales,
   montoEfectivo,
+  muestraDesglose,
   type NotaConRenglones,
   type RenglonNota,
 } from '@/lib/data/notas-obra-calculo';
@@ -44,6 +45,15 @@ export function construirNotaObraHtml(params: {
       ? `<tr><td colspan="3" class="vacia">Esta nota todavía no tiene renglones.</td></tr>`
       : nota.renglones.map(filaRenglon).join('');
 
+  // Una nota puede ir sin nombre (0034). En pantalla eso se marca con un
+  // asterisco, pero impreso se leería como llamada a pie de página: aquí el
+  // hueco sale como una raya, listo para llenarse a mano, o el apartado
+  // desaparece si el dueño apagó `mostrar_para`.
+  const bloquePara =
+    nota.destinatario || nota.mostrar_para
+      ? `<div><p class="etiqueta">Para</p><p class="dato">${esc(nota.destinatario) || '—'}</p></div>`
+      : '';
+
   const bloqueTitulo = nota.titulo
     ? `<div><p class="etiqueta">Referencia</p><p class="dato">${esc(nota.titulo)}</p></div>`
     : `<div><p class="etiqueta">Ubicación</p><p class="dato">${esc(obra.ubicacion ?? '') || '—'}</p></div>`;
@@ -83,7 +93,7 @@ export function construirNotaObraHtml(params: {
     </header>
 
     <section class="info-grid avoid">
-      <div><p class="etiqueta">Para</p><p class="dato">${esc(nota.destinatario) || '—'}</p></div>
+      ${bloquePara}
       <div><p class="etiqueta">Obra</p><p class="dato">${esc(obra.nombre)}</p></div>
       ${bloqueTitulo}
     </section>
@@ -138,6 +148,7 @@ export function construirNotaObraHtml(params: {
       .apunte td { background: #fafafa; }
       .apunte .detalle { font-weight: 600; color: #0F172A; }
       .cuenta { color: #737373; font-size: 10px; }
+      ${bloquePara ? '' : '.info-grid { grid-template-columns: repeat(2, 1fr); }'}
     `,
   });
 }
@@ -150,7 +161,7 @@ function filaRenglon(r: RenglonNota): string {
   const detalle: string[] = [];
   if (r.fecha !== null) detalle.push(`<span class="cuenta">${formatDate(r.fecha)}</span>`);
   if (r.texto) detalle.push(esc(r.texto));
-  if (r.monto_base !== null) {
+  if (muestraDesglose(r) && r.monto_base !== null) {
     const cuenta =
       r.porcentaje !== null
         ? `${formatCurrency(r.monto_base)} − ${r.porcentaje}% = ${formatCurrency(montoEfectivo(r))}`

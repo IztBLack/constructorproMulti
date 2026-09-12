@@ -40,6 +40,18 @@ function texto(fd: FormData, campo: string): string {
   return String(fd.get(campo) ?? '').trim();
 }
 
+/**
+ * Interruptor de una casilla. El cliente manda `'true'`/`'false'` explícito y no
+ * la ausencia del campo —como haría un <form> nativo— porque estas acciones
+ * reciben FormData armado a mano y por secciones: un campo ausente ahí no
+ * significa "desmarcado", significa "esta tarjeta no habla de eso".
+ */
+function booleano(fd: FormData, campo: string, porDefecto: boolean): boolean {
+  const bruto = String(fd.get(campo) ?? '').trim();
+  if (bruto === '') return porDefecto;
+  return bruto === 'true' || bruto === 'on' || bruto === '1';
+}
+
 function revalidar(obraId: string, notaId?: string) {
   revalidatePath(`/admin/obras/${obraId}/notas`);
   if (notaId) revalidatePath(`/admin/obras/${obraId}/notas/${notaId}`);
@@ -57,12 +69,16 @@ export type SeccionNota = 'datos' | 'cuentas' | 'pie';
 
 type DatosNota = Pick<
   NotaInput,
-  'destinatario' | 'colaborador_id' | 'titulo' | 'fecha' | 'estado'
+  'destinatario' | 'colaborador_id' | 'titulo' | 'fecha' | 'estado' | 'mostrar_para'
 >;
 
+/**
+ * El destinatario NO se valida: una nota puede nacer sin nombre y completarse
+ * después (0034). Antes era obligatorio y eso obligaba a inventar un nombre
+ * para poder apuntar un trato que se acababa de cerrar de palabra.
+ */
 function parseDatos(fd: FormData): DatosNota | { error: string } {
   const destinatario = texto(fd, 'destinatario');
-  if (!destinatario) return { error: 'Escribe a nombre de quién va la nota.' };
 
   const estadoBruto = texto(fd, 'estado');
   const estado = (ESTADOS as string[]).includes(estadoBruto)
@@ -81,6 +97,7 @@ function parseDatos(fd: FormData): DatosNota | { error: string } {
     titulo: texto(fd, 'titulo'),
     fecha,
     estado,
+    mostrar_para: booleano(fd, 'mostrar_para', true),
   };
 }
 
@@ -175,6 +192,7 @@ function parseRenglon(fd: FormData): RenglonInput | { error: string } {
       monto: null,
       monto_base: null,
       porcentaje: null,
+      mostrar_porcentaje: false,
       texto: texto(fd, 'texto'),
       fecha,
       orden: Number.isFinite(ordenBruto) ? ordenBruto : 0,
@@ -187,6 +205,10 @@ function parseRenglon(fd: FormData): RenglonInput | { error: string } {
     monto: numeroOpcional(fd, 'monto'),
     monto_base: numeroOpcional(fd, 'monto_base'),
     porcentaje: numeroOpcional(fd, 'porcentaje'),
+    // Solo las DEDUCCION esconden su cuenta, así que solo ellas guardan el
+    // interruptor: cambiar de tipo lo apaga y no deja un ajuste invisible
+    // esperando a que el renglón vuelva a ser deducción.
+    mostrar_porcentaje: tipo === 'DEDUCCION' && booleano(fd, 'mostrar_porcentaje', false),
     texto: texto(fd, 'texto'),
     fecha,
     orden: Number.isFinite(ordenBruto) ? ordenBruto : 0,

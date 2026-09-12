@@ -58,7 +58,7 @@ class AppDatabase extends _$AppDatabase {
   static final Set<String> columnasPorLlenar = <String>{};
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -392,6 +392,37 @@ class AppDatabase extends _$AppDatabase {
           if (from < 13) {
             await m.addColumn(obras, obras.textoFinal);
             columnasPorLlenar.add('obras.texto_final');
+          }
+
+          // v13 → v14: las dos opciones de impresión de la nota de obra
+          // (Supabase 0034): el apartado «Para» cuando no hay nombre, y el
+          // desglose del porcentaje en las deducciones.
+          //
+          // Las dos son NOT NULL con default, así que `addColumn` las llena en
+          // TODAS las filas de una vez y ninguna queda en NULL. Por eso NO
+          // entran en [columnasPorLlenar]: ese mecanismo solo sabe rellenar
+          // columnas que estén en NULL (`sqlRellenoColumna` filtra por
+          // `IS NULL`) y aquí no habría ni una que tocar.
+          //
+          // Los defaults son los que hacen que migrar no cambie ningún
+          // documento ya emitido salvo donde el dueño lo pidió: `mostrar_para`
+          // en true deja el encabezado como estaba, y `mostrar_porcentaje` en
+          // false ES el cambio que se encargó —las deducciones viejas dejan de
+          // enseñar el «− 4%»—, igual que en el servidor.
+          //
+          // Las dos columnas van GUARDADAS: quien venga de v11 o antes acaba de
+          // pasar por el `createTable` del paso v11 → v12, que crea las tablas
+          // con el esquema de HOY —o sea, con estas dos columnas ya puestas— y
+          // entonces el `ALTER TABLE` de aquí reventaría con "duplicate column".
+          if (from < 14) {
+            if (!await _columnaExiste('nota_obra', 'mostrar_para')) {
+              await m.addColumn(notaObra, notaObra.mostrarPara);
+            }
+            if (!await _columnaExiste(
+                'nota_obra_renglon', 'mostrar_porcentaje')) {
+              await m.addColumn(
+                  notaObraRenglon, notaObraRenglon.mostrarPorcentaje);
+            }
           }
         },
       );

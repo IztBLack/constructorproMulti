@@ -55,6 +55,7 @@ class RenglonCalc {
     this.monto,
     this.montoBase,
     this.porcentaje,
+    this.mostrarPorcentaje = false,
   });
 
   final TipoRenglon tipo;
@@ -67,6 +68,9 @@ class RenglonCalc {
 
   /// Retención en % sobre [montoBase].
   final double? porcentaje;
+
+  /// Solo lo miran las DEDUCCION (0034). Ver [muestraDesglose].
+  final bool mostrarPorcentaje;
 }
 
 class TotalesNota {
@@ -119,6 +123,23 @@ double? montoSugerido(TipoRenglon tipo, double? montoBase, double? porcentaje) {
   if (porcentaje == null || !porcentaje.isFinite) return montoBase;
   final parte = montoBase * porcentaje / 100;
   return tipo == TipoRenglon.deduccion ? parte : montoBase - parte;
+}
+
+/// ¿Este renglón enseña su cuenta («62,000 − 4% = 2,480») debajo del concepto?
+///
+/// Puerto de `muestraDesglose` de `web/src/lib/data/notas-obra-calculo.ts`. La
+/// regla no es la misma para todos los tipos, y la diferencia es de fondo:
+///   DEDUCCION → el desglose es OPCIONAL ([RenglonCalc.mostrarPorcentaje],
+///               0034). Al socio le basta cuánto se le descontó; enseñar el
+///               «− 4%» invita a discutir la fórmula en vez del trato.
+///   los demás → el desglose SIEMPRE, porque ahí explica de dónde sale el
+///               número que se cobra: «62,000 − 4% = 59,520» es un pago neto.
+///
+/// Vive aquí y no en cada pantalla para que el editor y el PDF no puedan
+/// contradecirse: lo que se ve al capturar es lo que sale impreso.
+bool muestraDesglose(RenglonCalc r) {
+  if (r.montoBase == null) return false;
+  return r.tipo == TipoRenglon.deduccion ? r.mostrarPorcentaje : true;
 }
 
 /// Valor con el que el renglón entra en los totales. Los TEXTO no suman: son
