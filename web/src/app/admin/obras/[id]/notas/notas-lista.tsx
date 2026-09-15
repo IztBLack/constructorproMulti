@@ -7,8 +7,9 @@ import { Badge, Button, Card, EmptyState, Field, Input, Modal } from '@/componen
 import { formatCurrency, formatDate } from '@/lib/data/format';
 import { calcularTotales, type NotaConRenglones } from '@/lib/data/notas-obra-calculo';
 import { msAFechaInput } from '@/lib/data/tz';
-import { crearNotaAction } from './actions';
+import { crearNotaAction, crearNotaDesdeTextoAction } from './actions';
 import BuscadorDestinatario, { type ColaboradorLite } from './buscador-destinatario';
+import PegarMensaje from './pegar-mensaje';
 
 /**
  * Listado de las notas de una obra, una por socio. Cada tarjeta enseña de un
@@ -32,6 +33,7 @@ export default function NotasLista({
 }) {
   const router = useRouter();
   const [abierto, setAbierto] = useState(false);
+  const [pegando, setPegando] = useState(false);
   const [destinatario, setDestinatario] = useState('');
   const [colaboradorId, setColaboradorId] = useState('');
   const [titulo, setTitulo] = useState('');
@@ -74,10 +76,25 @@ export default function NotasLista({
     else router.refresh();
   }
 
+  /**
+   * Alta desde un mensaje pegado. Se manda el texto crudo y lo lee el servidor;
+   * de vuelta se entra a la nota, igual que en el alta normal: lo que sigue es
+   * revisar lo que el parser entendió.
+   */
+  async function crearDesdeMensaje(mensaje: string) {
+    const r = await crearNotaDesdeTextoAction(obraId, mensaje, notas.length);
+    if (r.ok && r.id) router.push(`/admin/obras/${obraId}/notas/${r.id}`);
+    else if (r.ok) router.refresh();
+    return r;
+  }
+
   return (
     <div className="space-y-4">
       {puedeEditar && (
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="secondary" onClick={() => setPegando(true)}>
+            Pegar mensaje
+          </Button>
           <Button type="button" onClick={() => setAbierto(true)}>
             + Nueva nota
           </Button>
@@ -192,6 +209,13 @@ export default function NotasLista({
           )}
         </div>
       </Modal>
+
+      <PegarMensaje
+        abierto={pegando}
+        onCerrar={() => setPegando(false)}
+        modo="crear"
+        onConfirmar={crearDesdeMensaje}
+      />
     </div>
   );
 }

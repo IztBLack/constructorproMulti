@@ -236,6 +236,45 @@ export async function crearRenglon(
   return { ok: true };
 }
 
+/**
+ * Alta de varios renglones de un jalón, en un solo insert.
+ *
+ * Existe para el pegado de un mensaje (`notas-obra-texto.ts`): ahí la nota nace
+ * entera, con sus tres o seis renglones a la vez. Mandarlos uno por uno deja la
+ * nota a medio escribir si el cuarto falla, y obliga a adivinar qué se alcanzó
+ * a guardar.
+ */
+export async function crearRenglones(
+  notaId: string,
+  inputs: RenglonInput[],
+): Promise<ResultadoNota> {
+  if (inputs.length === 0) return { ok: true };
+
+  let empresaId: string;
+  try {
+    ({ empresaId } = await getEmpresaUsuario());
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Error de autenticación.' };
+  }
+
+  const supabase = await createClient();
+  const now = Date.now();
+
+  const { error } = await supabase.from('nota_obra_renglon').insert(
+    inputs.map((input) => ({
+      id: crypto.randomUUID(),
+      empresa_id: empresaId,
+      nota_id: notaId,
+      ...input,
+      created_at: now,
+      updated_at: now,
+    })),
+  );
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
 export async function actualizarRenglon(
   renglonId: string,
   input: RenglonInput,

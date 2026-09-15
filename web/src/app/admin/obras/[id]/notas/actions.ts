@@ -6,14 +6,17 @@ import {
   actualizarRenglon,
   crearNotaObra,
   crearRenglon,
+  crearRenglones,
   eliminarNotaObra,
   eliminarRenglon,
+  getNotaObra,
   reordenarRenglones,
   PASO_ORDEN,
   type NotaInput,
   type RenglonInput,
 } from '@/lib/data/notas-obra';
 import type { EstadoNota, TipoRenglon } from '@/lib/data/notas-obra-calculo';
+import { parsearNotaTexto, type RenglonParseado } from '@/lib/data/notas-obra-texto';
 import { fechaInputAMs } from '@/lib/data/tz';
 
 export interface ActionResult {
@@ -268,4 +271,109 @@ export async function reordenarRenglonesAction(
 
   revalidar(obraId, notaId);
   return { ok: true };
+}
+
+// ── Pegar un mensaje ────────────────────────────────────────────────────────
+// El texto llega CRUDO desde el navegador y se vuelve a leer aquí: el parser
+// (`notas-obra-texto.ts`) es el único que decide qué es cada renglón, y así la
+// vista previa no puede acabar enseñando una cosa y guardándose otra. Es el
+// mismo trato que el pegado de partidas en cotizaciones.
+
+/** Un renglón leído del mensaje, listo para insertarse. */
+function aRenglonInput(r: RenglonParseado, orden: number): RenglonInput {
+  return {
+    tipo: r.tipo,
+    etiqueta: r.etiqueta,
+    monto: r.monto,
+    monto_base: r.monto_base,
+    porcentaje: r.porcentaje,
+    // Apagado, como manda el default de 0034: la deducción enseña su valor y no
+    // la fórmula. Prenderlo es un clic en el renglón, ya dentro de la nota.
+    mostrar_porcentaje: false,
+    texto: r.texto,
+    fecha: r.fecha,
+    orden,
+  };
+}
+
+/**
+ * Crea una nota entera a partir de un mensaje pegado: encabezado, renglones y
+ * —si el mensaje declara un número que no cuadra con la suma— el total o el
+ * saldo fijados a mano.
+ */
+export async function crearNotaDesdeTextoAction(
+  obraId: string,
+  texto: string,
+  cuantasHay: number,
+): Promise<ActionResult & { id?: string; renglones?: number }> {
+  const leida = parsearNotaTexto(texto);
+  if (leida.renglones.length === 0) {
+    return { ok: false, error: 'No se reconoció ningún renglón en el mensaje.' };
+  }
+
+  const nota: NotaInput = {
+    destinatario: leida.destinatario,
+    colaborador_id: null,
+    titulo: leida.titulo,
+    fecha: Date.now(),
+    estado: 'ABIERTA',
+    mostrar_para: true,
+    total_override: leida.total_override,
+    saldo_override: leida.saldo_override,
+    notas: '',
+  };
+
+  const orden = (Number.isFinite(cuantasHay) ? cuantasHay + 1 : 1) * PASO_ORDEN;
+  const { id, error } = await crearNotaObra(obraId, nota, orden);
+  if (error || !id) return { ok: false, error: error ?? 'No se pudo crear la nota.' };
+
+  const resultado = await crearRenglones(
+    id,
+    leida.renglones.map((r, i) => aRenglonInput(r, (i + 1) * PASO_ORDEN)),
+  );
+  if (!resultado.ok) {
+    // La nota ya existe y queda vacía: se avisa con su nombre para que quien
+    // capturó sepa dónde está, en vez de dejarla suelta y sin explicación.
+    revalidar(obraId);
+    return {
+      ok: false,
+      error: `Se creó la nota pero no se pudieron guardar sus renglones: ${resultado.error}`,
+    };
+  }
+
+  revalidar(obraId, id);
+  return { ok: true, id, renglones: leida.renglones.length };
+}
+
+/**
+ * Agrega al final de una nota que ya existe los renglones de un mensaje.
+ *
+ * El total y el saldo que declare el mensaje NO se aplican aquí, a propósito:
+ * el parser los midió contra los renglones del mensaje, y esta nota ya trae
+ * otros. Fijarlos con esa cuenta pondría un número que no corresponde a nada.
+ * La vista previa lo dice, y el total se fija a mano en la tarjeta «Cuentas».
+ */
+export async function importarRenglonesTextoAction(
+  obraId: string,
+  notaId: string,
+  texto: string,
+): Promise<ActionResult & { renglones?: number }> {
+  const leida = parsearNotaTexto(texto);
+  if (leida.renglones.length === 0) {
+    return { ok: false, error: 'No se reconoció ningún renglón en el mensaje.' };
+  }
+
+  const { data: nota, error } = await getNotaObra(notaId);
+  if (error) return { ok: false, error };
+  if (!nota) return { ok: false, error: 'La nota ya no existe.' };
+
+  const ultimo = nota.renglones.reduce((max, r) => Math.max(max, r.orden), 0);
+  const resultado = await crearRenglones(
+    notaId,
+    leida.renglones.map((r, i) => aRenglonInput(r, ultimo + (i + 1) * PASO_ORDEN)),
+  );
+  if (!resultado.ok) return resultado;
+
+  revalidar(obraId, notaId);
+  return { ok: true, renglones: leida.renglones.length };
 }

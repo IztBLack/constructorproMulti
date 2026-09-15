@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, Field, Input, Select } from '@/components/ui';
-import type { BadgeTone } from '@/components/ui';
 import { formatCurrency, formatDate } from '@/lib/data/format';
 import {
   montoEfectivo,
@@ -18,30 +17,11 @@ import {
   actualizarRenglonAction,
   crearRenglonAction,
   eliminarRenglonAction,
+  importarRenglonesTextoAction,
   reordenarRenglonesAction,
 } from '../actions';
-
-const ETIQUETA_TIPO: Record<TipoRenglon, string> = {
-  CONCEPTO: 'Concepto',
-  DEDUCCION: 'Deducción',
-  PAGO: 'Pago',
-  TEXTO: 'Apunte',
-};
-
-const TONO_TIPO: Record<TipoRenglon, BadgeTone> = {
-  CONCEPTO: 'blue',
-  DEDUCCION: 'amber',
-  PAGO: 'green',
-  TEXTO: 'neutral',
-};
-
-/** El signo con el que el renglón entra en la cuenta, para leerlo de un vistazo. */
-const SIGNO: Record<TipoRenglon, string> = {
-  CONCEPTO: '',
-  DEDUCCION: '−',
-  PAGO: '−',
-  TEXTO: '',
-};
+import { ETIQUETA_TIPO, SIGNO, TONO_TIPO } from '../etiquetas-renglon';
+import PegarMensaje from '../pegar-mensaje';
 
 interface FormRenglon {
   tipo: TipoRenglon;
@@ -123,6 +103,7 @@ export default function RenglonesNota({
   const router = useRouter();
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [agregando, setAgregando] = useState(false);
+  const [pegando, setPegando] = useState(false);
   const [form, setForm] = useState<FormRenglon>(FORM_VACIO);
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -327,10 +308,26 @@ export default function RenglonesNota({
       </ul>
 
       {puedeEditar && !agregando && !editandoId && (
-        <Button type="button" variant="secondary" size="sm" onClick={agregar}>
-          + Agregar renglón
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant="secondary" size="sm" onClick={agregar}>
+            + Agregar renglón
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={() => setPegando(true)}>
+            Pegar mensaje
+          </Button>
+        </div>
       )}
+
+      <PegarMensaje
+        abierto={pegando}
+        onCerrar={() => setPegando(false)}
+        modo="agregar"
+        onConfirmar={async (mensaje) => {
+          const r = await importarRenglonesTextoAction(obraId, notaId, mensaje);
+          if (r.ok) router.refresh();
+          return r;
+        }}
+      />
     </div>
   );
 }
