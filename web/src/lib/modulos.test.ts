@@ -1,0 +1,291 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, test } from 'vitest';
+import {
+  CLAVES_MODULO,
+  MODULOS,
+  PAQUETE_POR_DEFECTO,
+  apagarModulo,
+  dependientesDe,
+  leerPerfil,
+  modulosPorPerfil,
+  navDeModulos,
+  normalizarModulos,
+  prenderModulo,
+  resolverDependencias,
+  rutaPerteneceAModulo,
+  rutaVisible,
+  siguientePaso,
+  type ClaveModulo,
+} from './modulos';
+
+describe('resolverDependencias', () => {
+  test('siempre incluye obras, aunque no se pida', () => {
+    expect(resolverDependencias([])).toEqual(['obras']);
+    expect(resolverDependencias(['caja'])).toEqual(['obras', 'caja']);
+  });
+
+  test('prende lo que cada módulo necesita (cuadrillas y proyección → equipo)', () => {
+    expect(resolverDependencias(['cuadrillas'])).toEqual(['obras', 'equipo', 'cuadrillas']);
+    expect(resolverDependencias(['proyeccion'])).toEqual(['obras', 'equipo', 'proyeccion']);
+  });
+
+  test('las dependencias de los módulos futuros también se resuelven', () => {
+    for (const c of ['estimaciones', 'rentabilidad', 'cambios', 'fiscal'] as const) {
+      expect(resolverDependencias([c])).toContain('cotizaciones');
+    }
+    expect(resolverDependencias(['subcontratos'])).toContain('notas');
+  });
+
+  test('sin repetidos y en el orden del catálogo', () => {
+    const r = resolverDependencias(['portal', 'cuadrillas', 'obras', 'equipo', 'cuadrillas']);
+    expect(r).toEqual(['obras', 'equipo', 'cuadrillas', 'portal']);
+  });
+
+  test('el paquete por defecto ya está cerrado bajo dependencias', () => {
+    expect(resolverDependencias(PAQUETE_POR_DEFECTO)).toEqual([...PAQUETE_POR_DEFECTO]);
+  });
+});
+
+describe('prender y apagar', () => {
+  test('apagar equipo apaga también lo que depende de él', () => {
+    expect(dependientesDe('equipo', PAQUETE_POR_DEFECTO)).toEqual(['cuadrillas', 'proyeccion']);
+    const r = apagarModulo(PAQUETE_POR_DEFECTO, 'equipo');
+    expect(r).not.toContain('equipo');
+    expect(r).not.toContain('cuadrillas');
+    expect(r).not.toContain('proyeccion');
+    expect(r).toContain('caja');
+  });
+
+  test('el núcleo no se apaga', () => {
+    expect(apagarModulo(PAQUETE_POR_DEFECTO, 'obras')).toContain('obras');
+  });
+
+  test('prender cuadrillas prende equipo', () => {
+    expect(prenderModulo(['obras'], 'cuadrillas')).toEqual(['obras', 'equipo', 'cuadrillas']);
+  });
+
+  test('apagar algo de lo que nadie depende solo lo quita a él', () => {
+    expect(apagarModulo(PAQUETE_POR_DEFECTO, 'portal')).toEqual(
+      PAQUETE_POR_DEFECTO.filter((c) => c !== 'portal'),
+    );
+  });
+});
+
+describe('normalizarModulos', () => {
+  test('sin dato (migración sin aplicar, fila ausente) = paquete de siempre', () => {
+    expect(normalizarModulos(null)).toEqual([...PAQUETE_POR_DEFECTO]);
+    expect(normalizarModulos(undefined)).toEqual([...PAQUETE_POR_DEFECTO]);
+    expect(normalizarModulos('obras')).toEqual([...PAQUETE_POR_DEFECTO]);
+  });
+
+  test('descarta claves que esta web no conoce y completa dependencias', () => {
+    expect(normalizarModulos(['cuadrillas', 'modulo_del_futuro', 42])).toEqual([
+      'obras',
+      'equipo',
+      'cuadrillas',
+    ]);
+  });
+});
+
+describe('rutaPerteneceAModulo', () => {
+  const casos: [string, ClaveModulo | null][] = [
+    ['/admin', null],
+    ['/admin/ajustes', null],
+    ['/admin/usuarios', null],
+    ['/admin/obras', 'obras'],
+    ['/admin/obras?nueva=1', 'obras'],
+    ['/admin/obras/importar', 'obras'],
+    ['/admin/obras/abc', 'obras'],
+    ['/admin/clientes/abc', 'obras'],
+    ['/admin/cotizaciones', 'cotizaciones'],
+    ['/admin/cotizaciones/abc/pdf', 'cotizaciones'],
+    ['/admin/catalogo', 'cotizaciones'],
+    ['/admin/equipo/abc', 'equipo'],
+    ['/admin/puestos', 'equipo'],
+    ['/campo', 'equipo'],
+    ['/admin/obras/abc/asistencia', 'equipo'],
+    ['/admin/obras/abc/nomina/pdf/descargar', 'equipo'],
+    ['/admin/cuadrillas/abc', 'cuadrillas'],
+    ['/admin/proyeccion/pdf', 'proyeccion'],
+    ['/admin/obras/abc/notas/n1', 'notas'],
+    ['/admin/obras/abc/importar', 'caja'],
+    ['/admin/obras/abc/pdf', 'caja'],
+    ['/admin/obras/abc/exportar', 'caja'],
+    ['/admin/obras/abc/estado-cuenta-cliente/descargar', 'caja'],
+    ['/admin/ajustes#pdf', null],
+  ];
+  test.each(casos)('%s → %s', (ruta, esperado) => {
+    expect(rutaPerteneceAModulo(ruta)).toBe(esperado);
+  });
+
+  test('no confunde prefijos de texto con prefijos de ruta', () => {
+    expect(rutaPerteneceAModulo('/admin/equipos-raros')).toBeNull();
+  });
+
+  test('rutaVisible: lo que no es de un módulo siempre se ve', () => {
+    expect(rutaVisible('/admin/ajustes', ['obras'])).toBe(true);
+    expect(rutaVisible('/admin/cotizaciones', ['obras'])).toBe(false);
+    expect(rutaVisible('/admin/cotizaciones', ['obras', 'cotizaciones'])).toBe(true);
+  });
+});
+
+describe('navDeModulos', () => {
+  test('con el paquete por defecto queda la barra de siempre, en su orden', () => {
+    expect(navDeModulos(PAQUETE_POR_DEFECTO).map((n) => n.label)).toEqual([
+      'Inicio',
+      'Pase de lista',
+      'Obras',
+      'Cotizaciones',
+      'Clientes',
+      'Equipo',
+      'Cuadrillas',
+      'Proyección',
+    ]);
+  });
+
+  test('lo apagado desaparece de la barra', () => {
+    const labels = navDeModulos(['obras', 'caja']).map((n) => n.label);
+    expect(labels).toEqual(['Inicio', 'Obras', 'Clientes']);
+  });
+});
+
+describe('modulosPorPerfil (plan §4.2)', () => {
+  test('independiente: obras, cotizaciones, equipo, caja', () => {
+    const r = modulosPorPerfil('independiente', [], 'no');
+    expect(r.activos).toEqual(['obras', 'cotizaciones', 'equipo', 'caja']);
+    expect(r.proximamente).toEqual([]);
+  });
+
+  test('contratista = el paquete de siempre', () => {
+    expect(modulosPorPerfil('contratista', [], null).activos.sort()).toEqual(
+      [...PAQUETE_POR_DEFECTO].sort(),
+    );
+  });
+
+  test('saltar el cuestionario (sin tipo) usa el paquete de contratista', () => {
+    expect(modulosPorPerfil(null, [], null)).toEqual(modulosPorPerfil('contratista', [], null));
+  });
+
+  test('empresa: lo que aún no existe queda en "próximamente", no se prende', () => {
+    const r = modulosPorPerfil('empresa', [], 'no');
+    expect(r.proximamente).toEqual(['rentabilidad', 'compras', 'estimaciones']);
+    for (const c of r.activos) expect(MODULOS.find((m) => m.clave === c)?.disponible).toBe(true);
+  });
+
+  test('constructora acumula los paquetes anteriores', () => {
+    const r = modulosPorPerfil('constructora', [], 'no');
+    expect(r.activos.sort()).toEqual([...PAQUETE_POR_DEFECTO].sort());
+    expect(r.proximamente).toEqual(
+      expect.arrayContaining(['bitacora', 'programa', 'cumplimiento', 'subcontratos', 'compras']),
+    );
+  });
+
+  test('facturar o tener gente en el IMSS sugiere cumplimiento; "no" no', () => {
+    expect(modulosPorPerfil('independiente', [], 'si').proximamente).toContain('cumplimiento');
+    expect(modulosPorPerfil('independiente', [], 'algunos').proximamente).toContain('cumplimiento');
+    expect(modulosPorPerfil('independiente', [], 'no').proximamente).not.toContain('cumplimiento');
+  });
+
+  test('las necesidades suman a la base, con dependencias', () => {
+    const r = modulosPorPerfil('independiente', ['cuadrillas', 'cliente', 'tratos'], 'no');
+    expect(r.activos).toEqual(
+      expect.arrayContaining(['cuadrillas', 'equipo', 'portal', 'notas']),
+    );
+  });
+
+  test('"ganancia" prende cotizaciones aunque la utilidad todavía no exista', () => {
+    const r = modulosPorPerfil('independiente', ['ganancia'], 'no');
+    expect(r.activos).toContain('cotizaciones');
+    expect(r.proximamente).toContain('rentabilidad');
+  });
+
+  test('tratos: subcontratos solo para perfiles con oficina', () => {
+    expect(modulosPorPerfil('contratista', ['tratos'], 'no').proximamente).not.toContain(
+      'subcontratos',
+    );
+    expect(modulosPorPerfil('empresa', ['tratos'], 'no').proximamente).toContain('subcontratos');
+  });
+});
+
+describe('leerPerfil', () => {
+  test('null o basura → null', () => {
+    expect(leerPerfil(null)).toBeNull();
+    expect(leerPerfil('x')).toBeNull();
+    expect(leerPerfil([1, 2])).toBeNull();
+  });
+
+  test('descarta valores desconocidos', () => {
+    const p = leerPerfil({
+      tipo: 'marciano',
+      factura: 'si',
+      necesidades: ['cotizar', 'volar', 'cotizar'],
+      proximamente: ['compras', 'nada'],
+      siguiente_paso_descartado: true,
+    });
+    expect(p).toEqual({
+      tipo: null,
+      factura: 'si',
+      necesidades: ['cotizar'],
+      proximamente: ['compras'],
+      saltado: false,
+      siguientePasoDescartado: true,
+    });
+  });
+});
+
+describe('siguientePaso (plan §4.3)', () => {
+  test('independiente → primera cotización; contratista → cuadrilla', () => {
+    expect(siguientePaso('independiente', PAQUETE_POR_DEFECTO).titulo).toBe(
+      'Haz tu primera cotización',
+    );
+    expect(siguientePaso('contratista', PAQUETE_POR_DEFECTO).titulo).toBe(
+      'Da de alta tu cuadrilla',
+    );
+  });
+
+  test('si el módulo del paso está apagado, cae a la primera obra', () => {
+    expect(siguientePaso('independiente', ['obras']).href).toBe('/admin/obras?nueva=1');
+  });
+});
+
+/**
+ * PARIDAD CON LA BASE. El catálogo vive dos veces: aquí (para la interfaz) y en
+ * la migración 0035 (para el CHECK y las RPC). Si alguien agrega un módulo o una
+ * dependencia en un solo lado, este test lo detecta antes de que la base rechace
+ * lo que la web ofrece (o al revés).
+ */
+describe('paridad con supabase/migrations/0035_modulos_empresa.sql', () => {
+  const sql = readFileSync(
+    fileURLToPath(new URL('../../../supabase/migrations/0035_modulos_empresa.sql', import.meta.url)),
+    'utf8',
+  );
+
+  function cuerpo(funcion: string): string {
+    const inicio = sql.indexOf(`function public.${funcion}()`);
+    expect(inicio).toBeGreaterThan(-1);
+    const desde = sql.indexOf('$$', inicio);
+    const hasta = sql.indexOf('$$', desde + 2);
+    return sql.slice(desde + 2, hasta);
+  }
+
+  test('mismo catálogo, mismo orden', () => {
+    const claves = [...cuerpo('modulos_catalogo').matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
+    expect(claves).toEqual([...CLAVES_MODULO]);
+  });
+
+  test('mismas dependencias', () => {
+    const json = cuerpo('modulos_dependencias').match(/'(\{[\s\S]*\})'::jsonb/)?.[1];
+    const deps = JSON.parse(json ?? '{}') as Record<string, string[]>;
+    const esperado = Object.fromEntries(
+      MODULOS.filter((m) => m.dependeDe.length > 0).map((m) => [m.clave, m.dependeDe]),
+    );
+    expect(deps).toEqual(esperado);
+  });
+
+  test('el default de la columna es el paquete por defecto', () => {
+    const bloque = sql.match(/add column if not exists modulos text\[\][\s\S]*?\]::text\[\]/)?.[0];
+    const claves = [...(bloque ?? '').matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
+    expect(claves).toEqual([...PAQUETE_POR_DEFECTO]);
+  });
+});

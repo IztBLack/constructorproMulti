@@ -8,6 +8,7 @@
 /// nómina real, aunque alguien manipule la petición.
 
 import { NextResponse, type NextRequest } from 'next/server';
+import { bloquearSiApagado } from '@/lib/data/modulos';
 import { getEmpresaUsuario, getNombreEmpresa } from '@/lib/data/empresa';
 import { getEmpresaConfig } from '@/lib/data/empresa-config';
 import { navegarSemana } from '@/lib/data/nomina';
@@ -64,6 +65,8 @@ export async function POST(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: 'No autenticado.' }, { status: 401 });
   }
+  const apagado = await bloquearSiApagado('proyeccion');
+  if (apagado) return apagado;
 
   // Misma puerta que la pantalla: este documento lleva el salario de cada
   // persona, así que no basta con estar autenticado.

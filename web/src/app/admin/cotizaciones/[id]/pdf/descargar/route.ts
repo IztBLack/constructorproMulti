@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { bloquearSiApagado } from '@/lib/data/modulos';
 import { getCotizacionConDetalle, calcularTotales } from '@/lib/data/cotizaciones';
 import { createClient } from '@/lib/supabase/server';
 import { getEmpresaConfig } from '@/lib/data/empresa-config';
@@ -21,6 +22,8 @@ export async function GET(
   if (!user) {
     return NextResponse.json({ error: 'No autenticado.' }, { status: 401 });
   }
+  const apagado = await bloquearSiApagado('cotizaciones');
+  if (apagado) return apagado;
 
   const { id } = await params;
   const { data: cotizacion, error } = await getCotizacionConDetalle(id);

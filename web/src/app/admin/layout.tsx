@@ -11,6 +11,8 @@ import { AvisoInstalar } from '@/components/pwa/aviso-instalar';
 import { ToggleTema } from '@/components/tema/toggle-tema';
 import { EnlaceAjustes } from '@/components/ajustes/enlace-ajustes';
 import { BotonDescargas } from '@/components/descargas/boton-descargas';
+import { ModulosProvider } from '@/components/modulos/modulos-context';
+import { getModulosEmpresa } from '@/lib/data/modulos';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,10 +25,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const marca = (await getNombreEmpresa()) ?? 'ConstructorPro';
   const nombre = nombreUsuario(user);
+  // Módulos prendidos de la empresa: deciden qué enlaces se ven en la barra, en
+  // la paleta y en las pestañas de la obra. Se leen UNA vez aquí y bajan por
+  // props y por contexto (`ModulosProvider`).
+  const { activos } = await getModulosEmpresa();
   // Aviso global de gente a medio registrar. Va en el layout y no en una
   // pantalla porque el pendiente es del negocio: quien da de alta en la obra
-  // no suele ser quien completa los datos en la oficina.
-  const incompletos = await contarIncompletos();
+  // no suele ser quien completa los datos en la oficina. Es del módulo
+  // `equipo`: con el equipo apagado no hay a quién completarle datos.
+  const conEquipo = activos.includes('equipo');
+  const incompletos = conEquipo ? await contarIncompletos() : null;
 
   return (
     // `print:*` deja fuera de la impresión el chrome del admin (nav, encabezado,
@@ -69,6 +77,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <NavLinks
           className="flex gap-1 overflow-x-auto border-t border-neutral-100 px-4 py-2 sm:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden mx-auto max-w-6xl"
           itemClassName="shrink-0"
+          modulos={activos}
         />
       </header>
 
@@ -78,15 +87,17 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
         {/* `print:hidden`: es un aviso de trabajo pendiente, no parte de ningún
             documento que se imprima desde estas pantallas. */}
-        <div className="print:hidden">
-          <AvisoIncompletos datos={incompletos} />
-        </div>
-        {children}
+        {incompletos && (
+          <div className="print:hidden">
+            <AvisoIncompletos datos={incompletos} />
+          </div>
+        )}
+        <ModulosProvider activos={activos}>{children}</ModulosProvider>
       </main>
 
       {/* Vive en el layout para responder desde CUALQUIER pantalla de /admin.
           No pinta nada hasta que se abre con Ctrl/⌘+K. */}
-      <PaletaComandos />
+      <PaletaComandos modulos={activos} />
     </div>
   );
 }

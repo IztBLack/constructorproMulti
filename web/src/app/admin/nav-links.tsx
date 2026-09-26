@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { navDeModulos, type ClaveModulo } from '@/lib/modulos';
 
 /**
  * Navegación del panel: SOLO las secciones de uso diario.
@@ -16,24 +17,17 @@ import { usePathname } from 'next/navigation';
  * Antes las diez secciones estaban al mismo nivel: además de no caber, ponía
  * "Puestos" con el mismo peso visual que "Obras", que es donde se trabaja todos
  * los días.
+ *
+ * LOS ENLACES SALEN DEL CATÁLOGO DE MÓDULOS (`lib/modulos.ts`, campo `nav`), no
+ * de una lista aquí: cada módulo declara los suyos y su posición, y la barra
+ * solo muestra los de los módulos prendidos. Así:
+ *   · "Pase de lista" es de `equipo` aunque viva fuera de /admin (ver
+ *     src/app/campo/layout.tsx): es una pantalla de uso diario.
+ *   · "Proyección" se ve siempre que el módulo esté prendido, aunque el rol no
+ *     pueda ver sueldos: este componente es de cliente y no conoce el rol; la
+ *     puerta está en la página (`puedeVerSueldos`), que es servidor. Quien no
+ *     tiene permiso llega y encuentra el aviso, nunca los salarios.
  */
-const NAV_LINKS = [
-  { href: '/admin', label: 'Inicio' },
-  // Vive fuera de /admin a propósito (ver src/app/campo/layout.tsx), pero se
-  // enlaza desde aquí porque es una pantalla de uso diario.
-  { href: '/campo', label: 'Pase de lista' },
-  { href: '/admin/obras', label: 'Obras' },
-  { href: '/admin/cotizaciones', label: 'Cotizaciones' },
-  { href: '/admin/clientes', label: 'Clientes' },
-  { href: '/admin/equipo', label: 'Equipo' },
-  { href: '/admin/cuadrillas', label: 'Cuadrillas' },
-  // Es de uso diario —se arma la raya de la semana desde la oficina—, así que
-  // va en la barra y no bajo Ajustes. El enlace se ve siempre porque este
-  // componente es de cliente y no conoce el rol; la puerta está en la página
-  // (`puedeVerSueldos`), que es servidor. Quien no tiene permiso llega y
-  // encuentra el aviso, nunca los salarios.
-  { href: '/admin/proyeccion', label: 'Proyección' },
-];
 
 function isActive(pathname: string, href: string): boolean {
   if (href === '/admin') {
@@ -52,14 +46,17 @@ interface NavLinksProps {
   className?: string;
   /** Clases extra para cada <Link> inactivo. */
   itemClassName?: string;
+  /** Módulos prendidos de la empresa; los lee el layout (servidor). */
+  modulos: readonly ClaveModulo[];
 }
 
-export function NavLinks({ className = '', itemClassName = '' }: NavLinksProps) {
+export function NavLinks({ className = '', itemClassName = '', modulos }: NavLinksProps) {
   const pathname = usePathname();
+  const enlaces = navDeModulos(modulos);
 
   return (
-    <nav className={className}>
-      {NAV_LINKS.map((link) => {
+    <nav aria-label="Secciones del panel" className={className}>
+      {enlaces.map((link) => {
         const active = isActive(pathname, link.href);
         return (
           <Link

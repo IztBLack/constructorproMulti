@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { bloquearSiApagado } from '@/lib/data/modulos';
 import { getObra, listMovimientosByObra } from '@/lib/data/obras';
 import { listPresupuestoObra } from '@/lib/data/presupuesto-obra';
 import { getNotaCaja } from '@/lib/data/caja-nota';
@@ -20,6 +21,8 @@ export async function GET(
   if (!user) {
     return NextResponse.json({ error: 'No autenticado.' }, { status: 401 });
   }
+  const apagado = await bloquearSiApagado('caja');
+  if (apagado) return apagado;
 
   // ── Cargar datos ───────────────────────────────────────────────────────────
   const { id } = await params;

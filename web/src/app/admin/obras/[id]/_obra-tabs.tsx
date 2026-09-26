@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useRutaVisible } from '@/components/modulos/modulos-context';
 
 interface ObraTabsProps {
   obraId: string;
@@ -47,7 +48,10 @@ function isActive(pathname: string, href: string, base: string): boolean {
 export default function ObraTabs({ obraId }: ObraTabsProps) {
   const pathname = usePathname();
   const base = `/admin/obras/${obraId}`;
-  const tabs = tabsFor(obraId);
+  // Las pestañas de un módulo apagado no se ofrecen (Asistencia y Nómina son de
+  // `equipo`, Notas de `notas`, Importar de `caja`). Detalle es del núcleo.
+  const visible = useRutaVisible();
+  const tabs = tabsFor(obraId).filter((t) => visible(t.href));
 
   const enLinea = useSyncExternalStore(
     suscribirRed,

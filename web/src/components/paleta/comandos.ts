@@ -8,7 +8,13 @@
  * borre, cobre o mande algo a un cliente. Una paleta se usa a ciegas —tres
  * letras y Enter—, que es justo el modo en el que no se debe confirmar algo
  * irreversible ni tocar dinero. Llevar hasta la pantalla donde eso vive: sí.
+ *
+ * MÓDULOS: los comandos no declaran a qué módulo pertenecen; se deduce de su
+ * `href` con el catálogo (`lib/modulos.ts`). Un comando nuevo queda filtrado
+ * solo, sin que nadie se acuerde de marcarlo.
  */
+
+import { rutaVisible, type ClaveModulo } from '@/lib/modulos';
 
 export interface Comando {
   /** Texto que se lee. */
@@ -119,6 +125,17 @@ export function normalizar(s: string): string {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
+}
+
+/**
+ * Quita lo que lleva a un módulo apagado. Aplica también a lo reciente: un
+ * comando guardado cuando el módulo estaba prendido no debe reaparecer.
+ */
+export function soloModulosActivos(
+  comandos: Comando[],
+  activos: readonly ClaveModulo[],
+): Comando[] {
+  return comandos.filter((c) => rutaVisible(c.href, activos));
 }
 
 /** ¿Este comando responde a lo que se escribió? Todas las palabras, en cualquier orden. */

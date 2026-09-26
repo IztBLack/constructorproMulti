@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { bloquearSiApagado } from '@/lib/data/modulos';
 import { getEstadoCuentaObraAdmin } from '@/lib/data/estado-cuenta-obra-admin';
 import { getNombreEmpresa } from '@/lib/data/empresa';
 import { getEmpresaConfig } from '@/lib/data/empresa-config';
@@ -33,6 +34,8 @@ export async function GET(
   if (!user) {
     return NextResponse.json({ error: 'No autenticado.' }, { status: 401 });
   }
+  const apagado = await bloquearSiApagado('caja');
+  if (apagado) return apagado;
 
   const { id } = await params;
   // El helper valida el acceso con getObra (RLS staff): si la obra no es de la
