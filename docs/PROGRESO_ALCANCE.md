@@ -58,7 +58,7 @@ en local (PGlite).
   de mínimo 44px.
 - **Verificación obligatoria antes de entregar** (desde `web/`): `npx tsc --noEmit`,
   `npx eslint <archivos tocados>`, `npx vitest run`, y la prueba de migraciones en
-  PGlite (`web/tests/migraciones/`) cuando exista. Lógica de dinero = tests unitarios.
+  PGlite (`web/src/db/`, ver `web/src/db/pglite/README.md`) cuando exista. Lógica de dinero = tests unitarios.
 - **Git:** commits en español con el formato del repo (`feat(modulo): …`), terminando con
   `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Sin push, sin tocar prod.
 
@@ -68,7 +68,7 @@ en local (PGlite).
 
 | Fase | Estado | Rama/commit | Notas |
 |---|---|---|---|
-| Harness PGlite | ⏳ | | |
+| Harness PGlite | ✅ | f36a70e | 34 migraciones sin reemplazos, 26 tests RLS, ~12 s |
 | F0 web | ⏳ | | |
 | F0 móvil | ⏳ | | |
 | F1 | ⏳ | | |
