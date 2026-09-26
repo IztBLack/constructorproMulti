@@ -60,10 +60,11 @@ describe('seccionesDe / puedeVer (Ajustes)', () => {
     expect(puedeVer('admin', 'campo')).toBe(true);
   });
 
-  test('usuarios, empresa y operación son solo del admin', () => {
+  test('usuarios, empresa, operación y módulos son solo del admin', () => {
     // `operacion` bajó del supervisor al admin cuando 0018 restringió
     // `empresa_config`: el IVA toca el dinero de toda cotización nueva.
-    for (const seccion of ['operacion', 'empresa', 'usuarios'] as const) {
+    // `modulos` (0035): la RPC `activar_modulos` solo acepta al admin.
+    for (const seccion of ['operacion', 'modulos', 'empresa', 'usuarios'] as const) {
       expect(puedeVer('admin', seccion)).toBe(true);
       expect(puedeVer('supervisor', seccion)).toBe(false);
       expect(puedeVer('colaborador', seccion)).toBe(false);

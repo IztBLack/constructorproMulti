@@ -16,6 +16,8 @@ import { SeccionPdf } from '@/components/ajustes/seccion-pdf';
 import { SeccionEmpresa } from '@/components/ajustes/seccion-empresa';
 import { SeccionUsuarios } from '@/components/ajustes/seccion-usuarios';
 import { listUsuariosEmpresa } from '@/lib/data/usuarios-empresa';
+import { SeccionModulos } from '@/components/ajustes/seccion-modulos';
+import { getModulosEmpresa } from '@/lib/data/modulos';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,8 +69,10 @@ export default async function AjustesPage() {
   const nombreEmpresa = await getNombreEmpresa();
 
   const verOperacion = secciones.includes('operacion');
+  const verModulos = secciones.includes('modulos');
   const verEmpresa = secciones.includes('empresa');
   const verUsuarios = secciones.includes('usuarios');
+  const { activos, perfil } = await getModulosEmpresa();
 
   // Solo se consulta si se va a mostrar: la RPC exige rol admin y lanzaría para
   // cualquier otro rol.
@@ -81,6 +85,7 @@ export default async function AjustesPage() {
     { id: 'seguridad', titulo: 'Seguridad' },
     { id: 'preferencias', titulo: 'Preferencias' },
     ...(verOperacion ? [{ id: 'operacion', titulo: 'Operación' }] : []),
+    ...(verModulos ? [{ id: 'modulos', titulo: 'Módulos' }] : []),
     ...(verEmpresa ? [{ id: 'empresa', titulo: 'Empresa' }] : []),
     ...(verUsuarios ? [{ id: 'usuarios', titulo: 'Usuarios' }] : []),
   ];
@@ -136,8 +141,22 @@ export default async function AjustesPage() {
               alcance="A toda la empresa"
               descripcion="Valores con los que arrancan las cotizaciones nuevas. No modifican las ya creadas."
             >
-              <SeccionOperacion ivaActual={ivaPorcentaje} />
+              <SeccionOperacion ivaActual={ivaPorcentaje} modulos={activos} />
               <SeccionPdf configActual={pdf} />
+            </GrupoAjustes>
+          )}
+
+          {verModulos && (
+            <GrupoAjustes
+              id="modulos"
+              titulo="Módulos"
+              alcance="A toda la empresa"
+              descripcion="Qué partes de la app usa tu empresa. Lo apagado no aparece en el menú de nadie, pero sus datos se conservan."
+            >
+              <SeccionModulos
+                activosIniciales={activos}
+                pedidos={perfil?.proximamente ?? []}
+              />
             </GrupoAjustes>
           )}
 

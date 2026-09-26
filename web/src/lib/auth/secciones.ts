@@ -33,7 +33,12 @@ export type SeccionAjustes =
   /** Nombre/marca de la constructora y datos del PDF. */
   | 'empresa'
   /** Altas de usuarios y asignación de roles. */
-  | 'usuarios';
+  | 'usuarios'
+  /**
+   * Qué partes de la app usa la empresa (0035). Solo admin: la RPC
+   * `activar_modulos` rechaza a cualquier otro rol (plan RR0.1).
+   */
+  | 'modulos';
 
 /** Secciones que aporta cada rol, ADEMÁS de las del rol anterior. */
 const APORTA: Record<string, SeccionAjustes[]> = {
@@ -47,7 +52,7 @@ const APORTA: Record<string, SeccionAjustes[]> = {
   // base — mostrarle a un supervisor un formulario que le va a fallar al guardar
   // es peor que no mostrárselo.
   // (El supervisor sigue llegando al catálogo y a los puestos desde el menú.)
-  admin: ['operacion', 'empresa', 'usuarios'],
+  admin: ['operacion', 'modulos', 'empresa', 'usuarios'],
 };
 
 /** Orden de menor a mayor privilegio. El acumulado define lo concéntrico. */

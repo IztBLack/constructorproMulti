@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Button, Card, CardHeader, CardTitle, Field, Input } from '@/components/ui';
 import { EstadoFormulario } from './estado-formulario';
 import { actualizarIva } from '@/lib/auth/empresa-actions';
+import { rutaVisible, type ClaveModulo } from '@/lib/modulos';
 
 /**
  * Configuración de operación: IVA por defecto y accesos a los catálogos.
@@ -17,7 +18,26 @@ import { actualizarIva } from '@/lib/auth/empresa-actions';
  * migración 0017), así que una cotización aceptada al 16% sigue diciendo 16%
  * aunque mañana la empresa opere al 8% de la franja fronteriza.
  */
-export function SeccionOperacion({ ivaActual }: { ivaActual: number }) {
+export function SeccionOperacion({
+  ivaActual,
+  modulos,
+}: {
+  ivaActual: number;
+  /** Módulos prendidos: los catálogos de un módulo apagado no se ofrecen. */
+  modulos: readonly ClaveModulo[];
+}) {
+  const catalogos = [
+    {
+      href: '/admin/catalogo',
+      titulo: 'Catálogo de conceptos',
+      descripcion: 'Conceptos, unidades y precios base.',
+    },
+    {
+      href: '/admin/puestos',
+      titulo: 'Puestos y salarios',
+      descripcion: 'Salario por día de cada puesto.',
+    },
+  ].filter((c) => rutaVisible(c.href, modulos));
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -88,24 +108,19 @@ export function SeccionOperacion({ ivaActual }: { ivaActual: number }) {
           solo lleva secciones de uso diario), así que estos dos tienen que
           leerse como destinos, no como notas al pie: antes eran dos enlaces
           subrayados debajo del formulario del IVA y se perdían. */}
-      <div className="mt-6 border-t border-neutral-200 pt-4">
-        <p className="text-sm font-medium text-neutral-900">Catálogos</p>
-        <p className="mb-3 text-sm text-neutral-600">
-          Los datos base que alimentan cotizaciones y nómina.
-        </p>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <EnlaceCatalogo
-            href="/admin/catalogo"
-            titulo="Catálogo de conceptos"
-            descripcion="Conceptos, unidades y precios base."
-          />
-          <EnlaceCatalogo
-            href="/admin/puestos"
-            titulo="Puestos y salarios"
-            descripcion="Salario por día de cada puesto."
-          />
+      {catalogos.length > 0 && (
+        <div className="mt-6 border-t border-neutral-200 pt-4">
+          <p className="text-sm font-medium text-neutral-900">Catálogos</p>
+          <p className="mb-3 text-sm text-neutral-600">
+            Los datos base que alimentan cotizaciones y nómina.
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {catalogos.map((c) => (
+              <EnlaceCatalogo key={c.href} {...c} />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </Card>
   );
 }
