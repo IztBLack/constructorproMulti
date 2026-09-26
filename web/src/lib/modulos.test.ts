@@ -10,7 +10,9 @@ import {
   leerPerfil,
   modulosPorPerfil,
   navDeModulos,
+  necesidadProximamente,
   normalizarModulos,
+  perfilDeRespuestas,
   prenderModulo,
   resolverDependencias,
   rutaPerteneceAModulo,
@@ -18,6 +20,67 @@ import {
   siguientePaso,
   type ClaveModulo,
 } from './modulos';
+import { COMANDOS_FIJOS, comandosDeObra, soloModulosActivos } from '@/components/paleta/comandos';
+
+describe('perfilDeRespuestas (lo que manda el navegador no se cree)', () => {
+  test('descarta lo desconocido y recalcula "próximamente"', () => {
+    const p = perfilDeRespuestas({
+      tipo: 'empresa',
+      factura: 'algunos',
+      necesidades: ['material', 'material', 'hackear'],
+      saltado: false,
+    });
+    expect(p.tipo).toBe('empresa');
+    expect(p.necesidades).toEqual(['material']);
+    expect(p.proximamente).toEqual(
+      expect.arrayContaining(['compras', 'rentabilidad', 'estimaciones', 'cumplimiento']),
+    );
+    expect(p.siguientePasoDescartado).toBe(false);
+  });
+
+  test('saltar sin contestar nada', () => {
+    expect(
+      perfilDeRespuestas({ tipo: undefined, factura: 7, necesidades: 'x', saltado: true }),
+    ).toEqual({
+      tipo: null,
+      factura: null,
+      necesidades: [],
+      proximamente: [],
+      saltado: true,
+      siguientePasoDescartado: false,
+    });
+  });
+});
+
+describe('necesidadProximamente', () => {
+  test('se decide por el módulo que la resuelve', () => {
+    expect(necesidadProximamente('cotizar', null)).toBe(false);
+    expect(necesidadProximamente('cuadrillas', null)).toBe(false);
+    expect(necesidadProximamente('ganancia', null)).toBe(true); // prende cotizaciones, pero es utilidad
+    expect(necesidadProximamente('material', 'empresa')).toBe(true);
+    expect(necesidadProximamente('tratos', 'constructora')).toBe(false);
+  });
+});
+
+describe('paleta de comandos', () => {
+  test('con todo prendido no se pierde ningún comando', () => {
+    expect(soloModulosActivos(COMANDOS_FIJOS, PAQUETE_POR_DEFECTO)).toEqual(COMANDOS_FIJOS);
+  });
+
+  test('con solo el núcleo desaparecen cotizaciones, equipo, caja y demás', () => {
+    const titulos = soloModulosActivos(
+      [...COMANDOS_FIJOS, ...comandosDeObra('o1')],
+      ['obras'],
+    ).map((c) => c.titulo);
+    expect(titulos).toContain('Obras');
+    expect(titulos).toContain('Ajustes');
+    expect(titulos).not.toContain('Cotizaciones');
+    expect(titulos).not.toContain('Pase de lista de hoy');
+    expect(titulos).not.toContain('Nómina');
+    expect(titulos).not.toContain('Importar movimientos');
+    expect(titulos).not.toContain('Notas de trato');
+  });
+});
 
 describe('resolverDependencias', () => {
   test('siempre incluye obras, aunque no se pida', () => {

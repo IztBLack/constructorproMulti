@@ -526,7 +526,11 @@ function paqueteBase(tipo: TipoEmpresa): ClaveModulo[] {
   return ESCALERA_TIPOS.slice(0, hasta + 1).flatMap((t) => PAQUETE_BASE[t]);
 }
 
-function modulosDeNecesidad(n: Necesidad, tipo: TipoEmpresa): ClaveModulo[] {
+/**
+ * Módulos que prende una necesidad del paso 3. El PRIMERO es el que la
+ * resuelve; los demás son apoyo (ver `necesidadProximamente`).
+ */
+export function modulosDeNecesidad(n: Necesidad, tipo: TipoEmpresa): ClaveModulo[] {
   switch (n) {
     case 'cotizar':
       return ['cotizaciones'];
@@ -556,6 +560,17 @@ function modulosDeNecesidad(n: Necesidad, tipo: TipoEmpresa): ClaveModulo[] {
     case 'facturar':
       return ['fiscal'];
   }
+}
+
+/**
+ * ¿La necesidad todavía no se puede resolver? Se decide por su módulo
+ * PRINCIPAL: "Saber si la obra me deja ganancia" prende cotizaciones (que ya
+ * existe) pero lo que resuelve es la utilidad por obra (que viene), así que se
+ * muestra como "Próximamente" aunque una parte ya esté.
+ */
+export function necesidadProximamente(n: Necesidad, tipo: TipoEmpresa | null): boolean {
+  const principal = modulosDeNecesidad(n, tipo ?? 'contratista')[0];
+  return !modulo(principal).disponible;
 }
 
 export interface Recomendacion {
@@ -632,6 +647,32 @@ export function leerPerfil(crudo: unknown): PerfilEmpresa | null {
     proximamente: ordenar(lista(o.proximamente).filter(esClaveModulo)),
     saltado: o.saltado === true,
     siguientePasoDescartado: o.siguiente_paso_descartado === true,
+  };
+}
+
+/**
+ * Arma el perfil a partir de las respuestas CRUDAS del cuestionario (vienen del
+ * navegador: no se confía en ellas). Lo desconocido se descarta y la lista de
+ * "próximamente" se recalcula aquí, no se toma de lo que mande el cliente.
+ */
+export function perfilDeRespuestas(r: {
+  tipo: unknown;
+  factura: unknown;
+  necesidades: unknown;
+  saltado: boolean;
+}): PerfilEmpresa {
+  const tipo = esTipoEmpresa(r.tipo) ? r.tipo : null;
+  const factura = esFactura(r.factura) ? r.factura : null;
+  const necesidades = [
+    ...new Set((Array.isArray(r.necesidades) ? r.necesidades : []).filter(esNecesidad)),
+  ];
+  return {
+    tipo,
+    factura,
+    necesidades,
+    proximamente: modulosPorPerfil(tipo, necesidades, factura).proximamente,
+    saltado: r.saltado,
+    siguientePasoDescartado: false,
   };
 }
 
