@@ -88,12 +88,12 @@ en local (PGlite).
 |---|---|---|---|
 | Harness PGlite | ✅ | f36a70e | 34 migraciones sin reemplazos, 26 tests RLS, ~12 s |
 | F0 web | ✅ | 2bf8235, 21e4709, 47a6d48 | 0035 escrita y probada en PGlite (19 tests), **sin aplicar a ningún Supabase**. Pendiente: verificación visual en navegador (no se levantó la web contra el Supabase de producción), sugerencias de módulo por uso (§4.3, dependen de `compras`), ocultar en el portal/PDF del cliente lo de módulos apagados (ver F0-5) |
-| F0 móvil | ⏳ | | |
-| F1 | ⏳ | | |
-| F1b | ⏳ | | |
+| F0 móvil | 🔄 | | agente en curso |
+| F1 | 🔄 | | agente en curso |
+| F1b | 🔄 | | agente en curso |
 | F2 | ⏳ | | |
 | F3 | ⏳ | | |
 | F5 | ⏳ | | |
-| F4 | ⏳ | | |
+| F4 | 🔄 | | agente en curso (adelantada: no depende de F1) |
 | F6 | ⏳ | | |
 | F7 | ⏳ | | |
