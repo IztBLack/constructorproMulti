@@ -5,6 +5,10 @@ import { listProgramaObra } from '@/lib/data/programa';
 import { listPresupuestoObra } from '@/lib/data/presupuesto-obra';
 import { hoyMxMs, msAFechaInput } from '@/lib/data/tz';
 import { relojPeticion } from '@/lib/bitacora/periodo';
+import { getModulosEmpresa } from '@/lib/data/modulos';
+import { listCapturasAvance, listConceptosObra } from '@/lib/data/estimaciones';
+import { ejecutadoPorConcepto } from '@/lib/estimaciones/avance';
+import { avanceRealPartida } from '@/lib/programa/programa';
 import ObraTabs from '../_obra-tabs';
 import { ProgramaObra } from './programa-obra';
 
@@ -15,9 +19,10 @@ export const dynamic = 'force-dynamic';
  * de barras sencilla y alerta de lo atrasado. Sin dependencias ni ruta crítica
  * (RF4.8). "Atrasada" hoy = pasó su fecha de fin sin marcarse terminada.
  *
- * TODO(F3 · 0039 avance_partida): conectar "programado vs real" (RF4.7): el %
- * real por partida (ligado por `presupuesto_id`) contra `avanceProgramado()` de
- * `@/lib/programa/programa`, para avisar antes de que venza.
+ * PROGRAMADO VS REAL (RF4.7): con el módulo `estimaciones` prendido y avance
+ * capturado, cada partida (o sección) trae su % real de `avance_partida` (0039)
+ * y se compara con lo que debería llevar a la fecha: "Va atrás" avisa antes de
+ * que venza. Sin avance capturado, todo sigue como antes (fechas + marca manual).
  */
 export default async function ProgramaObraPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -41,6 +46,19 @@ export default async function ProgramaObraPage({ params }: { params: Promise<{ i
     );
   }
   if (!obra) notFound();
+
+  // % real por partida del programa (solo si el módulo está prendido).
+  const { activos } = await getModulosEmpresa();
+  const avanceReal: Record<string, number | null> = {};
+  if (activos.includes('estimaciones') && partidas.length > 0) {
+    const [conceptos, capturas] = await Promise.all([listConceptosObra(id), listCapturasAvance(id)]);
+    if (!conceptos.error && !capturas.error) {
+      const ejecutado = ejecutadoPorConcepto(capturas.data);
+      for (const p of partidas) {
+        avanceReal[p.id] = avanceRealPartida(p, conceptos.data, ejecutado, capturas.data.length > 0);
+      }
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -66,6 +84,7 @@ export default async function ProgramaObraPage({ params }: { params: Promise<{ i
           puedeEditar={['admin', 'supervisor'].includes(rol)}
           ahora={ahora}
           hoy={msAFechaInput(hoyMxMs())}
+          avanceReal={avanceReal}
         />
       )}
     </div>

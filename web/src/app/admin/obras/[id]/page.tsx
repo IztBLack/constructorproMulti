@@ -26,6 +26,10 @@ import PresupuestoObra from './presupuesto-obra';
 import ObraTabs from './_obra-tabs';
 import { CobrosFiscales } from './cobros-fiscales';
 import { getAccesoFiscal, listCobros } from '@/lib/data/fiscal';
+import { acumuladosDe, getAvanceFisicoObra, listEstimacionesObra } from '@/lib/data/estimaciones';
+import { avanceFinanciero } from '@/lib/estimaciones/avance';
+import { costoTotal } from '@/lib/data/presupuesto-obra';
+import { AvanceFisicoFinanciero } from '@/components/estimaciones/avance-fisico-financiero';
 
 export const dynamic = 'force-dynamic';
 
@@ -99,11 +103,35 @@ export default async function ObraDetallePage({
     ? (await listCobros({ obraId: id, soloOrigen: 'movimiento' })).data
     : [];
 
+  // Avance físico vs financiero (RF3.7), con el módulo de estimaciones. Si 0039
+  // no está aplicada, el físico sale "sin medir" y lo demás igual.
+  const conEstimaciones = activos.includes('estimaciones');
+  let fisicoFinanciero: React.ComponentProps<typeof AvanceFisicoFinanciero> | null = null;
+  if (conEstimaciones && !presupuestoError) {
+    const [fisico, ests, extras] = await Promise.all([
+      getAvanceFisicoObra(id),
+      listEstimacionesObra(id),
+      conExtras ? listExtrasAprobadosObra(id) : Promise.resolve({ total: 0, error: null }),
+    ]);
+    const contratado = costoTotal(partidas) + (extras.error ? 0 : extras.total);
+    const cobrado = (movimientos ?? []).filter((m) => m.tipo === 'ENTRADA').reduce((s, m) => s + m.monto, 0);
+    const ac = acumuladosDe(ests.error ? [] : ests.data, 0);
+    fisicoFinanciero = {
+      fisico: fisico?.hayCapturas ? fisico.pct : null,
+      financiero: avanceFinanciero(cobrado, contratado),
+      estimado: avanceFinanciero(ac.estimado, contratado),
+      porCobrar: ac.porCobrar,
+      fondoRetenido: ac.fondoRetenido,
+    };
+  }
+
   return (
     <div className="space-y-6">
       <ObraTabs obraId={id} />
 
       <ObraHeader obra={obra} clientes={clientes} obras={obrasLite} />
+
+      {fisicoFinanciero && <AvanceFisicoFinanciero {...fisicoFinanciero} />}
 
       {/* ── Sección financiera ──────────────────────────────────────────── */}
 

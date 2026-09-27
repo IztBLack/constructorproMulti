@@ -22,6 +22,10 @@ import { listBitacoraObra } from '@/lib/data/bitacora';
 import { BitacoraCliente } from './bitacora-cliente';
 import { listExtrasObraCliente } from '@/lib/data/cambios';
 import { ExtrasCliente } from './_extras';
+import { getAvanceFisicoPortal, listEstimacionesCliente } from '@/lib/data/estimaciones';
+import { avanceFinanciero } from '@/lib/estimaciones/avance';
+import { AvanceFisicoFinanciero } from '@/components/estimaciones/avance-fisico-financiero';
+import { EstimacionesCliente } from './_estimaciones';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,13 +58,27 @@ export default async function ObraDetallePage({
     { costoTotal, recibido, pendiente, pagadoPct, entradas, presupuesto, totalExtras },
     extras,
     bitacora,
+    fisico,
+    estimaciones,
   ] = await Promise.all([
     getEstadoCuentaObra(obra.id),
     listExtrasObraCliente(obra.id),
     // Bitácora publicada (0041). La RLS entrega SOLO lo marcado para el
     // cliente; si falla o no hay nada, la sección simplemente no aparece.
     listBitacoraObra(obra.id),
+    // Avance por partida y estimaciones (0039). Como los extras (F1-11), se
+    // muestran aunque el módulo esté apagado: el cliente no puede leer los
+    // módulos y lo que ya se le mandó es suyo. Si 0039 no está, no aparecen.
+    getAvanceFisicoPortal(obra.id),
+    listEstimacionesCliente(obra.id),
   ]);
+
+  const porCobrarEst = estimaciones
+    .filter((e) => e.estado === 'AUTORIZADA')
+    .reduce((s, e) => s + e.foto.importes.neto, 0);
+  const fondoRetenido = estimaciones
+    .filter((e) => e.estado !== 'RECHAZADA')
+    .reduce((s, e) => s + e.foto.importes.fondoGarantia, 0);
 
   const tieneEstadoCuenta = costoTotal > 0 || entradas.length > 0;
 
@@ -96,7 +114,19 @@ export default async function ObraDetallePage({
         </p>
       </div>
 
-      {/* ── Avance de obra ───────────────────────────────────────────────── */}
+      {/* ── Avance: hecho (medido por partida) vs pagado (RF3.7) ─────────── */}
+      {fisico && (
+        <AvanceFisicoFinanciero
+          paraCliente
+          fisico={fisico.pct}
+          financiero={avanceFinanciero(recibido, costoTotal)}
+          porCobrar={Math.round(porCobrarEst * 100) / 100}
+          fondoRetenido={Math.round(fondoRetenido * 100) / 100}
+        />
+      )}
+
+      {/* ── Avance de obra (el que captura la constructora a mano) ─────────── */}
+      {!fisico && (
       <section aria-labelledby="avance-heading">
         <Card padding="md">
           <CardHeader>
@@ -123,6 +153,10 @@ export default async function ObraDetallePage({
           </p>
         </Card>
       </section>
+      )}
+
+      {/* ── Estimaciones (0039): lo que se le mandó a autorizar ──────────── */}
+      <EstimacionesCliente obraId={obra.id} estimaciones={estimaciones} />
 
       {/* ── Extras (0036): lo que se le mandó a aprobar ──────────────────── */}
       <ExtrasCliente obraId={obra.id} extras={extras} />

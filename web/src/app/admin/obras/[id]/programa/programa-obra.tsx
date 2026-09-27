@@ -7,6 +7,7 @@ import { formatDate } from '@/lib/data/format';
 import { msAFechaInput } from '@/lib/data/tz';
 import {
   ETIQUETA_ESTADO,
+  avanceProgramado,
   diasDeAtraso,
   duracionDias,
   estadoPartida,
@@ -55,6 +56,7 @@ export function ProgramaObra({
   puedeEditar,
   ahora,
   hoy,
+  avanceReal = {},
 }: {
   obraId: string;
   partidas: PartidaPrograma[];
@@ -62,6 +64,8 @@ export function ProgramaObra({
   puedeEditar: boolean;
   ahora: number;
   hoy: string;
+  /** % real por partida del programa (F3). null/ausente = no se mide. */
+  avanceReal?: Record<string, number | null>;
 }) {
   const router = useRouter();
   const [agregando, setAgregando] = useState(false);
@@ -72,7 +76,10 @@ export function ProgramaObra({
 
   const rango = rangoPrograma(partidas);
   const lineaHoy = rango ? posicionHoy(rango, ahora) : null;
-  const vencidas = partidas.filter((p) => estadoPartida(p, ahora) === 'vencida');
+  const real = (p: PartidaPrograma) => avanceReal[p.id] ?? null;
+  const estadoDe = (p: PartidaPrograma) => estadoPartida(p, ahora, real(p));
+  const vencidas = partidas.filter((p) => estadoDe(p) === 'vencida');
+  const retrasadas = partidas.filter((p) => estadoDe(p) === 'retrasada');
 
   function correr(fn: () => Promise<{ ok: boolean; error?: string }>, despues?: () => void) {
     setError(null);
@@ -106,6 +113,22 @@ export function ProgramaObra({
           <p className="mt-2 text-xs text-red-800">
             Si ya se terminó, márcala como terminada; si cambió el plan, mueve sus fechas.
           </p>
+        </div>
+      )}
+
+      {retrasadas.length > 0 && (
+        <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+          <p className="font-semibold">
+            {retrasadas.length === 1 ? '1 partida va atrás' : `${retrasadas.length} partidas van atrás`} de lo programado
+          </p>
+          <ul className="mt-1 list-disc pl-5">
+            {retrasadas.map((p) => (
+              <li key={p.id}>
+                {p.concepto}: lleva {real(p)} % y a hoy debería llevar {avanceProgramado(p, ahora)} %
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-xs text-amber-900">Sale del avance anotado en la pestaña Avance.</p>
         </div>
       )}
 
@@ -184,7 +207,7 @@ export function ProgramaObra({
               <ul className="space-y-2 rounded-xl border border-neutral-200 bg-white p-3">
                 {partidas.map((p) => {
                   const g = geometriaBarra(p, rango);
-                  const estado = estadoPartida(p, ahora);
+                  const estado = estadoDe(p);
                   return (
                     <li key={p.id} className="grid grid-cols-1 gap-1 sm:grid-cols-[minmax(0,12rem)_1fr] sm:items-center sm:gap-3">
                       <span className="truncate text-sm text-neutral-900" title={p.concepto}>
@@ -232,7 +255,7 @@ export function ProgramaObra({
             </h2>
             <ul className="divide-y divide-neutral-100 rounded-xl border border-neutral-200 bg-white">
               {partidas.map((p) => {
-                const estado = estadoPartida(p, ahora);
+                const estado = estadoDe(p);
                 if (editandoId === p.id) {
                   return (
                     <li key={p.id} className="p-3">
@@ -263,6 +286,11 @@ export function ProgramaObra({
                         {formatDate(p.fecha_inicio)} – {formatDate(p.fecha_fin)} · {duracionDias(p)} día
                         {duracionDias(p) === 1 ? '' : 's'}
                       </p>
+                      {real(p) !== null && (
+                        <p className="text-xs text-neutral-700">
+                          Real {real(p)} % · programado a hoy {avanceProgramado(p, ahora)} %
+                        </p>
+                      )}
                     </div>
                     <Badge tone={TONO[estado]}>{ETIQUETA_ESTADO[estado]}</Badge>
                     {puedeEditar && (
