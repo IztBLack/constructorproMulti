@@ -37,6 +37,8 @@ export async function registrarNominaEnCajaAction(
     metodoPago: 'Efectivo',
     referencia: '',
     nombre: '',
+    // La raya es mano de obra sin discusión: se clasifica sola para la utilidad.
+    categoriaCosto: 'MANO_OBRA',
   });
   if (error) return { error };
 

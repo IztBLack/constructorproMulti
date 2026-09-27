@@ -180,6 +180,10 @@ export interface Movimiento {
   /// Ruta del comprobante en el bucket privado `comprobantes` (migración 0024).
   /// Null si no se adjuntó. Solo la ve/gestiona el personal de oficina.
   comprobante_uri?: string | null;
+  /// Clasificación de costo para la utilidad por obra (migración 0036):
+  /// MANO_OBRA | MATERIAL | SUBCONTRATO | INDIRECTO | OTRO. Null = sin
+  /// clasificar. Opcional porque las filas previas a 0036 no la traen.
+  categoria_costo?: string | null;
   created_at: number;
   updated_at: number;
   server_updated_at: number | null;

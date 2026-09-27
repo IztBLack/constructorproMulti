@@ -21,15 +21,16 @@
  * cosas distintas.
  */
 
-export type TipoDocumento = 'cotizacion' | 'nota' | 'estado_cuenta';
+export type TipoDocumento = 'cotizacion' | 'nota' | 'estado_cuenta' | 'extra';
 
-export const TIPOS_DOCUMENTO: TipoDocumento[] = ['cotizacion', 'nota', 'estado_cuenta'];
+export const TIPOS_DOCUMENTO: TipoDocumento[] = ['cotizacion', 'nota', 'estado_cuenta', 'extra'];
 
 /** Cómo se llama cada tipo en la interfaz (Ajustes → PDF). */
 export const NOMBRE_TIPO: Record<TipoDocumento, string> = {
   cotizacion: 'Cotización',
   nota: 'Nota de obra',
   estado_cuenta: 'Estado de cuenta del cliente',
+  extra: 'Extra (orden de cambio)',
 };
 
 /** Textos generales por tipo, tal como se guardan en `pdf_config.textos`. */
@@ -78,6 +79,13 @@ export function textoIntegrado(tipo: TipoDocumento, ctx: ContextoTextoFinal): st
       return (
         'Documento informativo del avance de pagos de su obra. Los montos están expresados en ' +
         `pesos mexicanos (MXN). Para cualquier aclaración comuníquese con ${empresa}.`
+      );
+
+    case 'extra':
+      return (
+        'Trabajo adicional al presupuesto original de la obra. Montos en pesos mexicanos (MXN), ' +
+        'sin IVA. Una vez aprobado, el importe se suma a su estado de cuenta. ' +
+        `Para cualquier aclaración comuníquese con ${empresa}.`
       );
   }
 }
