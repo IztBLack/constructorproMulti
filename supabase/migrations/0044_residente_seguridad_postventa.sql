@@ -10,6 +10,10 @@
 -- NUNCA `incidente_salud` (D8: solo el admin) ni la carpeta `incidentes/` del
 -- bucket `seguridad` (F7-2).
 --
+-- ENDURECIMIENTO (SEG-M1, docs/PROGRESO_ALCANCE.md): el residente tampoco oculta
+-- las fotos que subió el cliente ni borra del bucket archivos ligados (fotos de
+-- garantía, evidencia de EPP): mismos candados que la oficina en 0043.
+--
 -- REVERSA: borrar las policies con sufijo `_residente` de este archivo.
 
 -- GarantÃ­a de la obra (fecha de entrega y meses): solo lectura, como el supervisor.
@@ -54,11 +58,11 @@ create policy garantia_foto_residente_insert on public.garantia_foto
 drop policy if exists garantia_foto_residente_update on public.garantia_foto;
 create policy garantia_foto_residente_update on public.garantia_foto
   for update
-  using (exists (
+  using (not subida_por_cliente and exists (
     select 1 from public.garantia_reporte r
      where r.id = garantia_foto.reporte_id and r.empresa_id = garantia_foto.empresa_id
        and public.auth_residente_obra(r.empresa_id, r.obra_id)))
-  with check (exists (
+  with check (not subida_por_cliente and exists (
     select 1 from public.garantia_reporte r
      where r.id = garantia_foto.reporte_id and r.empresa_id = garantia_foto.empresa_id
        and public.auth_residente_obra(r.empresa_id, r.obra_id)));
@@ -179,7 +183,8 @@ create policy postventa_obj_residente_delete on storage.objects
   for delete to authenticated
   using (bucket_id = 'postventa'
     and public.auth_residente_obra(public.compras_uuid((storage.foldername(name))[1]),
-                                   public.compras_uuid((storage.foldername(name))[2])));
+                                   public.compras_uuid((storage.foldername(name))[2]))
+    and not public._postventa_obj_protegido(name));
 
 -- EPP (0043): <empresa>/epp/<entrega>/<archivo>; la obra sale de la entrega.
 -- La carpeta `incidentes/` sigue siendo SOLO del admin (F7-2).
@@ -220,5 +225,6 @@ create policy seguridad_obj_residente_delete on storage.objects
          and e.empresa_id::text = (storage.foldername(name))[1]
          and e.obra_id is not null
          and public.auth_residente_obra(e.empresa_id, e.obra_id))
+    and not public._seguridad_obj_protegido(name)
   );
 

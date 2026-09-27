@@ -44,6 +44,15 @@
 --      enforcement en extras y órdenes de compra.
 --   7. Registro de actividad (`actividad`), inmutable, por triggers.
 --
+-- ENDURECIMIENTO (revisión de seguridad, docs/PROGRESO_ALCANCE.md, SEG-*): lo
+-- aditivo del residente no reabre lo que se cerró en 0036–0045:
+--   · SEG-A1: el residente NO borra físicamente partidas del presupuesto (la
+--     policy `obra_presupuesto_residente_delete` ya no se crea); tampoco borra
+--     obras (nunca tuvo esa policy).
+--   · SEG-M1: sus policies de borrado en Storage (extras, remisiones) respetan
+--     el mismo candado de evidencia ligada que las de la oficina.
+--   · SEG-M3: sus policies de movimientos de caja las ajusta 0045.
+--
 -- REVERSA (si hiciera falta): borrar las policies con sufijo `_residente`,
 -- `_colab_obra`, `_compras`, `_almacen`, `_org_read`; los triggers
 -- `trg_actividad` y `trg_usuario_obra_*`; las tablas `actividad`, `aprobacion`,
@@ -441,8 +450,14 @@ create policy obras_residente_update on public.obras
   using (public.auth_residente_obra(empresa_id, id))
   with check (public.auth_residente_obra(empresa_id, id));
 
--- 3c. Tablas "planas" con obra_id: lectura y escritura completas en SU obra,
--- como el supervisor (movimientos, presupuesto de la obra, nota de caja).
+-- 3c. Tablas "planas" con obra_id: lectura y escritura en SU obra, como el
+-- supervisor (movimientos, presupuesto de la obra, nota de caja).
+-- Borrado FÍSICO: solo en movimientos (como el supervisor en 0020; 0045 lo
+-- limita a los que no están ligados a pagos/cobros). El presupuesto de la obra
+-- NO (SEG-A1): borrar de verdad una partida se llevaba en cascada el avance
+-- capturado (evidencia de las estimaciones); en 0045 ni el supervisor lo hace.
+-- La app borra con `deleted_at` (UPDATE), así que nada de la web ni del móvil
+-- usaba ese DELETE.
 do $$
 declare t text;
 begin
@@ -457,10 +472,11 @@ begin
     execute format('create policy %I on public.%I for update using (public.auth_residente_obra(empresa_id, obra_id)) '
       'with check (public.auth_residente_obra(empresa_id, obra_id));', t || '_residente_update', t);
     execute format('drop policy if exists %I on public.%I;', t || '_residente_delete', t);
-    execute format('create policy %I on public.%I for delete using (public.auth_residente_obra(empresa_id, obra_id));',
-      t || '_residente_delete', t);
   end loop;
 end $$;
+
+create policy movimientos_residente_delete on public.movimientos
+  for delete using (public.auth_residente_obra(empresa_id, obra_id));
 
 drop policy if exists obra_caja_nota_residente_read on public.obra_caja_nota;
 create policy obra_caja_nota_residente_read on public.obra_caja_nota
@@ -800,12 +816,15 @@ create policy extras_residente_insert on storage.objects
     and public.auth_residente_obra(public.compras_uuid((storage.foldername(name))[1]),
                                    public.compras_uuid((storage.foldername(name))[2])));
 
+-- Mismo candado de evidencia que la oficina (SEG-M1, 0036): la foto de un
+-- extra enviado no se borra.
 drop policy if exists extras_residente_delete on storage.objects;
 create policy extras_residente_delete on storage.objects
   for delete to authenticated
   using (bucket_id = 'extras'
     and public.auth_residente_obra(public.compras_uuid((storage.foldername(name))[1]),
-                                   public.compras_uuid((storage.foldername(name))[2])));
+                                   public.compras_uuid((storage.foldername(name))[2]))
+    and not public._extras_obj_protegido(name));
 
 -- Bitácora (0041): <empresa>/<obra>/<entrada>/<archivo>, mismas reglas de
 -- entrada abierta que el supervisor.
@@ -1297,6 +1316,8 @@ create policy compras_obj_org_insert on storage.objects
          and r.deleted_at is null)
   );
 
+-- Mismo candado de evidencia que la oficina (SEG-M1, 0038): la remisión ligada
+-- a una recepción no se borra.
 drop policy if exists compras_obj_org_delete on storage.objects;
 create policy compras_obj_org_delete on storage.objects
   for delete to authenticated
@@ -1304,6 +1325,7 @@ create policy compras_obj_org_delete on storage.objects
     bucket_id = 'compras'
     and (storage.foldername(name))[2] = 'remisiones'
     and public.auth_tiene_rol(public.compras_uuid((storage.foldername(name))[1]), 'compras', 'almacen')
+    and not public._compras_obj_protegido(name)
   );
 
 drop policy if exists compras_obj_residente_select on storage.objects;
@@ -1341,6 +1363,7 @@ create policy compras_obj_residente_delete on storage.objects
        where r.id::text = (storage.foldername(name))[3]
          and r.empresa_id::text = (storage.foldername(name))[1]
          and public.auth_residente_obra(r.empresa_id, r.obra_id))
+    and not public._compras_obj_protegido(name)
   );
 
 -- ════════════════════════════════════════════════════════════════════════════
