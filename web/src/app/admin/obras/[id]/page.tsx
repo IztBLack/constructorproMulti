@@ -34,6 +34,7 @@ import { acumuladosDe, getAvanceFisicoObra, listEstimacionesObra } from '@/lib/d
 import { avanceFinanciero } from '@/lib/estimaciones/avance';
 import { costoTotal } from '@/lib/data/presupuesto-obra';
 import { AvanceFisicoFinanciero } from '@/components/estimaciones/avance-fisico-financiero';
+import { capturaEnObra } from '@/lib/auth/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,7 +85,7 @@ export default async function ObraDetallePage({
   // gestiona los comprobantes. Si falla la consulta de rol, se asume que no
   // (mejor solo lectura que romper la página).
   const rol = await getEmpresaUsuario().then((e) => e.rol).catch(() => '');
-  const esOficina = ['admin', 'supervisor', 'contador'].includes(rol);
+  const esOficina = ['admin', 'supervisor', 'contador', 'residente'].includes(rol);
 
   // Qué secciones de la obra se muestran según los módulos prendidos. La obra
   // en sí (encabezado, datos) es del núcleo y siempre se ve. Apagar un módulo
@@ -199,7 +200,7 @@ export default async function ObraDetallePage({
               documento: obra.texto_final,
               empresa: pdf.textos,
             })}
-            puedeEditar={['admin', 'supervisor'].includes(rol)}
+            puedeEditar={capturaEnObra(rol)}
           />
         </>
       )}

@@ -31,7 +31,7 @@ async function quien(roles: string[]): Promise<{ empresaId: string } | { error: 
   try {
     const { empresaId, rol } = await getEmpresaUsuario();
     if (!roles.includes(rol)) {
-      return { error: roles.length === 1 ? 'Solo el administrador.' : 'Solo el administrador o un supervisor.' };
+      return { error: roles.length === 1 ? 'Solo el administrador.' : 'Solo el administrador, un supervisor o el residente de la obra.' };
     }
     return { empresaId };
   } catch (e) {
@@ -53,7 +53,7 @@ export interface SeguimientoInput {
 }
 
 export async function actualizarReporte(id: string, obraId: string, input: SeguimientoInput): Promise<Resultado> {
-  const q = await quien(['admin', 'supervisor']);
+  const q = await quien(['admin', 'supervisor', 'residente']);
   if ('error' in q) return { ok: false, error: q.error };
   if (!UUID.test(id)) return { ok: false, error: 'Reporte inválido.' };
   if (!esEstadoReporte(input.estado)) return { ok: false, error: 'Elige el estado.' };
@@ -91,7 +91,7 @@ export async function crearReporteOficina(input: {
   descripcion: string;
   ubicacion: string;
 }): Promise<Resultado> {
-  const q = await quien(['admin', 'supervisor']);
+  const q = await quien(['admin', 'supervisor', 'residente']);
   if ('error' in q) return { ok: false, error: q.error };
   if (!UUID.test(input.id) || !UUID.test(input.obraId)) return { ok: false, error: 'Elige la obra.' };
   const descripcion = input.descripcion.trim();

@@ -12,6 +12,7 @@ import {
 } from '@/lib/herramienta/herramienta';
 import { Devolver, FormHerramienta, Prestar } from '../formularios';
 import { SemaforoPrestamo } from '../semaforo';
+import { capturaEnObra } from '@/lib/auth/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,7 +38,7 @@ export default async function HerramientaDetallePage({ params }: { params: Promi
   }
   if (!h) notFound();
   const rol = empresa?.rol ?? '';
-  const escribe = rol === 'admin' || rol === 'supervisor';
+  const escribe = capturaEnObra(rol);
 
   return (
     <div className="space-y-6">

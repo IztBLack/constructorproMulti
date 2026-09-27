@@ -15,6 +15,7 @@ import { EppColaborador } from './epp-colaborador';
 import { getModulosEmpresa } from '@/lib/data/modulos';
 import { listEppColaborador } from '@/lib/data/seguridad';
 import { hoyMxMs, msAFechaInput } from '@/lib/data/tz';
+import { capturaEnObra } from '@/lib/auth/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,7 +55,7 @@ export default async function ColaboradorDetallePage({
   // (la RLS no le regresa nada a los demás; aquí solo se evita la sección vacía).
   const modulos = await getModulosEmpresa();
   const verEpp =
-    modulos.activos.includes('seguridad') && (modulos.rol === 'admin' || modulos.rol === 'supervisor');
+    modulos.activos.includes('seguridad') && capturaEnObra(modulos.rol);
   const epp = verEpp ? await listEppColaborador(id) : null;
 
   return (

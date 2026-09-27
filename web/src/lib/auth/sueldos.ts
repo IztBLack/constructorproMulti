@@ -25,6 +25,10 @@ import type { Rol } from '@/lib/data/types';
  *   · `colaborador` — NO. Es staff de campo: captura asistencia y gasto. No hay
  *     razón para ponerle enfrente la raya de sus compañeros.
  *   · `cliente` — NO, nunca. Ve su obra desde el portal y jamás la nómina.
+ *   · `residente` (0042) — sí, la raya de SUS obras: la RLS le deja leer
+ *     `colaborador_sueldo` solo de quien trabaja en ellas. La Proyección de
+ *     toda la empresa no la abre (lib/auth/roles.ts).
+ *   · `compras` / `almacen` (0042) — NO.
  *
  * ─────────────────────────────────────────────────────────────────────────────
  * ESTO SOLO ES LA MITAD. La otra vive en `supabase/migrations/0027`, que revoca
@@ -34,7 +38,7 @@ import type { Rol } from '@/lib/data/types';
  * no lo detiene. Espeja `_rolesSueldos` del móvil (`lib/core/sync/rol_provider.dart`).
  * ─────────────────────────────────────────────────────────────────────────────
  */
-const ROLES_SUELDOS: readonly string[] = ['admin', 'supervisor', 'contador'];
+const ROLES_SUELDOS: readonly string[] = ['admin', 'supervisor', 'contador', 'residente'];
 
 /** ¿Este rol puede ver sueldos (nómina y proyección)? */
 export function puedeVerSueldos(rol: Rol): boolean {

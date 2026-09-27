@@ -9,6 +9,7 @@ import {
 } from '@/lib/data/compras';
 import { ordenadoPorRenglon, pendientePorComprar } from '@/lib/compras/calculo';
 import { ArmarOrdenes, type FilaPorComprar } from './armar-ordenes';
+import { gestionaCompras } from '@/lib/auth/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,7 +65,7 @@ export default async function ArmarPage() {
         title="Armar órdenes de compra"
         description="Elige proveedor y precio de cada material aprobado. Se arma una orden por obra y proveedor; nacen en borrador para que las revises antes de emitirlas."
       />
-      {rol !== 'admin' ? (
+      {!gestionaCompras(rol) ? (
         <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           Las órdenes de compra las arma el administrador.
         </p>

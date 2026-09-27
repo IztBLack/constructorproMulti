@@ -7,6 +7,7 @@ import { avanceFisico, ejecutadoPorConcepto } from '@/lib/estimaciones/avance';
 import { hoyMxMs, msAFechaInput } from '@/lib/data/tz';
 import ObraTabs from '../_obra-tabs';
 import { AvanceObra } from './avance-obra';
+import { capturaEnObra } from '@/lib/auth/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,7 +65,7 @@ export default async function AvancePage({ params }: { params: Promise<{ id: str
           capturas={capturas.data.slice(0, 60)}
           pctObra={a.pct}
           porConcepto={Object.fromEntries(a.porConcepto)}
-          puedeCapturar={['admin', 'supervisor'].includes(rol)}
+          puedeCapturar={capturaEnObra(rol)}
           esAdmin={rol === 'admin'}
           miId={await usuarioActual()}
           hoy={msAFechaInput(hoyMxMs())}

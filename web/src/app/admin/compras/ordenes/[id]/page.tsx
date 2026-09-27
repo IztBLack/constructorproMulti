@@ -23,6 +23,8 @@ import { AccionesOrden, EditorOrden } from './editor-orden';
 import { Recepciones } from './recepciones';
 import { FacturaProveedor } from './factura-proveedor';
 import { PagosOrden } from './pagos-orden';
+import { capturaEnObra } from '@/lib/auth/roles';
+import { gestionaCompras, vePreciosDeCompras } from '@/lib/auth/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,7 +53,12 @@ export default async function OrdenPage({ params }: { params: Promise<{ id: stri
     ]);
 
   const esAdmin = rol === 'admin';
-  const recibe = rol === 'admin' || rol === 'supervisor';
+  // Arma, emite y cancela: el admin o el rol compras (F6; la emisión puede
+  // pedir visto bueno según la regla de Ajustes → Visto bueno).
+  const gestiona = gestionaCompras(rol);
+  const recibe = capturaEnObra(rol) || rol === 'compras' || rol === 'almacen';
+  // Almacén recibe por cantidades; los precios no son suyos (F6-9).
+  const precios = vePreciosDeCompras(rol);
   const paga = rol === 'admin' || rol === 'contador';
   const pagos = paga ? await listPagos([id]) : [];
 
@@ -84,14 +91,16 @@ export default async function OrdenPage({ params }: { params: Promise<{ id: stri
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <LinkButton href={`/admin/compras/ordenes/${id}/pdf`} variant="secondary" size="sm">
-            Ver PDF
-          </LinkButton>
-          {esAdmin && <AccionesOrden ordenId={id} estado={orden.estado} tieneRenglones={orden.renglones.length > 0} />}
+          {precios && (
+            <LinkButton href={`/admin/compras/ordenes/${id}/pdf`} variant="secondary" size="sm">
+              Ver PDF
+            </LinkButton>
+          )}
+          {gestiona && <AccionesOrden ordenId={id} estado={orden.estado} tieneRenglones={orden.renglones.length > 0} />}
         </div>
       </header>
 
-      {borrador && esAdmin ? (
+      {borrador && gestiona ? (
         <EditorOrden
           orden={orden}
           proveedores={proveedores.data.map((p) => ({ id: p.id, nombre: p.nombre, dias: p.dias_credito }))}
@@ -117,8 +126,8 @@ export default async function OrdenPage({ params }: { params: Promise<{ id: stri
                   <th className="px-4 py-2 text-right font-medium">Pedido</th>
                   <th className="px-4 py-2 text-right font-medium">Recibido</th>
                   <th className="px-4 py-2 text-right font-medium">Falta</th>
-                  <th className="px-4 py-2 text-right font-medium">P. unitario</th>
-                  <th className="px-4 py-2 text-right font-medium">Importe</th>
+                  {precios && <th className="px-4 py-2 text-right font-medium">P. unitario</th>}
+                  {precios && <th className="px-4 py-2 text-right font-medium">Importe</th>}
                 </tr>
               </thead>
               <tbody>
@@ -138,20 +147,26 @@ export default async function OrdenPage({ params }: { params: Promise<{ id: stri
                         '—'
                       )}
                     </td>
-                    <td className="px-4 py-2 text-right tabular-nums">{formatCurrency(r.precio_unitario)}</td>
-                    <td className="px-4 py-2 text-right tabular-nums">
-                      {formatCurrency(Math.round(r.cantidad * r.precio_unitario * 100) / 100)}
-                    </td>
+                    {precios && (
+                      <td className="px-4 py-2 text-right tabular-nums">{formatCurrency(r.precio_unitario)}</td>
+                    )}
+                    {precios && (
+                      <td className="px-4 py-2 text-right tabular-nums">
+                        {formatCurrency(Math.round(r.cantidad * r.precio_unitario * 100) / 100)}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <dl className="space-y-1 border-t border-neutral-200 px-5 py-3 text-sm">
-            <Linea etiqueta="Subtotal" valor={formatCurrency(t.subtotal)} />
-            <Linea etiqueta={`IVA (${orden.iva_pct}%)`} valor={formatCurrency(t.iva)} />
-            <Linea etiqueta="Total" valor={formatCurrency(t.total)} fuerte />
-          </dl>
+          {precios && (
+            <dl className="space-y-1 border-t border-neutral-200 px-5 py-3 text-sm">
+              <Linea etiqueta="Subtotal" valor={formatCurrency(t.subtotal)} />
+              <Linea etiqueta={`IVA (${orden.iva_pct}%)`} valor={formatCurrency(t.iva)} />
+              <Linea etiqueta="Total" valor={formatCurrency(t.total)} fuerte />
+            </dl>
+          )}
           {(orden.condiciones || orden.notas) && (
             <div className="space-y-1 border-t border-neutral-200 px-5 py-3 text-sm text-neutral-700">
               {orden.condiciones && <p>Condiciones: {orden.condiciones}</p>}
@@ -161,7 +176,7 @@ export default async function OrdenPage({ params }: { params: Promise<{ id: stri
         </Card>
       )}
 
-      {borrador && esAdmin && (
+      {borrador && gestiona && (
         <TextoFinalCard
           tipo="orden_compra"
           documentoId={orden.id}

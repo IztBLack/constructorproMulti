@@ -23,6 +23,7 @@ import { CotizacionHeader } from '../cotizacion-header';
 import { SeccionesList } from '../secciones-list';
 import PagosSection from './pagos-section';
 import ArchivosSection from './archivos-section';
+import { capturaEnObra } from '@/lib/auth/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -182,7 +183,7 @@ export default async function CotizacionDetallePage({
           documento: cotizacion.texto_final,
           empresa: pdf.textos,
         })}
-        puedeEditar={['admin', 'supervisor'].includes(rol)}
+        puedeEditar={capturaEnObra(rol)}
       />
 
       <PagosSection

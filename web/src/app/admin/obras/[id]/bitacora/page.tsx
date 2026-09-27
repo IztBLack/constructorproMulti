@@ -9,12 +9,15 @@ import { createClient } from '@/lib/supabase/server';
 import ObraTabs from '../_obra-tabs';
 import { NuevaEntrada } from './nueva-entrada';
 import { TimelineBitacora } from './timeline-bitacora';
+import { capturaEnObra } from '@/lib/auth/roles';
+import { tengoObraAsignada } from '@/lib/data/usuario-obra';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * Bitácora de la obra (0041): lo que pasó cada día, con fotos, clima y quién
- * estuvo. Escriben admin y supervisor; el contador solo mira. Las entradas se
+ * estuvo. Escriben admin, supervisor, residente (sus obras) y el colaborador
+ * con la obra asignada; el contador solo mira. Las entradas se
  * cierran a las 24 h (lo decide la base) y después solo admiten aclaraciones.
  */
 export default async function BitacoraObraPage({
@@ -49,7 +52,9 @@ export default async function BitacoraObraPage({
   if (!obra) notFound();
 
   const rol = empresa?.rol ?? '';
-  const escribe = ['admin', 'supervisor'].includes(rol);
+  // Escriben admin, supervisor y residente (la RLS limita al residente a sus
+  // obras); el colaborador, solo si tiene ESTA obra asignada (F6, abre F4-2).
+  const escribe = capturaEnObra(rol) || (rol === 'colaborador' && (await tengoObraAsignada(id)));
   // La sugerencia solo se pide a quien va a escribir: un error aquí no rompe la página.
   const sugeridosHoy = escribe ? (await personalDelDia(id, hoyMs)).nombres : [];
   const qs = new URLSearchParams({ desde: periodo.desdeInput, hasta: periodo.hastaInput }).toString();

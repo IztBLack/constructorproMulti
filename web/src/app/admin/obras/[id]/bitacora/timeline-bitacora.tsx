@@ -24,6 +24,7 @@ import {
 } from './actions';
 import { FormularioEntrada } from './formulario-entrada';
 import { subirFotosEntrada } from './subir-fotos';
+import { capturaEnObra } from '@/lib/auth/roles';
 
 const TONO_TIPO = {
   AVANCE: 'green',
@@ -104,7 +105,7 @@ function TarjetaEntrada({
   const [pendiente, startTransition] = useTransition();
   const inputFotos = useRef<HTMLInputElement>(null);
 
-  const escribe = ['admin', 'supervisor'].includes(usuario.rol);
+  const escribe = capturaEnObra(usuario.rol);
   const abierta = entradaAbierta(e.registrada_en, ahora);
   const editable = puedeEditarEntrada(e, usuario, ahora);
   const cierre = textoCierre(e.registrada_en, ahora);

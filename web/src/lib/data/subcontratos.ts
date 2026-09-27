@@ -14,7 +14,8 @@ import type { Resultado } from './cumplimiento';
  */
 
 export const ROLES_ESCRIBEN_SUBCONTRATOS = ['admin', 'contador'] as const;
-export const ROLES_LEEN_SUBCONTRATOS = ['admin', 'contador', 'supervisor'] as const;
+// + residente (0042): la RLS le deja leer solo los contratos de sus obras.
+export const ROLES_LEEN_SUBCONTRATOS = ['admin', 'contador', 'supervisor', 'residente'] as const;
 
 export function puedeEscribirSubcontratos(rol: string): boolean {
   return (ROLES_ESCRIBEN_SUBCONTRATOS as readonly string[]).includes(rol);

@@ -36,7 +36,7 @@ async function quien(roles: string[]): Promise<{ empresaId: string; rol: string 
     const { empresaId, rol } = await getEmpresaUsuario();
     if (!roles.includes(rol)) {
       return {
-        error: roles.length === 1 ? 'Solo el administrador puede hacer esto.' : 'Solo el administrador o un supervisor.',
+        error: roles.length === 1 ? 'Solo el administrador puede hacer esto.' : 'Solo el administrador, un supervisor o el residente de la obra.',
       };
     }
     return { empresaId, rol };
@@ -74,7 +74,7 @@ export interface ChecklistInput {
 }
 
 export async function guardarChecklist(obraId: string, input: ChecklistInput): Promise<Resultado> {
-  const q = await quien(['admin', 'supervisor']);
+  const q = await quien(['admin', 'supervisor', 'residente']);
   if ('error' in q) return { ok: false, error: q.error };
   if (!UUID.test(input.id) || !UUID.test(obraId)) return { ok: false, error: 'Identificador inválido.' };
   if (!FECHA.test(input.fecha)) return { ok: false, error: 'Elige el día.' };
@@ -143,7 +143,7 @@ function validarIncidente(i: IncidenteInput): string | null {
 }
 
 export async function guardarIncidente(obraId: string, input: IncidenteInput): Promise<Resultado> {
-  const q = await quien(['admin', 'supervisor']);
+  const q = await quien(['admin', 'supervisor', 'residente']);
   if ('error' in q) return { ok: false, error: q.error };
   const invalido = validarIncidente(input);
   if (invalido) return { ok: false, error: invalido };
@@ -180,7 +180,7 @@ export async function marcarAvisoImss(
   hecho: boolean,
   fecha: string | null,
 ): Promise<Resultado> {
-  const q = await quien(['admin', 'supervisor']);
+  const q = await quien(['admin', 'supervisor', 'residente']);
   if ('error' in q) return { ok: false, error: q.error };
   if (hecho && (!fecha || !FECHA.test(fecha))) return { ok: false, error: 'Pon la fecha en que se dio el aviso.' };
 

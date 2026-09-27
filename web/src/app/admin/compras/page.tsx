@@ -38,6 +38,7 @@ import {
 import { ETIQUETA_ESTADO_ORDEN, TONO_ESTADO_ORDEN, type Tono } from '@/lib/compras/tipos';
 import { DecidirRequisiciones } from './decidir-requisiciones';
 import { NuevaOrdenDirecta } from './nueva-orden-directa';
+import { gestionaCompras, vePreciosDeCompras } from '@/lib/auth/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -67,8 +68,10 @@ export default async function ComprasPage() {
   const rol = await getEmpresaUsuario()
     .then((e) => e.rol as string)
     .catch(() => '');
-  const esAdmin = rol === 'admin';
+  // `esAdmin` = quien decide y compra: el admin o el rol compras (F6).
+  const esAdmin = gestionaCompras(rol);
   const vePagos = rol === 'admin' || rol === 'contador';
+  const precios = vePreciosDeCompras(rol);
 
   const [reqs, ordenesRes, provRes, obrasRes] = await Promise.all([
     listRequisiciones({ estados: ['PENDIENTE', 'APROBADA', 'PARCIAL'] }),
@@ -199,7 +202,7 @@ export default async function ComprasPage() {
         {abiertas.length === 0 ? (
           <EmptyState title="Sin órdenes abiertas" description="Las órdenes en borrador o por recibir aparecen aquí." />
         ) : (
-          <TablaOrdenes ordenes={abiertas} obras={obras} proveedores={proveedores} />
+          <TablaOrdenes ordenes={abiertas} obras={obras} proveedores={proveedores} precios={precios} />
         )}
       </section>
 
@@ -259,7 +262,7 @@ export default async function ComprasPage() {
           <h2 id="recientes" className="text-base font-semibold text-neutral-900">
             Recibidas y canceladas (recientes)
           </h2>
-          <TablaOrdenes ordenes={recientes} obras={obras} proveedores={proveedores} />
+          <TablaOrdenes ordenes={recientes} obras={obras} proveedores={proveedores} precios={precios} />
         </section>
       )}
 
@@ -289,10 +292,13 @@ function TablaOrdenes({
   ordenes,
   obras,
   proveedores,
+  precios,
 }: {
   ordenes: Awaited<ReturnType<typeof listOrdenes>>['data'];
   obras: Record<string, string>;
   proveedores: Record<string, string>;
+  /** Almacén no ve importes (F6-9). */
+  precios: boolean;
 }) {
   return (
     <TableContainer>
@@ -301,7 +307,7 @@ function TablaOrdenes({
           <Th>Proveedor</Th>
           <Th>Obra</Th>
           <Th>Estado</Th>
-          <Th className="text-right">Total</Th>
+          {precios && <Th className="text-right">Total</Th>}
         </THead>
         <TBody>
           {ordenes.map((o) => (
@@ -317,7 +323,7 @@ function TablaOrdenes({
               <Td>
                 <Badge tone={TONO_ESTADO_ORDEN[o.estado]}>{ETIQUETA_ESTADO_ORDEN[o.estado]}</Badge>
               </Td>
-              <Td className="text-right tabular-nums">{formatCurrency(totalesDe(o).total)}</Td>
+              {precios && <Td className="text-right tabular-nums">{formatCurrency(totalesDe(o).total)}</Td>}
             </Tr>
           ))}
         </TBody>

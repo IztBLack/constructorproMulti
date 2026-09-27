@@ -20,7 +20,9 @@ import {
  * antes de ir a la red, y se revalida el rol porque es barato.
  */
 
-const ESCRIBEN = ['admin', 'supervisor'];
+// Residente y colaborador: la RLS de 0042 los limita a sus obras asignadas (el
+// colaborador, además, no edita ni aclara: esas escrituras las rechaza la base).
+const ESCRIBEN = ['admin', 'supervisor', 'residente', 'colaborador'];
 const MAX_BYTES = 10 * 1024 * 1024; // igual que el bucket
 const TIPOS_FOTO = ['image/jpeg', 'image/png', 'image/webp'];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -34,7 +36,7 @@ export interface Resultado {
 async function oficinaQueEscribe(): Promise<{ empresaId: string } | { error: string }> {
   try {
     const { empresaId, rol } = await getEmpresaUsuario();
-    if (!ESCRIBEN.includes(rol)) return { error: 'Solo el administrador o un supervisor escriben en la bitácora.' };
+    if (!ESCRIBEN.includes(rol)) return { error: 'Tu rol no escribe en la bitácora.' };
     return { empresaId };
   } catch (e) {
     return { error: e instanceof Error ? e.message : 'Error de autenticación.' };

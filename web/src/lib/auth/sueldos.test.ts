@@ -23,6 +23,12 @@ describe('puedeVerSueldos', () => {
     expect(puedeVerSueldos('cliente')).toBe(false);
   });
 
+  test('roles de 0042: residente sí (sus obras); compras y almacén no', () => {
+    expect(puedeVerSueldos('residente')).toBe(true);
+    expect(puedeVerSueldos('compras')).toBe(false);
+    expect(puedeVerSueldos('almacen')).toBe(false);
+  });
+
   test('un rol que no existe todavía queda FUERA por omisión', () => {
     // Es lo que hace que esto sea una lista BLANCA: un rol que se agregue
     // mañana tiene que pedir el permiso, no heredarlo.

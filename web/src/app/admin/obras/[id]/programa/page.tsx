@@ -11,6 +11,7 @@ import { ejecutadoPorConcepto } from '@/lib/estimaciones/avance';
 import { avanceRealPartida } from '@/lib/programa/programa';
 import ObraTabs from '../_obra-tabs';
 import { ProgramaObra } from './programa-obra';
+import { capturaEnObra } from '@/lib/auth/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -81,7 +82,7 @@ export default async function ProgramaObraPage({ params }: { params: Promise<{ i
           obraId={id}
           partidas={partidas}
           presupuesto={presupuesto.map((p) => ({ id: p.id, concepto: p.concepto, seccion: p.seccion ?? null }))}
-          puedeEditar={['admin', 'supervisor'].includes(rol)}
+          puedeEditar={capturaEnObra(rol)}
           ahora={ahora}
           hoy={msAFechaInput(hoyMxMs())}
           avanceReal={avanceReal}

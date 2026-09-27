@@ -7,6 +7,7 @@ import { origenTextoFinal, resolverTextoFinal, textoIntegrado } from '@/lib/pdf/
 import { TextoFinalCard } from '@/components/pdf/texto-final-card';
 import ObraTabs from '../../_obra-tabs';
 import EditorExtra from './editor-extra';
+import { capturaEnObra } from '@/lib/auth/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +39,7 @@ export default async function ExtraPage({
   if (!obra || !extra || extra.obra_id !== id) notFound();
 
   const fotoUrl = await urlFotoExtra(extra.foto_uri);
-  const puedeEditar = ['admin', 'supervisor'].includes(rol) && extra.estado === 'BORRADOR';
+  const puedeEditar = capturaEnObra(rol) && extra.estado === 'BORRADOR';
   const ctx = { nombreEmpresa: nombreEmpresa ?? 'ConstructorPro' };
 
   return (
@@ -51,7 +52,7 @@ export default async function ExtraPage({
         fotoUrl={fotoUrl}
         puedeEditar={puedeEditar}
         esAdmin={rol === 'admin'}
-        puedeDuplicar={['admin', 'supervisor'].includes(rol)}
+        puedeDuplicar={capturaEnObra(rol)}
         tieneCliente={!!obra.cliente_id}
       />
 

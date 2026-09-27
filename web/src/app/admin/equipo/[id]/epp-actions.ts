@@ -6,6 +6,7 @@ import { getEmpresaUsuario } from '@/lib/data/empresa';
 import { BUCKET_SEGURIDAD } from '@/lib/data/seguridad';
 import { fechaInputAMs } from '@/lib/data/tz';
 import { limpiarArticulo } from '@/lib/seguridad/epp';
+import { capturaEnObra } from '@/lib/auth/roles';
 
 /**
  * Entrega de EPP a un colaborador (0043, NOM-017-STPS-2024 num. 5.12). La RLS
@@ -26,7 +27,7 @@ export interface Resultado {
 async function oficina(): Promise<{ empresaId: string } | { error: string }> {
   try {
     const { empresaId, rol } = await getEmpresaUsuario();
-    if (rol !== 'admin' && rol !== 'supervisor') return { error: 'Solo el administrador o un supervisor.' };
+    if (!capturaEnObra(rol)) return { error: 'Solo el administrador o un supervisor.' };
     return { empresaId };
   } catch (e) {
     return { error: e instanceof Error ? e.message : 'Error de autenticación.' };

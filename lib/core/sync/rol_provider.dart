@@ -19,9 +19,22 @@ const _kRolUsuario = 'rol_usuario';
 /// esconderle acciones a quien sí tiene permiso.
 ///
 /// La CAJA no se restringe aquí: el contador SÍ la usa (ver migración 0022).
+///
+/// Roles de la migración 0042 (F6):
+///   · `compras` y `almacen` → solo lectura, como el contador: su trabajo vive
+///     en la web (compras y material, D6) y el servidor les rechazaría obras,
+///     asistencias y cotizaciones. Mostrarles el botón solo dejaría filas en
+///     `error` en el indicador de sync.
+///   · `residente` → sí edita: es un supervisor limitado a sus obras (D4). La
+///     RLS ya le baja SOLO sus obras, así que lo que ve es lo que puede tocar.
+/// Un rol que esta versión no conoce sigue concediendo acceso (regla de arriba):
+/// el sync nunca se rompe por eso —cada fila rechazada queda en `error` y el
+/// resto sigue— y el servidor nunca le da más permisos de los que tiene.
 bool puedeEditarOperacionSegunRol(String? rol) {
-  return rol != 'contador' && rol != 'colaborador';
+  return !_rolesSoloLectura.contains(rol);
 }
+
+const _rolesSoloLectura = {'contador', 'colaborador', 'compras', 'almacen'};
 
 /// Roles con acceso a los SUELDOS (nómina y proyección).
 ///
@@ -47,7 +60,10 @@ bool puedeEditarOperacionSegunRol(String? rol) {
 /// Espeja `ROLES_SUELDOS` de la web (`web/src/lib/auth/sueldos.ts`). Las dos
 /// listas tienen que decir lo mismo: si se separan, la oficina y la obra dejan
 /// de coincidir en quién ve la raya.
-const _rolesSueldos = {'admin', 'supervisor', 'contador'};
+///   · `residente` (0042) — SÍ, la raya de SUS obras: la RLS le deja leer
+///     `colaborador_sueldo` solo de quien trabaja en ellas.
+///   · `compras` / `almacen` (0042) — NO.
+const _rolesSueldos = {'admin', 'supervisor', 'contador', 'residente'};
 
 /// ¿Este rol puede ver sueldos (nómina y proyección)?
 ///

@@ -112,7 +112,8 @@ export function puedeEditarEntrada(
 ): boolean {
   if (!entradaAbierta(e.registrada_en, ahora)) return false;
   if (usuario.rol === 'admin') return true;
-  return usuario.rol === 'supervisor' && e.autor_id === usuario.id;
+  // Supervisor y residente (0042): solo lo que ellos registraron.
+  return (usuario.rol === 'supervisor' || usuario.rol === 'residente') && e.autor_id === usuario.id;
 }
 
 // ── Agrupar por día ─────────────────────────────────────────────────────────

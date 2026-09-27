@@ -13,6 +13,7 @@ import {
 } from '@/lib/herramienta/herramienta';
 import { Devolver, FormHerramienta, Prestar } from './formularios';
 import { SemaforoPrestamo } from './semaforo';
+import { capturaEnObra } from '@/lib/auth/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,9 +41,9 @@ export default async function HerramientaPage({
     listResponsables(),
   ]);
   const rol = empresa?.rol ?? '';
-  const escribe = rol === 'admin' || rol === 'supervisor';
+  const escribe = capturaEnObra(rol);
 
-  if (!['admin', 'supervisor', 'contador'].includes(rol)) {
+  if (!['admin', 'supervisor', 'contador', 'residente'].includes(rol)) {
     return (
       <EmptyState
         title="Solo para la oficina"

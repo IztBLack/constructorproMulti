@@ -11,6 +11,7 @@ import {
   estadoGarantia,
 } from '@/lib/postventa/garantia';
 import { Seguimiento } from '../formularios';
+import { capturaEnObra } from '@/lib/auth/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +30,7 @@ export default async function ReporteGarantiaPage({ params }: { params: Promise<
   const gar = await getGarantiaObra(r.obra_id);
   const g = estadoGarantia(gar, r.reportado_en);
   const rol = empresa?.rol ?? '';
-  const gestiona = rol === 'admin' || rol === 'supervisor';
+  const gestiona = capturaEnObra(rol);
 
   return (
     <div className="space-y-6">

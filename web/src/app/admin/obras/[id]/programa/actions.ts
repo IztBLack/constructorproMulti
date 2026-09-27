@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getEmpresaUsuario } from '@/lib/data/empresa';
 import { fechaInputAMs, hoyMxMs, partesTz, medianocheMx, sumarDiasCalendario } from '@/lib/data/tz';
 import { validarPartidaPrograma } from '@/lib/programa/programa';
+import { capturaEnObra } from '@/lib/auth/roles';
 
 /**
  * Escrituras del PROGRAMA DE OBRA (0041). Escriben admin y supervisor (lo
@@ -31,7 +32,7 @@ const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 async function quienEscribe(): Promise<{ empresaId: string } | { error: string }> {
   try {
     const { empresaId, rol } = await getEmpresaUsuario();
-    if (!['admin', 'supervisor'].includes(rol)) {
+    if (!capturaEnObra(rol)) {
       return { error: 'Solo el administrador o un supervisor cambian el programa.' };
     }
     return { empresaId };

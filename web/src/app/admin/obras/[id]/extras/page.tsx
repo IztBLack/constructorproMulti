@@ -4,6 +4,7 @@ import { listExtrasObra } from '@/lib/data/cambios';
 import { getEmpresaUsuario } from '@/lib/data/empresa';
 import ObraTabs from '../_obra-tabs';
 import ExtrasLista from './extras-lista';
+import { capturaEnObra } from '@/lib/auth/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,7 +64,7 @@ export default async function ExtrasObraPage({ params }: { params: Promise<{ id:
         <ExtrasLista
           obraId={id}
           extras={extras}
-          puedeEditar={['admin', 'supervisor'].includes(rol)}
+          puedeEditar={capturaEnObra(rol)}
           esAdmin={rol === 'admin'}
         />
       )}

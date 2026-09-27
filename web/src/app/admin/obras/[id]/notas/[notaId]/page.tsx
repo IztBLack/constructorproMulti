@@ -12,6 +12,7 @@ import EditorNota from './editor-nota';
 import { ConvertirEnContrato } from './convertir-contrato';
 import { getModulosEmpresa } from '@/lib/data/modulos';
 import { puedeEscribirSubcontratos, subcontratoDeNota } from '@/lib/data/subcontratos';
+import { capturaEnObra } from '@/lib/auth/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,7 +47,7 @@ export default async function NotaDetallePage({
   // enseñaría una nota bajo un encabezado que no le corresponde.
   if (!obra || !nota || nota.obra_id !== id) notFound();
 
-  const puedeEditar = ['admin', 'supervisor'].includes(rol);
+  const puedeEditar = capturaEnObra(rol);
 
   // «Convertir en contrato» (módulo `subcontratos`, RF5.7): solo admin y
   // contador escriben contratos (0040). Si ya hay uno, se enlaza en su lugar.

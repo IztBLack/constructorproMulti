@@ -12,6 +12,7 @@ import { FUENTE_NOM_031 } from '@/lib/seguridad/plantilla';
 import ObraTabs from '../_obra-tabs';
 import { RevisionDiaria } from './revision-diaria';
 import { Incidentes } from './incidentes';
+import { capturaEnObra } from '@/lib/auth/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,7 +47,7 @@ export default async function SeguridadObraPage({ params }: { params: Promise<{ 
   if (!obra) notFound();
 
   const rol = empresa?.rol ?? '';
-  const escribe = rol === 'admin' || rol === 'supervisor';
+  const escribe = capturaEnObra(rol);
   const esAdmin = rol === 'admin';
 
   const deHoy = checklists.data.find((c) => msAFechaInput(c.fecha) === hoyInput) ?? null;

@@ -13,6 +13,7 @@ import {
   reporteAbierto,
 } from '@/lib/postventa/garantia';
 import { FormGarantiaObra, NuevoReporteOficina } from './formularios';
+import { capturaEnObra } from '@/lib/auth/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,7 +42,7 @@ export default async function PostventaPage({
     getEmpresaUsuario().catch(() => null),
   ]);
   const rol = empresa?.rol ?? '';
-  if (!['admin', 'supervisor', 'contador'].includes(rol)) {
+  if (!['admin', 'supervisor', 'contador', 'residente'].includes(rol)) {
     return (
       <EmptyState
         title="Solo para la oficina"
@@ -49,7 +50,7 @@ export default async function PostventaPage({
       />
     );
   }
-  const gestiona = rol === 'admin' || rol === 'supervisor';
+  const gestiona = capturaEnObra(rol);
   const abiertos = reportes.data.filter((r) => reporteAbierto(r.estado));
   const lista = verTodos ? reportes.data : abiertos;
 

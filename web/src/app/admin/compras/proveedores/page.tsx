@@ -17,7 +17,7 @@ export default async function ProveedoresPage() {
   const rol = await getEmpresaUsuario()
     .then((e) => e.rol as string)
     .catch(() => '');
-  const puedeEditar = rol === 'admin' || rol === 'contador';
+  const puedeEditar = rol === 'admin' || rol === 'contador' || rol === 'compras';
   const { data: proveedores, error } = await listProveedores();
 
   let saldos = new Map<string, { saldo: number; vencido: number }>();

@@ -77,6 +77,14 @@ export function manejaComprobantes(rol: Rol | null | undefined): boolean {
   return typeof rol === 'string' && ROLES_COMPROBANTES.includes(rol);
 }
 
+/**
+ * ¿Decide y compra? (aprueba requisiciones, arma, emite y cancela órdenes,
+ * edita el catálogo de materiales). Admin y el rol compras.
+ */
+export function gestionaCompras(rol: Rol | null | undefined): boolean {
+  return rol === 'admin' || rol === 'compras';
+}
+
 /** Roles a los que se les asignan obras (`usuario_obra`). */
 export function usaObrasAsignadas(rol: Rol | null | undefined): boolean {
   return rol === 'residente' || rol === 'colaborador';
@@ -119,7 +127,10 @@ export function rutaNavPermitida(rol: string | null | undefined, href: string): 
  * rota). Prefijos de ruta.
  */
 const BLOQUEADAS_POR_ROL: Readonly<Record<string, readonly string[]>> = {
-  residente: ['/admin/cotizaciones', '/admin/clientes', '/admin/catalogo', '/admin/puestos', '/admin/actividad'],
+  residente: [
+    '/admin/cotizaciones', '/admin/clientes', '/admin/catalogo', '/admin/puestos', '/admin/actividad',
+    '/admin/proyeccion', '/admin/rentabilidad', '/admin/facturacion', '/admin/cumplimiento',
+  ],
   compras: [
     '/admin/obras', '/admin/cotizaciones', '/admin/clientes', '/admin/equipo', '/admin/cuadrillas',
     '/admin/catalogo', '/admin/puestos', '/admin/actividad',
@@ -132,6 +143,8 @@ const BLOQUEADAS_POR_ROL: Readonly<Record<string, readonly string[]>> = {
 
 export function rutaBloqueadaPara(rol: string | null | undefined, pathname: string): boolean {
   if (!rol) return false;
+  // El PDF de la orden de compra trae precios: almacén no lo abre (F6-9).
+  if (rol === 'almacen' && /^\/admin\/compras\/ordenes\/[^/]+\/pdf(\/|$)/.test(pathname)) return true;
   const lista = BLOQUEADAS_POR_ROL[rol];
   if (!lista) return false;
   return lista.some((p) => pathname === p || pathname.startsWith(p + '/'));

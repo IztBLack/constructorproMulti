@@ -9,6 +9,7 @@ import {
   esTipoHerramienta,
   mensajeErrorHerramienta,
 } from '@/lib/herramienta/herramienta';
+import { capturaEnObra } from '@/lib/auth/roles';
 
 /**
  * Escrituras de HERRAMIENTA (0043). Admin y supervisor. La base impone: un
@@ -26,7 +27,7 @@ export interface Resultado {
 async function oficina(): Promise<{ empresaId: string } | { error: string }> {
   try {
     const { empresaId, rol } = await getEmpresaUsuario();
-    if (rol !== 'admin' && rol !== 'supervisor') {
+    if (!capturaEnObra(rol)) {
       return { error: 'Solo el administrador o un supervisor mueven la herramienta.' };
     }
     return { empresaId };

@@ -2,6 +2,7 @@ import { BackLink, PageHeader } from '@/components/ui';
 import { getEmpresaUsuario } from '@/lib/data/empresa';
 import { listMateriales, listProveedores } from '@/lib/data/compras';
 import { CatalogoMateriales } from './catalogo-materiales';
+import { gestionaCompras } from '@/lib/auth/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,7 +32,7 @@ export default async function MaterialesPage() {
         <CatalogoMateriales
           materiales={materiales}
           proveedores={proveedores.map((p) => ({ id: p.id, nombre: p.nombre }))}
-          puedeEditar={rol === 'admin'}
+          puedeEditar={gestionaCompras(rol)}
         />
       )}
     </div>

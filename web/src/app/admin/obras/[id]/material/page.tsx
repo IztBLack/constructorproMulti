@@ -24,6 +24,7 @@ import ObraTabs from '../_obra-tabs';
 import { NuevaRequisicion } from './nueva-requisicion';
 import { BorrarRequisicion } from './borrar-requisicion';
 import { ExistenciasObra } from './existencias-obra';
+import { capturaEnObra } from '@/lib/auth/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,7 +62,7 @@ export default async function MaterialObraPage({ params }: { params: Promise<{ i
   }
   if (!obra) notFound();
 
-  const puedePedir = rol.rol === 'admin' || rol.rol === 'supervisor';
+  const puedePedir = capturaEnObra(rol.rol) || rol.rol === 'compras';
   const nombreProv = new Map(proveedores.data.map((p) => [p.id, p.nombre]));
   const nombreMaterial = new Map(materiales.data.map((m) => [m.id, m]));
   const porLlegar = ordenes.data.filter((o) => o.estado === 'EMITIDA' || o.estado === 'PARCIAL');
