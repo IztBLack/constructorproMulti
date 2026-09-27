@@ -21,6 +21,8 @@ import {
 import { formatCurrency, formatDate } from '@/lib/data/format';
 import { msAFechaInput } from '@/lib/data/tz';
 import type { Pago } from '@/lib/data/pagos';
+import type { EstadoFiscal } from '@/lib/fiscal/tipos';
+import { EnlaceHoja, EstadoFiscalBadge } from '@/components/fiscal/estado-fiscal';
 import { actualizarPagoAction, crearPagoAction, eliminarPagoAction } from './pagos-actions';
 
 const METODOS_PAGO = ['EFECTIVO', 'TRANSFERENCIA', 'CHEQUE', 'TARJETA', 'OTRO'];
@@ -148,9 +150,12 @@ function PagoForm({ cotizacionId, mode, pago, onDone, onCancel }: PagoFormProps)
 function PagosTabla({
   cotizacionId,
   pagos,
+  estadosFiscales,
 }: {
   cotizacionId: string;
   pagos: Pago[];
+  /** Con el módulo `fiscal` y rol admin/contador: estado fiscal por pago. */
+  estadosFiscales?: Record<string, EstadoFiscal>;
 }) {
   const router = useRouter();
   const [editandoId, setEditandoId] = useState<string | null>(null);
@@ -195,13 +200,14 @@ function PagosTabla({
           <Th>Método</Th>
           <Th>Referencia</Th>
           <Th className="text-right">Monto</Th>
+          {estadosFiscales && <Th>Factura</Th>}
           <Th className="text-right">Acciones</Th>
         </THead>
         <TBody>
           {pagos.map((p) =>
             editandoId === p.id ? (
               <tr key={p.id} className="border-b border-neutral-100 last:border-0">
-                <td colSpan={6} className="px-4 py-4">
+                <td colSpan={estadosFiscales ? 7 : 6} className="px-4 py-4">
                   <PagoForm
                     cotizacionId={cotizacionId}
                     mode="editar"
@@ -224,6 +230,14 @@ function PagosTabla({
                 <Td className="text-right tabular-nums font-medium text-neutral-900">
                   {formatCurrency(p.monto)}
                 </Td>
+                {estadosFiscales && (
+                  <Td>
+                    <div className="flex flex-wrap items-center gap-1">
+                      <EstadoFiscalBadge estado={estadosFiscales[p.id] ?? 'por_facturar'} />
+                      <EnlaceHoja origen="pago" id={p.id} texto="Hoja" />
+                    </div>
+                  </Td>
+                )}
                 <Td className="text-right">
                   <div className="flex items-center justify-end gap-2">
                     {confirmandoId === p.id ? (
@@ -285,6 +299,7 @@ export interface PagosSectionProps {
   totalCotizacion: number;
   pagos: Pago[];
   totalPagado: number;
+  estadosFiscales?: Record<string, EstadoFiscal>;
 }
 
 export default function PagosSection({
@@ -292,6 +307,7 @@ export default function PagosSection({
   totalCotizacion,
   pagos,
   totalPagado,
+  estadosFiscales,
 }: PagosSectionProps) {
   const [mostrandoForm, setMostrandoForm] = useState(false);
   const saldo = totalCotizacion - totalPagado;
@@ -376,7 +392,7 @@ export default function PagosSection({
         </div>
 
         <div className="px-5 pb-5">
-          <PagosTabla cotizacionId={cotizacionId} pagos={pagos} />
+          <PagosTabla cotizacionId={cotizacionId} pagos={pagos} estadosFiscales={estadosFiscales} />
         </div>
       </Card>
     </section>

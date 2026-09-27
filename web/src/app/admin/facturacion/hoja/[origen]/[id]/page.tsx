@@ -9,7 +9,7 @@ import { LEYENDA_NO_ES_FACTURA, LEYENDA_SUGERENCIA } from '@/lib/fiscal/catalogo
 import { armarHoja, hojaComoTexto, type AvisoHoja, type CampoHoja } from '@/lib/fiscal/hoja';
 import { estadoDe, esOrigenCobro } from '@/lib/fiscal/tipos';
 import { AccionesHoja } from './acciones-hoja';
-import { ClavesConcepto } from './claves-concepto';
+import { ClavesConcepto } from '@/components/fiscal/claves-concepto';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Hoja para facturar' };

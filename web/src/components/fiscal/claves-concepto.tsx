@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui';
 import { EstadoFormulario } from '@/components/ajustes/estado-formulario';
 import { CLAVES_CONSTRUCCION, LEYENDA_SUGERENCIA, UNIDADES_SAT } from '@/lib/fiscal/catalogos';
-import { guardarClavesSatAction } from '../../../actions';
+import { guardarClavesSatAction } from '@/app/admin/facturacion/actions';
 
 /**
- * Guardar la clave SAT de un concepto EN SU ORIGEN (la partida de la cotización
- * o del presupuesto de la obra). Así se captura una vez y la próxima hoja ya la
- * trae; si la partida salió del catálogo, también se guarda allá (RD1b.3).
+ * Guardar la clave SAT de un concepto EN SU ORIGEN (el catálogo, la partida de
+ * la cotización o el presupuesto de la obra). Así se captura una vez y la
+ * próxima hoja ya la trae; si la partida salió del catálogo, también se guarda
+ * allá (RD1b.3). Solo admin y contador (lo exige la RPC `guardar_claves_sat`).
  */
 export function ClavesConcepto({
   tabla,
@@ -19,7 +20,7 @@ export function ClavesConcepto({
   unidad,
   volverA,
 }: {
-  tabla: 'partidas' | 'obra_presupuesto';
+  tabla: 'partidas' | 'obra_presupuesto' | 'catalogo_conceptos';
   id: string;
   clave: string;
   unidad: string;

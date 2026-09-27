@@ -146,6 +146,11 @@ export const CATEGORIAS_DATOS = [
     detalle: 'Nombre y contacto del cliente, cotizaciones, presupuestos, pagos y movimientos de caja.',
   },
   {
+    titulo: 'Datos fiscales (solo si usas «Datos para facturar»)',
+    detalle:
+      'RFC, nombre o razón social, régimen fiscal, código postal fiscal, uso del CFDI, correo para la factura y la constancia de situación fiscal, tuyos y de tus clientes; además el folio y los XML/PDF de tus facturas. El RFC de una persona física es un dato personal: lo ven solo el administrador y el contador de la empresa, y cada cliente solo los suyos. Nunca pedimos ni guardamos la e.firma, el sello digital (CSD) ni contraseñas del SAT, y la app no emite facturas.',
+  },
+  {
     titulo: 'Archivos que adjuntas',
     detalle:
       'Planos, fichas técnicas y comprobantes de pago. Un comprobante de transferencia o de cheque puede contener datos financieros —número de cuenta, banco, firma—, así que conviene subir solo lo que de verdad haga falta para la obra.',
@@ -193,6 +198,13 @@ export const ARCHIVOS = {
       limite: '10 MB por archivo',
       quienVe:
         'Solo el personal de oficina: administrador, supervisor y contador. Ni el personal de campo ni tus clientes pueden verlos, justamente porque un comprobante suele traer datos bancarios.',
+    },
+    {
+      que: 'Documentos fiscales',
+      ejemplos: 'Constancias de situación fiscal y facturas (XML y PDF).',
+      limite: '5 MB por archivo',
+      quienVe:
+        'Solo el administrador y el contador. Cada cliente puede subir y ver únicamente su propia constancia.',
     },
   ],
 } as const;
