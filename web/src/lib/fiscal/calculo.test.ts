@@ -8,6 +8,7 @@ import {
   sugerirMetodo,
   sugerirRetenciones,
 } from './calculo';
+import { periodoDeMes } from './periodo';
 
 const sinRet = { ivaPct: 16, retIsrPct: 0, retIvaPct: 0 };
 
@@ -132,5 +133,22 @@ describe('otros', () => {
     expect(limiteComplemento(Date.UTC(2026, 11, 20, 18))).toBe('2027-01-05');
     // 31 de agosto a las 23:00 en México = 1 de sept. en UTC: cuenta agosto.
     expect(limiteComplemento(Date.UTC(2026, 8, 1, 5))).toBe('2026-09-05');
+  });
+});
+
+describe('periodoDeMes', () => {
+  const hoy = Date.UTC(2026, 8, 26, 18);
+  test('un mes en hora de México, con cambio de año', () => {
+    expect(periodoDeMes('2026-09', hoy)).toEqual({
+      clave: '2026-09',
+      desde: Date.UTC(2026, 8, 1, 6),
+      hasta: Date.UTC(2026, 9, 1, 6),
+      nombre: 'septiembre de 2026',
+    });
+    expect(periodoDeMes('2026-12', hoy).hasta).toBe(Date.UTC(2027, 0, 1, 6));
+  });
+  test('basura → el mes de hoy', () => {
+    expect(periodoDeMes('2026-13', hoy).clave).toBe('2026-09');
+    expect(periodoDeMes(null, hoy).clave).toBe('2026-09');
   });
 });

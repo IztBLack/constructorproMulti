@@ -38,7 +38,12 @@ export type SeccionAjustes =
    * Qué partes de la app usa la empresa (0035). Solo admin: la RPC
    * `activar_modulos` rechaza a cualquier otro rol (plan RR0.1).
    */
-  | 'modulos';
+  | 'modulos'
+  /**
+   * Datos fiscales del emisor (0037). Admin y contador (RR1b.1), y solo con el
+   * módulo `fiscal` prendido (eso lo decide la página, no este mapa).
+   */
+  | 'fiscal';
 
 /** Secciones que aporta cada rol, ADEMÁS de las del rol anterior. */
 const APORTA: Record<string, SeccionAjustes[]> = {
@@ -52,7 +57,7 @@ const APORTA: Record<string, SeccionAjustes[]> = {
   // base — mostrarle a un supervisor un formulario que le va a fallar al guardar
   // es peor que no mostrárselo.
   // (El supervisor sigue llegando al catálogo y a los puestos desde el menú.)
-  admin: ['operacion', 'modulos', 'empresa', 'usuarios'],
+  admin: ['operacion', 'modulos', 'empresa', 'usuarios', 'fiscal'],
 };
 
 /** Orden de menor a mayor privilegio. El acumulado define lo concéntrico. */
@@ -66,6 +71,9 @@ const ESCALERA: readonly string[] = ['cliente', 'colaborador', 'supervisor', 'ad
  * menos privilegio.
  */
 export function seccionesDe(rol: Rol): SeccionAjustes[] {
+  // El contador no está en la escalera: no es "más" que un supervisor, es
+  // otra cosa (la tesorera). Ve lo suyo y los datos para facturar.
+  if (rol === 'contador') return [...APORTA.cliente, 'fiscal'];
   const hasta = ESCALERA.indexOf(rol);
   if (hasta === -1) return [...APORTA.cliente];
 

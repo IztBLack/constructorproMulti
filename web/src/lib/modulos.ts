@@ -220,8 +220,12 @@ export const MODULOS: readonly Modulo[] = [
       'Junta los datos de cada cobro para facturar o para tu contador. La app no factura ni se conecta al SAT.',
     grupo: 'dinero',
     dependeDe: ['cotizaciones'],
-    rutas: [],
-    disponible: false,
+    // La hoja de cada cobro, lo pendiente y el paquete para el contador. Los
+    // datos fiscales del emisor (Ajustes), del cliente (su ficha) y del portal
+    // se muestran solo con el módulo prendido (ver PROGRESO, F1b).
+    rutas: ['/admin/facturacion'],
+    nav: [{ href: '/admin/facturacion', label: 'Facturación', orden: 35 }],
+    disponible: true,
   },
   {
     clave: 'estimaciones',

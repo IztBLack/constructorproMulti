@@ -71,6 +71,17 @@ describe('seccionesDe / puedeVer (Ajustes)', () => {
     }
   });
 
+  test('datos para facturar: admin y contador, nadie más (RR1b.1)', () => {
+    expect(puedeVer('admin', 'fiscal')).toBe(true);
+    expect(puedeVer('contador', 'fiscal')).toBe(true);
+    for (const rol of ['supervisor', 'colaborador', 'cliente']) {
+      expect(puedeVer(rol, 'fiscal')).toBe(false);
+    }
+    // El contador no gana por eso lo del admin.
+    expect(puedeVer('contador', 'usuarios')).toBe(false);
+    expect(puedeVer('contador', 'operacion')).toBe(false);
+  });
+
   test('un rol desconocido cae al mínimo, no al máximo', () => {
     // Ante la duda, menos privilegio: la BD permite texto libre en la práctica.
     expect(seccionesDe('rol_que_no_existe')).toEqual(seccionesDe('cliente'));

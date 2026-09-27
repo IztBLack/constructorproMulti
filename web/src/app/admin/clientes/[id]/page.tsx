@@ -6,6 +6,8 @@ import { formatDate } from '@/lib/data/format';
 import EditarClienteForm from './editar-cliente-form';
 import CodigoAcceso from './codigo-acceso';
 import { getModulosEmpresa } from '@/lib/data/modulos';
+import { getAccesoFiscal, getClienteFiscal } from '@/lib/data/fiscal';
+import { DatosFiscalesCliente } from './datos-fiscales';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,6 +43,10 @@ export default async function ClienteDetallePage({
   ]);
   const conPortal = activos.includes('portal');
   const conCotizaciones = activos.includes('cotizaciones');
+  // Datos para factura: solo admin y contador (RR1b.1) y con el módulo prendido.
+  const fiscal = await getAccesoFiscal();
+  const verFiscal = fiscal.activo && fiscal.puede;
+  const datosFiscales = verFiscal ? await getClienteFiscal(id) : null;
 
   return (
     <div className="space-y-6">
@@ -71,6 +77,10 @@ export default async function ClienteDetallePage({
           </CardTitle>
           <CodigoAcceso clienteId={cliente.id} vinculado={cliente.user_id !== null} />
         </Card>
+      )}
+
+      {verFiscal && (
+        <DatosFiscalesCliente clienteId={cliente.id} datos={datosFiscales} conPortal={conPortal} />
       )}
 
       <section className="space-y-3">

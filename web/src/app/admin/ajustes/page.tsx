@@ -18,6 +18,8 @@ import { SeccionUsuarios } from '@/components/ajustes/seccion-usuarios';
 import { listUsuariosEmpresa } from '@/lib/data/usuarios-empresa';
 import { SeccionModulos } from '@/components/ajustes/seccion-modulos';
 import { getModulosEmpresa } from '@/lib/data/modulos';
+import { SeccionFiscal } from '@/components/ajustes/seccion-fiscal';
+import { getEmpresaFiscal } from '@/lib/data/fiscal';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,6 +75,10 @@ export default async function AjustesPage() {
   const verEmpresa = secciones.includes('empresa');
   const verUsuarios = secciones.includes('usuarios');
   const { activos, perfil } = await getModulosEmpresa();
+  // Datos para facturar: por rol (admin/contador) Y con el módulo prendido. A
+  // quien no factura no se le pide nada.
+  const verFiscal = secciones.includes('fiscal') && activos.includes('fiscal');
+  const emisor = verFiscal ? await getEmpresaFiscal() : null;
 
   // Solo se consulta si se va a mostrar: la RPC exige rol admin y lanzaría para
   // cualquier otro rol.
@@ -87,6 +93,7 @@ export default async function AjustesPage() {
     ...(verOperacion ? [{ id: 'operacion', titulo: 'Operación' }] : []),
     ...(verModulos ? [{ id: 'modulos', titulo: 'Módulos' }] : []),
     ...(verEmpresa ? [{ id: 'empresa', titulo: 'Empresa' }] : []),
+    ...(verFiscal ? [{ id: 'fiscal', titulo: 'Datos para facturar' }] : []),
     ...(verUsuarios ? [{ id: 'usuarios', titulo: 'Usuarios' }] : []),
   ];
 
@@ -168,6 +175,17 @@ export default async function AjustesPage() {
               descripcion="Datos de la constructora que aparecen en la aplicación y en el portal del cliente."
             >
               <SeccionEmpresa nombreActual={nombreEmpresa ?? 'ConstructorPro'} />
+            </GrupoAjustes>
+          )}
+
+          {verFiscal && (
+            <GrupoAjustes
+              id="fiscal"
+              titulo="Datos para facturar"
+              alcance="Solo administrador y contador"
+              descripcion="Tu RFC, razón social, régimen y código postal. Los ves tú y tu contador; nadie más del equipo."
+            >
+              <SeccionFiscal valores={emisor} />
             </GrupoAjustes>
           )}
 

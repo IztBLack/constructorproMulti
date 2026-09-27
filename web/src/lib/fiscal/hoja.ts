@@ -171,6 +171,14 @@ function facturaPpdPrevia(cobro: Cobro, otros: Cobro[]): Cobro | null {
   return null;
 }
 
+/**
+ * ¿Este cobro es un abono a una factura PPD de otro cobro del mismo documento?
+ * Devuelve el folio de esa factura, o null.
+ */
+export function folioPpdDelAbono(cobro: Cobro, otros: Cobro[]): string | null {
+  return facturaPpdPrevia(cobro, otros)?.fiscal?.uuid ?? null;
+}
+
 /** Clave principal del documento: la del concepto con más importe que ya tenga clave. */
 function claveDominante(conceptos: ConceptoOrigen[]): { clave: string | null; unidad: string | null } {
   const conClave = conceptos
