@@ -39,6 +39,7 @@ export async function guardarTextoFinalAction(
       revalidatePath(`/admin/obras/${id}`);
       break;
     case 'extra':
+    case 'estimacion':
     case 'nota':
       // La nota no conoce el id de su obra desde aquí, y la ruta lo lleva
       // adentro. Revalidar la rama completa es barato y no falla nunca.

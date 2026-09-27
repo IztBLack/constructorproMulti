@@ -8,7 +8,14 @@
  * 0/'' en vez de romper la página.
  */
 
-import type { RetencionAplicada } from './tipos';
+import {
+  claveDe,
+  type CapturaAvance,
+  type ConceptoContrato,
+  type ContratoObra,
+  type EstimacionConRenglones,
+  type RetencionAplicada,
+} from './tipos';
 
 export interface GeneradorFoto {
   fecha: number;
@@ -141,6 +148,82 @@ export function leerFoto(crudo: unknown): FotoEstimacion | null {
       brutoAcumulado: num(acu.bruto_acumulado),
       fondoPrevio: num(acu.fondo_previo),
       fondoAcumulado: num(acu.fondo_acumulado),
+    },
+  };
+}
+
+/**
+ * La misma forma que la foto, pero armada EN VIVO para un borrador (vista
+ * previa del PDF y del editor). Replica lo que hará `_estimacion_snapshot` al
+ * enviar: anterior = lo ya estimado en las que cuentan; generadores = lo
+ * capturado en campo dentro del periodo.
+ */
+export function armarFotoEnVivo(p: {
+  estimacion: EstimacionConRenglones;
+  obra: string;
+  conceptos: readonly ConceptoContrato[];
+  estimadoPrevio: ReadonlyMap<string, number>;
+  capturas: readonly CapturaAvance[];
+  contrato: ContratoObra;
+  previos: { estimado: number; amortizado: number; fondoRetenido: number };
+}): FotoEstimacion {
+  const e = p.estimacion;
+  const porClave = new Map(p.conceptos.map((c) => [c.clave, c]));
+  const r2 = (x: number) => Math.round(x * 100) / 100;
+  const r4 = (x: number) => Math.round(x * 10_000) / 10_000;
+  return {
+    folio: e.folio,
+    obra: p.obra,
+    periodoInicio: e.periodo_inicio,
+    periodoFin: e.periodo_fin,
+    esFiniquito: e.es_finiquito,
+    notas: e.notas,
+    renglones: e.renglones.map((r) => {
+      const k = claveDe(r) ?? '';
+      const c = porClave.get(k);
+      const anterior = p.estimadoPrevio.get(k) ?? 0;
+      return {
+        origen: r.orden_cambio_renglon_id ? 'extra' : 'presupuesto',
+        extraFolio: null,
+        concepto: r.concepto,
+        unidad: r.unidad,
+        seccion: r.seccion,
+        contratado: c?.cantidad ?? 0,
+        anterior,
+        cantidad: r.cantidad,
+        acumulado: r4(anterior + r.cantidad),
+        precioUnitario: r.precio_unitario,
+        importe: r.importe,
+        generadores: p.capturas
+          .filter((g) => g.clave === k && g.fecha >= e.periodo_inicio && g.fecha <= e.periodo_fin)
+          .sort((a, b) => a.fecha - b.fecha)
+          .map((g) => ({ fecha: g.fecha, cantidad: g.cantidad, nota: g.nota })),
+      };
+    }),
+    importes: {
+      bruto: e.importe_bruto,
+      amortizacion: e.amortizacion,
+      subtotal: e.subtotal,
+      ivaPct: e.iva_pct,
+      iva: e.iva,
+      total: e.total,
+      fondoGarantiaPct: e.fondo_garantia_pct,
+      fondoGarantia: e.fondo_garantia,
+      retenciones: e.retenciones,
+      retencionesTotal: e.retenciones_total,
+      neto: e.neto,
+    },
+    contrato: {
+      anticipo: p.contrato.anticipo,
+      amortizacionPct: p.contrato.amortizacionPct,
+      amortizadoPrevio: p.previos.amortizado,
+      anticipoPorAmortizar: r2(Math.max(0, p.contrato.anticipo - p.previos.amortizado - e.amortizacion)),
+    },
+    acumulados: {
+      brutoPrevio: p.previos.estimado,
+      brutoAcumulado: r2(p.previos.estimado + e.importe_bruto),
+      fondoPrevio: p.previos.fondoRetenido,
+      fondoAcumulado: r2(p.previos.fondoRetenido + e.fondo_garantia),
     },
   };
 }

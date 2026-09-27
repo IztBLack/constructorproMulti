@@ -17,7 +17,7 @@ import {
   type EstimacionResumen,
 } from '@/lib/estimaciones/calculo';
 import { cantidad4, precio4 } from '@/lib/estimaciones/dinero';
-import { leerFoto, leerRetenciones, type FotoEstimacion } from '@/lib/estimaciones/snapshot';
+import { armarFotoEnVivo, leerFoto, leerRetenciones, type FotoEstimacion } from '@/lib/estimaciones/snapshot';
 import {
   CONTRATO_VACIO,
   claveDe,
@@ -475,6 +475,62 @@ export function acumuladosDe(
   excepto?: string,
 ): Acumulados {
   return acumulados(estimaciones.map(resumenDe), anticipo, excepto);
+}
+
+export interface VistaEstimacion {
+  estimacion: EstimacionConRenglones;
+  /** Lo que vio (o verá) el cliente: la foto si ya se envió; si no, armada en vivo. */
+  foto: FotoEstimacion;
+  conceptos: ConceptoContrato[];
+  contrato: ContratoCompleto;
+  /** Cantidad ya estimada por partida en las OTRAS estimaciones que cuentan. */
+  estimadoPrevio: Map<string, number>;
+  /** Acumulados de la obra sin contar esta. */
+  previos: Acumulados;
+}
+
+/**
+ * Todo lo que necesitan el editor y el PDF de una estimación de ESTA obra.
+ * `null` si no existe, no es de la obra o no se puede leer.
+ */
+export async function getVistaEstimacion(
+  obraId: string,
+  id: string,
+  obraNombre: string,
+): Promise<{ data: VistaEstimacion | null; error: string | null }> {
+  const { data: est, error } = await getEstimacion(id);
+  if (error) return { data: null, error };
+  if (!est || est.obra_id !== obraId) return { data: null, error: null };
+
+  const [conceptos, contrato, todas, capturas] = await Promise.all([
+    listConceptosObra(obraId),
+    getContratoObra(obraId),
+    listEstimacionesObra(obraId),
+    est.estado === 'BORRADOR' ? listCapturasAvance(obraId) : Promise.resolve({ data: [], error: null }),
+  ]);
+  const err = conceptos.error ?? contrato.error ?? todas.error ?? capturas.error;
+  if (err) return { data: null, error: err };
+
+  const resumenes = todas.data.map(resumenDe);
+  const estimadoPrevio = estimadoPorConcepto(resumenes, id);
+  const previos = acumulados(resumenes, contrato.data.contrato.anticipo, id);
+  const fotoGuardada = est.estado === 'BORRADOR' ? null : leerFoto(est.snapshot_json);
+  const foto =
+    fotoGuardada ??
+    armarFotoEnVivo({
+      estimacion: est,
+      obra: obraNombre,
+      conceptos: conceptos.data,
+      estimadoPrevio,
+      capturas: capturas.data,
+      contrato: contrato.data.contrato,
+      previos: { estimado: previos.estimado, amortizado: previos.amortizado, fondoRetenido: previos.fondoRetenido },
+    });
+
+  return {
+    data: { estimacion: est, foto, conceptos: conceptos.data, contrato: contrato.data, estimadoPrevio, previos },
+    error: null,
+  };
 }
 
 // ── Estimaciones: escritura (solo admin, lo exige la RLS) ────────────────────

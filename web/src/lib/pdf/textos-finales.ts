@@ -21,9 +21,9 @@
  * cosas distintas.
  */
 
-export type TipoDocumento = 'cotizacion' | 'nota' | 'estado_cuenta' | 'extra';
+export type TipoDocumento = 'cotizacion' | 'nota' | 'estado_cuenta' | 'extra' | 'estimacion';
 
-export const TIPOS_DOCUMENTO: TipoDocumento[] = ['cotizacion', 'nota', 'estado_cuenta', 'extra'];
+export const TIPOS_DOCUMENTO: TipoDocumento[] = ['cotizacion', 'nota', 'estado_cuenta', 'extra', 'estimacion'];
 
 /** Cómo se llama cada tipo en la interfaz (Ajustes → PDF). */
 export const NOMBRE_TIPO: Record<TipoDocumento, string> = {
@@ -31,6 +31,7 @@ export const NOMBRE_TIPO: Record<TipoDocumento, string> = {
   nota: 'Nota de obra',
   estado_cuenta: 'Estado de cuenta del cliente',
   extra: 'Extra (orden de cambio)',
+  estimacion: 'Estimación (cobro por avance)',
 };
 
 /** Textos generales por tipo, tal como se guardan en `pdf_config.textos`. */
@@ -85,6 +86,14 @@ export function textoIntegrado(tipo: TipoDocumento, ctx: ContextoTextoFinal): st
       return (
         'Trabajo adicional al presupuesto original de la obra. Montos en pesos mexicanos (MXN), ' +
         'sin IVA. Una vez aprobado, el importe se suma a su estado de cuenta. ' +
+        `Para cualquier aclaración comuníquese con ${empresa}.`
+      );
+
+    case 'estimacion':
+      return (
+        'Estimación de los trabajos ejecutados en el periodo indicado, valuados a los precios unitarios ' +
+        'del contrato. Las cantidades se sustentan en los números generadores anexos. Montos en pesos ' +
+        'mexicanos (MXN). El fondo de garantía retenido se devuelve al concluir la obra. ' +
         `Para cualquier aclaración comuníquese con ${empresa}.`
       );
   }

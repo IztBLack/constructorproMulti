@@ -45,6 +45,14 @@ const nextConfig: NextConfig = {
     '/admin/obras/\\[id\\]/bitacora/pdf/descargar': [
       './node_modules/@sparticuz/chromium/**/*',
     ],
+    // Extra (orden de cambio, F1): faltaba y daría 500 en Vercel.
+    '/admin/obras/\\[id\\]/extras/\\[extraId\\]/pdf/descargar': [
+      './node_modules/@sparticuz/chromium/**/*',
+    ],
+    // Estimación con números generadores (F3, 0039): mismo Chromium.
+    '/admin/obras/\\[id\\]/estimaciones/\\[estId\\]/pdf/descargar': [
+      './node_modules/@sparticuz/chromium/**/*',
+    ],
     // Hoja para facturar (módulo fiscal, F1b): mismo Chromium.
     '/admin/facturacion/hoja/\\[origen\\]/\\[id\\]/pdf': [
       './node_modules/@sparticuz/chromium/**/*',

@@ -167,7 +167,7 @@ function faltaColumnaCategoria(error: { code?: string; message: string } | null)
 
 export async function crearMovimiento(
   input: MovimientoInput,
-): Promise<{ error: string | null }> {
+): Promise<{ error: string | null; id?: string }> {
   const { empresaId } = await getEmpresaUsuario();
   const supabase = await createClient();
   const now = Date.now();
@@ -198,7 +198,7 @@ export async function crearMovimiento(
   }
 
   if (error) return { error: error.message };
-  return { error: null };
+  return { error: null, id: fila.id };
 }
 
 export async function actualizarMovimiento(
