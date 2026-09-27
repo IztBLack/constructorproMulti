@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
+import '../../core/modulos/modulos.dart';
+import '../../core/modulos/modulos_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/sync/cloud_providers.dart';
 import '../../core/sync/rol_provider.dart';
@@ -103,8 +105,13 @@ class _ObraPaseLista extends ConsumerWidget {
     // duplicarlo cuando está en varias obras a la vez.
     final ultimaObra = ref.watch(ultimaObraPorColaboradorProvider).asData?.value ?? {};
     // Cuadrilla vigente por colaborador (para agrupar y etiquetar la asistencia).
-    final cuadrillaPorColab =
-        ref.watch(cuadrillaPorColaboradorProvider).asData?.value ??
+    // Con el módulo de cuadrillas apagado (F0) no se agrupa: todos caen en la
+    // lista sin cuadrilla, ordenada por `colaboradores.orden`. Nada se borra.
+    final usaCuadrillas =
+        ref.watch(modulosProvider).usa(ClaveModulo.cuadrillas);
+    final cuadrillaPorColab = !usaCuadrillas
+        ? const <String, Cuadrilla>{}
+        : ref.watch(cuadrillaPorColaboradorProvider).asData?.value ??
             const <String, Cuadrilla>{};
     // Orden personalizado del pase de lista: SIEMPRE activo (no hay botón de
     // modo). Cada colaborador se puede arrastrar dentro de su grupo; la posición

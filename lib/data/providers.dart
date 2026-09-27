@@ -18,8 +18,13 @@ import 'repositories_cuadrilla.dart';
 import 'repositories_cotizacion.dart';
 import 'repositories_nota_obra.dart';
 
+/// Pestañas del shell inferior, en su orden. Se guardan por NOMBRE y no por
+/// índice: con los módulos (F0) una pestaña puede desaparecer y los índices se
+/// recorren; "Cotizar" tiene que seguir siendo "Cotizar".
+enum HomeTab { obras, cotizar, equipo, resumen, config }
+
 /// Pestaña seleccionada del shell inferior (para accesos rápidos del dashboard).
-final homeTabProvider = StateProvider<int>((ref) => 0);
+final homeTabProvider = StateProvider<HomeTab>((ref) => HomeTab.obras);
 
 /// IVA por defecto (%) configurable, persistido en SharedPreferences.
 /// Notifier síncrono: la UI lee el valor directo (sin AsyncValue) y `set()`

@@ -5,6 +5,8 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
+import '../../core/modulos/modulos.dart';
+import '../../core/modulos/modulos_provider.dart';
 import '../../core/sync/cloud_providers.dart';
 import '../../domain/logic/salario_periodo.dart';
 import '../../core/theme/app_colors.dart';
@@ -72,13 +74,15 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
         title: const Text('Colaboradores'),
         actions: [
           const SyncStatusAction(),
-          IconButton(
-            tooltip: 'Cuadrillas',
-            icon: const Icon(Icons.groups),
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => const CuadrillasScreen(),
-            )),
-          ),
+          // Las cuadrillas son su propio módulo (F0): sin él, no hay entrada.
+          if (ref.watch(modulosProvider).usa(ClaveModulo.cuadrillas))
+            IconButton(
+              tooltip: 'Cuadrillas',
+              icon: const Icon(Icons.groups),
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => const CuadrillasScreen(),
+              )),
+            ),
           IconButton(
             tooltip: _mostrarInactivos ? 'Ocultar inactivos' : 'Mostrar inactivos',
             icon: Icon(_mostrarInactivos ? Icons.visibility : Icons.visibility_off),

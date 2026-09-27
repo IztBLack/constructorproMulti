@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:collection/collection.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -12,6 +13,8 @@ import 'package:uuid/uuid.dart';
 import '../pdf_preview_screen.dart';
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
+import '../../core/modulos/modulos.dart';
+import '../../core/modulos/modulos_provider.dart';
 import '../../core/pdf/textos_finales.dart';
 import '../../core/storage/comprobante_storage.dart';
 import '../../core/sync/cloud_providers.dart';
@@ -36,6 +39,21 @@ import '../notas/notas_obra_screen.dart';
 import '../pdf_pre_dialog.dart';
 import 'importar_movimientos_screen.dart';
 
+/// Pestañas del detalle de obra, en su orden.
+enum PestanaObra { equipo, asistencia, nomina, caja }
+
+/// Las pestañas que se dibujan con estos módulos (F0). Equipo, asistencia y
+/// nómina son del módulo `equipo`; la caja, del suyo. Puede quedar vacía: la
+/// obra (el núcleo) se sigue abriendo, con un aviso en vez de pestañas.
+List<PestanaObra> pestanasObraVisibles(ModulosActivos m) => [
+      if (m.usa(ClaveModulo.equipo)) ...const [
+        PestanaObra.equipo,
+        PestanaObra.asistencia,
+        PestanaObra.nomina,
+      ],
+      if (m.usa(ClaveModulo.caja)) PestanaObra.caja,
+    ];
+
 class ObraDetailScreen extends ConsumerStatefulWidget {
   final Obra obra;
   const ObraDetailScreen({super.key, required this.obra});
@@ -45,8 +63,37 @@ class ObraDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tab = TabController(length: 4, vsync: this);
+    with TickerProviderStateMixin {
+  /// Pestañas dibujadas y su controlador. Cambian si el admin prende o apaga
+  /// un módulo en la web con la pantalla abierta: por eso no es `late final`.
+  List<PestanaObra> _pestanas = const [];
+  TabController? _tab;
+
+  /// La pestaña a la vista, por NOMBRE (el índice cambia si otra desaparece).
+  PestanaObra? get _pestanaActual =>
+      _tab == null ? null : _pestanas[_tab!.index];
+
+  /// Rehace el controlador cuando cambia el juego de pestañas, conservando la
+  /// que estaba a la vista si sigue existiendo.
+  void _sincronizarPestanas(List<PestanaObra> nuevas) {
+    if (listEquals(nuevas, _pestanas)) return;
+    final antes = _pestanaActual;
+    final viejo = _tab;
+    _pestanas = nuevas;
+    final idx = antes == null ? 0 : nuevas.indexOf(antes);
+    _tab = nuevas.isEmpty
+        ? null
+        : TabController(
+            length: nuevas.length,
+            vsync: this,
+            initialIndex: idx < 0 ? 0 : idx,
+          );
+    // El TabBar de este mismo frame todavía se desprende del viejo: se
+    // descarta después, no a media construcción.
+    if (viejo != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => viejo.dispose());
+    }
+  }
 
   DateTime _diaAsistencia = DateTime.now();
   int _inicioSemana = Semana.inicioSemana(DateTime.now());
@@ -68,12 +115,53 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
 
   @override
   void dispose() {
-    _tab.dispose();
+    _tab?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final modulos = ref.watch(modulosProvider);
+    _sincronizarPestanas(pestanasObraVisibles(modulos));
+    final tab = _tab;
+    final verSueldos = ref.watch(puedeVerSueldosProvider);
+    // Cada entrada se va con su módulo (F0).
+    final menu = <PopupMenuEntry<String>>[
+      if (modulos.usa(ClaveModulo.caja))
+        const PopupMenuItem(
+          value: 'importar',
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.upload_file),
+            title: Text('Importar movimientos'),
+          ),
+        ),
+      // Va en el menú y no en una quinta pestaña: la TabBar es fija y
+      // con cuatro títulos cortos ya reparte justo el ancho.
+      if (modulos.usa(ClaveModulo.notas))
+        const PopupMenuItem(
+          value: 'notas',
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.handshake_outlined),
+            title: Text('Notas de trato'),
+          ),
+        ),
+      // Entra ya filtrada a esta obra. Solo para quien puede ver
+      // salarios (ver `puedeVerSueldosSegunRol`).
+      if (verSueldos && modulos.usa(ClaveModulo.proyeccion))
+        const PopupMenuItem(
+          value: 'proyeccion',
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.calculate_outlined),
+            title: Text('Proyectar la nómina'),
+          ),
+        ),
+    ];
+    final hayPdf = _pestanas.contains(PestanaObra.nomina) ||
+        _pestanas.contains(PestanaObra.caja);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.obra.nombre),
@@ -83,85 +171,72 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
             tooltip: 'Cambiar a obra',
             onPressed: _cambiarObra,
           ),
-          IconButton(
-            icon: const Icon(Icons.picture_as_pdf),
-            tooltip: 'Exportar PDF (Nómina/Caja)',
-            onPressed: _exportarPdf,
-          ),
-          PopupMenuButton<String>(
-            tooltip: 'Más acciones',
-            onSelected: (v) {
-              if (v == 'importar') _importarMovimientos();
-              if (v == 'proyeccion') {
-                Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => ProyeccionScreen(obraId: widget.obra.id)));
-              }
-              if (v == 'notas') {
-                Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => NotasObraScreen(
-                        obraId: widget.obra.id,
-                        obraNombre: widget.obra.nombre)));
-              }
-            },
-            itemBuilder: (ctx) => [
-              const PopupMenuItem(
-                value: 'importar',
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.upload_file),
-                  title: Text('Importar movimientos'),
-                ),
-              ),
-              // Va en el menú y no en una quinta pestaña: la TabBar es fija y
-              // con cuatro títulos cortos ya reparte justo el ancho.
-              const PopupMenuItem(
-                value: 'notas',
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.handshake_outlined),
-                  title: Text('Notas de trato'),
-                ),
-              ),
-              // Entra ya filtrada a esta obra. Solo para quien puede ver
-              // salarios (ver `puedeVerSueldosSegunRol`).
-              if (ref.watch(puedeVerSueldosProvider))
-                const PopupMenuItem(
-                  value: 'proyeccion',
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(Icons.calculate_outlined),
-                    title: Text('Proyectar la nómina'),
-                  ),
-                ),
-            ],
-          ),
+          if (hayPdf)
+            IconButton(
+              icon: const Icon(Icons.picture_as_pdf),
+              tooltip: 'Exportar PDF (Nómina/Caja)',
+              onPressed: _exportarPdf,
+            ),
+          if (menu.isNotEmpty)
+            PopupMenuButton<String>(
+              tooltip: 'Más acciones',
+              onSelected: (v) {
+                if (v == 'importar') _importarMovimientos();
+                if (v == 'proyeccion') {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => ProyeccionScreen(obraId: widget.obra.id)));
+                }
+                if (v == 'notas') {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => NotasObraScreen(
+                          obraId: widget.obra.id,
+                          obraNombre: widget.obra.nombre)));
+                }
+              },
+              itemBuilder: (ctx) => menu,
+            ),
         ],
-        bottom: TabBar(
-          controller: _tab,
-          // Fijo, no desplazable: con `isScrollable` los cuatro títulos cortos
-          // se amontonaban a la izquierda dejando media barra vacía, y no había
-          // nada que desplazar. Repartidos ocupan el ancho y crecen sus áreas
-          // tocables.
-          isScrollable: false,
-          tabs: const [
-            Tab(text: 'Equipo'),
-            Tab(text: 'Asistencia'),
-            Tab(text: 'Nómina'),
-            Tab(text: 'Caja'),
-          ],
-        ),
+        bottom: tab == null
+            ? null
+            : TabBar(
+                controller: tab,
+                // Fijo, no desplazable: con `isScrollable` los cuatro títulos
+                // cortos se amontonaban a la izquierda dejando media barra
+                // vacía, y no había nada que desplazar. Repartidos ocupan el
+                // ancho y crecen sus áreas tocables.
+                isScrollable: false,
+                tabs: [for (final p in _pestanas) Tab(text: _tituloPestana(p))],
+              ),
       ),
-      body: TabBarView(
-        controller: _tab,
-        children: [
-          _equipoTab(),
-          _asistenciaTab(),
-          _nominaTab(),
-          _cajaTab(),
-        ],
-      ),
+      body: tab == null
+          // Sin equipo ni caja la obra no tiene pestañas, pero se sigue
+          // abriendo: es el núcleo y de aquí cuelgan las notas.
+          ? const EmptyStateView(
+              icon: Icons.foundation_outlined,
+              title: 'Esta obra no tiene secciones prendidas.',
+              hint: 'Equipo y Caja están apagados para tu empresa. '
+                  'Se prenden desde la web, en Ajustes → Módulos.',
+            )
+          : TabBarView(
+              controller: tab,
+              children: [for (final p in _pestanas) _cuerpoPestana(p)],
+            ),
     );
   }
+
+  static String _tituloPestana(PestanaObra p) => switch (p) {
+        PestanaObra.equipo => 'Equipo',
+        PestanaObra.asistencia => 'Asistencia',
+        PestanaObra.nomina => 'Nómina',
+        PestanaObra.caja => 'Caja',
+      };
+
+  Widget _cuerpoPestana(PestanaObra p) => switch (p) {
+        PestanaObra.equipo => _equipoTab(),
+        PestanaObra.asistencia => _asistenciaTab(),
+        PestanaObra.nomina => _nominaTab(),
+        PestanaObra.caja => _cajaTab(),
+      };
 
   Future<void> _cambiarObra() async {
     final obras = ref.read(obrasProvider).asData?.value ?? [];
@@ -203,8 +278,8 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     if (!mounted) return;
     final config = await showPdfPreDialog(context, base);
     if (config == null) return;
-    final idx = _tab.index;
-    if (idx == 2) {
+    final pestana = _pestanaActual;
+    if (pestana == PestanaObra.nomina) {
       // La pestaña ya no se dibuja sin permiso, pero el export se defiende solo.
       if (!ref.read(puedeVerSueldosProvider)) return;
       // Nómina de la semana activa
@@ -232,7 +307,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
       await Navigator.of(context).push(MaterialPageRoute(
           builder: (_) => PdfPreviewScreen(
               bytes: bytes, titulo: 'Nómina', filename: 'nomina.pdf')));
-    } else if (idx == 3) {
+    } else if (pestana == PestanaObra.caja) {
       // Flujo de caja
       final movs = ref.read(movimientosPorObraProvider(_obraId)).asData?.value ?? [];
       final resumen =
@@ -1032,7 +1107,11 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                   label: const Text('Estado de cuenta del cliente (PDF)'),
                 ),
               ),
-              if (partidas.isNotEmpty) _presupuestoCard(estado, partidas),
+              // El presupuesto de la obra es la otra mitad de "Cotizaciones y
+              // presupuesto" (F0-6 de la web): se va con ese módulo.
+              if (partidas.isNotEmpty &&
+                  ref.watch(modulosProvider).usa(ClaveModulo.cotizaciones))
+                _presupuestoCard(estado, partidas),
               if (estado.porPersona.isNotEmpty)
                 _resumenCard(
                   titulo: 'Pagado por persona',
