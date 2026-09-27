@@ -53,6 +53,14 @@ const nextConfig: NextConfig = {
     '/admin/obras/\\[id\\]/estimaciones/\\[estId\\]/pdf/descargar': [
       './node_modules/@sparticuz/chromium/**/*',
     ],
+    // Proyección de nómina: usaba Chromium desde antes y nunca estuvo aquí.
+    '/admin/proyeccion/pdf': [
+      './node_modules/@sparticuz/chromium/**/*',
+    ],
+    // Contrato de subcontrato (F5, 0040): mismo Chromium.
+    '/admin/subcontratos/\\[id\\]/pdf/descargar': [
+      './node_modules/@sparticuz/chromium/**/*',
+    ],
     // Hoja para facturar (módulo fiscal, F1b): mismo Chromium.
     '/admin/facturacion/hoja/\\[origen\\]/\\[id\\]/pdf': [
       './node_modules/@sparticuz/chromium/**/*',
