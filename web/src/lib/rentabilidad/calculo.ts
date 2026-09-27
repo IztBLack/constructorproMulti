@@ -35,8 +35,10 @@
  *    no entra al costo real, pero sí a la proyección.
  *
  * ── LA PROYECCIÓN A TÉRMINO ─────────────────────────────────────────────────
- *   avance de la obra (0–100, lo captura la oficina) si es > 0;
- *   si no, el avance FINANCIERO = cobrado / contratado.
+ *   1. avance FÍSICO por partida (F3, `avance_partida` 0039, ponderado por
+ *      dinero con `lib/estimaciones/avance.ts`) si ya hay capturas;
+ *   2. si no, el avance capturado a mano en la obra (0–100) si es > 0;
+ *   3. si no, el avance FINANCIERO = cobrado / contratado.
  *   costo proyectado = costo real / avance, y nunca menos que
  *                      costo real + comprometido en notas.
  * Sin ningún avance no hay proyección (y el semáforo dice "sin datos"): al
@@ -94,13 +96,19 @@ export interface DatosRentabilidad {
   rayaCalculada: number;
   /** Notas de obra (vivas), con sus totales ya resueltos. */
   notas: NotaCosto[];
-  /** Avance capturado de la obra, 0–100. 0 o null = no se sabe. */
+  /** Avance capturado A MANO en la obra (`obras.avance`), 0–100. 0 o null = no se sabe. */
   avance: number | null;
+  /**
+   * Avance FÍSICO por partida (F3), 0–100. null = no hay capturas (o el módulo
+   * está apagado): entonces se usa el manual. Cuando existe, MANDA: es lo medido
+   * en campo, no una estimación a ojo.
+   */
+  avanceFisico?: number | null;
   /** Margen objetivo en %, ya resuelto (obra → empresa → 15). */
   margenObjetivo: number;
 }
 
-export type FuenteAvance = 'obra' | 'cobrado' | 'ninguna';
+export type FuenteAvance = 'partidas' | 'obra' | 'cobrado' | 'ninguna';
 
 export interface ResultadoRentabilidad {
   presupuesto: number;
@@ -248,11 +256,16 @@ export function calcularRentabilidad(d: DatosRentabilidad): ResultadoRentabilida
   const utilidad = redondear(contratado - costoReal);
   const margen = contratado > 0 ? redondear((utilidad / contratado) * 100) : null;
 
-  // Avance: el de la obra; si no hay, lo cobrado contra lo contratado.
+  // Avance: el físico por partida; si no hay, el de la obra; si no, lo cobrado
+  // contra lo contratado.
   let avanceUsado: number | null = null;
   let fuenteAvance: FuenteAvance = 'ninguna';
   const avanceObra = finito(d.avance);
-  if (avanceObra > 0) {
+  const fisico = d.avanceFisico == null ? null : finito(d.avanceFisico);
+  if (fisico !== null && fisico > 0) {
+    avanceUsado = Math.min(100, fisico);
+    fuenteAvance = 'partidas';
+  } else if (avanceObra > 0) {
     avanceUsado = Math.min(100, avanceObra);
     fuenteAvance = 'obra';
   } else if (contratado > 0 && cobrado > 0) {

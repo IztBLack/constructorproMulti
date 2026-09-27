@@ -192,6 +192,25 @@ describe('proyección a término', () => {
     expect(r.costoProyectado).toBe(85_000);
   });
 
+  test('el avance FÍSICO por partida (F3) manda sobre el manual y sobre lo cobrado', () => {
+    // Manual dice 40 %, pero en campo se midió 60 %: 36,000 / 0.6 = 60,000.
+    const r = calcularRentabilidad(
+      datos({ avance: 40, avanceFisico: 60, movimientos: [salida(36_000, 'MATERIAL'), entrada(80_000)] }),
+    );
+    expect(r.fuenteAvance).toBe('partidas');
+    expect(r.avanceUsado).toBe(60);
+    expect(r.costoProyectado).toBe(60_000);
+  });
+
+  test('sin capturas por partida (null o 0) se sigue usando el manual', () => {
+    for (const avanceFisico of [null, 0, undefined]) {
+      const r = calcularRentabilidad(
+        datos({ avance: 40, avanceFisico, movimientos: [salida(36_000, 'MATERIAL')] }),
+      );
+      expect(r.fuenteAvance).toBe('obra');
+    }
+  });
+
   test('el avance nunca pasa de 100', () => {
     const r = calcularRentabilidad(datos({ avance: 250, movimientos: [salida(10_000)] }));
     expect(r.avanceUsado).toBe(100);

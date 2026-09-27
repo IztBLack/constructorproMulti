@@ -31,6 +31,8 @@ describe('estado de cuenta con extras (RF1.4)', () => {
       recibido: 40,
       pendiente: 60,
       pagadoPct: 40,
+      estimacionesPorCobrar: 0,
+      fondoGarantiaRetenido: 0,
     });
   });
 
@@ -43,5 +45,26 @@ describe('estado de cuenta con extras (RF1.4)', () => {
         entradas: [{ monto: 50 }],
       }).pagadoPct,
     ).toBe(100);
+  });
+});
+
+describe('estado de cuenta con estimaciones (F3)', () => {
+  test('lo autorizado sin cobrar y el fondo retenido van aparte; el costo no cambia', () => {
+    const t = totalesEstadoCuenta({
+      partidas: [{ cantidad: 1, precio_unitario: 100_000 }],
+      extras: [],
+      entradas: [{ monto: 30_000 }],
+      estimaciones: [
+        { estado: 'COBRADA', neto: 20_000, fondo_garantia: 1_000 },
+        { estado: 'AUTORIZADA', neto: 15_000.55, fondo_garantia: 800 },
+        { estado: 'ENVIADA', neto: 9_000, fondo_garantia: 500 },
+        { estado: 'RECHAZADA', neto: 99_999, fondo_garantia: 9_999 },
+        { estado: 'BORRADOR', neto: 1, fondo_garantia: 1 },
+      ],
+    });
+    expect(t.costoTotal).toBe(100_000);
+    expect(t.pendiente).toBe(70_000);
+    expect(t.estimacionesPorCobrar).toBe(15_000.55);
+    expect(t.fondoGarantiaRetenido).toBe(2_300);
   });
 });

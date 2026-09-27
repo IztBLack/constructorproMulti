@@ -34,6 +34,7 @@ export interface OpcionPresupuesto {
 const TONO: Record<EstadoPartida, 'green' | 'red' | 'blue' | 'neutral'> = {
   terminada: 'green',
   vencida: 'red',
+  retrasada: 'red',
   en_curso: 'blue',
   por_empezar: 'neutral',
 };
@@ -42,6 +43,7 @@ const TONO: Record<EstadoPartida, 'green' | 'red' | 'blue' | 'neutral'> = {
 const BARRA: Record<EstadoPartida, string> = {
   terminada: 'bg-green-600',
   vencida: 'bg-red-600',
+  retrasada: 'bg-amber-600',
   en_curso: 'bg-blue-600',
   por_empezar: 'bg-neutral-500',
 };

@@ -5,6 +5,7 @@ import { calcularTotales, type RenglonNota } from './notas-obra-calculo';
 import type { Asistencia, Destajo, Obra, Puesto } from './types';
 import { puedeFijarMargen, puedeVerUtilidad } from '@/lib/auth/utilidad';
 import { totalExtrasAprobados } from '@/lib/cambios/extras';
+import { avanceFisicoPorObra } from './estimaciones';
 import {
   MARGEN_OBJETIVO_POR_DEFECTO,
   calcularRentabilidad,
@@ -75,6 +76,8 @@ interface DatosCrudos {
   renglonesNotas: RenglonNota[];
   margenEmpresa: number;
   margenesObra: { obra_id: string; margen_objetivo: number }[];
+  /** % físico por obra desde `avance_partida` (F3); solo las que tienen capturas. */
+  avanceFisico: Map<string, number>;
 }
 
 /**
@@ -219,6 +222,10 @@ async function leerDatos(empresaId: string, obraId?: string): Promise<{ d: Datos
     renglonesNotas = renglonesNotas.concat(r.data);
   }
 
+  // Avance físico por partida (F3). Si 0039 no está aplicada, mapa vacío y la
+  // proyección usa el avance manual, como antes.
+  const avanceFisico = await avanceFisicoPorObra(empresaId, obraId);
+
   // Sin la columna (0036 sin aplicar) o sin fila: el objetivo de siempre.
   const margenEmpresa = Number(config.data?.margen_objetivo ?? MARGEN_OBJETIVO_POR_DEFECTO);
 
@@ -236,6 +243,7 @@ async function leerDatos(empresaId: string, obraId?: string): Promise<{ d: Datos
       renglonesNotas,
       margenEmpresa: Number.isFinite(margenEmpresa) ? margenEmpresa : MARGEN_OBJETIVO_POR_DEFECTO,
       margenesObra: margenesObra.data,
+      avanceFisico,
     },
     error: null,
   };
@@ -289,6 +297,7 @@ function calcularTodas(d: DatosCrudos): RentabilidadObra[] {
       }),
       notas: notasCosto,
       avance: obra.avance ?? null,
+      avanceFisico: d.avanceFisico.get(obra.id) ?? null,
       margenObjetivo: margenObjetivoDe(margenObra, d.margenEmpresa),
     });
 

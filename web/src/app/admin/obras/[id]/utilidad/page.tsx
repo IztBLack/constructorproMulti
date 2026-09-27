@@ -77,16 +77,18 @@ export default async function UtilidadObraPage({ params }: { params: Promise<{ i
         <CardTitle as="h2">Cómo va a terminar</CardTitle>
         {r.costoProyectado === null ? (
           <p className="mt-2 text-sm text-neutral-700">
-            Todavía no hay con qué proyectar: captura el avance de la obra (Detalle → Editar) o
+            Todavía no hay con qué proyectar: captura el avance por partida (pestaña Avance), el de la obra (Detalle → Editar) o
             registra lo que te ha pagado el cliente. Al arrancar una obra el margen siempre sale alto
             porque aún no se gasta, por eso no se pinta de verde.
           </p>
         ) : (
           <div className="mt-3 space-y-2 text-sm">
             <p className="text-neutral-700">
-              {r.fuenteAvance === 'obra'
-                ? `Con el avance capturado de la obra (${r.avanceUsado} %).`
-                : `Sin avance capturado, se toma lo cobrado como avance (${r.avanceUsado} % de lo contratado).`}
+              {r.fuenteAvance === 'partidas'
+                ? `Con el avance medido por partida en la pestaña Avance (${r.avanceUsado} %).`
+                : r.fuenteAvance === 'obra'
+                  ? `Con el avance capturado de la obra (${r.avanceUsado} %).`
+                  : `Sin avance capturado, se toma lo cobrado como avance (${r.avanceUsado} % de lo contratado).`}
             </p>
             <dl className="grid gap-3 sm:grid-cols-3">
               <DatoChico etiqueta="Costo al terminar" valor={formatCurrency(r.costoProyectado)} />

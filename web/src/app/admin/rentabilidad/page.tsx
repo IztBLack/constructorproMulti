@@ -118,8 +118,8 @@ export default async function RentabilidadPage({
       )}
 
       <p className="text-xs text-neutral-600">
-        El margen al terminar se proyecta con el avance capturado de cada obra o, si no hay, con lo
-        cobrado. Montos sin IVA.
+        El margen al terminar se proyecta con el avance medido por partida, el avance capturado de
+        cada obra o, si no hay, con lo cobrado. Montos sin IVA.
       </p>
     </div>
   );
