@@ -29,6 +29,7 @@
  */
 // 2026-09-27: F5 agrega datos IMSS/fiscales de colaboradores y el expediente
 // de subcontratistas (cambio de fondo: nuevas categorías de datos).
+// 2026-09-27: F7 agrega datos de salud de incidentes de trabajo (solo admin).
 export const VERSION_LEGAL = '2026-09-27';
 
 /**
@@ -164,6 +165,16 @@ export const CATEGORIAS_DATOS = [
       'RFC, nombre o razón social, régimen fiscal, código postal fiscal, uso del CFDI, correo para la factura y la constancia de situación fiscal, tuyos y de tus clientes; además el folio y los XML/PDF de tus facturas. El RFC de una persona física es un dato personal: lo ven solo el administrador y el contador de la empresa, y cada cliente solo los suyos. Nunca pedimos ni guardamos la e.firma, el sello digital (CSD) ni contraseñas del SAT, y la app no emite facturas.',
   },
   {
+    titulo: 'Seguridad en obra (solo si usas «Seguridad en obra»)',
+    detalle:
+      'Revisiones diarias de seguridad, equipo de protección entregado a cada colaborador (con su firma o la foto de la hoja firmada, si la capturas) e incidentes: qué pasó, a quién, días de incapacidad y si ya se dio el aviso al IMSS. Si hubo un accidente, el administrador puede anotar datos MÍNIMOS de salud: tipo de lesión, parte del cuerpo y qué atención recibió, elegidos de una lista, más una nota corta. Son datos personales sensibles: los ve y los escribe SOLO el administrador de la empresa; ni supervisores, ni contador, ni clientes. La app no pide diagnósticos, no se conecta al IMSS y no manda el aviso por ti.',
+  },
+  {
+    titulo: 'Garantías (solo si usas «Garantías»)',
+    detalle:
+      'Lo que tu cliente reporta desde su portal (descripción, lugar y fotos), la respuesta de tu empresa y el periodo de garantía de la obra. Cada cliente ve solo los reportes de sus propias obras.',
+  },
+  {
     titulo: 'Archivos que adjuntas',
     detalle:
       'Planos, fichas técnicas y comprobantes de pago. Un comprobante de transferencia o de cheque puede contener datos financieros —número de cuenta, banco, firma—, así que conviene subir solo lo que de verdad haga falta para la obra.',
@@ -222,6 +233,21 @@ export const ARCHIVOS = {
         'Solo el personal de oficina: administrador, supervisor y contador. Ni el personal de campo ni tus clientes pueden verlos, justamente porque un comprobante suele traer datos bancarios.',
     },
     {
+      que: 'Evidencia de seguridad',
+      ejemplos:
+        'Firma o foto de la hoja de entrega del equipo de protección, y el comprobante del aviso de accidente al IMSS.',
+      limite: '10 MB por archivo',
+      quienVe:
+        'La evidencia de entrega de equipo: administrador y supervisor. El comprobante del aviso de accidente (trae datos de salud): SOLO el administrador.',
+    },
+    {
+      que: 'Fotos de garantía',
+      ejemplos: 'Las fotos que tu cliente sube al reportar un problema.',
+      limite: '10 MB por archivo',
+      quienVe:
+        'El personal de oficina (administrador, supervisor y contador) y el cliente que las subió, solo en los reportes de sus obras. El cliente no puede borrarlas: son la evidencia del reporte.',
+    },
+    {
       que: 'Documentos fiscales',
       ejemplos: 'Constancias de situación fiscal y facturas (XML y PDF).',
       limite: '5 MB por archivo',
@@ -229,6 +255,24 @@ export const ARCHIVOS = {
         'Solo el administrador y el contador. Cada cliente puede subir y ver únicamente su propia constancia.',
     },
   ],
+} as const;
+
+/**
+ * Datos de salud de los incidentes de seguridad (módulo `seguridad`, 0043).
+ *
+ * La LFPDPPP trata el estado de salud como dato personal SENSIBLE y pide para
+ * él consentimiento expreso del titular (el trabajador). En este esquema el
+ * RESPONSABLE de esos datos es la empresa que usa la app (ConstructorPro solo
+ * los guarda por su instrucción), así que el consentimiento lo recaba ella.
+ * Falta que Mario, con un abogado, confirme el texto: qué se le dice al
+ * trabajador, si los Términos deben obligar al usuario a recabarlo y el plazo
+ * de conservación. Mientras tanto la app ya minimiza (listas cerradas, nota de
+ * 280 letras, solo el admin). NO se cambia a `true` sin esa revisión.
+ */
+export const DATOS_SALUD = {
+  revisadoPorAbogado: false,
+  /** Plazo de conservación de los datos de salud. FALTA DECIDIR. */
+  conservacion: null as string | null,
 } as const;
 
 /**
@@ -247,6 +291,9 @@ export function legalIncompleto(): string[] {
   if (!RESPONSABLE.domicilio) faltantes.push('domicilio del responsable');
   if (!COMPROMISO_RESPUESTA.plazo) faltantes.push('plazo de respuesta de soporte');
   if (!COMPROMISO_RESPUESTA.horario) faltantes.push('horario de atención');
+  if (!DATOS_SALUD.revisadoPorAbogado) {
+    faltantes.push('revisar el tratamiento de datos de salud de los incidentes (consentimiento del trabajador)');
+  }
   return faltantes;
 }
 

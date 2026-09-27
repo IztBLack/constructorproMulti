@@ -35,6 +35,7 @@ function tabsFor(obraId: string) {
     { href: `${base}/utilidad`, label: 'Utilidad' },
     { href: `${base}/bitacora`, label: 'Bitácora' },
     { href: `${base}/programa`, label: 'Programa' },
+    { href: `${base}/seguridad`, label: 'Seguridad' },
     { href: `${base}/importar`, label: 'Importar' },
   ];
 }
@@ -54,7 +55,7 @@ export default function ObraTabs({ obraId }: ObraTabsProps) {
   const pathname = usePathname();
   const base = `/admin/obras/${obraId}`;
   // Las pestañas de un módulo apagado no se ofrecen (Asistencia y Nómina son de
-  // `equipo`, Notas de `notas`, Bitácora de `bitacora`, Programa de `programa`,
+  // `equipo`, Notas de `notas`, Bitácora de `bitacora`, Programa de `programa`, Seguridad de `seguridad`,
   // Importar de `caja`). Detalle es del núcleo.
   const visible = useRutaVisible();
   // "Utilidad" además es solo de admin y contador (D1). La página lo vuelve a
