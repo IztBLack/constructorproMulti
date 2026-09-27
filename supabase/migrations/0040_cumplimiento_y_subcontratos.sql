@@ -49,6 +49,26 @@
 --   cliente         → NADA (sin policy = sin filas; lo mismo que 0031).
 -- El borrado es lógico (`deleted_at`, por UPDATE): no hay policy de DELETE,
 -- salvo en los datos IMSS (derecho de cancelación ARCO: se borran de verdad).
+--
+-- ENDURECIMIENTO (revisión de seguridad, docs/PROGRESO_ALCANCE.md, SEG-*)
+-- ─────────────────────────────────────────────────────────────────────
+-- · SEG-A1c: los datos IMSS ya NO se van en cascada si alguien borra de verdad
+--   al colaborador (FK `on delete no action`): el borrado de esos datos es
+--   explícito, por su propia policy DELETE (ARCO), y deja de poder pasar "sin
+--   querer" por quien ni siquiera los puede leer.
+-- · SEG-B9: las policies de Storage convierten la carpeta con `uuid_o_null`.
+
+-- Texto → uuid sin reventar. Mismo cuerpo que en 0036 (ver ahí el porqué).
+create or replace function public.uuid_o_null(p text)
+returns uuid
+language sql
+immutable
+as $$
+  select case
+    when p ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then p::uuid
+    else null
+  end
+$$;
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 1. SIROC por obra
@@ -198,7 +218,11 @@ create index if not exists idx_subcontratista_doc on public.subcontratista_docum
 -- ════════════════════════════════════════════════════════════════════════════
 -- `0002`, `0009` y `0027` no traen NSS, CURP ni RFC: no hay nada que mover.
 create table if not exists public.colaborador_datos_imss (
-  colaborador_id      uuid primary key references public.colaboradores(id) on delete cascade,
+  -- NO ACTION y no CASCADE (SEG-A1c). NO ACTION y no RESTRICT: RESTRICT se
+  -- revisa al instante y tumbaría la cascada de ELIMINAR LA EMPRESA completa
+  -- (donde colaborador y datos se van juntos); NO ACTION se revisa al final de
+  -- la sentencia, así que solo impide borrar al colaborador y dejar sus datos.
+  colaborador_id      uuid primary key references public.colaboradores(id) on delete no action,
   empresa_id          uuid not null references public.empresas(id) on delete cascade,
   -- Solo formato, sin consultar a nadie: NSS 11 dígitos, CURP 18, RFC 13.
   nss                 text check (nss is null or nss ~ '^[0-9]{11}$'),
@@ -212,6 +236,27 @@ create table if not exists public.colaborador_datos_imss (
   server_updated_at   bigint not null default 0,
   deleted_at          bigint
 );
+
+-- Si la tabla ya existía con la FK en cascada (una base de desarrollo que corrió
+-- la versión anterior de este archivo), se rehace. Idempotente.
+do $$
+declare v_fk text;
+begin
+  select c.conname into v_fk
+    from pg_constraint c
+   where c.conrelid = 'public.colaborador_datos_imss'::regclass
+     and c.contype = 'f'
+     and c.confrelid = 'public.colaboradores'::regclass;
+  if v_fk is not null and exists (
+    select 1 from pg_constraint where conname = v_fk and conrelid = 'public.colaborador_datos_imss'::regclass
+       and confdeltype <> 'a'
+  ) then
+    execute format('alter table public.colaborador_datos_imss drop constraint %I', v_fk);
+    alter table public.colaborador_datos_imss
+      add constraint colaborador_datos_imss_colaborador_id_fkey
+      foreign key (colaborador_id) references public.colaboradores(id) on delete no action;
+  end if;
+end $$;
 
 comment on column public.colaborador_datos_imss.nss  is 'PII: número de seguridad social. Solo admin/contador (RLS).';
 comment on column public.colaborador_datos_imss.curp is 'PII: identificador nacional. Solo admin/contador (RLS).';
@@ -627,7 +672,7 @@ create policy cumplimiento_obj_select on storage.objects
   for select to authenticated
   using (
     bucket_id = 'cumplimiento'
-    and public.auth_tiene_rol((storage.foldername(name))[1]::uuid, 'admin', 'contador')
+    and public.auth_tiene_rol(public.uuid_o_null((storage.foldername(name))[1]), 'admin', 'contador')
   );
 
 drop policy if exists cumplimiento_obj_insert on storage.objects;
@@ -635,7 +680,7 @@ create policy cumplimiento_obj_insert on storage.objects
   for insert to authenticated
   with check (
     bucket_id = 'cumplimiento'
-    and public.auth_tiene_rol((storage.foldername(name))[1]::uuid, 'admin', 'contador')
+    and public.auth_tiene_rol(public.uuid_o_null((storage.foldername(name))[1]), 'admin', 'contador')
     and (storage.foldername(name))[2] in ('siroc', 'repse', 'obligacion', 'subcontratista', 'colaborador')
   );
 
@@ -644,7 +689,7 @@ create policy cumplimiento_obj_delete on storage.objects
   for delete to authenticated
   using (
     bucket_id = 'cumplimiento'
-    and public.auth_tiene_rol((storage.foldername(name))[1]::uuid, 'admin', 'contador')
+    and public.auth_tiene_rol(public.uuid_o_null((storage.foldername(name))[1]), 'admin', 'contador')
   );
 
 -- ════════════════════════════════════════════════════════════════════════════

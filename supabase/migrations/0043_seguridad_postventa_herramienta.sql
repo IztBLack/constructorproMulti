@@ -56,10 +56,69 @@
 --     public.f7_nombre_usuario(), public.seguridad_puntos_validos(jsonb) cascade;
 --   delete from storage.buckets where id in ('seguridad', 'postventa');  -- si están vacíos
 --   (y las policies `seguridad_obj_*` / `postventa_obj_*` de storage.objects)
+--
+-- ENDURECIMIENTO (revisión de seguridad, docs/PROGRESO_ALCANCE.md, SEG-*)
+-- ─────────────────────────────────────────────────────────────────────
+-- · SEG-A1: incidentes, datos de salud, reportes de garantía, sus fotos y las
+--   entregas de EPP no se borran FÍSICAMENTE (tampoco en la cascada de borrar
+--   la obra o al colaborador). `incidente_salud` → `incidente` pasa a NO ACTION.
+-- · SEG-B4: el admin SÍ puede borrar de verdad los datos de salud de un
+--   incidente (derecho ARCO de cancelación). Queda rastro en el incidente
+--   (`salud_borrada_at/_por`), sin guardar el dato.
+-- · SEG-M1: la oficina no oculta (borrado lógico) las fotos que subió el
+--   cliente, y ningún archivo ligado (foto de garantía, evidencia de EPP,
+--   comprobante del aviso) se borra del bucket.
+-- · SEG-M2: el candado del préstamo devuelto compara todo, también cuando en el
+--   mismo UPDATE cambia `deleted_at`, y un préstamo cerrado no se "des-borra".
+-- · SEG-B5: el cliente sube como máximo 8 archivos a la carpeta de su reporte.
+-- · SEG-B9: las policies de Storage convierten la carpeta con `uuid_o_null`.
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 0. Utilidades
 -- ════════════════════════════════════════════════════════════════════════════
+-- Compartidas del endurecimiento: mismo cuerpo que en 0036/0037 (ver ahí el
+-- porqué). Esta migración no depende de aquéllas, por eso se repiten.
+create or replace function public.uuid_o_null(p text)
+returns uuid
+language sql
+immutable
+as $$
+  select case
+    when p ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then p::uuid
+    else null
+  end
+$$;
+
+create or replace function public._evidencia_no_se_borra()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (select 1 from public.empresas e where e.id = old.empresa_id) then
+    return old;
+  end if;
+  raise exception 'EVIDENCIA_INMUTABLE: un registro de % que ya es evidencia no se borra (usa el borrado lógico o cancélalo).',
+    tg_table_name using errcode = 'P0001';
+end $$;
+revoke all on function public._evidencia_no_se_borra() from public, anon, authenticated;
+
+create or replace function public.storage_objetos_en_carpeta(p_bucket text, p_prefijo text)
+returns integer
+language sql
+stable
+security definer
+set search_path = public, storage
+as $$
+  select count(*)::integer
+    from storage.objects o
+   where o.bucket_id = p_bucket
+     and left(o.name, length(p_prefijo)) = p_prefijo
+$$;
+revoke all on function public.storage_objetos_en_carpeta(text, text) from public, anon;
+grant execute on function public.storage_objetos_en_carpeta(text, text) to authenticated;
+
 create or replace function public.f7_ahora_ms()
 returns bigint
 language sql stable
@@ -152,6 +211,13 @@ create table if not exists public.epp_entrega (
 create index if not exists idx_epp_entrega_colaborador
   on public.epp_entrega (colaborador_id, fecha desc);
 
+-- El registro de entrega de EPP es lo que pide la NOM-017 (5.12): tampoco se
+-- borra físicamente (SEG-A1), ni en la cascada de borrar al colaborador.
+drop trigger if exists trg_epp_entrega_evidencia on public.epp_entrega;
+create trigger trg_epp_entrega_evidencia
+  before delete on public.epp_entrega
+  for each row execute function public._evidencia_no_se_borra();
+
 -- ════════════════════════════════════════════════════════════════════════════
 -- 3. SEGURIDAD — incidentes (NOM-031-STPS-2011, num. 5.27 y cap. 21)
 -- ════════════════════════════════════════════════════════════════════════════
@@ -176,6 +242,10 @@ create table if not exists public.incidente (
   registrado_por     uuid,
   registrado_nombre  text not null default '',
   registrada_en      bigint not null default 0,
+  -- Rastro del borrado ARCO de los datos de salud (SEG-B4): cuándo y quién,
+  -- nunca qué decían. Los pone el trigger de `incidente_salud`.
+  salud_borrada_at   bigint,
+  salud_borrada_por  uuid,
   created_at         bigint not null default (extract(epoch from now()) * 1000)::bigint,
   updated_at         bigint not null default (extract(epoch from now()) * 1000)::bigint,
   server_updated_at  bigint not null default 0,
@@ -188,6 +258,10 @@ create table if not exists public.incidente (
 );
 
 create index if not exists idx_incidente_obra on public.incidente (obra_id, fecha desc);
+
+-- Para una base que ya corrió la versión anterior de este archivo.
+alter table public.incidente add column if not exists salud_borrada_at  bigint;
+alter table public.incidente add column if not exists salud_borrada_por uuid;
 
 create or replace function public.incidente_sellar()
 returns trigger
@@ -211,6 +285,12 @@ begin
   new.registrado_nombre := old.registrado_nombre;
   new.registrada_en     := old.registrada_en;
   new.empresa_id        := old.empresa_id;
+  -- El rastro del borrado ARCO solo lo escribe el admin (lo pone el trigger de
+  -- `incidente_salud`, que corre con su sesión). A otro rol se le conserva.
+  if auth.uid() is not null and not public.auth_tiene_rol(old.empresa_id, 'admin') then
+    new.salud_borrada_at  := old.salud_borrada_at;
+    new.salud_borrada_por := old.salud_borrada_por;
+  end if;
   -- `auth.uid() is null` = llave de servicio / mantenimiento: se le permite.
   if new.comprobante_path is distinct from old.comprobante_path
      and auth.uid() is not null
@@ -230,7 +310,10 @@ create trigger trg_incidente_sellar
 create table if not exists public.incidente_salud (
   id                 uuid primary key,
   empresa_id         uuid not null references public.empresas(id)  on delete cascade,
-  incidente_id       uuid not null unique references public.incidente(id) on delete cascade,
+  -- NO ACTION (SEG-A1): el dato de salud no se va "de paso" con el incidente.
+  -- No RESTRICT: se revisa al instante y tumbaría la cascada de ELIMINAR LA
+  -- EMPRESA completa, donde incidente y salud se van juntos.
+  incidente_id       uuid not null unique references public.incidente(id) on delete no action,
   tipo_lesion        text not null default 'OTRA'
                        check (tipo_lesion in ('GOLPE', 'HERIDA', 'TORCEDURA', 'FRACTURA',
                                               'QUEMADURA', 'OJOS', 'ELECTRICA', 'INTOXICACION', 'OTRA')),
@@ -246,6 +329,61 @@ create table if not exists public.incidente_salud (
   server_updated_at  bigint not null default 0,
   deleted_at         bigint
 );
+
+-- Base de desarrollo que corrió la versión anterior (FK en cascada): se rehace.
+do $$
+declare v_fk text;
+begin
+  select c.conname into v_fk
+    from pg_constraint c
+   where c.conrelid = 'public.incidente_salud'::regclass
+     and c.contype = 'f'
+     and c.confrelid = 'public.incidente'::regclass
+     and c.confdeltype <> 'a';
+  if v_fk is not null then
+    execute format('alter table public.incidente_salud drop constraint %I', v_fk);
+    alter table public.incidente_salud
+      add constraint incidente_salud_incidente_id_fkey
+      foreign key (incidente_id) references public.incidente(id) on delete no action;
+  end if;
+end $$;
+
+-- ── Evidencia: incidentes y datos de salud no se borran físicamente (SEG-A1) ─
+drop trigger if exists trg_incidente_evidencia on public.incidente;
+create trigger trg_incidente_evidencia
+  before delete on public.incidente
+  for each row execute function public._evidencia_no_se_borra();
+
+-- Datos de salud: la ÚNICA salida es el borrado ARCO del admin (SEG-B4), que
+-- deja el rastro en el incidente. Nadie más (ni la llave de servicio sin
+-- sesión) los borra, salvo la cascada de eliminar la empresa completa.
+create or replace function public._incidente_salud_borrado()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (select 1 from public.empresas e where e.id = old.empresa_id) then
+    return old;  -- se está eliminando la empresa completa
+  end if;
+  if auth.uid() is null or not public.auth_tiene_rol(old.empresa_id, 'admin') then
+    raise exception 'EVIDENCIA_INMUTABLE: los datos de salud solo los borra el administrador (derecho de cancelación).'
+      using errcode = 'P0001';
+  end if;
+  update public.incidente
+     set salud_borrada_at  = public.f7_ahora_ms(),
+         salud_borrada_por = auth.uid(),
+         updated_at        = public.f7_ahora_ms()
+   where id = old.incidente_id;
+  return old;
+end $$;
+revoke all on function public._incidente_salud_borrado() from public, anon, authenticated;
+
+drop trigger if exists trg_incidente_salud_borrado on public.incidente_salud;
+create trigger trg_incidente_salud_borrado
+  before delete on public.incidente_salud
+  for each row execute function public._incidente_salud_borrado();
 
 comment on table public.incidente_salud is
   'SENSIBLE (LFPDPPP, datos de salud): solo el admin. Mínimo: listas cerradas y nota corta. Ver 0043 y PROGRESO D8/F7.';
@@ -356,6 +494,12 @@ create trigger trg_garantia_reporte_sellar
   before insert or update on public.garantia_reporte
   for each row execute function public.garantia_reporte_sellar();
 
+-- Un reclamo de garantía es evidencia (SEG-A1): no se borra físicamente.
+drop trigger if exists trg_garantia_reporte_evidencia on public.garantia_reporte;
+create trigger trg_garantia_reporte_evidencia
+  before delete on public.garantia_reporte
+  for each row execute function public._evidencia_no_se_borra();
+
 -- Fotos: `path` = '<empresa_id>/<obra_id>/<reporte_id>/<archivo>' (bucket `postventa`).
 create table if not exists public.garantia_foto (
   id                 uuid primary key,
@@ -403,6 +547,11 @@ drop trigger if exists trg_garantia_foto_reglas on public.garantia_foto;
 create trigger trg_garantia_foto_reglas
   before insert or update on public.garantia_foto
   for each row execute function public.garantia_foto_reglas();
+
+drop trigger if exists trg_garantia_foto_evidencia on public.garantia_foto;
+create trigger trg_garantia_foto_evidencia
+  before delete on public.garantia_foto
+  for each row execute function public._evidencia_no_se_borra();
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 6. HERRAMIENTA — inventario y préstamos
@@ -484,15 +633,37 @@ begin
   new.empresa_id     := old.empresa_id;
   new.herramienta_id := old.herramienta_id;
   -- Un préstamo ya cerrado es historial: no se reescribe (solo se puede ocultar).
-  if old.hasta is not null
-     and (new.obra_id, new.colaborador_id, new.desde, new.devolver_antes, new.hasta,
-          new.entrego_nombre, new.recibio_nombre, new.estado_regreso, new.notas)
-         is distinct from
-         (old.obra_id, old.colaborador_id, old.desde, old.devolver_antes, old.hasta,
-          old.entrego_nombre, old.recibio_nombre, old.estado_regreso, old.notas)
-     and new.deleted_at is not distinct from old.deleted_at
-  then
-    raise exception 'HERRAMIENTA_HISTORIAL: un préstamo ya devuelto no se cambia.' using errcode = 'P0001';
+  -- SEG-M2: antes, si en el MISMO UPDATE cambiaba `deleted_at`, el candado no
+  -- se revisaba (reescribir + borrar, y luego des-borrar). Ahora:
+  --   · el contenido se compara SIEMPRE, cambie o no `deleted_at`;
+  --   · `deleted_at` solo puede pasar de vacío a una fecha (ocultarlo), nunca
+  --     volver a vacío ni moverse a otra fecha.
+  -- Única excepción: la FK `on delete set null` de obra o colaborador (borrado
+  -- real de la obra o de la persona), que solo vacía esas columnas y llega
+  -- desde el trigger de integridad referencial (pg_trigger_depth() > 1).
+  if old.hasta is not null then
+    if (new.obra_id, new.colaborador_id, new.desde, new.devolver_antes, new.hasta,
+        new.entrego_nombre, new.recibio_nombre, new.estado_regreso, new.notas)
+       is distinct from
+       (old.obra_id, old.colaborador_id, old.desde, old.devolver_antes, old.hasta,
+        old.entrego_nombre, old.recibio_nombre, old.estado_regreso, old.notas)
+       and not (
+         pg_trigger_depth() > 1
+         and (new.obra_id is null or new.obra_id = old.obra_id)
+         and (new.colaborador_id is null or new.colaborador_id = old.colaborador_id)
+         and (new.desde, new.devolver_antes, new.hasta, new.entrego_nombre,
+              new.recibio_nombre, new.estado_regreso, new.notas)
+             is not distinct from
+             (old.desde, old.devolver_antes, old.hasta, old.entrego_nombre,
+              old.recibio_nombre, old.estado_regreso, old.notas)
+       )
+    then
+      raise exception 'HERRAMIENTA_HISTORIAL: un préstamo ya devuelto no se cambia.' using errcode = 'P0001';
+    end if;
+    if old.deleted_at is not null and new.deleted_at is distinct from old.deleted_at then
+      raise exception 'HERRAMIENTA_HISTORIAL: un préstamo ya devuelto y borrado no se restaura ni se cambia.'
+        using errcode = 'P0001';
+    end if;
   end if;
   return new;
 end $$;
@@ -693,6 +864,12 @@ create policy incidente_salud_update on public.incidente_salud
                  where i.id = incidente_id and i.empresa_id = incidente_salud.empresa_id)
   );
 
+-- Derecho de cancelación (ARCO, SEG-B4): el admin borra de verdad el dato de
+-- salud. El trigger `_incidente_salud_borrado` deja el rastro en el incidente.
+drop policy if exists incidente_salud_delete on public.incidente_salud;
+create policy incidente_salud_delete on public.incidente_salud
+  for delete using (public.auth_tiene_rol(empresa_id, 'admin'));
+
 -- ── obra_garantia: oficina lee; admin escribe; el cliente ve la de sus obras ─
 drop policy if exists obra_garantia_read on public.obra_garantia;
 create policy obra_garantia_read on public.obra_garantia
@@ -811,11 +988,14 @@ create policy garantia_foto_cliente_insert on public.garantia_foto
     )
   );
 
+-- La oficina edita (orden, borrado lógico) solo las fotos que ELLA subió: lo
+-- que mandó el cliente es su evidencia del reclamo (SEG-M1). `subida_por_cliente`
+-- no se puede voltear (trigger de reglas).
 drop policy if exists garantia_foto_update on public.garantia_foto;
 create policy garantia_foto_update on public.garantia_foto
   for update
-  using (public.auth_tiene_rol(empresa_id, 'admin', 'supervisor'))
-  with check (public.auth_tiene_rol(empresa_id, 'admin', 'supervisor'));
+  using (public.auth_tiene_rol(empresa_id, 'admin', 'supervisor') and not subida_por_cliente)
+  with check (public.auth_tiene_rol(empresa_id, 'admin', 'supervisor') and not subida_por_cliente);
 
 -- ── herramienta ─────────────────────────────────────────────────────────────
 drop policy if exists herramienta_read on public.herramienta;
@@ -859,7 +1039,7 @@ create policy herramienta_asignacion_update on public.herramienta_asignacion
     and (colaborador_id is null or exists (select 1 from public.colaboradores c
                  where c.id = colaborador_id and c.empresa_id = herramienta_asignacion.empresa_id))
   );
--- Ninguna tabla de 0043 tiene policy de DELETE: se borra con `deleted_at`.
+-- Ninguna otra tabla de 0043 tiene policy de DELETE: se borra con `deleted_at`.
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 8. RPC del portal del cliente
@@ -988,6 +1168,38 @@ on conflict (id) do update set
   allowed_mime_types = excluded.allowed_mime_types,
   public             = false;
 
+-- ¿El objeto está ligado a una fila (evidencia de entrega de EPP o comprobante
+-- del aviso de un incidente)? Entonces no se borra del bucket (SEG-M1). Lo que
+-- se subió y nunca se ligó, o lo que ya se desligó, sí se limpia. SECURITY
+-- DEFINER: la respuesta no depende de la RLS de quien borra. Sin policy de
+-- UPDATE en el bucket, nada se sobreescribe con el mismo nombre.
+create or replace function public._seguridad_obj_protegido(p_name text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (select 1 from public.epp_entrega e where e.evidencia_path = p_name)
+      or exists (select 1 from public.incidente i where i.comprobante_path = p_name)
+$$;
+revoke all on function public._seguridad_obj_protegido(text) from public, anon;
+grant execute on function public._seguridad_obj_protegido(text) to authenticated;
+
+-- ¿El objeto es una foto de garantía registrada (de la oficina o del cliente)?
+-- Entonces no se borra del bucket (SEG-M1): es la evidencia del reclamo.
+create or replace function public._postventa_obj_protegido(p_name text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (select 1 from public.garantia_foto f where f.path = p_name)
+$$;
+revoke all on function public._postventa_obj_protegido(text) from public, anon;
+grant execute on function public._postventa_obj_protegido(text) to authenticated;
+
 drop policy if exists seguridad_obj_select on storage.objects;
 create policy seguridad_obj_select on storage.objects
   for select to authenticated
@@ -995,9 +1207,9 @@ create policy seguridad_obj_select on storage.objects
     bucket_id = 'seguridad'
     and (
       ((storage.foldername(name))[2] = 'epp'
-        and public.auth_tiene_rol((storage.foldername(name))[1]::uuid, 'admin', 'supervisor'))
+        and public.auth_tiene_rol(public.uuid_o_null((storage.foldername(name))[1]), 'admin', 'supervisor'))
       or ((storage.foldername(name))[2] = 'incidentes'
-        and public.auth_tiene_rol((storage.foldername(name))[1]::uuid, 'admin'))
+        and public.auth_tiene_rol(public.uuid_o_null((storage.foldername(name))[1]), 'admin'))
     )
   );
 
@@ -1008,13 +1220,13 @@ create policy seguridad_obj_insert on storage.objects
     bucket_id = 'seguridad'
     and (
       ((storage.foldername(name))[2] = 'epp'
-        and public.auth_tiene_rol((storage.foldername(name))[1]::uuid, 'admin', 'supervisor')
+        and public.auth_tiene_rol(public.uuid_o_null((storage.foldername(name))[1]), 'admin', 'supervisor')
         and exists (select 1 from public.epp_entrega e
                      where e.id::text = (storage.foldername(name))[3]
                        and e.empresa_id::text = (storage.foldername(name))[1]
                        and e.deleted_at is null))
       or ((storage.foldername(name))[2] = 'incidentes'
-        and public.auth_tiene_rol((storage.foldername(name))[1]::uuid, 'admin')
+        and public.auth_tiene_rol(public.uuid_o_null((storage.foldername(name))[1]), 'admin')
         and exists (select 1 from public.incidente i
                      where i.id::text = (storage.foldername(name))[3]
                        and i.empresa_id::text = (storage.foldername(name))[1]
@@ -1029,10 +1241,11 @@ create policy seguridad_obj_delete on storage.objects
     bucket_id = 'seguridad'
     and (
       ((storage.foldername(name))[2] = 'epp'
-        and public.auth_tiene_rol((storage.foldername(name))[1]::uuid, 'admin', 'supervisor'))
+        and public.auth_tiene_rol(public.uuid_o_null((storage.foldername(name))[1]), 'admin', 'supervisor'))
       or ((storage.foldername(name))[2] = 'incidentes'
-        and public.auth_tiene_rol((storage.foldername(name))[1]::uuid, 'admin'))
+        and public.auth_tiene_rol(public.uuid_o_null((storage.foldername(name))[1]), 'admin'))
     )
+    and not public._seguridad_obj_protegido(name)
   );
 
 -- `postventa`: <empresa>/<obra>/<reporte>/<archivo>
@@ -1055,7 +1268,7 @@ create policy postventa_obj_select on storage.objects
   using (
     bucket_id = 'postventa'
     and (
-      public.auth_tiene_rol((storage.foldername(name))[1]::uuid, 'admin', 'supervisor', 'contador')
+      public.auth_tiene_rol(public.uuid_o_null((storage.foldername(name))[1]), 'admin', 'supervisor', 'contador')
       or exists (select 1 from public.garantia_foto f
                   where f.path = storage.objects.name and f.deleted_at is null)
     )
@@ -1083,18 +1296,26 @@ create policy postventa_obj_insert on storage.objects
                select o.id from public.obras o
                 where o.cliente_id in (select id from public.clientes where user_id = auth.uid())
              )
+             -- Tope de 8 archivos por reporte para lo que sube el cliente
+             -- (SEG-B5), el mismo de `garantia_foto`. Cuenta todo lo que hay en
+             -- la carpeta, también lo subido y nunca ligado.
+             and public.storage_objetos_en_carpeta(
+                   'postventa', r.empresa_id::text || '/' || r.obra_id::text || '/' || r.id::text || '/') < 8
            )
          )
     )
   );
 
--- BORRAR: solo la oficina. El cliente no borra evidencia de un reclamo.
+-- BORRAR: solo la oficina, y solo lo que NO es una foto registrada de un
+-- reporte (SEG-M1: ni la del cliente ni la propia; lo registrado es la
+-- evidencia del reclamo). El cliente no borra nada.
 drop policy if exists postventa_obj_delete on storage.objects;
 create policy postventa_obj_delete on storage.objects
   for delete to authenticated
   using (
     bucket_id = 'postventa'
-    and public.auth_tiene_rol((storage.foldername(name))[1]::uuid, 'admin', 'supervisor')
+    and public.auth_tiene_rol(public.uuid_o_null((storage.foldername(name))[1]), 'admin', 'supervisor')
+    and not public._postventa_obj_protegido(name)
   );
 
 -- ════════════════════════════════════════════════════════════════════════════

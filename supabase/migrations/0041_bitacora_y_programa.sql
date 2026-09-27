@@ -45,10 +45,47 @@
 --                 sería adelantar F6 (0042, `usuario_obra`). Ver PROGRESO F4-2.
 --   cliente     → lee SOLO las entradas `visible_cliente` de SUS obras, con sus
 --                 fotos y aclaraciones. El programa no se le muestra (aún).
+--
+-- ENDURECIMIENTO (revisión de seguridad, docs/PROGRESO_ALCANCE.md, SEG-*)
+-- ─────────────────────────────────────────────────────────────────────
+-- · SEG-A1: el candado de 24 h cubría el UPDATE, pero un DELETE físico de la
+--   OBRA se llevaba en cascada entradas cerradas y aclaraciones. Ahora una
+--   entrada cerrada y cualquier aclaración no se borran físicamente (trigger
+--   BEFORE DELETE, que también se dispara dentro de la cascada).
+-- · SEG-B9: las policies de Storage convierten la carpeta con `uuid_o_null`.
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 0. Utilidades
 -- ════════════════════════════════════════════════════════════════════════════
+-- Texto → uuid sin reventar. Mismo cuerpo que en 0036 (ver ahí el porqué).
+create or replace function public.uuid_o_null(p text)
+returns uuid
+language sql
+immutable
+as $$
+  select case
+    when p ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then p::uuid
+    else null
+  end
+$$;
+
+-- La evidencia no se borra físicamente (SEG-A1). Mismo cuerpo que en 0036 (ver
+-- ahí el porqué): solo deja pasar la cascada de eliminar la empresa completa.
+create or replace function public._evidencia_no_se_borra()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (select 1 from public.empresas e where e.id = old.empresa_id) then
+    return old;
+  end if;
+  raise exception 'EVIDENCIA_INMUTABLE: un registro de % que ya es evidencia no se borra (usa el borrado lógico o cancélalo).',
+    tg_table_name using errcode = 'P0001';
+end $$;
+revoke all on function public._evidencia_no_se_borra() from public, anon, authenticated;
+
 -- Reloj del servidor en epoch ms (la convención de todas las fechas).
 create or replace function public.bitacora_ahora_ms()
 returns bigint
@@ -152,6 +189,13 @@ create trigger trg_bitacora_entrada_sellar
   before insert or update on public.bitacora_entrada
   for each row execute function public.bitacora_entrada_sellar();
 
+-- Cerrada = evidencia: tampoco se borra FÍSICAMENTE (SEG-A1).
+drop trigger if exists trg_bitacora_entrada_evidencia on public.bitacora_entrada;
+create trigger trg_bitacora_entrada_evidencia
+  before delete on public.bitacora_entrada
+  for each row when (not public.bitacora_abierta(old.registrada_en))
+  execute function public._evidencia_no_se_borra();
+
 -- ════════════════════════════════════════════════════════════════════════════
 -- 2. Aclaraciones (lo único que se agrega a una entrada cerrada)
 -- ════════════════════════════════════════════════════════════════════════════
@@ -189,6 +233,13 @@ drop trigger if exists trg_bitacora_aclaracion_sellar on public.bitacora_aclarac
 create trigger trg_bitacora_aclaracion_sellar
   before insert on public.bitacora_aclaracion
   for each row execute function public.bitacora_aclaracion_sellar();
+
+-- Una aclaración es inmutable desde que existe: tampoco se borra FÍSICAMENTE
+-- (SEG-A1), ni en la cascada de su entrada o de la obra.
+drop trigger if exists trg_bitacora_aclaracion_evidencia on public.bitacora_aclaracion;
+create trigger trg_bitacora_aclaracion_evidencia
+  before delete on public.bitacora_aclaracion
+  for each row execute function public._evidencia_no_se_borra();
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 3. Fotos de la entrada (el archivo vive en el bucket privado `bitacora`)
@@ -488,7 +539,7 @@ create policy bitacora_obj_select on storage.objects
   using (
     bucket_id = 'bitacora'
     and (
-      public.auth_tiene_rol((storage.foldername(name))[1]::uuid, 'admin', 'supervisor', 'contador')
+      public.auth_tiene_rol(public.uuid_o_null((storage.foldername(name))[1]), 'admin', 'supervisor', 'contador')
       or exists (
         select 1 from public.bitacora_foto f
          where f.path = storage.objects.name and f.deleted_at is null
@@ -504,7 +555,7 @@ create policy bitacora_obj_insert on storage.objects
   for insert to authenticated
   with check (
     bucket_id = 'bitacora'
-    and public.auth_tiene_rol((storage.foldername(name))[1]::uuid, 'admin', 'supervisor')
+    and public.auth_tiene_rol(public.uuid_o_null((storage.foldername(name))[1]), 'admin', 'supervisor')
     and exists (
       select 1 from public.bitacora_entrada e
        where e.id::text         = (storage.foldername(name))[3]
@@ -522,7 +573,7 @@ create policy bitacora_obj_delete on storage.objects
   for delete to authenticated
   using (
     bucket_id = 'bitacora'
-    and public.auth_tiene_rol((storage.foldername(name))[1]::uuid, 'admin', 'supervisor')
+    and public.auth_tiene_rol(public.uuid_o_null((storage.foldername(name))[1]), 'admin', 'supervisor')
     and not exists (
       select 1 from public.bitacora_entrada e
        where e.id::text = (storage.foldername(name))[3]
