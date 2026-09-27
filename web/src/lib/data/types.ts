@@ -90,6 +90,10 @@ export interface Partida {
   cantidad: number;
   precio_unitario: number;
   orden: number;
+  /** Clave de producto o servicio del SAT (0037). Ausente si la migración no está. */
+  clave_sat?: string | null;
+  /** Clave de unidad del SAT (0037). */
+  unidad_sat?: string | null;
   created_at: number;
   updated_at: number;
   server_updated_at: number | null;
@@ -198,6 +202,9 @@ export interface PartidaPresupuesto {
   cantidad: number;
   precio_unitario: number;
   orden: number;
+  /** Claves SAT (0037), opcionales. */
+  clave_sat?: string | null;
+  unidad_sat?: string | null;
   created_at: number;
   updated_at: number;
   deleted_at: number | null;
@@ -251,6 +258,9 @@ export interface CatalogoConcepto {
   precio_unitario_default: number;
   categoria: string | null;
   es_personalizado: boolean;
+  /** Claves SAT (0037), opcionales. Se copian a la partida al cotizar. */
+  clave_sat?: string | null;
+  unidad_sat?: string | null;
   created_at: number;
   updated_at: number;
   server_updated_at: number | null;

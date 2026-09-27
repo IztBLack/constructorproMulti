@@ -45,6 +45,10 @@ const nextConfig: NextConfig = {
     '/admin/obras/\\[id\\]/bitacora/pdf/descargar': [
       './node_modules/@sparticuz/chromium/**/*',
     ],
+    // Hoja para facturar (módulo fiscal, F1b): mismo Chromium.
+    '/admin/facturacion/hoja/\\[origen\\]/\\[id\\]/pdf': [
+      './node_modules/@sparticuz/chromium/**/*',
+    ],
   },
 
   async headers() {

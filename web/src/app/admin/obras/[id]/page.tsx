@@ -23,6 +23,8 @@ import EquipoObra from './equipo-obra';
 import EstadoCuenta from './estado-cuenta';
 import PresupuestoObra from './presupuesto-obra';
 import ObraTabs from './_obra-tabs';
+import { CobrosFiscales } from './cobros-fiscales';
+import { getAccesoFiscal, listCobros } from '@/lib/data/fiscal';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,6 +85,14 @@ export default async function ObraDetallePage({
   const conPresupuesto = activos.includes('cotizaciones');
   const conEquipo = activos.includes('equipo');
 
+  // Cobros para facturar (módulo `fiscal`): admin y contador. Van con la caja
+  // porque los cobros de la obra SON sus entradas de caja.
+  const fiscal = await getAccesoFiscal();
+  const verFiscal = conCaja && fiscal.activo && fiscal.puede;
+  const cobrosFiscales = verFiscal
+    ? (await listCobros({ obraId: id, soloOrigen: 'movimiento' })).data
+    : [];
+
   return (
     <div className="space-y-6">
       <ObraTabs obraId={id} />
@@ -106,6 +116,8 @@ export default async function ObraDetallePage({
           {!presupuestoError && (
             <EstadoCuenta obraId={id} partidas={partidas} movimientos={movimientos ?? []} />
           )}
+
+          {verFiscal && <CobrosFiscales cobros={cobrosFiscales} />}
 
           {/* Nota de conciliación (el apunte al pie del Excel de la contadora). */}
           <NotaCaja obraId={id} notaInicial={notaCaja} puedeEditar={esOficina} />

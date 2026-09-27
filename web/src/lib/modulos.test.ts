@@ -64,7 +64,14 @@ describe('necesidadProximamente', () => {
 
 describe('paleta de comandos', () => {
   test('con todo prendido no se pierde ningún comando', () => {
-    expect(soloModulosActivos(COMANDOS_FIJOS, PAQUETE_POR_DEFECTO)).toEqual(COMANDOS_FIJOS);
+    expect(soloModulosActivos(COMANDOS_FIJOS, CLAVES_MODULO)).toEqual(COMANDOS_FIJOS);
+  });
+
+  test('Facturación solo aparece con el módulo fiscal (no viene en el paquete de siempre)', () => {
+    const titulos = (m: readonly ClaveModulo[]) => soloModulosActivos(COMANDOS_FIJOS, m).map((c) => c.titulo);
+    expect(titulos(PAQUETE_POR_DEFECTO)).not.toContain('Facturación');
+    expect(titulos([...PAQUETE_POR_DEFECTO, 'fiscal'])).toContain('Facturación');
+    expect(navDeModulos([...PAQUETE_POR_DEFECTO, 'fiscal']).map((n) => n.href)).toContain('/admin/facturacion');
   });
 
   test('con solo el núcleo desaparecen cotizaciones, equipo, caja y demás', () => {

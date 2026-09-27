@@ -41,6 +41,7 @@ export const COMANDOS_FIJOS: Comando[] = [
   { titulo: 'Equipo', href: '/admin/equipo', grupo: 'Ir a', alias: 'trabajadores gente colaboradores personal albañiles' },
   { titulo: 'Cuadrillas', href: '/admin/cuadrillas', grupo: 'Ir a', alias: 'grupos brigadas' },
   { titulo: 'Clientes', href: '/admin/clientes', grupo: 'Ir a', alias: 'contratantes' },
+  { titulo: 'Facturación', detalle: 'Hoja para facturar y paquete para el contador', href: '/admin/facturacion', grupo: 'Ir a', alias: 'factura sat cfdi rfc contador complemento xml' },
   { titulo: 'Proyección de nómina', href: '/admin/proyeccion', grupo: 'Ir a', alias: 'raya esperada semana estimado sueldos' },
   { titulo: 'Pase de lista de hoy', href: '/campo', grupo: 'Ir a', alias: 'asistencia lista campo jornada faltas' },
   { titulo: 'Catálogo de conceptos', href: '/admin/catalogo', grupo: 'Ir a', alias: 'precios partidas conceptos' },

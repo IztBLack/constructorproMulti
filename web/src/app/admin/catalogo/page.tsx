@@ -3,11 +3,15 @@ import { PageHeader } from '@/components/ui';
 import NuevoConceptoForm from './nuevo-concepto-form';
 import CargarOficialBoton from './cargar-oficial-boton';
 import TablaConceptos from './tabla-conceptos';
+import { getAccesoFiscal } from '@/lib/data/fiscal';
 
 export const dynamic = 'force-dynamic';
 
 export default async function CatalogoPage() {
-  const { data: conceptos, error } = await listCatalogoConceptos();
+  const [{ data: conceptos, error }, fiscal] = await Promise.all([
+    listCatalogoConceptos(),
+    getAccesoFiscal(),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -28,7 +32,7 @@ export default async function CatalogoPage() {
         </p>
       )}
 
-      {!error && <TablaConceptos conceptos={conceptos} />}
+      {!error && <TablaConceptos conceptos={conceptos} conFiscal={fiscal.activo && fiscal.puede} />}
     </div>
   );
 }
