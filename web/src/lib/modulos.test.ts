@@ -33,8 +33,10 @@ describe('perfilDeRespuestas (lo que manda el navegador no se cree)', () => {
     expect(p.tipo).toBe('empresa');
     expect(p.necesidades).toEqual(['material']);
     expect(p.proximamente).toEqual(
-      expect.arrayContaining(['compras', 'rentabilidad', 'estimaciones', 'cumplimiento']),
+      expect.arrayContaining(['compras', 'rentabilidad', 'estimaciones']),
     );
+    // F5 ya existe: "algunos en el IMSS" prende cumplimiento de verdad.
+    expect(p.proximamente).not.toContain('cumplimiento');
     expect(p.siguientePasoDescartado).toBe(false);
   });
 
@@ -238,19 +240,21 @@ describe('modulosPorPerfil (plan §4.2)', () => {
 
   test('constructora acumula los paquetes anteriores', () => {
     const r = modulosPorPerfil('constructora', [], 'no');
-    // F4 ya existe: bitácora y programa se prenden de verdad.
-    expect(r.activos.sort()).toEqual([...PAQUETE_POR_DEFECTO, 'bitacora', 'programa'].sort());
-    expect(r.proximamente).toEqual(
-      expect.arrayContaining(['cumplimiento', 'subcontratos', 'compras']),
+    // F4 y F5 ya existen: bitácora, programa, cumplimiento y subcontratos se
+    // prenden de verdad.
+    expect(r.activos.sort()).toEqual(
+      [...PAQUETE_POR_DEFECTO, 'bitacora', 'programa', 'cumplimiento', 'subcontratos'].sort(),
     );
-    expect(r.proximamente).not.toContain('bitacora');
-    expect(r.proximamente).not.toContain('programa');
+    expect(r.proximamente).toEqual(expect.arrayContaining(['compras']));
+    for (const c of ['bitacora', 'programa', 'cumplimiento', 'subcontratos'] as const) {
+      expect(r.proximamente).not.toContain(c);
+    }
   });
 
   test('facturar o tener gente en el IMSS sugiere cumplimiento; "no" no', () => {
-    expect(modulosPorPerfil('independiente', [], 'si').proximamente).toContain('cumplimiento');
-    expect(modulosPorPerfil('independiente', [], 'algunos').proximamente).toContain('cumplimiento');
-    expect(modulosPorPerfil('independiente', [], 'no').proximamente).not.toContain('cumplimiento');
+    expect(modulosPorPerfil('independiente', [], 'si').activos).toContain('cumplimiento');
+    expect(modulosPorPerfil('independiente', [], 'algunos').activos).toContain('cumplimiento');
+    expect(modulosPorPerfil('independiente', [], 'no').activos).not.toContain('cumplimiento');
   });
 
   test('las necesidades suman a la base, con dependencias', () => {
@@ -267,10 +271,10 @@ describe('modulosPorPerfil (plan §4.2)', () => {
   });
 
   test('tratos: subcontratos solo para perfiles con oficina', () => {
-    expect(modulosPorPerfil('contratista', ['tratos'], 'no').proximamente).not.toContain(
+    expect(modulosPorPerfil('contratista', ['tratos'], 'no').activos).not.toContain(
       'subcontratos',
     );
-    expect(modulosPorPerfil('empresa', ['tratos'], 'no').proximamente).toContain('subcontratos');
+    expect(modulosPorPerfil('empresa', ['tratos'], 'no').activos).toContain('subcontratos');
   });
 });
 

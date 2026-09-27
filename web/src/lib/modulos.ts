@@ -286,8 +286,11 @@ export const MODULOS: readonly Modulo[] = [
     descripcion: 'Convierte un trato con un subcontratista en contrato, con sus retenciones.',
     grupo: 'socios',
     dependeDe: ['notas'],
-    rutas: [],
-    disponible: false,
+    // El botón "Convertir en contrato" vive en la nota (ruta de `notas`); lo
+    // oculta la propia página si este módulo está apagado.
+    rutas: ['/admin/subcontratos'],
+    nav: [{ href: '/admin/subcontratos', label: 'Subcontratos', orden: 75 }],
+    disponible: true,
   },
   {
     clave: 'postventa',
@@ -305,8 +308,11 @@ export const MODULOS: readonly Modulo[] = [
       'Te recuerda lo que toca con el IMSS y guarda los comprobantes, para que no te multen. El trámite lo haces tú o tu contador.',
     grupo: 'papeles',
     dependeDe: [],
-    rutas: [],
-    disponible: false,
+    // La tarjeta SIROC del detalle de la obra la muestra la página de la obra
+    // (núcleo) solo si este módulo está prendido y el rol es admin/contador.
+    rutas: ['/admin/cumplimiento'],
+    nav: [{ href: '/admin/cumplimiento', label: 'IMSS y papeles', orden: 80 }],
+    disponible: true,
   },
 ];
 
