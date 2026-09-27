@@ -248,8 +248,9 @@ export const MODULOS: readonly Modulo[] = [
     descripcion: 'Lo que pasa cada día en la obra, con fotos y fecha, para tener evidencia.',
     grupo: 'obra',
     dependeDe: [],
-    rutas: [],
-    disponible: false,
+    // Vive dentro de cada obra (pestaña "Bitácora"): no pone enlace en la barra.
+    rutas: ['/admin/obras/*/bitacora'],
+    disponible: true,
   },
   {
     clave: 'programa',
@@ -257,8 +258,9 @@ export const MODULOS: readonly Modulo[] = [
     descripcion: 'Fechas de inicio y fin de cada partida, y qué va atrasado.',
     grupo: 'obra',
     dependeDe: [],
-    rutas: [],
-    disponible: false,
+    // Vive dentro de cada obra (pestaña "Programa"): no pone enlace en la barra.
+    rutas: ['/admin/obras/*/programa'],
+    disponible: true,
   },
   {
     clave: 'seguridad',
