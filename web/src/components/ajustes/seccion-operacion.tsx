@@ -37,6 +37,16 @@ export function SeccionOperacion({
       titulo: 'Puestos y salarios',
       descripcion: 'Salario por día de cada puesto.',
     },
+    {
+      href: '/admin/compras/materiales',
+      titulo: 'Catálogo de materiales',
+      descripcion: 'Lo que compras: unidad, último precio y proveedor.',
+    },
+    {
+      href: '/admin/compras/proveedores',
+      titulo: 'Proveedores',
+      descripcion: 'A quién le compras y sus días de crédito.',
+    },
   ].filter((c) => rutaVisible(c.href, modulos));
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -112,7 +122,7 @@ export function SeccionOperacion({
         <div className="mt-6 border-t border-neutral-200 pt-4">
           <p className="text-sm font-medium text-neutral-900">Catálogos</p>
           <p className="mb-3 text-sm text-neutral-600">
-            Los datos base que alimentan cotizaciones y nómina.
+            Los datos base que alimentan cotizaciones, nómina y compras.
           </p>
           <div className="grid gap-2 sm:grid-cols-2">
             {catalogos.map((c) => (

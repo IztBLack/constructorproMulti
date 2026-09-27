@@ -196,7 +196,7 @@ export default async function OrdenPage({ params }: { params: Promise<{ id: stri
           puedeRecibir={recibe && (orden.estado === 'EMITIDA' || orden.estado === 'PARCIAL')}
           puedeSubirRemision={recibe}
           puedeBorrar={esAdmin}
-          hoy={msAFechaInput(Date.now())}
+          hoy={msAFechaInput(hoyMxMs())}
         />
       )}
 
@@ -234,7 +234,7 @@ export default async function OrdenPage({ params }: { params: Promise<{ id: stri
               metodo: p.metodo_pago,
               referencia: p.referencia,
             }))}
-            hoy={msAFechaInput(Date.now())}
+            hoy={msAFechaInput(hoyMxMs())}
           />
         </>
       )}
