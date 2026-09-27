@@ -192,6 +192,21 @@ describe('proyección a término', () => {
     expect(r.costoProyectado).toBe(85_000);
   });
 
+  test('compras por pagar (F2): piso de la proyección, nunca costo real (sin doble conteo)', () => {
+    // Ya se pagó 10,000 de material (en caja, MATERIAL) y se deben 30,000 de
+    // órdenes emitidas. El costo real solo cuenta lo pagado.
+    const r = calcularRentabilidad(
+      datos({ avance: 90, movimientos: [salida(10_000, 'MATERIAL'), entrada(50_000)], comprometidoCompras: 30_000 }),
+    );
+    expect(r.costoReal).toBe(10_000);
+    expect(r.costoPorCategoria.MATERIAL).toBe(10_000);
+    expect(r.comprometidoCompras).toBe(30_000);
+    // 10,000 / 0.9 ≈ 11,111, pero ya se deben 30,000 → 40,000.
+    expect(r.costoProyectado).toBe(40_000);
+    // Sin el dato (empresa sin compras), 0.
+    expect(calcularRentabilidad(datos()).comprometidoCompras).toBe(0);
+  });
+
   test('el avance nunca pasa de 100', () => {
     const r = calcularRentabilidad(datos({ avance: 250, movimientos: [salida(10_000)] }));
     expect(r.avanceUsado).toBe(100);

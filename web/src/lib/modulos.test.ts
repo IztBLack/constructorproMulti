@@ -17,7 +17,9 @@ import {
   resolverDependencias,
   rutaPerteneceAModulo,
   rutaVisible,
+  perfilAJson,
   siguientePaso,
+  sugerenciaModulo,
   type ClaveModulo,
 } from './modulos';
 import { COMANDOS_FIJOS, comandosDeObra, soloModulosActivos } from '@/components/paleta/comandos';
@@ -33,9 +35,10 @@ describe('perfilDeRespuestas (lo que manda el navegador no se cree)', () => {
     expect(p.tipo).toBe('empresa');
     expect(p.necesidades).toEqual(['material']);
     expect(p.proximamente).toEqual(
-      expect.arrayContaining(['compras', 'estimaciones', 'cumplimiento']),
+      expect.arrayContaining(['estimaciones', 'cumplimiento']),
     );
-    // La utilidad ya existe (F1): se prende, no queda en "próximamente".
+    // La utilidad (F1) y Compras (F2) ya existen: se prenden, no quedan en "próximamente".
+    expect(p.proximamente).not.toContain('compras');
     expect(p.proximamente).not.toContain('rentabilidad');
     expect(p.siguientePasoDescartado).toBe(false);
   });
@@ -61,7 +64,8 @@ describe('necesidadProximamente', () => {
     expect(necesidadProximamente('ganancia', null)).toBe(false); // la utilidad salió en F1
     expect(necesidadProximamente('extras', null)).toBe(false);
     expect(necesidadProximamente('facturar', null)).toBe(false); // F1b ya salió
-    expect(necesidadProximamente('material', 'empresa')).toBe(true);
+    expect(necesidadProximamente('material', 'empresa')).toBe(false); // F2 ya salió
+    expect(necesidadProximamente('estimaciones', 'empresa')).toBe(true);
     expect(necesidadProximamente('tratos', 'constructora')).toBe(false);
   });
 });
@@ -268,16 +272,19 @@ describe('modulosPorPerfil (plan §4.2)', () => {
   test('empresa: lo que aún no existe queda en "próximamente", no se prende', () => {
     const r = modulosPorPerfil('empresa', [], 'no');
     expect(r.activos).toContain('rentabilidad');
-    expect(r.proximamente).toEqual(['compras', 'estimaciones']);
+    expect(r.activos).toContain('compras'); // F2 ya salió
+    expect(r.proximamente).toEqual(['estimaciones']);
     for (const c of r.activos) expect(MODULOS.find((m) => m.clave === c)?.disponible).toBe(true);
   });
 
   test('constructora acumula los paquetes anteriores', () => {
     const r = modulosPorPerfil('constructora', [], 'no');
-    // F1 y F4 ya existen: utilidad, bitácora y programa se prenden de verdad.
-    expect(r.activos.sort()).toEqual([...PAQUETE_POR_DEFECTO, 'rentabilidad', 'bitacora', 'programa'].sort());
+    // F1, F2 y F4 ya existen: utilidad, compras, bitácora y programa se prenden de verdad.
+    expect(r.activos.sort()).toEqual(
+      [...PAQUETE_POR_DEFECTO, 'rentabilidad', 'compras', 'bitacora', 'programa'].sort(),
+    );
     expect(r.proximamente).toEqual(
-      expect.arrayContaining(['cumplimiento', 'subcontratos', 'compras']),
+      expect.arrayContaining(['cumplimiento', 'subcontratos']),
     );
     expect(r.proximamente).not.toContain('bitacora');
     expect(r.proximamente).not.toContain('programa');
@@ -395,5 +402,44 @@ describe('paridad con supabase/migrations/0035_modulos_empresa.sql', () => {
     const bloque = sql.match(/add column if not exists modulos text\[\][\s\S]*?\]::text\[\]/)?.[0];
     const claves = [...(bloque ?? '').matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
     expect(claves).toEqual([...PAQUETE_POR_DEFECTO]);
+  });
+});
+
+describe('compras (F2)', () => {
+  test('sus rutas y su enlace en la barra', () => {
+    expect(rutaPerteneceAModulo('/admin/compras/ordenes/123')).toBe('compras');
+    expect(rutaPerteneceAModulo('/admin/obras/abc/material')).toBe('compras');
+    expect(navDeModulos([...PAQUETE_POR_DEFECTO]).map((n) => n.href)).not.toContain('/admin/compras');
+    expect(navDeModulos([...PAQUETE_POR_DEFECTO, 'compras']).map((n) => n.href)).toContain('/admin/compras');
+    expect(rutaVisible('/admin/obras/abc/material', PAQUETE_POR_DEFECTO)).toBe(false);
+  });
+});
+
+describe('sugerenciaModulo (plan §4.3)', () => {
+  const perfil = leerPerfil({ tipo: 'contratista' });
+
+  test('sugiere Compras con más de 3 salidas de material y el módulo apagado', () => {
+    expect(sugerenciaModulo({ activos: PAQUETE_POR_DEFECTO, perfil, salidasMaterial: 4 })?.clave).toBe('compras');
+    expect(sugerenciaModulo({ activos: PAQUETE_POR_DEFECTO, perfil, salidasMaterial: 3 })).toBeNull();
+    // Empresas de antes del cuestionario (sin perfil) también.
+    expect(sugerenciaModulo({ activos: PAQUETE_POR_DEFECTO, perfil: null, salidasMaterial: 10 })?.clave).toBe(
+      'compras',
+    );
+  });
+
+  test('no con el módulo prendido ni ya descartada', () => {
+    expect(
+      sugerenciaModulo({ activos: [...PAQUETE_POR_DEFECTO, 'compras'], perfil, salidasMaterial: 50 }),
+    ).toBeNull();
+    const descartada = leerPerfil({ tipo: 'contratista', sugerencias_descartadas: ['compras', 'nada'] });
+    expect(descartada?.sugerenciasDescartadas).toEqual(['compras']);
+    expect(sugerenciaModulo({ activos: PAQUETE_POR_DEFECTO, perfil: descartada, salidasMaterial: 50 })).toBeNull();
+  });
+
+  test('lo descartado viaja en el jsonb y vuelve igual', () => {
+    const p = { ...leerPerfil({})!, sugerenciasDescartadas: ['compras' as ClaveModulo] };
+    expect(perfilAJson(p).sugerencias_descartadas).toEqual(['compras']);
+    expect(leerPerfil(perfilAJson(p))?.sugerenciasDescartadas).toEqual(['compras']);
+    expect(perfilAJson(leerPerfil({})!)).not.toHaveProperty('sugerencias_descartadas');
   });
 });

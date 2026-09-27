@@ -102,6 +102,12 @@ export default async function UtilidadObraPage({ params }: { params: Promise<{ i
                 notas abiertas.
               </p>
             )}
+            {r.comprometidoCompras > 0 && (
+              <p className="text-neutral-600">
+                Incluye {formatCurrency(r.comprometidoCompras)} de material comprado que todavía se les debe
+                a proveedores (órdenes de compra sin pagar).
+              </p>
+            )}
           </div>
         )}
       </Card>

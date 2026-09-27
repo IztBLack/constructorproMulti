@@ -178,6 +178,26 @@ describe('paquete para el contador', () => {
     expect(p.resumen.ivaFacturado).toBe(8000 + 1600);
   });
 
+  test('gastos de compras con factura del proveedor: IVA real, no estimado (F2)', () => {
+    const conCompras = armarPaquete(entradas, [
+      ...gastos,
+      {
+        obra: 'Casa', fecha: 3, categoria: 'MATERIAL', concepto: 'Pago OC-7 · Ferre', nombre: 'Ferre', monto: 500,
+        metodo: 'TRANSFERENCIA', referencia: '',
+        factura: { uuid: 'AAAA', rfc: 'FER010101AA1', proveedor: 'Ferre', ordenFolio: 7, iva: 68.97 },
+      },
+      {
+        obra: 'Casa', fecha: 4, categoria: 'MATERIAL', concepto: 'Pago OC-8 · Ferre', nombre: 'Ferre', monto: 116,
+        metodo: 'EFECTIVO', referencia: '',
+        // Orden sin factura subida: se estima como cualquier gasto.
+        factura: { uuid: null, rfc: '', proveedor: 'Ferre', ordenFolio: 8, iva: null },
+      },
+    ]);
+    expect(conCompras.resumen.gastosConFactura).toBe(1);
+    expect(conCompras.resumen.ivaGastosConFactura).toBe(68.97);
+    expect(conCompras.resumen.ivaGastos).toBe(160 + 68.97 + 16);
+  });
+
   test('el Excel trae las 6 hojas y el ZIP el Excel y los XML', async () => {
     const excel = await construirExcelPaquete({ paquete: p, empresa: 'Prueba', periodo: 'sept 2026' });
     const libro = new ExcelJS.Workbook();

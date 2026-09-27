@@ -98,6 +98,13 @@ export interface DatosRentabilidad {
   avance: number | null;
   /** Margen objetivo en %, ya resuelto (obra → empresa → 15). */
   margenObjetivo: number;
+  /**
+   * Lo que se les debe a proveedores por órdenes de compra emitidas de esta obra
+   * (módulo `compras`, 0038): total − pagado. NO es costo real todavía (no ha
+   * salido de caja); al pagarse, sale de aquí y entra a caja como MATERIAL. Por
+   * eso nunca se cuenta dos veces. Opcional: sin compras, 0.
+   */
+  comprometidoCompras?: number;
 }
 
 export type FuenteAvance = 'obra' | 'cobrado' | 'ninguna';
@@ -125,6 +132,8 @@ export interface ResultadoRentabilidad {
 
   /** Saldo pendiente de las notas abiertas: dinero comprometido con socios. */
   comprometidoNotas: number;
+  /** Saldo por pagar a proveedores de órdenes de compra emitidas. */
+  comprometidoCompras: number;
 
   avanceUsado: number | null;
   fuenteAvance: FuenteAvance;
@@ -239,6 +248,7 @@ export function calcularRentabilidad(d: DatosRentabilidad): ResultadoRentabilida
   }
   const sociosSinCaja = redondear(Math.max(0, pagadoNotas - salidasPorCategoria.SUBCONTRATO));
   const comprometidoNotas = redondear(comprometido);
+  const comprometidoCompras = redondear(Math.max(0, finito(d.comprometidoCompras)));
 
   const costoPorCategoria = { ...salidasPorCategoria };
   costoPorCategoria.MANO_OBRA = redondear(costoPorCategoria.MANO_OBRA + rayaSinCaja);
@@ -265,7 +275,7 @@ export function calcularRentabilidad(d: DatosRentabilidad): ResultadoRentabilida
   let margenProyectado: number | null = null;
   if (avanceUsado !== null && avanceUsado > 0 && contratado > 0) {
     costoProyectado = redondear(
-      Math.max(costoReal / (avanceUsado / 100), costoReal + comprometidoNotas),
+      Math.max(costoReal / (avanceUsado / 100), costoReal + comprometidoNotas + comprometidoCompras),
     );
     utilidadProyectada = redondear(contratado - costoProyectado);
     margenProyectado = redondear((utilidadProyectada / contratado) * 100);
@@ -287,6 +297,7 @@ export function calcularRentabilidad(d: DatosRentabilidad): ResultadoRentabilida
     utilidad,
     margen,
     comprometidoNotas,
+    comprometidoCompras,
     avanceUsado,
     fuenteAvance,
     costoProyectado,

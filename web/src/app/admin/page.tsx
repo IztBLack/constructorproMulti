@@ -29,8 +29,10 @@ import {
   resumenFlujo,
 } from '@/lib/data/dashboard';
 import { getModulosEmpresa } from '@/lib/data/modulos';
-import { rutaVisible, siguientePaso } from '@/lib/modulos';
+import { rutaVisible, siguientePaso, sugerenciaModulo } from '@/lib/modulos';
 import { TarjetaSiguientePaso } from '@/components/modulos/tarjeta-siguiente-paso';
+import { TarjetaSugerenciaModulo } from '@/components/modulos/tarjeta-sugerencia-modulo';
+import { contarSalidasMaterial } from '@/lib/data/compras';
 
 export const dynamic = 'force-dynamic';
 
@@ -185,6 +187,13 @@ export default async function AdminPage({
       cotizaciones: cotizacionesCount.count ?? 0,
     }));
 
+  // Sugerencia de módulo por uso (plan §4.3): una a la vez, y nunca junto a la
+  // tarjeta "Siguiente paso" (dos llamados a la acción compiten entre sí).
+  const sugerencia =
+    rol === 'admin' && !mostrarSiguientePaso && !activos.includes('compras')
+      ? sugerenciaModulo({ activos, perfil, salidasMaterial: await contarSalidasMaterial() })
+      : null;
+
   const primerosPasos = [
     { paso: '1', titulo: 'Crea tus puestos', desc: 'Define los roles de trabajo de tu equipo.', href: '/admin/puestos' },
     { paso: '2', titulo: 'Da de alta tu equipo', desc: 'Agrega a los colaboradores.', href: '/admin/equipo' },
@@ -217,6 +226,7 @@ export default async function AdminPage({
       />
 
       {mostrarSiguientePaso && paso && <TarjetaSiguientePaso paso={paso} />}
+      {sugerencia && <TarjetaSugerenciaModulo sugerencia={sugerencia} />}
 
       {/* Primeros pasos: solo si la empresa está vacía */}
       {mostrarPrimerosPasos && (

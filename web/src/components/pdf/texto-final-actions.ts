@@ -38,6 +38,9 @@ export async function guardarTextoFinalAction(
     case 'estado_cuenta':
       revalidatePath(`/admin/obras/${id}`);
       break;
+    case 'orden_compra':
+      revalidatePath('/admin/compras', 'layout');
+      break;
     case 'extra':
     case 'nota':
       // La nota no conoce el id de su obra desde aquí, y la ruta lo lleva
