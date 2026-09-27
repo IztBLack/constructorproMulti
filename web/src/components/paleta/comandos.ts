@@ -15,6 +15,7 @@
  */
 
 import { rutaVisible, type ClaveModulo } from '@/lib/modulos';
+import { rutaBloqueadaPara } from '@/lib/auth/roles';
 
 export interface Comando {
   /** Texto que se lee. */
@@ -52,7 +53,9 @@ export const COMANDOS_FIJOS: Comando[] = [
   { titulo: 'Garantías', detalle: 'Reportes de tus clientes después de entregar', href: '/admin/postventa', grupo: 'Ir a', alias: 'postventa reclamos quejas reportes garantia' },
   { titulo: 'Catálogo de conceptos', href: '/admin/catalogo', grupo: 'Ir a', alias: 'precios partidas conceptos' },
   { titulo: 'Puestos', href: '/admin/puestos', grupo: 'Ir a', alias: 'oficios salarios' },
-  { titulo: 'Usuarios y roles', href: '/admin/usuarios', grupo: 'Ir a', alias: 'permisos accesos socios' },
+  { titulo: 'Usuarios y roles', href: '/admin/usuarios', grupo: 'Ir a', alias: 'permisos accesos socios residente obras asignadas' },
+  { titulo: 'Registro de actividad', detalle: 'Quién cambió qué', href: '/admin/actividad', grupo: 'Ir a', alias: 'bitacora auditoria cambios historial quien movimientos' },
+  { titulo: 'Visto bueno', detalle: 'Reglas y solicitudes pendientes', href: '/admin/ajustes#aprobaciones', grupo: 'Ir a', alias: 'aprobaciones autorizar aprobar monto compras extras' },
   { titulo: 'Ajustes', href: '/admin/ajustes', grupo: 'Ir a', alias: 'configuracion preferencias empresa' },
   { titulo: 'Vincular un dispositivo', href: '/admin/vincular', grupo: 'Ir a', alias: 'codigo celular tableta invitar' },
 
@@ -148,6 +151,21 @@ export function soloModulosActivos(
   activos: readonly ClaveModulo[],
 ): Comando[] {
   return comandos.filter((c) => rutaVisible(c.href, activos));
+}
+
+/** Pantallas que solo abre el administrador. */
+const SOLO_ADMIN = ['/admin/usuarios', '/admin/actividad', '/admin/ajustes#aprobaciones'];
+
+/**
+ * Quita lo que el rol no puede abrir (F6). Presentación: la RLS y las guardias
+ * de cada página siguen siendo la barrera.
+ */
+export function soloParaRol(comandos: Comando[], rol: string | undefined): Comando[] {
+  return comandos.filter((c) => {
+    if (rol !== 'admin' && SOLO_ADMIN.includes(c.href)) return false;
+    const ruta = c.href.split(/[?#]/)[0];
+    return !rutaBloqueadaPara(rol, ruta);
+  });
 }
 
 /** ¿Este comando responde a lo que se escribió? Todas las palabras, en cualquier orden. */

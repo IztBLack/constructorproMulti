@@ -15,7 +15,19 @@ export type TipoPago = 'DIA' | 'DESTAJO';
 /// El salario diario se deriva de aquí (ver `lib/data/salario.ts`).
 export type PeriodoPago = 'SEMANAL' | 'QUINCENAL' | 'MENSUAL';
 export type TipoMovimiento = 'ENTRADA' | 'SALIDA';
-export type Rol = 'admin' | 'supervisor' | 'colaborador' | 'cliente' | string;
+/// Roles de `usuarios_empresa.rol` (0001, 0022 contador, 0042 residente/compras/almacén).
+/// Queda abierto a `string`: un rol que esta versión no conozca cae al mínimo
+/// en cada lista blanca (`lib/auth/`), nunca al máximo.
+export type Rol =
+  | 'admin'
+  | 'supervisor'
+  | 'colaborador'
+  | 'cliente'
+  | 'contador'
+  | 'residente'
+  | 'compras'
+  | 'almacen'
+  | (string & {});
 
 export interface Obra {
   id: string;

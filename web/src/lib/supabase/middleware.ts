@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { rutaBloqueadaPara } from '@/lib/auth/roles';
 
 /// Refresca la sesión en cada request y protege /admin y /cliente.
 /// Sin sesión → redirige a /login.
@@ -49,10 +50,13 @@ export async function updateSession(request: NextRequest) {
   //             staff, TODAS las obras/datos de la empresa (no solo los de un
   //             cliente), así que se le saca del portal.
   if (user && (path.startsWith('/admin') || path.startsWith('/cliente'))) {
+    // Ordenado por antigüedad: `roles[0]` es la MISMA membresía que usa el
+    // panel (`getEmpresaUsuario`).
     const { data: membresias, error: empresaError } = await supabase
       .from('usuarios_empresa')
       .select('rol')
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true });
 
     if (!empresaError) {
       const roles = (membresias ?? []).map((m) => m.rol as string);
@@ -67,6 +71,15 @@ export async function updateSession(request: NextRequest) {
         if (!esStaff) {
           const url = request.nextUrl.clone();
           url.pathname = '/cliente';
+          return NextResponse.redirect(url);
+        }
+        // Roles de F6 (residente, compras, almacén): pantallas de toda la
+        // empresa que no les tocan → al inicio. Presentación: la RLS ya les
+        // daría listas vacías (lib/auth/roles.ts).
+        if (rutaBloqueadaPara(roles[0], path)) {
+          const url = request.nextUrl.clone();
+          url.pathname = '/admin';
+          url.search = '';
           return NextResponse.redirect(url);
         }
       } else if (esStaff) {

@@ -74,6 +74,11 @@ export function seccionesDe(rol: Rol): SeccionAjustes[] {
   // El contador no está en la escalera: no es "más" que un supervisor, es
   // otra cosa (la tesorera). Ve lo suyo y los datos para facturar.
   if (rol === 'contador') return [...APORTA.cliente, 'fiscal'];
+  // F6: el residente pisa la obra como el supervisor (recordatorios y datos
+  // sin conexión); compras y almacén son oficina sin configuración de empresa.
+  // Ninguno llega a operación, módulos, empresa, fiscal ni usuarios.
+  if (rol === 'residente') return [...APORTA.cliente, ...APORTA.colaborador];
+  if (rol === 'compras' || rol === 'almacen') return [...APORTA.cliente];
   const hasta = ESCALERA.indexOf(rol);
   if (hasta === -1) return [...APORTA.cliente];
 

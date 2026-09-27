@@ -22,6 +22,8 @@
  * `nav`, y listo. Nada más en la web tiene que enterarse.
  */
 
+import { rutaNavPermitida } from '@/lib/auth/roles';
+
 export const CLAVES_MODULO = [
   // Existentes
   'obras',
@@ -299,7 +301,7 @@ export const MODULOS: readonly Modulo[] = [
     dependeDe: [],
     rutas: ['/admin/herramienta'],
     // El colaborador no ve herramienta (0043): el enlace es para la oficina.
-    nav: [{ href: '/admin/herramienta', label: 'Herramienta', orden: 65, roles: ['admin', 'supervisor', 'contador'] }],
+    nav: [{ href: '/admin/herramienta', label: 'Herramienta', orden: 65, roles: ['admin', 'supervisor', 'contador', 'residente'] }],
     disponible: true,
   },
   {
@@ -323,7 +325,7 @@ export const MODULOS: readonly Modulo[] = [
     // En el portal, "Reportar un problema" sale solo con el módulo prendido
     // (RPC `postventa_disponible`, 0043); lo ya reportado se sigue viendo.
     rutas: ['/admin/postventa'],
-    nav: [{ href: '/admin/postventa', label: 'Garantías', orden: 42, roles: ['admin', 'supervisor', 'contador'] }],
+    nav: [{ href: '/admin/postventa', label: 'Garantías', orden: 42, roles: ['admin', 'supervisor', 'contador', 'residente'] }],
     disponible: true,
   },
   {
@@ -497,6 +499,8 @@ export function navDeModulos(
     if (!m.disponible || !activos.includes(m.clave)) continue;
     for (const n of m.nav ?? []) {
       if (n.roles && !(rol && n.roles.includes(rol))) continue;
+      // Roles de F6: su barra solo ofrece lo que pueden usar (lib/auth/roles.ts).
+      if (!rutaNavPermitida(rol, n.href)) continue;
       enlaces.push(n);
     }
   }

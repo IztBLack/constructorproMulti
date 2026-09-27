@@ -100,7 +100,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
       {/* Vive en el layout para responder desde CUALQUIER pantalla de /admin.
           No pinta nada hasta que se abre con Ctrl/⌘+K. */}
-      <PaletaComandos modulos={activos} />
+      <PaletaComandos modulos={activos} rol={rol} />
     </div>
   );
 }
