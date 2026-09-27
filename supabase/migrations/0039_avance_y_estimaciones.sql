@@ -90,6 +90,17 @@
 --                 (`responder_estimacion`, patrón de `responder_orden_cambio`).
 --                 El avance físico de su obra lo ve por `avance_obra_portal`,
 --                 sin las notas ni quién capturó.
+--
+-- ENDURECIMIENTO (revisión de seguridad, docs/PROGRESO_ALCANCE.md, SEG-*)
+-- ─────────────────────────────────────────────────────────────────────
+-- · SEG-A1: una estimación que salió de BORRADOR y una captura de avance ya
+--   estimada no se borran FÍSICAMENTE (tampoco en la cascada de la obra).
+-- · SEG-B2: la foto que ve el cliente ya no copia la NOTA de las capturas
+--   (son internas, F3-15): los generadores van con fecha y cantidad.
+-- · SEG-B6: al editar un renglón de estimación se revalida que la partida sea
+--   de la obra (lo mismo que al crearlo).
+-- · SEG-B8: una captura de avance que ya respalda una estimación enviada no se
+--   edita ni se borra (la corrección es otra captura, negativa si hace falta).
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 0. Utilidades
@@ -104,6 +115,23 @@ as $$
     from auth.users u where u.id = auth.uid()
 $$;
 revoke all on function public._estimaciones_nombre_usuario() from public, anon, authenticated;
+
+-- La evidencia no se borra físicamente (SEG-A1). Mismo cuerpo que en 0036 (ver
+-- ahí el porqué): solo deja pasar la cascada de eliminar la empresa completa.
+create or replace function public._evidencia_no_se_borra()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (select 1 from public.empresas e where e.id = old.empresa_id) then
+    return old;
+  end if;
+  raise exception 'EVIDENCIA_INMUTABLE: un registro de % que ya es evidencia no se borra (usa el borrado lógico o cancélalo).',
+    tg_table_name using errcode = 'P0001';
+end $$;
+revoke all on function public._evidencia_no_se_borra() from public, anon, authenticated;
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 1. Contrato de la obra: anticipo, amortización, fondo de garantía, IVA
@@ -199,6 +227,41 @@ create index if not exists idx_avance_partida_extra on public.avance_partida (or
 -- Quién capturó lo sella la base; la partida y la obra no se mueven; y el
 -- acumulado de la partida nunca queda abajo de cero. SECURITY DEFINER para
 -- sumar TODAS las capturas de la partida sin depender de la RLS de quien escribe.
+--
+-- SEG-B8: una captura que YA RESPALDA una estimación que cuenta (ENVIADA,
+-- AUTORIZADA o COBRADA) queda fija: no cambia su fecha, cantidad, nota ni su
+-- borrado lógico. "Respalda" = hay una estimación que cuenta, de esta obra, con
+-- un renglón vivo de ESTA partida y cuyo periodo termina en o después de la
+-- fecha de la captura: lo estimado sale de "lo ejecutado hasta el fin del
+-- periodo" (F3-5/F3-6), así que también cuenta lo capturado antes del periodo.
+-- Una RECHAZADA no cuenta (libera sus cantidades, F3-6): lo capturado se puede
+-- corregir para rehacerla. La corrección de algo ya estimado es OTRA captura
+-- (negativa si hace falta), que entra en la siguiente estimación.
+create or replace function public._avance_estimado(
+  p_obra uuid, p_presupuesto uuid, p_extra uuid, p_fecha bigint
+)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+begin
+  return exists (
+    select 1
+      from public.estimaciones e
+      join public.estimacion_renglon er on er.estimacion_id = e.id
+     where e.obra_id = p_obra
+       and e.estado in ('ENVIADA', 'AUTORIZADA', 'COBRADA')
+       and e.deleted_at is null
+       and e.periodo_fin >= p_fecha
+       and er.deleted_at is null
+       and (   (p_presupuesto is not null and er.presupuesto_id = p_presupuesto)
+            or (p_extra is not null and er.orden_cambio_renglon_id = p_extra))
+  );
+end $$;
+revoke all on function public._avance_estimado(uuid, uuid, uuid, bigint) from public, anon, authenticated;
+
 create or replace function public._avance_partida_guarda()
 returns trigger
 language plpgsql
@@ -219,6 +282,13 @@ begin
     end if;
     new.capturo_id     := old.capturo_id;
     new.capturo_nombre := old.capturo_nombre;
+    -- SEG-B8 (ver arriba).
+    if (new.fecha, new.cantidad, new.nota, new.deleted_at)
+         is distinct from (old.fecha, old.cantidad, old.nota, old.deleted_at)
+       and public._avance_estimado(old.obra_id, old.presupuesto_id, old.orden_cambio_renglon_id, old.fecha) then
+      raise exception 'AVANCE_ESTIMADO: esta captura ya respalda una estimación enviada; no se cambia. Corrige con otra captura (negativa si hace falta).'
+        using errcode = 'P0001';
+    end if;
   end if;
 
   select coalesce(sum(a.cantidad), 0) into v_acum
@@ -242,6 +312,29 @@ drop trigger if exists trg_avance_partida_guarda on public.avance_partida;
 create trigger trg_avance_partida_guarda
   before insert or update on public.avance_partida
   for each row execute function public._avance_partida_guarda();
+
+-- Y tampoco se borra FÍSICAMENTE (SEG-A1): ni directo ni en la cascada de
+-- borrar la obra o la partida del presupuesto.
+create or replace function public._avance_partida_no_borrar()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if public._avance_estimado(old.obra_id, old.presupuesto_id, old.orden_cambio_renglon_id, old.fecha)
+     and exists (select 1 from public.empresas e where e.id = old.empresa_id) then
+    raise exception 'EVIDENCIA_INMUTABLE: una captura de avance que ya respalda una estimación no se borra.'
+      using errcode = 'P0001';
+  end if;
+  return old;
+end $$;
+revoke all on function public._avance_partida_no_borrar() from public, anon, authenticated;
+
+drop trigger if exists trg_avance_partida_evidencia on public.avance_partida;
+create trigger trg_avance_partida_evidencia
+  before delete on public.avance_partida
+  for each row execute function public._avance_partida_no_borrar();
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 4. La estimación
@@ -473,6 +566,14 @@ drop trigger if exists trg_estimacion_guarda on public.estimaciones;
 create trigger trg_estimacion_guarda
   before update on public.estimaciones
   for each row execute function public._estimacion_guarda();
+
+-- Lo que se le envió al cliente tampoco se borra FÍSICAMENTE (SEG-A1): ni
+-- directo ni en la cascada de borrar la obra. Un borrador sí.
+drop trigger if exists trg_estimacion_evidencia on public.estimaciones;
+create trigger trg_estimacion_evidencia
+  before delete on public.estimaciones
+  for each row when (old.estado <> 'BORRADOR')
+  execute function public._evidencia_no_se_borra();
 
 -- Los renglones solo se tocan mientras la estimación es BORRADOR.
 create or replace function public._estimacion_renglon_guarda()
@@ -732,6 +833,11 @@ create policy estimacion_renglon_insert on public.estimacion_renglon
     )
   );
 
+-- SEG-B6: al editar se revalida lo mismo que al crear (la partida o el renglón
+-- del extra, de la MISMA obra). Si no, un UPDATE podía colgar el renglón de una
+-- partida de otra obra. Un renglón que se está BORRANDO (lógico) no se revalida:
+-- así se puede quitar el que se quedó sin partida porque alguien la borró de
+-- verdad (FK `on delete set null`).
 drop policy if exists estimacion_renglon_update on public.estimacion_renglon;
 create policy estimacion_renglon_update on public.estimacion_renglon
   for update
@@ -743,6 +849,25 @@ create policy estimacion_renglon_update on public.estimacion_renglon
        where e.id = estimacion_id
          and e.empresa_id = estimacion_renglon.empresa_id
          and e.estado = 'BORRADOR'
+         and (
+           estimacion_renglon.deleted_at is not null
+           or
+           (estimacion_renglon.presupuesto_id is not null and exists (
+             select 1 from public.obra_presupuesto p
+              where p.id = estimacion_renglon.presupuesto_id
+                and p.obra_id = e.obra_id
+                and p.empresa_id = e.empresa_id
+           ))
+           or
+           (estimacion_renglon.orden_cambio_renglon_id is not null and exists (
+             select 1 from public.orden_cambio_renglon r
+               join public.orden_cambio oc on oc.id = r.orden_cambio_id
+              where r.id = estimacion_renglon.orden_cambio_renglon_id
+                and oc.obra_id = e.obra_id
+                and oc.empresa_id = e.empresa_id
+                and oc.estado = 'APROBADA'
+           ))
+         )
     )
   );
 
@@ -831,10 +956,12 @@ as $$
         'acumulado', r.anterior + r.cantidad,
         'precio_unitario', r.precio_unitario,
         'importe', r.importe,
-        -- Números generadores: lo capturado en campo dentro del periodo.
+        -- Números generadores: lo capturado en campo dentro del periodo. SIN la
+        -- nota de la captura (SEG-B2): la foto la lee el cliente y las notas
+        -- son internas (F3-15), igual que en `avance_obra_portal`.
         'generadores', coalesce((
           select jsonb_agg(jsonb_build_object(
-            'fecha', a.fecha, 'cantidad', a.cantidad, 'nota', a.nota
+            'fecha', a.fecha, 'cantidad', a.cantidad
           ) order by a.fecha, a.created_at)
             from public.avance_partida a
            where a.deleted_at is null

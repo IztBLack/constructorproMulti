@@ -66,6 +66,13 @@
 -- fiscal, RFC del emisor, total e IVA. Un mismo folio no puede ligarse a dos
 -- órdenes (índice único). Alimenta la hoja "Gastos por obra" del paquete del
 -- contador (F1b): esos gastos dejan de ser "¿tiene factura? — no sé".
+--
+-- ENDURECIMIENTO (revisión de seguridad, docs/PROGRESO_ALCANCE.md, SEG-*)
+-- ─────────────────────────────────────────────────────────────────────
+-- · SEG-A1: una orden ya EMITIDA y cualquier recepción no se borran
+--   FÍSICAMENTE, ni directo ni en la cascada de borrar la obra.
+-- · SEG-M1: la foto de remisión y los archivos de factura que una fila tiene
+--   ligados no se borran del bucket; la remisión ligada solo la cambia el admin.
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 0. Utilidades
@@ -88,6 +95,23 @@ as $$
     else null
   end
 $$;
+
+-- La evidencia no se borra físicamente (SEG-A1). Mismo cuerpo que en 0036 (ver
+-- ahí el porqué): solo deja pasar la cascada de eliminar la empresa completa.
+create or replace function public._evidencia_no_se_borra()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (select 1 from public.empresas e where e.id = old.empresa_id) then
+    return old;
+  end if;
+  raise exception 'EVIDENCIA_INMUTABLE: un registro de % que ya es evidencia no se borra (usa el borrado lógico o cancélalo).',
+    tg_table_name using errcode = 'P0001';
+end $$;
+revoke all on function public._evidencia_no_se_borra() from public, anon, authenticated;
 
 -- Nombre de quien está en sesión, para sellar "quién pidió / quién recibió".
 -- Mismo criterio que 0041 (que corre después en una base nueva, por eso no se
@@ -812,6 +836,14 @@ create trigger trg_orden_compra_guarda
   before update on public.ordenes_compra
   for each row execute function public._orden_compra_guarda();
 
+-- 9d'. Lo que se le mandó al proveedor no se borra FÍSICAMENTE (SEG-A1): una
+-- orden que se emitió alguna vez (aunque luego se cancelara). Un borrador sí.
+drop trigger if exists trg_orden_compra_evidencia on public.ordenes_compra;
+create trigger trg_orden_compra_evidencia
+  before delete on public.ordenes_compra
+  for each row when (old.emitida_at is not null)
+  execute function public._evidencia_no_se_borra();
+
 -- 9e. Renglones de la orden: solo en BORRADOR.
 create or replace function public._orden_compra_renglon_guarda()
 returns trigger
@@ -921,6 +953,16 @@ begin
      (old.id, old.empresa_id, old.orden_compra_id, old.obra_id, old.fecha, old.recibido_por, old.recibido_por_nombre) then
     raise exception 'De una recepción solo se cambian la foto de la remisión y las notas. Si se capturó mal, bórrala y regístrala otra vez.';
   end if;
+  -- La remisión ya ligada es evidencia de lo que llegó (SEG-M1): ponerla la
+  -- primera vez lo hace quien recibe; CAMBIARLA o quitarla, solo el admin (o
+  -- la llave de servicio). Sin esto, subir otra foto y religarla dejaba el
+  -- archivo viejo sin dueño y borrable.
+  if old.remision_uri is not null
+     and new.remision_uri is distinct from old.remision_uri
+     and auth.uid() is not null
+     and not public.auth_tiene_rol(old.empresa_id, 'admin') then
+    raise exception 'La foto de la remisión ya quedó registrada: solo el administrador la cambia.';
+  end if;
   return new;
 end $$;
 
@@ -928,6 +970,13 @@ drop trigger if exists trg_recepcion_sellos on public.recepciones;
 create trigger trg_recepcion_sellos
   before insert or update on public.recepciones
   for each row execute function public._recepcion_sellos();
+
+-- Una recepción (lo que llegó a la obra) no se borra FÍSICAMENTE (SEG-A1): la
+-- corrección es su borrado lógico, del admin.
+drop trigger if exists trg_recepcion_evidencia on public.recepciones;
+create trigger trg_recepcion_evidencia
+  before delete on public.recepciones
+  for each row execute function public._evidencia_no_se_borra();
 
 -- 9h. Renglón recibido: tiene que ser de la MISMA orden que la recepción.
 create or replace function public._recepcion_renglon_guarda()
@@ -1780,6 +1829,26 @@ create policy compras_obj_insert on storage.objects
     )
   );
 
+-- ¿El objeto es la remisión de una recepción o el XML/PDF de la factura de una
+-- orden? Entonces es evidencia ligada y no se borra (SEG-M1). Lo que se subió y
+-- nunca se ligó (una subida que falló) o lo que ya se desligó (el admin cambió
+-- la remisión, se quitó la factura) sí se puede limpiar. SECURITY DEFINER para
+-- que la respuesta no dependa de la RLS de quien borra. Sin policy de UPDATE en
+-- el bucket, nada se sobreescribe con el mismo nombre.
+create or replace function public._compras_obj_protegido(p_name text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (select 1 from public.recepciones r where r.remision_uri = p_name)
+      or exists (select 1 from public.ordenes_compra o
+                  where o.factura_xml_path = p_name or o.factura_pdf_path = p_name)
+$$;
+revoke all on function public._compras_obj_protegido(text) from public, anon;
+grant execute on function public._compras_obj_protegido(text) to authenticated;
+
 drop policy if exists compras_obj_delete on storage.objects;
 create policy compras_obj_delete on storage.objects
   for delete to authenticated
@@ -1791,6 +1860,7 @@ create policy compras_obj_delete on storage.objects
       or ((storage.foldername(name))[2] = 'facturas'
         and public.auth_tiene_rol(public.compras_uuid((storage.foldername(name))[1]), 'admin', 'contador'))
     )
+    and not public._compras_obj_protegido(name)
   );
 
 -- ════════════════════════════════════════════════════════════════════════════

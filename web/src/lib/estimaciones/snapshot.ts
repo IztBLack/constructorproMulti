@@ -156,7 +156,7 @@ export function leerFoto(crudo: unknown): FotoEstimacion | null {
  * La misma forma que la foto, pero armada EN VIVO para un borrador (vista
  * previa del PDF y del editor). Replica lo que hará `_estimacion_snapshot` al
  * enviar: anterior = lo ya estimado en las que cuentan; generadores = lo
- * capturado en campo dentro del periodo.
+ * capturado en campo dentro del periodo (fecha y cantidad, sin la nota).
  */
 export function armarFotoEnVivo(p: {
   estimacion: EstimacionConRenglones;
@@ -197,7 +197,9 @@ export function armarFotoEnVivo(p: {
         generadores: p.capturas
           .filter((g) => g.clave === k && g.fecha >= e.periodo_inicio && g.fecha <= e.periodo_fin)
           .sort((a, b) => a.fecha - b.fecha)
-          .map((g) => ({ fecha: g.fecha, cantidad: g.cantidad, nota: g.nota })),
+          // Sin la nota de la captura: la foto que se envía no la lleva (es
+          // interna, F3-15 / SEG-B2) y la vista previa enseña lo mismo.
+          .map((g) => ({ fecha: g.fecha, cantidad: g.cantidad, nota: '' })),
       };
     }),
     importes: {
