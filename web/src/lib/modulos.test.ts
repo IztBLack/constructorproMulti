@@ -238,10 +238,13 @@ describe('modulosPorPerfil (plan §4.2)', () => {
 
   test('constructora acumula los paquetes anteriores', () => {
     const r = modulosPorPerfil('constructora', [], 'no');
-    expect(r.activos.sort()).toEqual([...PAQUETE_POR_DEFECTO].sort());
+    // F4 ya existe: bitácora y programa se prenden de verdad.
+    expect(r.activos.sort()).toEqual([...PAQUETE_POR_DEFECTO, 'bitacora', 'programa'].sort());
     expect(r.proximamente).toEqual(
-      expect.arrayContaining(['bitacora', 'programa', 'cumplimiento', 'subcontratos', 'compras']),
+      expect.arrayContaining(['cumplimiento', 'subcontratos', 'compras']),
     );
+    expect(r.proximamente).not.toContain('bitacora');
+    expect(r.proximamente).not.toContain('programa');
   });
 
   test('facturar o tener gente en el IMSS sugiere cumplimiento; "no" no', () => {
