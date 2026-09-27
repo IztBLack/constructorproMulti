@@ -9,7 +9,16 @@ import { randomUUID } from 'node:crypto';
 import type { PGlite } from '@electric-sql/pglite';
 import { comoUsuario, type Consultable } from './crear-db';
 
-export type Rol = 'admin' | 'supervisor' | 'colaborador' | 'cliente' | 'contador';
+export type Rol =
+  | 'admin'
+  | 'supervisor'
+  | 'colaborador'
+  | 'cliente'
+  | 'contador'
+  // 0042 (F6)
+  | 'residente'
+  | 'compras'
+  | 'almacen';
 
 export const ahoraMs = () => Date.now();
 
@@ -96,7 +105,7 @@ export async function crearEmpresaDePrueba(
 /**
  * Da de alta a alguien en la empresa con ese rol.
  *
- * - supervisor / colaborador / contador: por el flujo REAL — el admin llama a
+ * - supervisor / colaborador / contador / residente / compras / almacen: por el flujo REAL — el admin llama a
  *   `invitar_usuario` y la persona nueva canjea el código con
  *   `canjear_codigo_vinculacion`. Así el test también cubre esas RPC.
  * - admin: inserción directa como superusuario (el alta de un segundo admin va
@@ -213,5 +222,27 @@ export async function crearNotaObra(
     obra_id: datos.obraId,
     destinatario: 'Socio de prueba',
   });
+  return id;
+}
+
+/**
+ * Asigna una obra a un residente o colaborador (0042 `usuario_obra`), como lo
+ * hace la pantalla de Usuarios: el ADMIN inserta por RLS. Devuelve el id.
+ */
+export async function asignarObra(
+  db: PGlite,
+  empresa: EmpresaDePrueba,
+  userId: string,
+  obraId: string,
+): Promise<string> {
+  const id = randomUUID();
+  await comoUsuario(db, empresa.adminId, (tx) =>
+    insertar(
+      tx,
+      'public.usuario_obra',
+      { id, empresa_id: empresa.empresaId, user_id: userId, obra_id: obraId },
+      { returning: false },
+    ),
+  );
   return id;
 }

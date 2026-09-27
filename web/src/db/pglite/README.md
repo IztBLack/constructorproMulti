@@ -111,13 +111,14 @@ describe('0038 compras', () => {
 
 - `crearEmpresaDePrueba(db)` → usuario nuevo + la RPC real `crear_empresa` (queda admin,
   con los 10 conceptos del catálogo base).
-- `invitarConRol(db, empresa, 'supervisor' | 'colaborador' | 'contador')` → flujo real:
-  `invitar_usuario` como el admin + `canjear_codigo_vinculacion` como la persona nueva.
-  `'admin'` se inserta directo.
+- `invitarConRol(db, empresa, 'supervisor' | 'colaborador' | 'contador' | 'residente' | 'compras' | 'almacen')`
+  → flujo real: `invitar_usuario` como el admin + `canjear_codigo_vinculacion` como la
+  persona nueva. `'admin'` se inserta directo.
+- `asignarObra(db, empresa, userId, obraId)` → fila de `usuario_obra` (0042) insertada
+  por el admin con RLS: lo que ve el residente y la bitácora del colaborador.
 - `crearClienteConCuenta(db, empresaId)` → fila en `clientes` con `user_id` + membresía `cliente`.
-- `agregarMembresia(db, empresaId, userId, rol)` → inserción directa, para roles nuevos
-  (p. ej. `residente` de 0042) antes de que exista su RPC. Si tu migración cambia el
-  CHECK de `usuarios_empresa.rol`, esto lo respeta.
+- `agregarMembresia(db, empresaId, userId, rol)` → inserción directa, sin RPC (p. ej. una
+  segunda membresía en otra empresa). Respeta el CHECK de `usuarios_empresa.rol`.
 - `comoAnonimo(db, fn)` → sin sesión (rol `anon`).
 
 ## Cuando algo de una migración no corre en PGlite
