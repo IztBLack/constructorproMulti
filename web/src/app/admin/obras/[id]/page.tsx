@@ -13,6 +13,7 @@ import { getNotaCaja } from '@/lib/data/caja-nota';
 import { getNombreEmpresa } from '@/lib/data/empresa';
 import { getEmpresaConfig } from '@/lib/data/empresa-config';
 import { getModulosEmpresa } from '@/lib/data/modulos';
+import { listExtrasAprobadosObra } from '@/lib/data/cambios';
 import { origenTextoFinal, resolverTextoFinal, textoIntegrado } from '@/lib/pdf/textos-finales';
 import { TextoFinalCard } from '@/components/pdf/texto-final-card';
 import ObraHeader from './obra-header';
@@ -82,6 +83,11 @@ export default async function ObraDetallePage({
   const conCaja = activos.includes('caja');
   const conPresupuesto = activos.includes('cotizaciones');
   const conEquipo = activos.includes('equipo');
+  const conExtras = activos.includes('cambios');
+  // Extras aprobados para el estado de cuenta. Si falla la lectura (p. ej. 0036
+  // sin aplicar), cuentan como cero: es el estado de cuenta de antes.
+  const extrasAprobados =
+    conCaja && conExtras ? await listExtrasAprobadosObra(id).then((r) => (r.error ? [] : r.data)) : [];
 
   return (
     <div className="space-y-6">
@@ -104,7 +110,12 @@ export default async function ObraDetallePage({
       {conCaja && (
         <>
           {!presupuestoError && (
-            <EstadoCuenta obraId={id} partidas={partidas} movimientos={movimientos ?? []} />
+            <EstadoCuenta
+              obraId={id}
+              partidas={partidas}
+              movimientos={movimientos ?? []}
+              extras={extrasAprobados}
+            />
           )}
 
           {/* Nota de conciliación (el apunte al pie del Excel de la contadora). */}

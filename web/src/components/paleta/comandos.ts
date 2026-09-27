@@ -42,6 +42,7 @@ export const COMANDOS_FIJOS: Comando[] = [
   { titulo: 'Cuadrillas', href: '/admin/cuadrillas', grupo: 'Ir a', alias: 'grupos brigadas' },
   { titulo: 'Clientes', href: '/admin/clientes', grupo: 'Ir a', alias: 'contratantes' },
   { titulo: 'Proyección de nómina', href: '/admin/proyeccion', grupo: 'Ir a', alias: 'raya esperada semana estimado sueldos' },
+  { titulo: 'Utilidad por obra', href: '/admin/rentabilidad', grupo: 'Ir a', alias: 'ganancia margen rentabilidad comparativo dinero' },
   { titulo: 'Pase de lista de hoy', href: '/campo', grupo: 'Ir a', alias: 'asistencia lista campo jornada faltas' },
   { titulo: 'Catálogo de conceptos', href: '/admin/catalogo', grupo: 'Ir a', alias: 'precios partidas conceptos' },
   { titulo: 'Puestos', href: '/admin/puestos', grupo: 'Ir a', alias: 'oficios salarios' },
@@ -86,6 +87,8 @@ export function comandosDeObra(obraId: string, nombre?: string): Comando[] {
     { titulo: `Asistencia${suf}`, href: `/admin/obras/${obraId}/asistencia`, grupo: 'En esta obra', alias: 'pase lista jornada faltas' },
     { titulo: `Nómina${suf}`, href: `/admin/obras/${obraId}/nomina`, grupo: 'En esta obra', alias: 'raya semana pago sueldo' },
     { titulo: `Notas de trato${suf}`, href: `/admin/obras/${obraId}/notas`, grupo: 'En esta obra', alias: 'socios acuerdos tratos' },
+    { titulo: `Extras${suf}`, href: `/admin/obras/${obraId}/extras`, grupo: 'En esta obra', alias: 'cambios adicionales orden de cambio cobrar' },
+    { titulo: `Utilidad${suf}`, href: `/admin/obras/${obraId}/utilidad`, grupo: 'En esta obra', alias: 'ganancia margen rentabilidad' },
     { titulo: `PDF de caja${suf}`, href: `/admin/obras/${obraId}/pdf`, grupo: 'En esta obra', alias: 'imprimir documento movimientos', nuevaPestana: true },
     {
       titulo: `Estado de cuenta del cliente${suf}`,

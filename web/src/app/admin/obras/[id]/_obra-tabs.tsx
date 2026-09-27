@@ -3,7 +3,8 @@
 import { useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useRutaVisible } from '@/components/modulos/modulos-context';
+import { useRol, useRutaVisible } from '@/components/modulos/modulos-context';
+import { puedeVerUtilidad } from '@/lib/auth/utilidad';
 
 interface ObraTabsProps {
   obraId: string;
@@ -30,6 +31,8 @@ function tabsFor(obraId: string) {
     { href: `${base}/asistencia`, label: 'Asistencia' },
     { href: `${base}/nomina`, label: 'Nómina' },
     { href: `${base}/notas`, label: 'Notas' },
+    { href: `${base}/extras`, label: 'Extras' },
+    { href: `${base}/utilidad`, label: 'Utilidad' },
     { href: `${base}/importar`, label: 'Importar' },
   ];
 }
@@ -51,7 +54,12 @@ export default function ObraTabs({ obraId }: ObraTabsProps) {
   // Las pestañas de un módulo apagado no se ofrecen (Asistencia y Nómina son de
   // `equipo`, Notas de `notas`, Importar de `caja`). Detalle es del núcleo.
   const visible = useRutaVisible();
-  const tabs = tabsFor(obraId).filter((t) => visible(t.href));
+  // "Utilidad" además es solo de admin y contador (D1). La página lo vuelve a
+  // comprobar en el servidor; esto solo evita ofrecer una pestaña vacía.
+  const verUtilidad = puedeVerUtilidad(useRol());
+  const tabs = tabsFor(obraId).filter(
+    (t) => visible(t.href) && (verUtilidad || !t.href.endsWith('/utilidad')),
+  );
 
   const enLinea = useSyncExternalStore(
     suscribirRed,

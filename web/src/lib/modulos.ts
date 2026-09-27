@@ -67,6 +67,12 @@ export interface NavModulo {
   label: string;
   /** Posición en la barra (menor = más a la izquierda). */
   orden: number;
+  /**
+   * Solo estos roles ven el enlace. Sin lista, todos. Es PRESENTACIÓN: la
+   * página vuelve a comprobar el permiso en el servidor (p. ej. la utilidad,
+   * decisión D1, `lib/auth/utilidad.ts`).
+   */
+  roles?: readonly string[];
 }
 
 export interface Modulo {
@@ -201,8 +207,9 @@ export const MODULOS: readonly Modulo[] = [
     descripcion: 'Los extras que te pide el cliente, aprobados por él y sumados a lo que te debe.',
     grupo: 'dinero',
     dependeDe: ['cotizaciones'],
-    rutas: [],
-    disponible: false,
+    // Viven dentro de cada obra (pestaña "Extras"); no llevan enlace en la barra.
+    rutas: ['/admin/obras/*/extras'],
+    disponible: true,
   },
   {
     clave: 'rentabilidad',
@@ -210,8 +217,10 @@ export const MODULOS: readonly Modulo[] = [
     descripcion: 'Cuánto te está dejando cada obra: lo contratado contra lo que llevas gastado.',
     grupo: 'dinero',
     dependeDe: ['cotizaciones'],
-    rutas: [],
-    disponible: false,
+    rutas: ['/admin/rentabilidad', '/admin/obras/*/utilidad'],
+    // Decisión D1: la utilidad es del dueño y del contador, no del supervisor.
+    nav: [{ href: '/admin/rentabilidad', label: 'Utilidad', orden: 45, roles: ['admin', 'contador'] }],
+    disponible: true,
   },
   {
     clave: 'fiscal',
@@ -450,12 +459,22 @@ export function rutaVisible(ruta: string, activos: readonly ClaveModulo[]): bool
   return activos.includes(clave) && modulo(clave).disponible;
 }
 
-/** Enlaces de la barra para lo prendido, en su orden. Siempre abre con Inicio. */
-export function navDeModulos(activos: readonly ClaveModulo[]): { href: string; label: string }[] {
+/**
+ * Enlaces de la barra para lo prendido, en su orden. Siempre abre con Inicio.
+ * Con `rol`, se quitan los enlaces restringidos a otros roles; sin él (un
+ * componente que no lo conoce), también se quitan: ante la duda, menos.
+ */
+export function navDeModulos(
+  activos: readonly ClaveModulo[],
+  rol?: string,
+): { href: string; label: string }[] {
   const enlaces: NavModulo[] = [{ href: '/admin', label: 'Inicio', orden: 0 }];
   for (const m of MODULOS) {
     if (!m.disponible || !activos.includes(m.clave)) continue;
-    enlaces.push(...(m.nav ?? []));
+    for (const n of m.nav ?? []) {
+      if (n.roles && !(rol && n.roles.includes(rol))) continue;
+      enlaces.push(n);
+    }
   }
   return enlaces.sort((a, b) => a.orden - b.orden).map(({ href, label }) => ({ href, label }));
 }

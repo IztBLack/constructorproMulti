@@ -278,25 +278,29 @@ export async function crearRenglonExtra(
 }
 
 export async function actualizarRenglonExtra(
+  extraId: string,
   renglonId: string,
   input: RenglonExtraInput,
 ): Promise<Resultado> {
   const supabase = await createClient();
+  // `orden_cambio_id` en el filtro: un renglón solo se toca desde SU extra.
   const { error } = await supabase
     .from('orden_cambio_renglon')
     .update({ ...input, updated_at: Date.now() })
-    .eq('id', renglonId);
+    .eq('id', renglonId)
+    .eq('orden_cambio_id', extraId);
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
 
-export async function eliminarRenglonExtra(renglonId: string): Promise<Resultado> {
+export async function eliminarRenglonExtra(extraId: string, renglonId: string): Promise<Resultado> {
   const supabase = await createClient();
   const now = Date.now();
   const { error } = await supabase
     .from('orden_cambio_renglon')
     .update({ deleted_at: now, updated_at: now })
-    .eq('id', renglonId);
+    .eq('id', renglonId)
+    .eq('orden_cambio_id', extraId);
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }

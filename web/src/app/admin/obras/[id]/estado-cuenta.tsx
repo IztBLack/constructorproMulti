@@ -1,17 +1,24 @@
+import Link from 'next/link';
 import { Card, CardTitle, THead, Th, TBody, Tr, Td, LinkButton } from '@/components/ui';
 import { formatCurrency } from '@/lib/data/format';
 import type { Movimiento, PartidaPresupuesto } from '@/lib/data/types';
 import { costoTotal } from '@/lib/data/presupuesto-obra';
+import type { ExtraAprobado } from '@/lib/data/cambios';
 
 interface Props {
   obraId: string;
   partidas: PartidaPresupuesto[];
   movimientos: Movimiento[];
+  /** Extras APROBADOS (0036). Suman al costo total como línea aparte. */
+  extras?: ExtraAprobado[];
 }
 
-export default function EstadoCuenta({ obraId, partidas, movimientos }: Props) {
+export default function EstadoCuenta({ obraId, partidas, movimientos, extras = [] }: Props) {
   // ── Cálculos principales ────────────────────────────────────────────────
-  const costo = costoTotal(partidas);
+  // COSTO TOTAL = presupuesto + extras aprobados (RF1.4), igual que el estado de
+  // cuenta que ve el cliente (`totalesEstadoCuenta`).
+  const totalExtras = extras.reduce((acc, e) => acc + e.total, 0);
+  const costo = costoTotal(partidas) + totalExtras;
   const recibido = movimientos
     .filter((m) => m.tipo === 'ENTRADA')
     .reduce((acc, m) => acc + m.monto, 0);
@@ -82,6 +89,24 @@ export default function EstadoCuenta({ obraId, partidas, movimientos }: Props) {
                 <span className="tabular-nums font-medium text-neutral-900">
                   {formatCurrency(p.cantidad * p.precio_unitario)}
                 </span>
+              </div>
+            ))}
+            <div className="mt-2 border-t border-neutral-200 pt-2" />
+          </div>
+        )}
+
+        {/* Extras aprobados: línea aparte, para que se vea qué era el trato
+            original y qué se agregó después. */}
+        {extras.length > 0 && (
+          <div className="mb-4 space-y-1">
+            <p className="text-xs font-medium uppercase tracking-wide text-neutral-600">Extras aprobados</p>
+            {extras.map((e) => (
+              <div key={e.id} className="flex items-baseline justify-between gap-4 text-sm">
+                <Link href={`/admin/obras/${obraId}/extras/${e.id}`} className="text-neutral-700 hover:underline">
+                  Extra {e.folio}
+                  {e.titulo ? ` · ${e.titulo}` : ''}
+                </Link>
+                <span className="tabular-nums font-medium text-neutral-900">{formatCurrency(e.total)}</span>
               </div>
             ))}
             <div className="mt-2 border-t border-neutral-200 pt-2" />
