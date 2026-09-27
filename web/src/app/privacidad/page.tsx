@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PaginaLegal, Seccion } from '@/components/legal/pagina-legal';
 import { NombreResponsable, Pendiente } from '@/components/legal/pendiente';
-import { ARCHIVOS, CATEGORIAS_DATOS, RESPONSABLE, TERCEROS, metadataBorrador } from '@/lib/legal/datos';
+import { ARCHIVOS, CATEGORIAS_DATOS, DATOS_SALUD, RESPONSABLE, TERCEROS, metadataBorrador } from '@/lib/legal/datos';
 
 export const metadata: Metadata = {
   title: 'Aviso de privacidad',
@@ -59,8 +59,15 @@ export default function PrivacidadPage() {
         </ul>
         <p>
           No tratamos datos personales sensibles en el sentido de la ley —origen racial o étnico,
-          estado de salud, creencias religiosas, preferencia sexual y similares—, no usamos tu
-          ubicación (GPS), no leemos tus contactos y no mostramos publicidad.
+          creencias religiosas, preferencia sexual y similares—, no usamos tu ubicación (GPS), no
+          leemos tus contactos y no mostramos publicidad. La <strong>única excepción es el estado de
+          salud</strong>, y solo si usas «Seguridad en obra» y registras un accidente: el
+          administrador puede anotar el tipo de lesión, la parte del cuerpo y la atención recibida,
+          nada más. Solo él los ve. Como responsable de los datos de tu gente, a ti te toca avisarle
+          al trabajador y recabar su consentimiento.{' '}
+          {!DATOS_SALUD.revisadoPorAbogado && (
+            <Pendiente que="revisión legal del tratamiento de datos de salud: texto para el trabajador y plazo de conservación" />
+          )}
         </p>
         <p>
           Sí puede haber <strong>datos financieros</strong> entre los archivos que adjuntas: el
