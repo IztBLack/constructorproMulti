@@ -41,6 +41,22 @@ en local (PGlite).
 | F0-12 | En el catálogo, `nav` es una **lista** con `orden` (no un solo enlace) | `equipo` pone "Pase de lista" y "Equipo"; `obras` pone "Obras" y "Clientes". El `orden` conserva la barra exactamente como estaba |
 | F0-13 | Con la tarjeta "Siguiente paso" a la vista se oculta la guía genérica "Primeros pasos" del inicio | Dos guías a la vez para una empresa recién creada sobran; la tarjeta es la versión hecha a la medida |
 
+### Decisiones menores de F0 móvil (gating de módulos en Flutter)
+
+| # | Decisión | Por qué |
+|---|---|---|
+| F0m-1 | El móvil lee `empresa_config.modulos` **directo de Supabase** y lo cachea en SharedPreferences (`lib/core/modulos/`). No entra a Drift ni al sync; `schemaVersion` no cambia | Es el patrón de `ui_orden` y `pdf_config`: el móvil solo lee, y la lista cabe en una preferencia. Meterla a Drift obligaba a una migración y snapshots sin ganar nada |
+| F0m-2 | Sin sesión o sin empresa vinculada → **todo prendido**. Con sesión y sin señal (o con 0035 sin aplicar) → la última lista **de esa misma empresa**. Sin fila o sin dato → todo prendido y se borra la caché. La caché guarda el `empresaId` | Regla de oro: el móvil nunca se queda vacío por falta de red o de cuenta. Guardar la empresa evita que un teléfono aplique la lista de otra cuenta que se usó antes |
+| F0m-3 | La lista se relee al cambiar la sesión o la empresa y **al terminar cada sync** | Así un cambio hecho en la web llega al teléfono cuando llegan los datos, sin botón de "actualizar" |
+| F0m-4 | `homeTabProvider` pasa de `int` a `enum HomeTab`. Si la pestaña guardada se apaga, se enseña Obras y lo guardado se corrige tras el frame. Cada pantalla del `IndexedStack` lleva llave por pestaña | Con pestañas que aparecen y desaparecen, un índice apunta a otra pantalla. Corregir lo guardado evita que la app salte sola a esa pestaña el día que el módulo vuelva |
+| F0m-5 | Solo se ocultan pestañas del shell de módulos (**Cotizar** = `cotizaciones`, **Equipo** = `equipo`). Obras es el núcleo; **Resumen** y **Config.** se quedan y ocultan sus secciones por dentro | Nunca menos de tres pestañas (la `NavigationBar` pide dos o más) y el tablero sigue sirviendo para llegar a cada obra |
+| F0m-6 | Mapeo en el móvil: **equipo** = pestaña Equipo, pase de lista, pestañas Equipo/Asistencia/Nómina de la obra, puestos, recordatorio de nómina, aviso de incompletos, reportes de nómina y asistencias; **cuadrillas** = botón Cuadrillas y la agrupación del pase de lista; **caja** = pestaña Caja, importar movimientos, flujo global, y flujo/distribución/saldo del Resumen; **cotizaciones** = pestaña Cotizar, catálogo, IVA por defecto, pipeline, tarjeta de presupuesto de la obra y reporte de presupuestos; **proyección** y **notas** = sus entradas en el menú de la obra y en accesos rápidos | Es el mismo reparto que F0-6 de la web, llevado a donde vive cada cosa en el móvil |
+| F0m-7 | Una obra sin `equipo` ni `caja` se abre igual, sin pestañas y con el aviso "Esta obra no tiene secciones prendidas" (cómo prenderlas en la web) | La obra es el núcleo; un `TabBar` vacío no es válido y un callejón sin salida confunde |
+| F0m-8 | En el móvil **no hay interruptores de módulos, ni para el admin**. Configuración → "Partes de la app" dice quién los elige: admin → "desde la web, en Ajustes → Módulos"; otros roles → "los elige el administrador"; sin cuenta → "se ven todas" | D6 (web primero). En la web el cambio pasa por la RPC con dependencias y la confirmación "tus datos se conservan"; duplicarlo en el móvil es otra superficie que mantener |
+| F0m-9 | "Disponibles en la web" lista **todo módulo prendido que el móvil no implementa**, sin mirar el `disponible` de la web. El portal no se lista (`aplicaEnMovil: false`). Claves que esta versión no conoce se ignoran. Solo texto, sin enlaces | La web solo deja prender lo disponible (F0-1), así que lo prendido ya existe allá; si se mirara `disponible`, cada fase nueva exigiría actualizar el APK para anunciarla. El portal lo usa el cliente, nunca fue del celular. Sin pantalla a dónde mandar, un enlace sería un enlace roto |
+| F0m-10 | Con `cuadrillas` apagado, el pase de lista no agrupa: todos van a la lista sin cuadrilla, ordenada por `colaboradores.orden`. `cuadrilla_miembro` no se toca | Apagar oculta, no borra. Al prenderlo vuelve la agrupación con su orden |
+| F0m-11 | `test/core/modulos_test.dart` lee `0035_modulos_empresa.sql` y `web/src/lib/modulos.ts` y falla si difieren claves, dependencias, nombres, descripciones o el paquete por defecto | El dueño debe leer lo mismo en el celular que en la web; el catálogo no puede quedarse atrás sin que nadie se entere |
+
 ---
 
 ## Convenciones para todos los agentes
@@ -88,7 +104,7 @@ en local (PGlite).
 |---|---|---|---|
 | Harness PGlite | ✅ | f36a70e | 34 migraciones sin reemplazos, 26 tests RLS, ~12 s |
 | F0 web | ✅ | 2bf8235, 21e4709, 47a6d48 | 0035 escrita y probada en PGlite (19 tests), **sin aplicar a ningún Supabase**. Pendiente: verificación visual en navegador (no se levantó la web contra el Supabase de producción), sugerencias de módulo por uso (§4.3, dependen de `compras`), ocultar en el portal/PDF del cliente lo de módulos apagados (ver F0-5) |
-| F0 móvil | ⏳ | | |
+| F0 móvil | ✅ | a03bde8, 10cc080 | Lee `empresa_config.modulos` sin tocar Drift (sin cambio de `schemaVersion`). `flutter analyze` sin hallazgos nuevos; `flutter test` 315/315 (incluido contraste). Mientras 0035 no se aplique en prod, el móvil enseña todo (F0m-2). Pendiente: verificación en la tableta; el tutorial sigue describiendo todos los módulos; la Zona de peligro de Config. no se filtra por módulo |
 | F1 | ⏳ | | |
 | F1b | ⏳ | | |
 | F2 | ⏳ | | |
