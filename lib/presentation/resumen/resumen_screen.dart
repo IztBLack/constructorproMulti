@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../pdf_preview_screen.dart';
 import '../../core/format/format.dart';
+import '../../core/modulos/modulos.dart';
+import '../../core/modulos/modulos_provider.dart';
 import '../../core/sync/rol_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
@@ -80,34 +82,48 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
       }
     });
 
+    // Cada sección se va con su módulo (F0). El resumen en sí se queda: es el
+    // tablero de la app, y al menos cuenta las obras, que son el núcleo.
+    final modulos = ref.watch(modulosProvider);
+    final usaCaja = modulos.usa(ClaveModulo.caja);
+    final usaCotizaciones = modulos.usa(ClaveModulo.cotizaciones);
+    final usaEquipo = modulos.usa(ClaveModulo.equipo);
+    final verSueldos = ref.watch(puedeVerSueldosProvider);
+    final hayReportes = usaCaja || usaCotizaciones || usaEquipo;
+    final accesos = _accesos(modulos, verSueldos);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Resumen'),
         actions: [
           const SyncStatusAction(),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.picture_as_pdf),
-            tooltip: 'Reportes globales',
-            onSelected: (v) {
-              if (v == 'flujo') _exportarGlobal(ref);
-              // Segunda línea: el menú ya no ofrece la opción, pero el gate
-              // vive también aquí para que no dependa del dibujo.
-              if (v == 'nomina' && ref.read(puedeVerSueldosProvider)) {
-                _exportarNominaGlobal(ref);
-              }
-              if (v == 'presupuestos') _exportarPresupuestosGlobal(ref);
-              if (v == 'asistencias') _exportarAsistenciasGlobal(ref);
-            },
-            itemBuilder: (_) => [
-              const PopupMenuItem(value: 'flujo', child: Text('Flujo de caja global')),
-              // La nómina global lleva el sueldo de toda la plantilla, así que
-              // se rige por la misma lista blanca que la proyección.
-              if (ref.watch(puedeVerSueldosProvider))
-                const PopupMenuItem(value: 'nomina', child: Text('Nómina global (semana)')),
-              const PopupMenuItem(value: 'presupuestos', child: Text('Presupuestos global')),
-              const PopupMenuItem(value: 'asistencias', child: Text('Asistencias global (semana)')),
-            ],
-          ),
+          if (hayReportes)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.picture_as_pdf),
+              tooltip: 'Reportes globales',
+              onSelected: (v) {
+                if (v == 'flujo') _exportarGlobal(ref);
+                // Segunda línea: el menú ya no ofrece la opción, pero el gate
+                // vive también aquí para que no dependa del dibujo.
+                if (v == 'nomina' && ref.read(puedeVerSueldosProvider) && usaEquipo) {
+                  _exportarNominaGlobal(ref);
+                }
+                if (v == 'presupuestos') _exportarPresupuestosGlobal(ref);
+                if (v == 'asistencias') _exportarAsistenciasGlobal(ref);
+              },
+              itemBuilder: (_) => [
+                if (usaCaja)
+                  const PopupMenuItem(value: 'flujo', child: Text('Flujo de caja global')),
+                // La nómina global lleva el sueldo de toda la plantilla, así que
+                // se rige por la misma lista blanca que la proyección.
+                if (usaEquipo && verSueldos)
+                  const PopupMenuItem(value: 'nomina', child: Text('Nómina global (semana)')),
+                if (usaCotizaciones)
+                  const PopupMenuItem(value: 'presupuestos', child: Text('Presupuestos global')),
+                if (usaEquipo)
+                  const PopupMenuItem(value: 'asistencias', child: Text('Asistencias global (semana)')),
+              ],
+            ),
         ],
       ),
       body: obrasAsync.when(
@@ -149,101 +165,120 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
           return ListView(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
             children: [
-              // Selector de periodo
-              SegmentedButton<bool>(
-                segments: const [
-                  ButtonSegment(value: false, label: Text('Mes')),
-                  ButtonSegment(value: true, label: Text('Año')),
-                ],
-                selected: {_anual},
-                onSelectionChanged: (s) => setState(() => _anual = s.first),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.chevron_left),
-                    tooltip: _anual ? 'Año anterior' : 'Mes anterior',
-                    onPressed: () => _navPeriodo(-1),
-                  ),
-                  Text(_periodoLabel, style: textTheme.titleMedium),
-                  IconButton(
-                    icon: const Icon(Icons.chevron_right),
-                    tooltip: _anual ? 'Año siguiente' : 'Mes siguiente',
-                    onPressed: () => _navPeriodo(1),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              // Contadores
-              Row(children: [
-                _contador('Obras', obras.where((o) => o.activa).length, Icons.foundation),
-                const SizedBox(width: 8),
-                _contador('Equipo', colabs.where((c) => c.activo).length, Icons.people),
-                const SizedBox(width: 8),
-                _contador('Cotizaciones', cots.length, Icons.description),
-              ]),
-              const SizedBox(height: 12),
-              // Pipeline: valor de cotizaciones pendientes
-              AppCard(
-                padding: CardPadding.sm,
-                child: Row(
+              // Selector de periodo (solo filtra la caja)
+              if (usaCaja) ...[
+                SegmentedButton<bool>(
+                  segments: const [
+                    ButtonSegment(value: false, label: Text('Mes')),
+                    ButtonSegment(value: true, label: Text('Año')),
+                  ],
+                  selected: {_anual},
+                  onSelectionChanged: (s) => setState(() => _anual = s.first),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.trending_up, color: colores.info),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Pipeline', style: textTheme.titleSmall),
-                          Text('Cotizaciones pendientes (borrador/enviada)',
-                              style: textTheme.bodySmall),
-                        ],
-                      ),
+                    IconButton(
+                      icon: const Icon(Icons.chevron_left),
+                      tooltip: _anual ? 'Año anterior' : 'Mes anterior',
+                      onPressed: () => _navPeriodo(-1),
                     ),
-                    const SizedBox(width: 8),
-                    MoneyText(
-                      pipeline,
-                      color: colores.info,
-                      style: textTheme.titleMedium,
+                    Text(_periodoLabel, style: textTheme.titleMedium),
+                    IconButton(
+                      icon: const Icon(Icons.chevron_right),
+                      tooltip: _anual ? 'Año siguiente' : 'Mes siguiente',
+                      onPressed: () => _navPeriodo(1),
                     ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 4),
+              ],
+              // Contadores
+              Row(children: [
+                _contador('Obras', obras.where((o) => o.activa).length, Icons.foundation),
+                if (usaEquipo) ...[
+                  const SizedBox(width: 8),
+                  _contador('Equipo', colabs.where((c) => c.activo).length, Icons.people),
+                ],
+                if (usaCotizaciones) ...[
+                  const SizedBox(width: 8),
+                  _contador('Cotizaciones', cots.length, Icons.description),
+                ],
+              ]),
               const SizedBox(height: 12),
+              // Pipeline: valor de cotizaciones pendientes
+              if (usaCotizaciones) ...[
+                AppCard(
+                  padding: CardPadding.sm,
+                  child: Row(
+                    children: [
+                      Icon(Icons.trending_up, color: colores.info),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Pipeline', style: textTheme.titleSmall),
+                            Text('Cotizaciones pendientes (borrador/enviada)',
+                                style: textTheme.bodySmall),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      MoneyText(
+                        pipeline,
+                        color: colores.info,
+                        style: textTheme.titleMedium,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               // Accesos rápidos
-              _accesosRapidos(),
-              const SizedBox(height: 16),
+              if (accesos.isNotEmpty) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: accesos,
+                ),
+                const SizedBox(height: 16),
+              ],
               // Flujo del periodo
-              AppCard(
-                child: Column(children: [
-                  Text('Flujo de caja · $_periodoLabel',
-                      style: textTheme.titleSmall),
-                  const SizedBox(height: 16),
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-                    _kpi('Ingresos', global.totalEntradas, colores.success),
-                    _kpi('Egresos', global.totalSalidas, colores.danger),
-                    _kpi('Saldo', global.saldo, colores.montoTone(global.saldo)),
+              if (usaCaja) ...[
+                AppCard(
+                  child: Column(children: [
+                    Text('Flujo de caja · $_periodoLabel',
+                        style: textTheme.titleSmall),
+                    const SizedBox(height: 16),
+                    Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+                      _kpi('Ingresos', global.totalEntradas, colores.success),
+                      _kpi('Egresos', global.totalSalidas, colores.danger),
+                      _kpi('Saldo', global.saldo, colores.montoTone(global.saldo)),
+                    ]),
                   ]),
-                ]),
-              ),
-              const SizedBox(height: 12),
-              // % de gasto
-              AppCard(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  SectionHeader(title: 'Distribución del gasto · $_periodoLabel'),
-                  _barraGasto('Nómina', salNomina, totalSal, colores.chartPayroll),
-                  _barraGasto('Material', salMaterial, totalSal, colores.chartMaterial),
-                  _barraGasto('Otros', salOtros, totalSal, colores.chartOther),
-                  const SizedBox(height: 8),
-                  Text('Nómina ${pct(salNomina)}% · Material ${pct(salMaterial)}% · Otros ${pct(salOtros)}%',
-                      style: textTheme.bodySmall),
-                ]),
-              ),
-              const SizedBox(height: 20),
-              const SectionHeader(
-                title: 'Saldo por obra',
-                description: 'Histórico completo, sin filtrar por periodo.',
+                ),
+                const SizedBox(height: 12),
+                // % de gasto
+                AppCard(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    SectionHeader(title: 'Distribución del gasto · $_periodoLabel'),
+                    _barraGasto('Nómina', salNomina, totalSal, colores.chartPayroll),
+                    _barraGasto('Material', salMaterial, totalSal, colores.chartMaterial),
+                    _barraGasto('Otros', salOtros, totalSal, colores.chartOther),
+                    const SizedBox(height: 8),
+                    Text('Nómina ${pct(salNomina)}% · Material ${pct(salMaterial)}% · Otros ${pct(salOtros)}%',
+                        style: textTheme.bodySmall),
+                  ]),
+                ),
+                const SizedBox(height: 20),
+              ],
+              // Sin caja no hay saldo que enseñar, pero la lista sigue siendo el
+              // atajo a cada obra.
+              SectionHeader(
+                title: usaCaja ? 'Saldo por obra' : 'Obras',
+                description: usaCaja
+                    ? 'Histórico completo, sin filtrar por periodo.'
+                    : null,
               ),
               if (obras.isEmpty)
                 const Padding(
@@ -254,9 +289,10 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
                 ...obras.map((o) {
                   final r = porObra[o.id]!;
                   final nEquipo = equipoPorObra[o.id] ?? 0;
-                  final sub = o.cliente.isEmpty
-                      ? '$nEquipo en equipo'
-                      : '${o.cliente} · $nEquipo en equipo';
+                  final enEquipo = usaEquipo ? '$nEquipo en equipo' : '';
+                  final sub = [o.cliente, enEquipo]
+                      .where((x) => x.isNotEmpty)
+                      .join(' · ');
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: AppCard(
@@ -274,12 +310,14 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
                               ],
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          MoneyText(
-                            r.saldo,
-                            colorearPorSigno: true,
-                            style: textTheme.titleSmall,
-                          ),
+                          if (usaCaja) ...[
+                            const SizedBox(width: 8),
+                            MoneyText(
+                              r.saldo,
+                              colorearPorSigno: true,
+                              style: textTheme.titleSmall,
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -292,24 +330,28 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
     );
   }
 
-  Widget _accesosRapidos() => Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
+  /// Accesos rápidos que tocan con estos módulos. Cada uno se va con el suyo.
+  List<Widget> _accesos(ModulosActivos modulos, bool verSueldos) => [
+        if (modulos.usa(ClaveModulo.equipo))
           _accion(Icons.fact_check, 'Pase lista',
               () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PaseListaScreen()))),
-          // La proyección enseña el salario de cada persona junto a su nombre,
-          // así que ni siquiera se ofrece a quien no puede verla: el gate de la
-          // pantalla es la segunda línea de defensa, no la primera.
-          if (ref.watch(puedeVerSueldosProvider))
-            _accion(Icons.calculate_outlined, 'Proyección',
-                () => Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => const ProyeccionScreen()))),
-          _accion(Icons.note_add, 'Cotizar', () => ref.read(homeTabProvider.notifier).state = 1),
-          _accion(Icons.person_add, 'Equipo', () => ref.read(homeTabProvider.notifier).state = 2),
+        // La proyección enseña el salario de cada persona junto a su nombre,
+        // así que ni siquiera se ofrece a quien no puede verla: el gate de la
+        // pantalla es la segunda línea de defensa, no la primera.
+        if (verSueldos && modulos.usa(ClaveModulo.proyeccion))
+          _accion(Icons.calculate_outlined, 'Proyección',
+              () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => const ProyeccionScreen()))),
+        if (modulos.usa(ClaveModulo.cotizaciones))
+          _accion(Icons.note_add, 'Cotizar',
+              () => ref.read(homeTabProvider.notifier).state = HomeTab.cotizar),
+        if (modulos.usa(ClaveModulo.equipo))
+          _accion(Icons.person_add, 'Equipo',
+              () => ref.read(homeTabProvider.notifier).state = HomeTab.equipo),
+        if (modulos.usa(ClaveModulo.cotizaciones))
           _accion(Icons.menu_book, 'Catálogo',
               () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CatalogoScreen()))),
-        ],
-      );
+      ];
 
   /// El `Tooltip` explícito es lo que le da nombre al botón para el lector de
   /// pantalla: el ícono por sí solo no dice nada (regla `aria-labels`). La
