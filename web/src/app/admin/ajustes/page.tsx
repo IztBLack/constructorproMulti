@@ -23,6 +23,8 @@ import { getEmpresaFiscal } from '@/lib/data/fiscal';
 import { SeccionMargen } from '@/components/ajustes/seccion-margen';
 import { getMargenEmpresa } from '@/lib/data/rentabilidad';
 import { nombreRol } from '@/lib/auth/roles';
+import { SeccionAprobaciones } from '@/components/ajustes/seccion-aprobaciones';
+import { listReglas, listSolicitudes } from '@/lib/data/aprobaciones';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,6 +71,7 @@ export default async function AjustesPage() {
   const verModulos = secciones.includes('modulos');
   const verEmpresa = secciones.includes('empresa');
   const verUsuarios = secciones.includes('usuarios');
+  const verAprobaciones = secciones.includes('aprobaciones');
   const { activos, perfil } = await getModulosEmpresa();
   // Datos para facturar: por rol (admin/contador) Y con el módulo prendido. A
   // quien no factura no se le pide nada.
@@ -81,6 +84,10 @@ export default async function AjustesPage() {
   // Solo se consulta si se va a mostrar: la RPC exige rol admin y lanzaría para
   // cualquier otro rol.
   const usuarios = verUsuarios ? (await listUsuariosEmpresa()).data : [];
+  // Visto bueno (0042): si la migración no está aplicada, las listas llegan vacías.
+  const [reglas, pendientes] = verAprobaciones
+    ? await Promise.all([listReglas().then((r) => r.data), listSolicitudes('PENDIENTE').then((r) => r.data)])
+    : [[], []];
 
   // El índice se arma con los grupos que este rol realmente ve, para que no
   // ofrezca saltar a una sección inexistente.
@@ -92,6 +99,7 @@ export default async function AjustesPage() {
     ...(verModulos ? [{ id: 'modulos', titulo: 'Módulos' }] : []),
     ...(verEmpresa ? [{ id: 'empresa', titulo: 'Empresa' }] : []),
     ...(verFiscal ? [{ id: 'fiscal', titulo: 'Datos para facturar' }] : []),
+    ...(verAprobaciones ? [{ id: 'aprobaciones', titulo: 'Visto bueno' }] : []),
     ...(verUsuarios ? [{ id: 'usuarios', titulo: 'Usuarios' }] : []),
   ];
 
@@ -185,6 +193,17 @@ export default async function AjustesPage() {
               descripcion="Tu RFC, razón social, régimen y código postal. Los ves tú y tu contador; nadie más del equipo."
             >
               <SeccionFiscal valores={emisor} />
+            </GrupoAjustes>
+          )}
+
+          {verAprobaciones && (
+            <GrupoAjustes
+              id="aprobaciones"
+              titulo="Visto bueno"
+              alcance="A toda la empresa"
+              descripcion="Desde qué monto un extra o una orden de compra necesita tu visto bueno antes de salir. Sin regla, solo tú los mandas."
+            >
+              <SeccionAprobaciones reglas={reglas} pendientes={pendientes} />
             </GrupoAjustes>
           )}
 

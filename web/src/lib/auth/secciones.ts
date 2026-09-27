@@ -43,7 +43,12 @@ export type SeccionAjustes =
    * Datos fiscales del emisor (0037). Admin y contador (RR1b.1), y solo con el
    * módulo `fiscal` prendido (eso lo decide la página, no este mapa).
    */
-  | 'fiscal';
+  | 'fiscal'
+  /**
+   * Visto bueno configurable (0042, RF6.3): reglas y solicitudes. Solo admin:
+   * la RLS de `regla_aprobacion` solo le deja escribir a él.
+   */
+  | 'aprobaciones';
 
 /** Secciones que aporta cada rol, ADEMÁS de las del rol anterior. */
 const APORTA: Record<string, SeccionAjustes[]> = {
@@ -57,7 +62,7 @@ const APORTA: Record<string, SeccionAjustes[]> = {
   // base — mostrarle a un supervisor un formulario que le va a fallar al guardar
   // es peor que no mostrárselo.
   // (El supervisor sigue llegando al catálogo y a los puestos desde el menú.)
-  admin: ['operacion', 'modulos', 'empresa', 'usuarios', 'fiscal'],
+  admin: ['operacion', 'modulos', 'empresa', 'usuarios', 'fiscal', 'aprobaciones'],
 };
 
 /** Orden de menor a mayor privilegio. El acumulado define lo concéntrico. */

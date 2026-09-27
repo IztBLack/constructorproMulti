@@ -33,9 +33,14 @@ export function SeccionUsuarios({
         </div>
       </CardHeader>
 
-      <LinkButton href="/admin/usuarios" variant="secondary">
-        Administrar usuarios
-      </LinkButton>
+      <div className="flex flex-wrap gap-2">
+        <LinkButton href="/admin/usuarios" variant="secondary">
+          Administrar usuarios
+        </LinkButton>
+        <LinkButton href="/admin/actividad" variant="secondary">
+          Registro de actividad
+        </LinkButton>
+      </div>
     </Card>
   );
 }

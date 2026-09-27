@@ -29,6 +29,7 @@ import {
   quitarFotoExtra,
   registrarFotoExtra,
 } from '../actions';
+import { PedirVistoBueno } from '@/components/aprobaciones/pedir-visto-bueno';
 
 const PASO = 100;
 
@@ -49,6 +50,8 @@ export default function EditorExtra({
   fotoUrl,
   puedeEditar,
   esAdmin,
+  puedeEnviar,
+  pedirVistoBueno,
   puedeDuplicar,
   tieneCliente,
 }: {
@@ -57,6 +60,10 @@ export default function EditorExtra({
   fotoUrl: string | null;
   puedeEditar: boolean;
   esAdmin: boolean;
+  /** Admin, o supervisor/residente con regla de visto bueno activa (0042). */
+  puedeEnviar: boolean;
+  /** Ofrecer "Pedir visto bueno" (no admin, con regla activa). */
+  pedirVistoBueno: boolean;
   puedeDuplicar: boolean;
   tieneCliente: boolean;
 }) {
@@ -120,11 +127,12 @@ export default function EditorExtra({
             <LinkButton href={`${base}/${extra.id}/pdf`} variant="secondary" size="sm">
               Ver PDF
             </LinkButton>
-            {esAdmin && borrador && (
+            {puedeEnviar && borrador && (
               <Button size="sm" onClick={() => setConfirmando('enviar')} disabled={ocupado}>
                 Enviar al cliente
               </Button>
             )}
+            {pedirVistoBueno && borrador && <PedirVistoBueno tipo="EXTRA" objetoId={extra.id} />}
             {puedeDuplicar && !borrador && (
               <Button
                 size="sm"

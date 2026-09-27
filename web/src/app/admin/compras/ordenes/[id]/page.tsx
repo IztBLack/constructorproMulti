@@ -25,6 +25,7 @@ import { FacturaProveedor } from './factura-proveedor';
 import { PagosOrden } from './pagos-orden';
 import { capturaEnObra } from '@/lib/auth/roles';
 import { gestionaCompras, vePreciosDeCompras } from '@/lib/auth/roles';
+import { PedirVistoBueno } from '@/components/aprobaciones/pedir-visto-bueno';
 
 export const dynamic = 'force-dynamic';
 
@@ -97,6 +98,7 @@ export default async function OrdenPage({ params }: { params: Promise<{ id: stri
             </LinkButton>
           )}
           {gestiona && <AccionesOrden ordenId={id} estado={orden.estado} tieneRenglones={orden.renglones.length > 0} />}
+          {rol === 'compras' && borrador && <PedirVistoBueno tipo="COMPRA" objetoId={id} />}
         </div>
       </header>
 

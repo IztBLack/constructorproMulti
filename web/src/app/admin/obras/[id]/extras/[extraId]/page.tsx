@@ -8,6 +8,7 @@ import { TextoFinalCard } from '@/components/pdf/texto-final-card';
 import ObraTabs from '../../_obra-tabs';
 import EditorExtra from './editor-extra';
 import { capturaEnObra } from '@/lib/auth/roles';
+import { listReglas } from '@/lib/data/aprobaciones';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,6 +40,11 @@ export default async function ExtraPage({
   if (!obra || !extra || extra.obra_id !== id) notFound();
 
   const fotoUrl = await urlFotoExtra(extra.foto_uri);
+  // Visto bueno (0042): con la regla de extras prendida, supervisor y residente
+  // mandan solos lo chico y piden visto bueno para lo grande. Lo decide la base.
+  const esAdmin = rol === 'admin';
+  const delegado =
+    !esAdmin && capturaEnObra(rol) && (await listReglas()).data.some((r) => r.tipo === 'EXTRA' && r.activa);
   const puedeEditar = capturaEnObra(rol) && extra.estado === 'BORRADOR';
   const ctx = { nombreEmpresa: nombreEmpresa ?? 'ConstructorPro' };
 
@@ -51,7 +57,9 @@ export default async function ExtraPage({
         extra={extra}
         fotoUrl={fotoUrl}
         puedeEditar={puedeEditar}
-        esAdmin={rol === 'admin'}
+        esAdmin={esAdmin}
+        puedeEnviar={esAdmin || delegado}
+        pedirVistoBueno={delegado}
         puedeDuplicar={capturaEnObra(rol)}
         tieneCliente={!!obra.cliente_id}
       />
