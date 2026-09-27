@@ -51,7 +51,11 @@ export default async function HojaFacturarPage({
   const estado = estadoDe(cobro);
   const volverA = `/admin/facturacion/hoja/${origen}/${id}`;
   const documentoHref =
-    origen === 'pago' ? `/admin/cotizaciones/${cobro.documentoId}` : `/admin/obras/${cobro.documentoId}`;
+    origen === 'pago'
+      ? `/admin/cotizaciones/${cobro.documentoId}`
+      : origen === 'estimacion'
+        ? `/admin/obras/${cobro.documentoId}/estimaciones/${cobro.id}`
+        : `/admin/obras/${cobro.documentoId}`;
 
   return (
     <div className="space-y-6">
@@ -64,7 +68,7 @@ export default async function HojaFacturarPage({
       <PageHeader
         eyebrow={`${origen === 'pago' ? 'Cotización' : 'Obra'}: ${cobro.documentoNombre}`}
         title={hoja.titulo}
-        description={`Cobro del ${formatDate(cobro.fecha)} · ${cobro.concepto || 'Sin concepto'} · ${formatCurrency(cobro.monto)}`}
+        description={`${origen === 'estimacion' ? 'Autorizada el' : 'Cobro del'} ${formatDate(cobro.fecha)} · ${cobro.concepto || 'Sin concepto'} · ${formatCurrency(cobro.monto)}`}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <EstadoFiscalBadge estado={estado} />

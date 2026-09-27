@@ -202,3 +202,51 @@ describe('paquete para el contador', () => {
     );
   });
 });
+
+describe('hoja de una ESTIMACIÓN (F3)', () => {
+  const est = {
+    folio: 3,
+    obra: 'Casa Gómez',
+    periodo: '1 sep al 15 sep',
+    importe: 11_000,
+    amortizacion: 3_300,
+    fondoGarantia: 550,
+    retenciones: [{ concepto: '5 al millar', importe: 55 }],
+    neto: 8_327,
+    ivaPct: 16,
+    renglones: [
+      { presupuestoId: 'p1', descripcion: 'Muro', cantidad: 10, unidad: 'm2', precioUnitario: 1_000, importe: 10_000, claveSat: '72151900', unidadSat: 'MTK' },
+      { presupuestoId: 'p2', descripcion: 'Losa', cantidad: 2.5, unidad: 'm2', precioUnitario: 400, importe: 1_000, claveSat: null, unidadSat: null },
+    ],
+    anticipoUuid: 'AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE',
+    esFiniquito: false,
+  };
+  const c: Cobro = { ...cobro('e1', 500, 8_327, 'Estimación 3'), origen: 'estimacion', documentoId: 'obra' };
+
+  test('factura el IMPORTE de lo ejecutado + IVA, con sus renglones y sus claves', () => {
+    const h = armarHoja(entrada(c, [], { estimacion: est }));
+    expect(h.tipo).toBe('factura');
+    expect(h.desglose.subtotal).toBe(11_000);
+    expect(h.desglose.iva).toBe(1_760);
+    expect(h.conceptos.map((x) => [x.claveProdServ, x.importe])).toEqual([
+      ['72151900', 10_000],
+      ['72111000', 1_000],
+    ]);
+    expect(h.conceptos[1].claveSugerida).toBe(true);
+  });
+
+  test('anticipo relacionado tipo 07; fondo y retenciones NO van en la factura', () => {
+    const h = armarHoja(entrada(c, [], { estimacion: est }));
+    const texto = h.notas.join(' ');
+    expect(texto).toMatch(/tipo 07/);
+    expect(texto).toMatch(/AAAAAAAA-BBBB/);
+    expect(texto).toMatch(/fondo de garantía .* NO se resta/);
+    expect(texto).toMatch(/5 al millar.*no va en el CFDI/);
+  });
+
+  test('sin IVA pactado usa el IVA de la empresa (el IVA va encima)', () => {
+    const h = armarHoja(entrada(c, [], { estimacion: { ...est, ivaPct: 0 }, ivaPorDefecto: 16 }));
+    expect(h.ivaModo).toBe('aparte');
+    expect(h.desglose.total).toBe(12_760);
+  });
+});

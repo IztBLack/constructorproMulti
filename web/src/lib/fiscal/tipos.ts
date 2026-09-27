@@ -5,7 +5,11 @@
 
 export type EstadoFiscal = 'por_facturar' | 'facturado' | 'no_requiere';
 export type IvaModo = 'incluido' | 'aparte' | 'sin_iva';
-export type OrigenCobro = 'pago' | 'movimiento';
+/**
+ * De dónde sale un cobro: pago de cotización, entrada de caja de la obra o
+ * ESTIMACIÓN autorizada (F3, 0039). Exactamente uno por fila de `cobro_fiscal`.
+ */
+export type OrigenCobro = 'pago' | 'movimiento' | 'estimacion';
 
 export const ESTADOS_FISCALES: readonly { valor: EstadoFiscal; texto: string }[] = [
   { valor: 'por_facturar', texto: 'Por facturar' },
@@ -17,7 +21,8 @@ export const esEstadoFiscal = (x: unknown): x is EstadoFiscal =>
   x === 'por_facturar' || x === 'facturado' || x === 'no_requiere';
 export const esIvaModo = (x: unknown): x is IvaModo =>
   x === 'incluido' || x === 'aparte' || x === 'sin_iva';
-export const esOrigenCobro = (x: unknown): x is OrigenCobro => x === 'pago' || x === 'movimiento';
+export const esOrigenCobro = (x: unknown): x is OrigenCobro =>
+  x === 'pago' || x === 'movimiento' || x === 'estimacion';
 
 export interface EmpresaFiscal {
   rfc: string | null;
@@ -38,6 +43,8 @@ export interface CobroFiscal {
   id: string;
   pago_id: string | null;
   movimiento_id: string | null;
+  /** 0039. Undefined si la base todavía no tiene la columna. */
+  estimacion_id?: string | null;
   estado: EstadoFiscal;
   metodo_pago: 'PUE' | 'PPD' | null;
   forma_pago: string | null;
@@ -68,7 +75,7 @@ export interface Cobro {
   metodo: string;
   concepto: string;
   referencia: string;
-  /** Cotización (pago) u obra (movimiento) de la que sale. */
+  /** Cotización (pago) u obra (movimiento, estimación) de la que sale. */
   documentoId: string;
   documentoNombre: string;
   clienteId: string | null;

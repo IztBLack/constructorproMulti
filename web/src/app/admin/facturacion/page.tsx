@@ -26,7 +26,7 @@ import { estadoDe, type Cobro } from '@/lib/fiscal/tipos';
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Facturación' };
 
-const ORIGEN: Record<Cobro['origen'], string> = { pago: 'Cotización', movimiento: 'Obra' };
+const ORIGEN: Record<Cobro['origen'], string> = { pago: 'Cotización', movimiento: 'Obra', estimacion: 'Estimación' };
 
 /**
  * Facturación (RF1b.4–6): lo pendiente por facturar, los complementos de pago

@@ -52,6 +52,39 @@ export interface DocumentoOrigen {
   conceptos: ConceptoOrigen[];
 }
 
+/**
+ * La estimación de la que sale el cobro (origen `estimacion`, F3). La factura
+ * de una estimación se hace por su IMPORTE (lo ejecutado a precios del
+ * contrato), no por lo que se cobra neto: la amortización del anticipo, el
+ * fondo de garantía y las retenciones no son conceptos de la factura.
+ */
+export interface EstimacionHoja {
+  folio: number;
+  obra: string;
+  periodo: string;
+  /** Importe bruto sin IVA. */
+  importe: number;
+  amortizacion: number;
+  fondoGarantia: number;
+  retenciones: { concepto: string; importe: number }[];
+  neto: number;
+  /** IVA pactado en el contrato de la obra (0 = se cobró sin IVA). */
+  ivaPct: number;
+  renglones: {
+    presupuestoId: string | null;
+    descripcion: string;
+    cantidad: number;
+    unidad: string;
+    precioUnitario: number;
+    importe: number;
+    claveSat: string | null;
+    unidadSat: string | null;
+  }[];
+  /** Folio fiscal del anticipo, si ya se facturó. */
+  anticipoUuid: string | null;
+  esFiniquito: boolean;
+}
+
 export interface EntradaHoja {
   cobro: Cobro;
   documento: DocumentoOrigen;
@@ -61,6 +94,8 @@ export interface EntradaHoja {
   otrosCobros: Cobro[];
   /** IVA por defecto de la empresa, si el documento no trae el suyo. */
   ivaPorDefecto: number;
+  /** Solo para cobros de origen `estimacion`. */
+  estimacion?: EstimacionHoja | null;
 }
 
 export interface CampoHoja {
@@ -125,6 +160,9 @@ const pesos = (n: number) => n.toFixed(2);
 /** IVA con que se factura: lo guardado en el cobro manda; si no, lo del documento. */
 export function ivaModoDe(cobro: Cobro, documento: DocumentoOrigen): IvaModo {
   if (cobro.fiscal?.iva_modo) return cobro.fiscal.iva_modo;
+  // Una estimación se valúa a precios del presupuesto, que no llevan IVA: el
+  // IVA va encima del importe.
+  if (cobro.origen === 'estimacion') return 'aparte';
   if (documento.conIva === false) return 'aparte';
   return 'incluido';
 }
@@ -193,8 +231,10 @@ export function armarHoja(e: EntradaHoja): HojaFacturar {
   const avisos: AvisoHoja[] = [];
   const notas: string[] = [];
 
+  const est = cobro.origen === 'estimacion' ? (e.estimacion ?? null) : null;
   const ivaModo = ivaModoDe(cobro, documento);
-  const ivaPct = documento.conIva === null ? e.ivaPorDefecto : documento.ivaPct;
+  const ivaPct =
+    est && est.ivaPct > 0 ? est.ivaPct : documento.conIva === null ? e.ivaPorDefecto : documento.ivaPct;
   const tipoEmisor = tipoPersonaDeRfc(emisor?.rfc);
   const rfcReceptor = (receptor?.rfc ?? '').toUpperCase();
   const generico = rfcReceptor === RFC_PUBLICO_GENERAL || rfcReceptor === RFC_EXTRANJERO;
@@ -204,10 +244,12 @@ export function armarHoja(e: EntradaHoja): HojaFacturar {
   );
   const retIsrPct = f?.ret_isr_pct ?? sugRet.isrPct;
   const retIvaPct = f?.ret_iva_pct ?? sugRet.ivaPct;
-  const desglose = desglosar(cobro.monto, { ivaModo, ivaPct, retIsrPct, retIvaPct });
+  // La factura de una estimación va por su IMPORTE (no por el neto cobrado).
+  const desglose = desglosar(est ? est.importe : cobro.monto, { ivaModo, ivaPct, retIsrPct, retIvaPct });
 
   // ── ¿Factura nueva o complemento de una PPD? ─────────────────────────────
-  const ppd = facturaPpdPrevia(cobro, e.otrosCobros);
+  // Una estimación siempre es factura propia.
+  const ppd = est ? null : facturaPpdPrevia(cobro, e.otrosCobros);
   const tipo: HojaFacturar['tipo'] = ppd ? 'complemento' : 'factura';
 
   // ── 1. Emisor ────────────────────────────────────────────────────────────
@@ -255,7 +297,10 @@ export function armarHoja(e: EntradaHoja): HojaFacturar {
   const esAnticipo = tipo === 'factura' && pareceAnticipo(cobro.concepto) && esPrimerCobro;
   const cubreTodo = Math.abs(cobro.monto - documento.total) <= 1 && documento.conceptos.length > 0;
 
-  if (tipo === 'complemento') {
+  if (est) {
+    conceptos = conceptosDeEstimacion(est, desglose.subtotal);
+    notas.push(...notasDeEstimacion(est));
+  } else if (tipo === 'complemento') {
     conceptos = [
       {
         origen: null,
@@ -402,8 +447,8 @@ export function armarHoja(e: EntradaHoja): HojaFacturar {
         texto: 'Te pagaron con tarjeta: revisa si fue de crédito (04) o de débito (28).',
       });
     }
-    // Anticipo facturado antes: hay que relacionarlo.
-    if (!esAnticipo) {
+    // Anticipo facturado antes: hay que relacionarlo (la estimación ya trae su nota).
+    if (!esAnticipo && !est) {
       const anticipo = anteriores.find(
         (c) => pareceAnticipo(c.concepto) && c.fiscal?.estado === 'facturado' && c.fiscal.uuid,
       );
@@ -416,9 +461,11 @@ export function armarHoja(e: EntradaHoja): HojaFacturar {
   }
 
   // ── Notas del caso y avisos ──────────────────────────────────────────────
-  notas.push(
-    'Si tu cliente te retiene un fondo de garantía, no lo restes en la factura: se factura el total y el fondo es un pago que llega después.',
-  );
+  if (!est) {
+    notas.push(
+      'Si tu cliente te retiene un fondo de garantía, no lo restes en la factura: se factura el total y el fondo es un pago que llega después.',
+    );
+  }
   if (ivaModo === 'aparte') {
     avisos.push({
       tipo: 'atencion',
@@ -473,6 +520,68 @@ export function armarHoja(e: EntradaHoja): HojaFacturar {
     facturaRelacionada: ppd?.fiscal?.uuid ?? null,
     ivaModo,
   };
+}
+
+/** Conceptos de la factura de una estimación: sus renglones, con la clave SAT de la partida. */
+function conceptosDeEstimacion(est: EstimacionHoja, subtotal: number): ConceptoHoja[] {
+  const conceptos: ConceptoHoja[] = est.renglones.map((r) => {
+    const unidadSat = r.unidadSat ?? 'E48';
+    return {
+      origen: r.presupuestoId ? { tabla: 'obra_presupuesto', id: r.presupuestoId } : null,
+      claveProdServ: r.claveSat ?? '72111000',
+      claveSugerida: !r.claveSat,
+      claveUnidad: unidadSat,
+      unidadSugerida: !r.unidadSat,
+      cantidad: r.cantidad,
+      unidad: textoUnidad(unidadSat) || r.unidad,
+      descripcion: `${r.descripcion} (estimación ${est.folio}, ${est.periodo})`,
+      valorUnitario: r.precioUnitario,
+      importe: centavos(r.importe),
+      objetoImpuesto: '02',
+    };
+  });
+  // Los importes ya vienen redondeados por renglón (igual que la base); si la
+  // suma se moviera un centavo, se ajusta en el último.
+  const suma = centavos(conceptos.reduce((s, c) => s + c.importe, 0));
+  const ajuste = centavos(subtotal - suma);
+  if (ajuste !== 0 && conceptos.length > 0) {
+    const u = conceptos[conceptos.length - 1];
+    u.importe = centavos(u.importe + ajuste);
+  }
+  return conceptos;
+}
+
+const pesosMx = (n: number) =>
+  n.toLocaleString('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 2 });
+
+/**
+ * Notas del caso de una estimación. La guía de llenado del SAT (apéndice de
+ * anticipos) da dos caminos para aplicar un anticipo facturado; la app los
+ * explica y el contador decide.
+ */
+function notasDeEstimacion(est: EstimacionHoja): string[] {
+  const notas = [
+    `Es la estimación ${est.folio} de ${est.obra} (${est.periodo}). La factura va por el importe de lo ejecutado, ${pesosMx(est.importe)} más IVA; tu cliente te paga ${pesosMx(est.neto)} después de sus descuentos.`,
+  ];
+  if (est.amortizacion > 0) {
+    const folio = est.anticipoUuid ? ` (folio ${est.anticipoUuid})` : '';
+    notas.push(
+      `Esta estimación amortiza ${pesosMx(est.amortizacion)} del anticipo${folio}. Si el anticipo se facturó, relaciona ese folio con el tipo 07 "CFDI por aplicación de anticipo" y emite por esa cantidad un CFDI de egreso (nota de crédito) relacionado también con el tipo 07. La otra opción del SAT es facturar solo el remanente con la misma relación. Confírmalo con tu contador.`,
+    );
+  }
+  if (est.fondoGarantia > 0) {
+    notas.push(
+      `El fondo de garantía (${pesosMx(est.fondoGarantia)}) NO se resta en la factura: se factura el importe completo y el fondo es dinero que tu cliente te regresa al cerrar la obra.`,
+    );
+  }
+  for (const r of est.retenciones) {
+    if (r.importe <= 0) continue;
+    notas.push(
+      `«${r.concepto}» (${pesosMx(r.importe)}) es una retención de tu cliente, no un impuesto de la factura: no va en el CFDI.`,
+    );
+  }
+  if (est.esFiniquito) notas.push('Es la estimación de finiquito: con ella se termina de amortizar el anticipo.');
+  return notas;
 }
 
 /** Texto plano de toda la hoja (para "Copiar todo" y para pegar en WhatsApp al contador). */

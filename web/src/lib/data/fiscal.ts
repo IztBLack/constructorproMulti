@@ -5,9 +5,12 @@
  * roles reciben vacío. Aquí además se revisa el rol para dar un mensaje claro
  * en vez de una pantalla vacía.
  *
- * Los "cobros" salen de dos lugares (ver 0037 §5):
+ * Los "cobros" salen de tres lugares (ver 0037 §5 y 0039 §8):
  *   · `pagos` de una cotización,
- *   · `movimientos` tipo ENTRADA de una obra.
+ *   · `movimientos` tipo ENTRADA de una obra,
+ *   · `estimaciones` AUTORIZADAS o COBRADAS (F3). La entrada de caja con que se
+ *     pagó una estimación NO se lista aparte: ya se factura con la estimación
+ *     (sería el mismo dinero dos veces en "por facturar").
  */
 
 import { cache } from 'react';
@@ -15,7 +18,10 @@ import { createClient } from '@/lib/supabase/server';
 import { getEmpresaUsuario } from './empresa';
 import { getModulosEmpresa } from './modulos';
 import { IVA_POR_DEFECTO } from './types';
-import type { ConceptoOrigen, DocumentoOrigen, EntradaHoja } from '@/lib/fiscal/hoja';
+import { formatDate } from './format';
+import { getEstimacion } from './estimaciones';
+import type { ConceptoOrigen, DocumentoOrigen, EntradaHoja, EstimacionHoja } from '@/lib/fiscal/hoja';
+import { pareceAnticipo } from '@/lib/fiscal/calculo';
 import type { GastoPaquete } from '@/lib/fiscal/paquete';
 import type {
   ClienteFiscal,
@@ -187,6 +193,15 @@ interface MovFila {
   categoria: string | null;
   referencia: string | null;
 }
+interface EstFila {
+  id: string;
+  obra_id: string;
+  folio: number;
+  neto: number;
+  respondido_at: number | null;
+  cobrado_at: number | null;
+  movimiento_id: string | null;
+}
 interface CotFila {
   id: string;
   nombre_proyecto: string;
@@ -245,22 +260,46 @@ export async function listCobros(filtro: FiltroCobros = {}): Promise<{ data: Cob
   if (filtro.cotizacionId) qPagos = qPagos.eq('cotizacion_id', filtro.cotizacionId);
   if (filtro.obraId) qMovs = qMovs.eq('obra_id', filtro.obraId);
 
-  const quierePagos = filtro.soloOrigen !== 'movimiento' && !filtro.obraId;
-  const quiereMovs = filtro.soloOrigen !== 'pago' && !filtro.cotizacionId;
+  // Estimaciones: la fecha del cobro es cuando el cliente la AUTORIZÓ (desde ahí
+  // es dinero que se le puede facturar).
+  let qEsts = supabase
+    .from('estimaciones')
+    .select('id, obra_id, folio, neto, respondido_at, cobrado_at, movimiento_id')
+    .in('estado', ['AUTORIZADA', 'COBRADA'])
+    .is('deleted_at', null);
+  if (filtro.desde != null) qEsts = qEsts.gte('respondido_at', filtro.desde);
+  if (filtro.hasta != null) qEsts = qEsts.lt('respondido_at', filtro.hasta);
+  if (filtro.obraId) qEsts = qEsts.eq('obra_id', filtro.obraId);
 
-  const [rPagos, rMovs, fiscales] = await Promise.all([
+  const quierePagos = (!filtro.soloOrigen || filtro.soloOrigen === 'pago') && !filtro.obraId;
+  const quiereMovs = (!filtro.soloOrigen || filtro.soloOrigen === 'movimiento') && !filtro.cotizacionId;
+  const quiereEsts = (!filtro.soloOrigen || filtro.soloOrigen === 'estimacion') && !filtro.cotizacionId;
+
+  const [rPagos, rMovs, rEsts, rLigadas, fiscales] = await Promise.all([
     quierePagos ? qPagos : Promise.resolve({ data: [], error: null }),
     quiereMovs ? qMovs : Promise.resolve({ data: [], error: null }),
+    quiereEsts ? qEsts : Promise.resolve({ data: [], error: null }),
+    // Entradas que pagan una estimación (de cualquier fecha).
+    quiereMovs
+      ? supabase.from('estimaciones').select('movimiento_id').not('movimiento_id', 'is', null).is('deleted_at', null)
+      : Promise.resolve({ data: [], error: null }),
     listarCobroFiscal(),
   ]);
   const error = rPagos.error?.message ?? rMovs.error?.message ?? null;
   if (error) return { data: [], error };
 
+  // Si 0039 no está aplicada, las estimaciones simplemente no aparecen.
+  const ests = rEsts.error ? [] : ((rEsts.data ?? []) as unknown as EstFila[]);
+  const ligadas = new Set(
+    (rLigadas.error ? [] : ((rLigadas.data ?? []) as { movimiento_id: string | null }[]))
+      .map((x) => x.movimiento_id)
+      .filter((x): x is string => !!x),
+  );
   const pagos = (rPagos.data ?? []) as PagoFila[];
-  const movs = (rMovs.data ?? []) as MovFila[];
+  const movs = ((rMovs.data ?? []) as MovFila[]).filter((m) => !ligadas.has(m.id));
 
   const cotIds = [...new Set(pagos.map((p) => p.cotizacion_id))];
-  const obraIds = [...new Set(movs.map((m) => m.obra_id))];
+  const obraIds = [...new Set([...movs.map((m) => m.obra_id), ...ests.map((e) => e.obra_id)])];
   const [rCots, rObras] = await Promise.all([
     cotIds.length
       ? supabase.from('cotizaciones').select('id, nombre_proyecto, cliente, cliente_id').in('id', cotIds)
@@ -285,6 +324,7 @@ export async function listCobros(filtro: FiltroCobros = {}): Promise<{ data: Cob
 
   const porPago = new Map(fiscales.filter((f) => f.pago_id).map((f) => [f.pago_id!, f]));
   const porMov = new Map(fiscales.filter((f) => f.movimiento_id).map((f) => [f.movimiento_id!, f]));
+  const porEst = new Map(fiscales.filter((f) => f.estimacion_id).map((f) => [f.estimacion_id!, f]));
 
   const cobros: Cobro[] = [
     ...pagos.map((p): Cobro => {
@@ -319,6 +359,24 @@ export async function listCobros(filtro: FiltroCobros = {}): Promise<{ data: Cob
         clienteId: o?.cliente_id ?? null,
         clienteNombre: (o?.cliente_id && nombres.get(o.cliente_id)) || o?.cliente || '',
         fiscal: porMov.get(m.id) ?? null,
+      };
+    }),
+    ...ests.map((e): Cobro => {
+      const o = obras.get(e.obra_id);
+      return {
+        origen: 'estimacion',
+        id: e.id,
+        fecha: Number(e.respondido_at ?? e.cobrado_at ?? 0),
+        monto: Number(e.neto),
+        // Cómo se pagó lo dice la entrada ligada; si no hay, la hoja pide confirmarlo.
+        metodo: '',
+        concepto: `Estimación ${e.folio}`,
+        referencia: '',
+        documentoId: e.obra_id,
+        documentoNombre: o?.nombre ?? 'Obra',
+        clienteId: o?.cliente_id ?? null,
+        clienteNombre: (o?.cliente_id && nombres.get(o.cliente_id)) || o?.cliente || '',
+        fiscal: porEst.get(e.id) ?? null,
       };
     }),
   ].sort((a, b) => b.fecha - a.fecha);
@@ -446,23 +504,28 @@ export async function getEntradaHoja(origen: OrigenCobro, id: string): Promise<E
     origen === 'pago'
       ? ((await supabase.from('pagos').select('cotizacion_id').eq('id', id).maybeSingle()).data
           ?.cotizacion_id as string | undefined)
-      : ((
-          await supabase.from('movimientos').select('obra_id').eq('id', id).eq('tipo', 'ENTRADA').maybeSingle()
-        ).data?.obra_id as string | undefined);
+      : origen === 'estimacion'
+        ? ((await supabase.from('estimaciones').select('obra_id').eq('id', id).maybeSingle()).data
+            ?.obra_id as string | undefined)
+        : ((
+            await supabase.from('movimientos').select('obra_id').eq('id', id).eq('tipo', 'ENTRADA').maybeSingle()
+          ).data?.obra_id as string | undefined);
   if (!documentoId) return null;
 
   const filtro: FiltroCobros =
-    origen === 'pago' ? { cotizacionId: documentoId, soloOrigen: 'pago' } : { obraId: documentoId, soloOrigen: 'movimiento' };
+    origen === 'pago' ? { cotizacionId: documentoId, soloOrigen: 'pago' } : { obraId: documentoId, soloOrigen: origen };
   const [{ data: cobros }, ivaEmpresa] = await Promise.all([listCobros(filtro), ivaDeEmpresa()]);
   const cobro = cobros.find((c) => c.id === id);
   if (!cobro) return null;
 
-  const [documento, emisor, receptor] = await Promise.all([
+  const [documento, emisor, receptor, estimacion] = await Promise.all([
     origen === 'pago' ? documentoDeCotizacion(documentoId) : documentoDeObra(documentoId, ivaEmpresa),
     getEmpresaFiscal(),
     cobro.clienteId ? getClienteFiscal(cobro.clienteId) : Promise.resolve(null),
+    origen === 'estimacion' ? estimacionParaHoja(id) : Promise.resolve(null),
   ]);
   if (!documento) return null;
+  if (origen === 'estimacion' && !estimacion) return null;
 
   return {
     cobro,
@@ -471,6 +534,75 @@ export async function getEntradaHoja(origen: OrigenCobro, id: string): Promise<E
     receptor,
     otrosCobros: cobros.filter((c) => c.id !== id),
     ivaPorDefecto: ivaEmpresa,
+    estimacion,
+  };
+}
+
+/**
+ * Lo que la hoja necesita de una estimación: sus renglones (congelados desde
+ * que se envió) con la clave SAT de la partida, sus descuentos y el folio
+ * fiscal del anticipo (el de la entrada ligada en el contrato o, si no, la
+ * primera entrada de la obra que diga "anticipo" y ya esté facturada).
+ */
+async function estimacionParaHoja(id: string): Promise<EstimacionHoja | null> {
+  const { data: e } = await getEstimacion(id);
+  if (!e) return null;
+  const supabase = await createClient();
+
+  const ids = e.renglones.map((r) => r.presupuesto_id).filter((x): x is string => !!x);
+  const claves = new Map<string, { clave: string | null; unidad: string | null }>();
+  if (ids.length) {
+    const { data, error } = await supabase.from('obra_presupuesto').select('id, clave_sat, unidad_sat').in('id', ids);
+    if (!error) {
+      for (const p of (data ?? []) as Record<string, unknown>[]) {
+        claves.set(p.id as string, {
+          clave: (p.clave_sat as string | null) ?? null,
+          unidad: (p.unidad_sat as string | null) ?? null,
+        });
+      }
+    }
+  }
+
+  const [{ data: obra }, { data: contrato }] = await Promise.all([
+    supabase.from('obras').select('nombre').eq('id', e.obra_id).maybeSingle(),
+    supabase.from('obra_contrato').select('anticipo_movimiento_id').eq('obra_id', e.obra_id).maybeSingle(),
+  ]);
+  let anticipoUuid: string | null = null;
+  const movAnticipo = (contrato?.anticipo_movimiento_id as string | null | undefined) ?? null;
+  if (movAnticipo) {
+    const { data } = await supabase.from('cobro_fiscal').select('uuid').eq('movimiento_id', movAnticipo).maybeSingle();
+    anticipoUuid = (data?.uuid as string | null | undefined) ?? null;
+  }
+  if (!anticipoUuid) {
+    const { data: entradas } = await listCobros({ obraId: e.obra_id, soloOrigen: 'movimiento' });
+    const anticipo = [...entradas]
+      .sort((a, b) => a.fecha - b.fecha)
+      .find((c) => pareceAnticipo(c.concepto) && c.fiscal?.estado === 'facturado' && c.fiscal.uuid);
+    anticipoUuid = anticipo?.fiscal?.uuid ?? null;
+  }
+
+  return {
+    folio: e.folio,
+    obra: (obra?.nombre as string | undefined) ?? 'Obra',
+    periodo: `${formatDate(e.periodo_inicio)} al ${formatDate(e.periodo_fin)}`,
+    importe: e.importe_bruto,
+    amortizacion: e.amortizacion,
+    fondoGarantia: e.fondo_garantia,
+    retenciones: e.retenciones.map((r) => ({ concepto: r.concepto, importe: r.importe })),
+    neto: e.neto,
+    ivaPct: e.iva_pct,
+    renglones: e.renglones.map((r) => ({
+      presupuestoId: r.presupuesto_id,
+      descripcion: r.concepto,
+      cantidad: r.cantidad,
+      unidad: r.unidad,
+      precioUnitario: r.precio_unitario,
+      importe: r.importe,
+      claveSat: r.presupuesto_id ? (claves.get(r.presupuesto_id)?.clave ?? null) : null,
+      unidadSat: r.presupuesto_id ? (claves.get(r.presupuesto_id)?.unidad ?? null) : null,
+    })),
+    anticipoUuid,
+    esFiniquito: e.es_finiquito,
   };
 }
 
@@ -511,7 +643,10 @@ export async function listEntradasPeriodo(
   for (const c of enPeriodo) {
     const documento = docs.get(`${c.origen}:${c.documentoId}`);
     if (!documento) continue;
+    const estimacion = c.origen === 'estimacion' ? await estimacionParaHoja(c.id) : null;
+    if (c.origen === 'estimacion' && !estimacion) continue;
     data.push({
+      estimacion,
       cobro: c,
       documento,
       emisor,
@@ -564,7 +699,13 @@ export async function listGastosPeriodo(
 
 // ── Escritura del estado fiscal de un cobro ──────────────────────────────────
 
-export type CambiosCobroFiscal = Partial<Omit<CobroFiscal, 'id' | 'pago_id' | 'movimiento_id'>>;
+export type CambiosCobroFiscal = Partial<Omit<CobroFiscal, 'id' | 'pago_id' | 'movimiento_id' | 'estimacion_id'>>;
+
+const COLUMNA_ORIGEN: Record<OrigenCobro, 'pago_id' | 'movimiento_id' | 'estimacion_id'> = {
+  pago: 'pago_id',
+  movimiento: 'movimiento_id',
+  estimacion: 'estimacion_id',
+};
 
 /**
  * Crea o actualiza la fila fiscal de un cobro. Se lee primero (y no un upsert a
@@ -578,7 +719,7 @@ export async function guardarCobroFiscal(
   const { empresaId, puede } = await getAccesoFiscal();
   if (!empresaId || !puede) return { id: null, error: 'Solo el administrador o el contador pueden hacer esto.' };
   const supabase = await createClient();
-  const col = origen === 'pago' ? 'pago_id' : 'movimiento_id';
+  const col = COLUMNA_ORIGEN[origen];
   const { data: actual, error: errLeer } = await supabase
     .from('cobro_fiscal')
     .select('id')
