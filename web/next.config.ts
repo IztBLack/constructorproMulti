@@ -41,6 +41,10 @@ const nextConfig: NextConfig = {
     '/admin/obras/\\[id\\]/estado-cuenta-cliente/descargar': [
       './node_modules/@sparticuz/chromium/**/*',
     ],
+    // Bitácora de obra por periodo (0041): mismo Chromium.
+    '/admin/obras/\\[id\\]/bitacora/pdf/descargar': [
+      './node_modules/@sparticuz/chromium/**/*',
+    ],
   },
 
   async headers() {
