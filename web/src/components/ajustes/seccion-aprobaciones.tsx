@@ -12,7 +12,7 @@ import {
   enlaceObjeto,
   type ReglaAprobacion,
   type SolicitudAprobacion,
-} from '@/lib/data/aprobaciones';
+} from '@/lib/aprobaciones/tipos';
 import { formatCurrency, formatDateTime } from '@/lib/data/format';
 
 /**

@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui';
 import { EstadoFormulario } from '@/components/ajustes/estado-formulario';
 import { solicitarAprobacion } from '@/lib/aprobaciones/actions';
-import type { TipoAprobacion } from '@/lib/data/aprobaciones';
+import type { TipoAprobacion } from '@/lib/aprobaciones/tipos';
 
 /**
  * "Pedir visto bueno" para quien arma un extra o una orden de compra y no la

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getEmpresaUsuario } from '@/lib/data/empresa';
-import type { TipoAprobacion } from '@/lib/data/aprobaciones';
+import type { TipoAprobacion } from '@/lib/aprobaciones/tipos';
 
 /*
  * Escrituras del visto bueno (0042). La barrera es la base: las reglas solo las
