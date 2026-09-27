@@ -165,9 +165,9 @@ en local (PGlite).
 | F1 | 🔄 | | agente en curso |
 | F1b | ✅ | 2200833, d3cc925, 430c522, 48d74c6 | Web. 0037 escrita y probada en PGlite (23 tests), **sin aplicar a ningún Supabase**. RF1b.7 no se hizo (a propósito). Pendiente: verificación visual en navegador, ver un XML real de un PAC, móvil (D6), y que un contador valide notas y claves (D3) |
 | F1 web | ✅ | f77041c, ee76ceb, cd24dec, 4f2736f, cd4f01a | 0036 escrita y probada en PGlite (31 tests), **sin aplicar a ningún Supabase**. Pendiente: verificación visual en navegador (no se levantó la web contra producción), el móvil (D6), tests de paridad web↔móvil de la utilidad (RT6) cuando el móvil la implemente, sumar los extras en el PDF/Excel de caja interno (`documento-caja-html.ts`, `estado-cuenta-excel.ts`), que siguen mostrando COSTO TOTAL = solo presupuesto, y aplicar 0036 + bucket `extras` con el visto bueno de Mario |
-| F2 | ⏳ | | |
-| F3 | ⏳ | | |
+| F2 | 🔄 | | agente en curso |
+| F3 | 🔄 | | agente en curso |
 | F5 | 🔄 | | agente en curso (adelantada) |
 | F4 | ✅ parcial | 27b64ea, 88bdfa9, 77328b6, 343f8ba, c8920b0, a1a358d | Web: bitácora (timeline, fotos, aclaraciones, cierre 24 h, PDF por periodo, portal del cliente) y programa (tabla, barras CSS, atrasos). 0041 escrita y probada en PGlite (31 tests), **sin aplicar a ningún Supabase**. Pendiente: "programado vs real" con `avance_partida` de F3 (F4-13), captura sin conexión → móvil (F4-10), colaborador/residente escribe en su obra → F6 (F4-2), verificación visual en navegador (no se levantó contra producción), paginación de la bitácora larga en el portal |
 | F6 | ⏳ | | |
-| F7 | ⏳ | | |
+| F7 | 🔄 | | agente en curso |
