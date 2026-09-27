@@ -18,6 +18,8 @@ import {
 import { formatCurrency, formatDate } from '@/lib/data/format';
 import { getObraCliente, getEstadoCuentaObra, mapEstadoObra } from '@/lib/data/portal-cliente';
 import type { EstadoObraPortal } from '@/lib/data/portal-cliente';
+import { listBitacoraObra } from '@/lib/data/bitacora';
+import { BitacoraCliente } from './bitacora-cliente';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,8 +48,12 @@ export default async function ObraDetallePage({
 
   // Estado de cuenta REAL de ESTA obra: COSTO TOTAL (presupuesto) vs RECIBIDO
   // (movimientos tipo='ENTRADA'). Las SALIDA (pagos internos) nunca se exponen.
-  const { costoTotal, recibido, pendiente, pagadoPct, entradas } =
-    await getEstadoCuentaObra(obra.id);
+  const [{ costoTotal, recibido, pendiente, pagadoPct, entradas }, bitacora] = await Promise.all([
+    getEstadoCuentaObra(obra.id),
+    // Bitácora publicada (0041). La RLS entrega SOLO lo marcado para el
+    // cliente; si falla o no hay nada, la sección simplemente no aparece.
+    listBitacoraObra(obra.id),
+  ]);
 
   const tieneEstadoCuenta = costoTotal > 0 || entradas.length > 0;
 
@@ -183,6 +189,9 @@ export default async function ObraDetallePage({
           </>
         )}
       </section>
+
+      {/* ── Bitácora publicada ──────────────────────────────────────────── */}
+      <BitacoraCliente entradas={bitacora.data} />
 
       {/* ── Historial de pagos (ENTRADAS de esta obra) ──────────────────── */}
       {entradas.length > 0 && (
