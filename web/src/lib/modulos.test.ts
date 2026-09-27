@@ -35,11 +35,13 @@ describe('perfilDeRespuestas (lo que manda el navegador no se cree)', () => {
     expect(p.tipo).toBe('empresa');
     expect(p.necesidades).toEqual(['material']);
     expect(p.proximamente).toEqual(
-      expect.arrayContaining(['estimaciones', 'cumplimiento']),
+      expect.arrayContaining(['estimaciones']),
     );
-    // La utilidad (F1) y Compras (F2) ya existen: se prenden, no quedan en "próximamente".
+    // La utilidad (F1), compras (F2) y cumplimiento (F5) ya existen: se
+    // prenden, no quedan en "próximamente".
     expect(p.proximamente).not.toContain('compras');
     expect(p.proximamente).not.toContain('rentabilidad');
+    expect(p.proximamente).not.toContain('cumplimiento');
     expect(p.siguientePasoDescartado).toBe(false);
   });
 
@@ -81,6 +83,17 @@ describe('paleta de comandos', () => {
     expect(titulos(PAQUETE_POR_DEFECTO)).not.toContain('Facturación');
     expect(titulos([...PAQUETE_POR_DEFECTO, 'fiscal'])).toContain('Facturación');
     expect(navDeModulos([...PAQUETE_POR_DEFECTO, 'fiscal']).map((n) => n.href)).toContain('/admin/facturacion');
+  });
+
+  test('seguridad, herramienta y garantías solo con su módulo prendido', () => {
+    const titulos = (activos: ClaveModulo[]) =>
+      soloModulosActivos([...COMANDOS_FIJOS, ...comandosDeObra('o1')], activos).map((c) => c.titulo);
+    expect(titulos([...PAQUETE_POR_DEFECTO])).not.toContain('Seguridad');
+    expect(titulos([...PAQUETE_POR_DEFECTO])).not.toContain('Herramienta y maquinaria');
+    expect(titulos([...PAQUETE_POR_DEFECTO])).not.toContain('Garantías');
+    expect(titulos([...PAQUETE_POR_DEFECTO, 'seguridad', 'herramienta', 'postventa'])).toEqual(
+      expect.arrayContaining(['Seguridad', 'Herramienta y maquinaria', 'Garantías']),
+    );
   });
 
   test('extras y utilidad solo con su módulo prendido', () => {
@@ -207,6 +220,11 @@ describe('rutaPerteneceAModulo', () => {
     ['/admin/obras/abc/extras/e1/pdf/descargar', 'cambios'],
     ['/admin/obras/abc/utilidad', 'rentabilidad'],
     ['/admin/rentabilidad', 'rentabilidad'],
+    ['/admin/obras/abc/seguridad', 'seguridad'],
+    ['/admin/herramienta', 'herramienta'],
+    ['/admin/herramienta/h1', 'herramienta'],
+    ['/admin/postventa', 'postventa'],
+    ['/admin/postventa/r1', 'postventa'],
   ];
   test.each(casos)('%s → %s', (ruta, esperado) => {
     expect(rutaPerteneceAModulo(ruta)).toBe(esperado);
@@ -246,6 +264,18 @@ describe('navDeModulos', () => {
     expect(navDeModulos(PAQUETE_POR_DEFECTO, 'admin').map((n) => n.label)).not.toContain('Utilidad');
   });
 
+  test('F7: Herramienta y Garantías para la oficina, nunca para el colaborador', () => {
+    const f7 = [...PAQUETE_POR_DEFECTO, 'seguridad', 'herramienta', 'postventa'] as ClaveModulo[];
+    for (const rol of ['admin', 'supervisor', 'contador']) {
+      expect(navDeModulos(f7, rol).map((n) => n.label)).toEqual(expect.arrayContaining(['Herramienta', 'Garantías']));
+    }
+    expect(navDeModulos(f7, 'colaborador').map((n) => n.label)).not.toContain('Herramienta');
+    expect(navDeModulos(f7, 'colaborador').map((n) => n.label)).not.toContain('Garantías');
+    // Seguridad vive en la obra: no pone enlace en la barra.
+    expect(navDeModulos(f7, 'admin').map((n) => n.label)).not.toContain('Seguridad');
+    expect(navDeModulos(PAQUETE_POR_DEFECTO, 'admin').map((n) => n.label)).not.toContain('Herramienta');
+  });
+
   test('lo apagado desaparece de la barra', () => {
     const labels = navDeModulos(['obras', 'caja']).map((n) => n.label);
     expect(labels).toEqual(['Inicio', 'Obras', 'Clientes']);
@@ -279,21 +309,29 @@ describe('modulosPorPerfil (plan §4.2)', () => {
 
   test('constructora acumula los paquetes anteriores', () => {
     const r = modulosPorPerfil('constructora', [], 'no');
-    // F1, F2 y F4 ya existen: utilidad, compras, bitácora y programa se prenden de verdad.
+    // F1, F2, F4 y F5 ya existen: utilidad, compras, bitácora, programa,
+    // cumplimiento y subcontratos se prenden de verdad.
     expect(r.activos.sort()).toEqual(
-      [...PAQUETE_POR_DEFECTO, 'rentabilidad', 'compras', 'bitacora', 'programa'].sort(),
+      [
+        ...PAQUETE_POR_DEFECTO,
+        'rentabilidad',
+        'compras',
+        'bitacora',
+        'programa',
+        'cumplimiento',
+        'subcontratos',
+      ].sort(),
     );
-    expect(r.proximamente).toEqual(
-      expect.arrayContaining(['cumplimiento', 'subcontratos']),
-    );
-    expect(r.proximamente).not.toContain('bitacora');
-    expect(r.proximamente).not.toContain('programa');
+    expect(r.proximamente).toEqual(expect.arrayContaining(['estimaciones']));
+    for (const c of ['compras', 'bitacora', 'programa', 'cumplimiento', 'subcontratos'] as const) {
+      expect(r.proximamente).not.toContain(c);
+    }
   });
 
   test('facturar o tener gente en el IMSS sugiere cumplimiento; "no" no', () => {
-    expect(modulosPorPerfil('independiente', [], 'si').proximamente).toContain('cumplimiento');
-    expect(modulosPorPerfil('independiente', [], 'algunos').proximamente).toContain('cumplimiento');
-    expect(modulosPorPerfil('independiente', [], 'no').proximamente).not.toContain('cumplimiento');
+    expect(modulosPorPerfil('independiente', [], 'si').activos).toContain('cumplimiento');
+    expect(modulosPorPerfil('independiente', [], 'algunos').activos).toContain('cumplimiento');
+    expect(modulosPorPerfil('independiente', [], 'no').activos).not.toContain('cumplimiento');
   });
 
   test('las necesidades suman a la base, con dependencias', () => {
@@ -316,10 +354,10 @@ describe('modulosPorPerfil (plan §4.2)', () => {
   });
 
   test('tratos: subcontratos solo para perfiles con oficina', () => {
-    expect(modulosPorPerfil('contratista', ['tratos'], 'no').proximamente).not.toContain(
+    expect(modulosPorPerfil('contratista', ['tratos'], 'no').activos).not.toContain(
       'subcontratos',
     );
-    expect(modulosPorPerfil('empresa', ['tratos'], 'no').proximamente).toContain('subcontratos');
+    expect(modulosPorPerfil('empresa', ['tratos'], 'no').activos).toContain('subcontratos');
   });
 });
 

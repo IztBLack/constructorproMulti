@@ -53,6 +53,14 @@ const nextConfig: NextConfig = {
     '/admin/compras/ordenes/\\[id\\]/pdf/descargar': [
       './node_modules/@sparticuz/chromium/**/*',
     ],
+    // Contrato de subcontrato (F5) y proyección de la raya: también usan
+    // Chromium y no estaban registrados (se detectó al integrar F2).
+    '/admin/subcontratos/\\[id\\]/pdf/descargar': [
+      './node_modules/@sparticuz/chromium/**/*',
+    ],
+    '/admin/proyeccion/pdf': [
+      './node_modules/@sparticuz/chromium/**/*',
+    ],
     // Hoja para facturar (módulo fiscal, F1b): mismo Chromium.
     '/admin/facturacion/hoja/\\[origen\\]/\\[id\\]/pdf': [
       './node_modules/@sparticuz/chromium/**/*',

@@ -21,9 +21,21 @@
  * cosas distintas.
  */
 
-export type TipoDocumento = 'cotizacion' | 'nota' | 'estado_cuenta' | 'extra' | 'orden_compra';
+export type TipoDocumento = 'cotizacion' | 'nota' | 'estado_cuenta' | 'extra' | 'subcontrato' | 'orden_compra';
 
-export const TIPOS_DOCUMENTO: TipoDocumento[] = ['cotizacion', 'nota', 'estado_cuenta', 'extra', 'orden_compra'];
+/**
+ * `extra` (0036), `subcontrato` (0040) y `orden_compra` (0038) llegaron
+ * después: el móvil no los conoce, pero como nunca escribe `pdf_config.textos`
+ * (0032), una clave nueva en ese jsonb no le afecta.
+ */
+export const TIPOS_DOCUMENTO: TipoDocumento[] = [
+  'cotizacion',
+  'nota',
+  'estado_cuenta',
+  'extra',
+  'subcontrato',
+  'orden_compra',
+];
 
 /** Cómo se llama cada tipo en la interfaz (Ajustes → PDF). */
 export const NOMBRE_TIPO: Record<TipoDocumento, string> = {
@@ -31,6 +43,7 @@ export const NOMBRE_TIPO: Record<TipoDocumento, string> = {
   nota: 'Nota de obra',
   estado_cuenta: 'Estado de cuenta del cliente',
   extra: 'Extra (orden de cambio)',
+  subcontrato: 'Contrato de subcontrato',
   orden_compra: 'Orden de compra (al proveedor)',
 };
 
@@ -43,7 +56,7 @@ export interface ContextoTextoFinal {
   /** Cotización: si lleva IVA y a qué tasa. */
   ivaEnabled?: boolean;
   ivaPct?: number;
-  /** Nota de obra: a nombre de quién va. */
+  /** Nota de obra y subcontrato: a nombre de quién va. */
   destinatario?: string;
 }
 
@@ -96,6 +109,14 @@ export function textoIntegrado(tipo: TipoDocumento, ctx: ContextoTextoFinal): st
         'Anote el folio de esta orden en su remisión y en su factura. ' +
         `Cualquier cambio de precio o de cantidad debe autorizarlo ${empresa} antes de surtir.`
       );
+
+    case 'subcontrato': {
+      const quien = ctx.destinatario?.trim() || 'el subcontratista';
+      return (
+        `Leído el presente contrato, ${empresa} y ${quien} lo firman de conformidad. ` +
+        'Montos en pesos mexicanos (MXN).'
+      );
+    }
   }
 }
 

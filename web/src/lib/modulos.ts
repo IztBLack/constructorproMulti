@@ -284,8 +284,10 @@ export const MODULOS: readonly Modulo[] = [
     descripcion: 'Revisión diaria, equipo de protección entregado e incidentes.',
     grupo: 'obra',
     dependeDe: [],
-    rutas: [],
-    disponible: false,
+    // Vive dentro de cada obra (pestaña "Seguridad") y en la ficha de cada
+    // colaborador (EPP entregado): no pone enlace en la barra.
+    rutas: ['/admin/obras/*/seguridad'],
+    disponible: true,
   },
   {
     clave: 'herramienta',
@@ -293,8 +295,10 @@ export const MODULOS: readonly Modulo[] = [
     descripcion: 'Qué herramienta tienes, en qué obra está y quién la trae.',
     grupo: 'obra',
     dependeDe: [],
-    rutas: [],
-    disponible: false,
+    rutas: ['/admin/herramienta'],
+    // El colaborador no ve herramienta (0043): el enlace es para la oficina.
+    nav: [{ href: '/admin/herramienta', label: 'Herramienta', orden: 65, roles: ['admin', 'supervisor', 'contador'] }],
+    disponible: true,
   },
   {
     clave: 'subcontratos',
@@ -302,8 +306,11 @@ export const MODULOS: readonly Modulo[] = [
     descripcion: 'Convierte un trato con un subcontratista en contrato, con sus retenciones.',
     grupo: 'socios',
     dependeDe: ['notas'],
-    rutas: [],
-    disponible: false,
+    // El botón "Convertir en contrato" vive en la nota (ruta de `notas`); lo
+    // oculta la propia página si este módulo está apagado.
+    rutas: ['/admin/subcontratos'],
+    nav: [{ href: '/admin/subcontratos', label: 'Subcontratos', orden: 75 }],
+    disponible: true,
   },
   {
     clave: 'postventa',
@@ -311,8 +318,11 @@ export const MODULOS: readonly Modulo[] = [
     descripcion: 'Tu cliente reporta una garantía desde el portal y tú le das seguimiento.',
     grupo: 'cliente',
     dependeDe: [],
-    rutas: [],
-    disponible: false,
+    // En el portal, "Reportar un problema" sale solo con el módulo prendido
+    // (RPC `postventa_disponible`, 0043); lo ya reportado se sigue viendo.
+    rutas: ['/admin/postventa'],
+    nav: [{ href: '/admin/postventa', label: 'Garantías', orden: 42, roles: ['admin', 'supervisor', 'contador'] }],
+    disponible: true,
   },
   {
     clave: 'cumplimiento',
@@ -321,8 +331,11 @@ export const MODULOS: readonly Modulo[] = [
       'Te recuerda lo que toca con el IMSS y guarda los comprobantes, para que no te multen. El trámite lo haces tú o tu contador.',
     grupo: 'papeles',
     dependeDe: [],
-    rutas: [],
-    disponible: false,
+    // La tarjeta SIROC del detalle de la obra la muestra la página de la obra
+    // (núcleo) solo si este módulo está prendido y el rol es admin/contador.
+    rutas: ['/admin/cumplimiento'],
+    nav: [{ href: '/admin/cumplimiento', label: 'IMSS y papeles', orden: 80 }],
+    disponible: true,
   },
 ];
 

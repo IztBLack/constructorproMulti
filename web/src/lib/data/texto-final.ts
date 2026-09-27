@@ -20,6 +20,8 @@ const TABLA: Record<TipoDocumento, string> = {
   // Solo se puede mientras el extra es borrador: al enviarse queda congelado
   // con todo y su párrafo (0036), y la base rechaza el cambio.
   extra: 'orden_cambio',
+  // 0040: el contrato de subcontrato lleva su propio párrafo final.
+  subcontrato: 'subcontrato',
   // Igual que el extra: solo en borrador. Emitida, la base la congela (0038).
   orden_compra: 'ordenes_compra',
 };
