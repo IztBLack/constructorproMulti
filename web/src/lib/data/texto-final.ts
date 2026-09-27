@@ -17,6 +17,8 @@ const TABLA: Record<TipoDocumento, string> = {
   // que pueda llevar el suyo.
   estado_cuenta: 'obras',
   nota: 'nota_obra',
+  // 0040: el contrato de subcontrato lleva su propio párrafo final.
+  subcontrato: 'subcontrato',
 };
 
 export interface ResultadoTexto {
