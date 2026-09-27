@@ -158,7 +158,7 @@ function columnaCategoriaCosto(input: MovimientoInput): { categoria_costo?: Cate
  * se guarda el movimiento SIN clasificar en vez de perderlo: la web y la
  * migración pueden desplegarse en cualquier orden (mismo criterio que F0-9).
  */
-function faltaColumnaCategoria(error: { code?: string; message: string } | null): boolean {
+export function faltaColumnaCategoria(error: { code?: string; message: string } | null): boolean {
   return (
     !!error &&
     (error.code === 'PGRST204' || /could not find.*categoria_costo/i.test(error.message))

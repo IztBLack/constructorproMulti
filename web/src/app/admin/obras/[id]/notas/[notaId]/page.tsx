@@ -9,6 +9,9 @@ import { origenTextoFinal, resolverTextoFinal, textoIntegrado } from '@/lib/pdf/
 import { TextoFinalCard } from '@/components/pdf/texto-final-card';
 import { LinkButton } from '@/components/ui';
 import EditorNota from './editor-nota';
+import { ConvertirEnContrato } from './convertir-contrato';
+import { getModulosEmpresa } from '@/lib/data/modulos';
+import { puedeEscribirSubcontratos, subcontratoDeNota } from '@/lib/data/subcontratos';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,6 +48,12 @@ export default async function NotaDetallePage({
 
   const puedeEditar = ['admin', 'supervisor'].includes(rol);
 
+  // «Convertir en contrato» (módulo `subcontratos`, RF5.7): solo admin y
+  // contador escriben contratos (0040). Si ya hay uno, se enlaza en su lugar.
+  const { activos } = await getModulosEmpresa();
+  const conSubcontratos = activos.includes('subcontratos');
+  const contrato = conSubcontratos ? await subcontratoDeNota(notaId) : null;
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -55,9 +64,19 @@ export default async function NotaDetallePage({
           ← Notas de {obra.nombre}
         </Link>
 
-        <LinkButton href={`/admin/obras/${id}/notas/${notaId}/pdf`} variant="secondary" size="sm">
-          Ver PDF para compartir
-        </LinkButton>
+        <div className="flex flex-wrap items-start gap-2">
+          {conSubcontratos && contrato && (
+            <LinkButton href={`/admin/subcontratos/${contrato.id}`} variant="secondary" size="sm">
+              Ver contrato
+            </LinkButton>
+          )}
+          {conSubcontratos && !contrato && puedeEscribirSubcontratos(rol) && (
+            <ConvertirEnContrato obraId={id} notaId={notaId} />
+          )}
+          <LinkButton href={`/admin/obras/${id}/notas/${notaId}/pdf`} variant="secondary" size="sm">
+            Ver PDF para compartir
+          </LinkButton>
+        </div>
       </div>
 
       <EditorNota
