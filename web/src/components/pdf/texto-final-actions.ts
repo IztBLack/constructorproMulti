@@ -45,6 +45,10 @@ export async function guardarTextoFinalAction(
       // adentro. Revalidar la rama completa es barato y no falla nunca.
       revalidatePath('/admin/obras', 'layout');
       break;
+    case 'subcontrato':
+      revalidatePath(`/admin/subcontratos/${id}`);
+      revalidatePath(`/admin/subcontratos/${id}/pdf`);
+      break;
   }
 
   return { ok: true };

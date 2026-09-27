@@ -45,6 +45,8 @@ export const COMANDOS_FIJOS: Comando[] = [
   { titulo: 'Proyección de nómina', href: '/admin/proyeccion', grupo: 'Ir a', alias: 'raya esperada semana estimado sueldos' },
   { titulo: 'Utilidad por obra', href: '/admin/rentabilidad', grupo: 'Ir a', alias: 'ganancia margen rentabilidad comparativo dinero' },
   { titulo: 'Pase de lista de hoy', href: '/campo', grupo: 'Ir a', alias: 'asistencia lista campo jornada faltas' },
+  { titulo: 'Herramienta y maquinaria', href: '/admin/herramienta', grupo: 'Ir a', alias: 'inventario equipo prestamo revolvedora andamio donde esta' },
+  { titulo: 'Garantías', detalle: 'Reportes de tus clientes después de entregar', href: '/admin/postventa', grupo: 'Ir a', alias: 'postventa reclamos quejas reportes garantia' },
   { titulo: 'Catálogo de conceptos', href: '/admin/catalogo', grupo: 'Ir a', alias: 'precios partidas conceptos' },
   { titulo: 'Puestos', href: '/admin/puestos', grupo: 'Ir a', alias: 'oficios salarios' },
   { titulo: 'Usuarios y roles', href: '/admin/usuarios', grupo: 'Ir a', alias: 'permisos accesos socios' },
@@ -92,6 +94,7 @@ export function comandosDeObra(obraId: string, nombre?: string): Comando[] {
     { titulo: `Avance${suf}`, href: `/admin/obras/${obraId}/avance`, grupo: 'En esta obra', alias: 'lo que se hizo partidas medir porcentaje' },
     { titulo: `Estimaciones${suf}`, href: `/admin/obras/${obraId}/estimaciones`, grupo: 'En esta obra', alias: 'cobrar por avance anticipo amortización retención' },
     { titulo: `Utilidad${suf}`, href: `/admin/obras/${obraId}/utilidad`, grupo: 'En esta obra', alias: 'ganancia margen rentabilidad' },
+    { titulo: `Seguridad${suf}`, href: `/admin/obras/${obraId}/seguridad`, grupo: 'En esta obra', alias: 'revision checklist epp accidente incidente nom-031 imss st-7' },
     { titulo: `PDF de caja${suf}`, href: `/admin/obras/${obraId}/pdf`, grupo: 'En esta obra', alias: 'imprimir documento movimientos', nuevaPestana: true },
     {
       titulo: `Estado de cuenta del cliente${suf}`,

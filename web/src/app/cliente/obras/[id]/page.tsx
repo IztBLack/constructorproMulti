@@ -26,6 +26,10 @@ import { getAvanceFisicoPortal, listEstimacionesCliente } from '@/lib/data/estim
 import { avanceFinanciero } from '@/lib/estimaciones/avance';
 import { AvanceFisicoFinanciero } from '@/components/estimaciones/avance-fisico-financiero';
 import { EstimacionesCliente } from './_estimaciones';
+import { getGarantiaObra, listReportesObra, postventaDisponible } from '@/lib/data/postventa';
+import { estadoGarantia } from '@/lib/postventa/garantia';
+import { hoyMxMs } from '@/lib/data/tz';
+import { PostventaCliente } from './postventa-cliente';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,6 +64,9 @@ export default async function ObraDetallePage({
     bitacora,
     fisico,
     estimaciones,
+    postventaActiva,
+    garantiaObra,
+    reportes,
   ] = await Promise.all([
     getEstadoCuentaObra(obra.id),
     listExtrasObraCliente(obra.id),
@@ -71,6 +78,11 @@ export default async function ObraDetallePage({
     // módulos y lo que ya se le mandó es suyo. Si 0039 no está, no aparecen.
     getAvanceFisicoPortal(obra.id),
     listEstimacionesCliente(obra.id),
+    // Garantías (0043): el botón de reportar solo si su contratista usa el
+    // módulo; lo ya reportado y el periodo se ven siempre (RLS: solo lo suyo).
+    postventaDisponible(obra.id),
+    getGarantiaObra(obra.id),
+    listReportesObra(obra.id),
   ]);
 
   const porCobrarEst = estimaciones
@@ -251,6 +263,14 @@ export default async function ObraDetallePage({
 
       {/* ── Bitácora publicada ──────────────────────────────────────────── */}
       <BitacoraCliente entradas={bitacora.data} />
+
+      {/* ── Garantía y reportes (0043) ──────────────────────────────────── */}
+      <PostventaCliente
+        obraId={obra.id}
+        disponible={postventaActiva}
+        garantia={estadoGarantia(garantiaObra, hoyMxMs())}
+        reportes={reportes.data}
+      />
 
       {/* ── Historial de pagos (ENTRADAS de esta obra) ──────────────────── */}
       {entradas.length > 0 && (

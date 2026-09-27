@@ -16,6 +16,10 @@ import { getModulosEmpresa } from '@/lib/data/modulos';
 import { listExtrasAprobadosObra } from '@/lib/data/cambios';
 import { origenTextoFinal, resolverTextoFinal, textoIntegrado } from '@/lib/pdf/textos-finales';
 import { TextoFinalCard } from '@/components/pdf/texto-final-card';
+import { TarjetaSiroc } from '@/components/cumplimiento/tarjeta-siroc';
+import { getSirocObra, puedeCumplimiento } from '@/lib/data/cumplimiento';
+import { avisoSiroc } from '@/lib/cumplimiento/avisos';
+import { hoyMxMs } from '@/lib/data/tz';
 import ObraHeader from './obra-header';
 import { NotaCaja } from './nota-caja';
 import RegistrarMovimiento from './registrar-movimiento';
@@ -102,6 +106,11 @@ export default async function ObraDetallePage({
   const cobrosFiscales = verFiscal
     ? (await listCobros({ obraId: id, soloOrigen: 'movimiento' })).data
     : [];
+  // SIROC (módulo `cumplimiento`): solo admin y contador, que son quienes ven
+  // ese dato por RLS (0040). Recién creada la obra, la tarjeta ya avisa "te
+  // quedan N días hábiles" con la fecha de inicio de la obra.
+  const conSiroc = activos.includes('cumplimiento') && puedeCumplimiento(rol);
+  const siroc = conSiroc ? await getSirocObra(id) : null;
 
   // Avance físico vs financiero (RF3.7), con el módulo de estimaciones. Si 0039
   // no está aplicada, el físico sale "sin medir" y lo demás igual.
@@ -132,6 +141,15 @@ export default async function ObraDetallePage({
       <ObraHeader obra={obra} clientes={clientes} obras={obrasLite} />
 
       {fisicoFinanciero && <AvanceFisicoFinanciero {...fisicoFinanciero} />}
+
+      {conSiroc && (
+        <TarjetaSiroc
+          obraId={id}
+          siroc={siroc}
+          obraFechaInicio={obra.fecha_inicio}
+          aviso={avisoSiroc(siroc, obra.fecha_inicio, hoyMxMs())}
+        />
+      )}
 
       {/* ── Sección financiera ──────────────────────────────────────────── */}
 

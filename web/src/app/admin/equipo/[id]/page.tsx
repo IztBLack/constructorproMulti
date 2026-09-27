@@ -11,6 +11,10 @@ import { formatCurrency } from '@/lib/data/format';
 import { PERIODO_PAGO_LABEL, SUELDO_PERIODO_LABEL } from '@/lib/data/salario';
 import EditarColaboradorForm from './editar-colaborador-form';
 import AsignacionesObra from './asignaciones-obra';
+import { EppColaborador } from './epp-colaborador';
+import { getModulosEmpresa } from '@/lib/data/modulos';
+import { listEppColaborador } from '@/lib/data/seguridad';
+import { hoyMxMs, msAFechaInput } from '@/lib/data/tz';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,6 +49,13 @@ export default async function ColaboradorDetallePage({
     listObrasDisponibles(),
     listAsignacionesColaborador(id),
   ]);
+
+  // EPP entregado (módulo `seguridad`, 0043): solo admin y supervisor lo ven
+  // (la RLS no le regresa nada a los demás; aquí solo se evita la sección vacía).
+  const modulos = await getModulosEmpresa();
+  const verEpp =
+    modulos.activos.includes('seguridad') && (modulos.rol === 'admin' || modulos.rol === 'supervisor');
+  const epp = verEpp ? await listEppColaborador(id) : null;
 
   return (
     <div className="space-y-6">
@@ -132,6 +143,22 @@ export default async function ColaboradorDetallePage({
           <AsignacionesObra colaboradorId={id} obras={obras} asignaciones={asignaciones} />
         )}
       </section>
+
+      {epp && epp.error && (
+        <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          No se pudo cargar el equipo de protección: {epp.error}
+        </p>
+      )}
+      {epp && !epp.error && (
+        <EppColaborador
+          colaboradorId={id}
+          colaboradorNombre={colaborador.nombre}
+          hoy={msAFechaInput(hoyMxMs())}
+          entregas={epp.data}
+          obras={obras}
+          escribe
+        />
+      )}
     </div>
   );
 }

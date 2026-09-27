@@ -22,6 +22,8 @@ const TABLA: Record<TipoDocumento, string> = {
   extra: 'orden_cambio',
   // Igual que el extra: solo en borrador; al enviarse se congela (0039).
   estimacion: 'estimaciones',
+  // 0040: el contrato de subcontrato lleva su propio párrafo final.
+  subcontrato: 'subcontrato',
 };
 
 export interface ResultadoTexto {
