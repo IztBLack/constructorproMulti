@@ -35,6 +35,9 @@ export const ETIQUETA_CLIMA: Record<Clima, string> = {
   VIENTO: 'Viento',
 };
 
+/** Bucket privado de las fotos (0041). */
+export const BUCKET_BITACORA = 'bitacora';
+
 /** Igual que `bitacora_abierta()` en 0041. */
 export const VENTANA_EDICION_MS = 24 * 60 * 60 * 1000;
 /** Igual que el trigger `bitacora_foto_reglas` de 0041. */

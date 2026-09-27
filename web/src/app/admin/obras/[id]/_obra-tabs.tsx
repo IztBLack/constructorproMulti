@@ -30,6 +30,8 @@ function tabsFor(obraId: string) {
     { href: `${base}/asistencia`, label: 'Asistencia' },
     { href: `${base}/nomina`, label: 'Nómina' },
     { href: `${base}/notas`, label: 'Notas' },
+    { href: `${base}/bitacora`, label: 'Bitácora' },
+    { href: `${base}/programa`, label: 'Programa' },
     { href: `${base}/importar`, label: 'Importar' },
   ];
 }
@@ -49,7 +51,8 @@ export default function ObraTabs({ obraId }: ObraTabsProps) {
   const pathname = usePathname();
   const base = `/admin/obras/${obraId}`;
   // Las pestañas de un módulo apagado no se ofrecen (Asistencia y Nómina son de
-  // `equipo`, Notas de `notas`, Importar de `caja`). Detalle es del núcleo.
+  // `equipo`, Notas de `notas`, Bitácora de `bitacora`, Programa de `programa`,
+  // Importar de `caja`). Detalle es del núcleo.
   const visible = useRutaVisible();
   const tabs = tabsFor(obraId).filter((t) => visible(t.href));
 
