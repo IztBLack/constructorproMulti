@@ -243,8 +243,10 @@ export const MODULOS: readonly Modulo[] = [
       'Cobra por avance: lo que se hizo en el periodo por el precio pactado, con anticipo y retenciones.',
     grupo: 'dinero',
     dependeDe: ['cotizaciones'],
-    rutas: [],
-    disponible: false,
+    // Viven dentro de cada obra (pestañas "Avance" y "Estimaciones"): no llevan
+    // enlace en la barra.
+    rutas: ['/admin/obras/*/avance', '/admin/obras/*/estimaciones'],
+    disponible: true,
   },
   {
     clave: 'compras',

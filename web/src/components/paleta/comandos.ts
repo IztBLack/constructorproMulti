@@ -89,6 +89,8 @@ export function comandosDeObra(obraId: string, nombre?: string): Comando[] {
     { titulo: `Nómina${suf}`, href: `/admin/obras/${obraId}/nomina`, grupo: 'En esta obra', alias: 'raya semana pago sueldo' },
     { titulo: `Notas de trato${suf}`, href: `/admin/obras/${obraId}/notas`, grupo: 'En esta obra', alias: 'socios acuerdos tratos' },
     { titulo: `Extras${suf}`, href: `/admin/obras/${obraId}/extras`, grupo: 'En esta obra', alias: 'cambios adicionales orden de cambio cobrar' },
+    { titulo: `Avance${suf}`, href: `/admin/obras/${obraId}/avance`, grupo: 'En esta obra', alias: 'lo que se hizo partidas medir porcentaje' },
+    { titulo: `Estimaciones${suf}`, href: `/admin/obras/${obraId}/estimaciones`, grupo: 'En esta obra', alias: 'cobrar por avance anticipo amortización retención' },
     { titulo: `Utilidad${suf}`, href: `/admin/obras/${obraId}/utilidad`, grupo: 'En esta obra', alias: 'ganancia margen rentabilidad' },
     { titulo: `PDF de caja${suf}`, href: `/admin/obras/${obraId}/pdf`, grupo: 'En esta obra', alias: 'imprimir documento movimientos', nuevaPestana: true },
     {

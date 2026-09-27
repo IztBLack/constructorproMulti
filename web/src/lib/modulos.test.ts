@@ -32,11 +32,11 @@ describe('perfilDeRespuestas (lo que manda el navegador no se cree)', () => {
     });
     expect(p.tipo).toBe('empresa');
     expect(p.necesidades).toEqual(['material']);
-    expect(p.proximamente).toEqual(
-      expect.arrayContaining(['compras', 'estimaciones', 'cumplimiento']),
-    );
-    // La utilidad ya existe (F1): se prende, no queda en "próximamente".
+    expect(p.proximamente).toEqual(expect.arrayContaining(['compras', 'cumplimiento']));
+    // La utilidad (F1) y las estimaciones (F3) ya existen: se prenden, no
+    // quedan en "próximamente".
     expect(p.proximamente).not.toContain('rentabilidad');
+    expect(p.proximamente).not.toContain('estimaciones');
     expect(p.siguientePasoDescartado).toBe(false);
   });
 
@@ -268,19 +268,31 @@ describe('modulosPorPerfil (plan §4.2)', () => {
   test('empresa: lo que aún no existe queda en "próximamente", no se prende', () => {
     const r = modulosPorPerfil('empresa', [], 'no');
     expect(r.activos).toContain('rentabilidad');
-    expect(r.proximamente).toEqual(['compras', 'estimaciones']);
+    expect(r.activos).toContain('estimaciones');
+    expect(r.proximamente).toEqual(['compras']);
     for (const c of r.activos) expect(MODULOS.find((m) => m.clave === c)?.disponible).toBe(true);
   });
 
   test('constructora acumula los paquetes anteriores', () => {
     const r = modulosPorPerfil('constructora', [], 'no');
-    // F1 y F4 ya existen: utilidad, bitácora y programa se prenden de verdad.
-    expect(r.activos.sort()).toEqual([...PAQUETE_POR_DEFECTO, 'rentabilidad', 'bitacora', 'programa'].sort());
+    // F1, F3 y F4 ya existen: utilidad, estimaciones, bitácora y programa se
+    // prenden de verdad.
+    expect(r.activos.sort()).toEqual(
+      [...PAQUETE_POR_DEFECTO, 'rentabilidad', 'estimaciones', 'bitacora', 'programa'].sort(),
+    );
     expect(r.proximamente).toEqual(
       expect.arrayContaining(['cumplimiento', 'subcontratos', 'compras']),
     );
     expect(r.proximamente).not.toContain('bitacora');
     expect(r.proximamente).not.toContain('programa');
+    expect(r.proximamente).not.toContain('estimaciones');
+  });
+
+  test('las pestañas Avance y Estimaciones de la obra son del módulo estimaciones', () => {
+    expect(rutaPerteneceAModulo('/admin/obras/abc/avance')).toBe('estimaciones');
+    expect(rutaPerteneceAModulo('/admin/obras/abc/estimaciones/xyz/pdf')).toBe('estimaciones');
+    expect(rutaVisible('/admin/obras/abc/avance', PAQUETE_POR_DEFECTO)).toBe(false);
+    expect(rutaVisible('/admin/obras/abc/avance', [...PAQUETE_POR_DEFECTO, 'estimaciones'])).toBe(true);
   });
 
   test('facturar o tener gente en el IMSS sugiere cumplimiento; "no" no', () => {
