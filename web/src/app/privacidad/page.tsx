@@ -63,6 +63,11 @@ export default function PrivacidadPage() {
           ubicación (GPS), no leemos tus contactos y no mostramos publicidad.
         </p>
         <p>
+          Nunca te pedimos ni guardamos tu e.firma, tu certificado de sello digital (CSD) ni
+          contraseñas del SAT, del IMSS o del Infonavit, y la aplicación no se conecta a esos
+          sistemas. Los trámites los haces tú o tu contador en el portal oficial.
+        </p>
+        <p>
           Sí puede haber <strong>datos financieros</strong> entre los archivos que adjuntas: el
           comprobante de una transferencia o de un cheque trae número de cuenta y banco. Por eso el
           acceso a los comprobantes es más estrecho que el del resto de la información; lo

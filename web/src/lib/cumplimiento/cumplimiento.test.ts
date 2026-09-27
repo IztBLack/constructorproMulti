@@ -23,6 +23,7 @@ import {
 } from './avisos';
 import { armarRaya, construirExcelRaya } from './raya-excel';
 import { ENLACES } from './enlaces';
+import { resumenExpediente } from './expediente';
 import type { Asistencia, Colaborador, Destajo, Puesto } from '@/lib/data/types';
 
 /** Medianoche de México de una fecha 'YYYY-MM-DD'. */
@@ -320,5 +321,39 @@ describe('raya para el contador', () => {
     wb.getWorksheet('Raya')!.getRow(4).eachCell((c) => encabezados.push(c.value));
     expect(encabezados).not.toContain('NSS');
     expect(encabezados).toContain('Total');
+  });
+});
+
+describe('expediente del subcontratista', () => {
+  const hoy = f('2026-09-27');
+  test('manda el documento más reciente de cada tipo', () => {
+    const r = resumenExpediente(
+      [
+        { tipo: 'OPINION_32D', vigencia_hasta: f('2026-08-01'), created_at: 1 },
+        { tipo: 'OPINION_32D', vigencia_hasta: f('2026-12-31'), created_at: 2 },
+        { tipo: 'REPSE', vigencia_hasta: f('2027-06-01'), created_at: 1 },
+        { tipo: 'CONSTANCIA_FISCAL', vigencia_hasta: null, created_at: 1 },
+        { tipo: 'IMSS_OPINION', vigencia_hasta: f('2026-12-31'), created_at: 1 },
+      ],
+      hoy,
+    );
+    expect(r).toMatchObject({ nivel: 'VIGENTE', faltan: [] });
+    expect(r.porTipo.CONSTANCIA_FISCAL?.texto).toBe('Sin vencimiento');
+  });
+
+  test('lo que falta se pide (PRONTO) y lo vencido manda (VENCIDO)', () => {
+    const r = resumenExpediente([{ tipo: 'REPSE', vigencia_hasta: f('2027-06-01'), created_at: 1 }], hoy);
+    expect(r.nivel).toBe('PRONTO');
+    expect(r.faltan).toEqual(['CONSTANCIA_FISCAL', 'OPINION_32D', 'IMSS_OPINION']);
+    expect(
+      resumenExpediente([{ tipo: 'OPINION_32D', vigencia_hasta: f('2026-09-01'), created_at: 1 }], hoy).nivel,
+    ).toBe('VENCIDO');
+  });
+
+  test('sin documentos: se pide todo', () => {
+    expect(resumenExpediente([], hoy)).toMatchObject({
+      nivel: 'PRONTO',
+      faltan: ['REPSE', 'CONSTANCIA_FISCAL', 'OPINION_32D', 'IMSS_OPINION'],
+    });
   });
 });

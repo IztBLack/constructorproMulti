@@ -27,7 +27,9 @@
  * que su valor es la prueba de QUÉ aceptó esa persona: si aquí se sobrescribe
  * una versión ya aceptada, esa prueba se pierde. Formato: fecha de vigencia.
  */
-export const VERSION_LEGAL = '2026-08-25';
+// 2026-09-27: F5 agrega datos IMSS/fiscales de colaboradores y el expediente
+// de subcontratistas (cambio de fondo: nuevas categorías de datos).
+export const VERSION_LEGAL = '2026-09-27';
 
 /**
  * Identidad del responsable del tratamiento.
@@ -142,6 +144,17 @@ export const CATEGORIAS_DATOS = [
       'Nombre, puesto, sueldo, asistencia y contacto de emergencia. Los capturas tú; nosotros solo los guardamos y procesamos por tu instrucción.',
   },
   {
+    // 0040 (módulo «IMSS y papeles»). Opcionales: solo si el usuario los captura.
+    titulo: 'Datos IMSS y fiscales de tus colaboradores (opcional)',
+    detalle:
+      'Número de seguridad social (NSS), CURP y RFC, y el documento que adjuntes (por ejemplo, el acuse de alta). Solo los ven el administrador y el contador de tu empresa; los usas para la raya que le pasas a tu contador. No los enviamos al IMSS, al SAT ni a nadie más.',
+  },
+  {
+    titulo: 'De tus subcontratistas',
+    detalle:
+      'Nombre o razón social, RFC, contacto y los documentos de su expediente: registro REPSE, constancia de situación fiscal y opiniones de cumplimiento del SAT y del IMSS. Solo los ven el administrador y el contador. El supervisor ve los contratos, pero no el RFC ni el expediente.',
+  },
+  {
     titulo: 'De tus clientes y obras',
     detalle: 'Nombre y contacto del cliente, cotizaciones, presupuestos, pagos y movimientos de caja.',
   },
@@ -186,6 +199,15 @@ export const ARCHIVOS = {
       limite: '15 MB por archivo',
       quienVe:
         'El personal de tu empresa: administrador, supervisor y colaborador. Tus clientes no tienen acceso a este material.',
+    },
+    {
+      // Bucket `cumplimiento` (0040): privado, 10 MB, PDF e imágenes (sin HEIC).
+      que: 'Documentos de IMSS y papeles',
+      ejemplos:
+        'Acuses del SIROC, del REPSE y de las entregas ICSOE/SISUB; expediente de subcontratistas; documentos de alta de tus colaboradores.',
+      limite: '10 MB por archivo',
+      quienVe:
+        'Solo el administrador y el contador. Ni el supervisor, ni el personal de campo, ni tus clientes pueden verlos: traen datos fiscales y personales.',
     },
     {
       que: 'Comprobantes de pago',
