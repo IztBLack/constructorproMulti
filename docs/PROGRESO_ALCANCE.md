@@ -237,6 +237,8 @@ en local (PGlite).
   | 0041 | F4 bitácora + programa |
   | 0042 | F6 residente/compras/almacén + `usuario_obra` + bitácora de actividad |
   | 0043 | F7 seguridad, postventa, herramienta |
+  | 0044 | F6 (parte 2): residente sobre las tablas de 0043 |
+  | 0045 | Endurecimiento tras la revisión de seguridad (policies ya en prod) |
 
 - **Registro de módulos:** `web/src/lib/modulos.ts` es la **única** fuente. Cada fase
   cambia `disponible: true` en su módulo y registra su entrada de nav. No crees listas
