@@ -508,12 +508,36 @@ describe('0036 — categoría de costo y margen objetivo', () => {
     ).rejects.toThrow(/categoria_costo/);
   });
 
-  it('la empresa nace con margen objetivo de 15%', async () => {
+  // SEG-B3: el margen de la empresa ya no vive en `empresa_config` (la leen
+  // supervisor y colaborador) sino en `empresa_margen`. Sin fila = 15 (la web
+  // aplica el mismo respaldo); la fila nueva nace con 15.
+  it('el margen de la empresa: sin fila la web usa 15, y la fila nace con 15 (solo admin la escribe)', async () => {
+    const col = await db.query(
+      `select 1 from information_schema.columns
+        where table_schema = 'public' and table_name = 'empresa_config' and column_name = 'margen_objetivo'`,
+    );
+    expect(col.rows).toHaveLength(0);
+    await comoUsuario(db, a.adminId, (tx) =>
+      insertar(tx, 'public.empresa_margen', { empresa_id: a.empresaId }, { returning: false }),
+    );
     const r = await db.query<{ m: number }>(
-      'select margen_objetivo as m from public.empresa_config where empresa_id = $1',
+      'select margen_objetivo as m from public.empresa_margen where empresa_id = $1',
       [a.empresaId],
     );
     expect(r.rows[0].m).toBe(15);
+    const leer = (u: string) =>
+      comoUsuario(db, u, (tx) =>
+        tx.query('select margen_objetivo from public.empresa_margen where empresa_id = $1', [a.empresaId]),
+      );
+    expect((await leer(a.adminId)).rows).toHaveLength(1);
+    expect((await leer(contA)).rows).toHaveLength(1);
+    expect((await leer(supA)).rows).toHaveLength(0);
+    expect((await leer(clienteA.userId)).rows).toHaveLength(0);
+    await expect(
+      comoUsuario(db, contA, (tx) =>
+        insertar(tx, 'public.empresa_margen', { empresa_id: a.empresaId, margen_objetivo: 3 }, { returning: false }),
+      ),
+    ).rejects.toThrow(/row-level security/);
   });
 
   it('el margen de la obra lo escribe el admin, lo lee el contador y NO el supervisor ni el cliente', async () => {
@@ -559,9 +583,11 @@ describe('0036 — categoría de costo y margen objetivo', () => {
 
   it('un margen fuera de rango se rechaza', async () => {
     await expect(
-      db.query('update public.empresa_config set margen_objetivo = 100 where empresa_id = $1', [
-        a.empresaId,
-      ]),
+      db.query(
+        `insert into public.empresa_margen (empresa_id, margen_objetivo) values ($1, 100)
+         on conflict (empresa_id) do update set margen_objetivo = 100`,
+        [a.empresaId],
+      ),
     ).rejects.toThrow(/margen/);
   });
 });

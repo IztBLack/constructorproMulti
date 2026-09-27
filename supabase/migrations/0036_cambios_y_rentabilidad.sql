@@ -44,7 +44,59 @@
 -- columna `obras.margen_objetivo` les enseñaría cuánto quiere ganarle el dueño a
 -- esa obra. Va en una tabla aparte, `obra_margen_objetivo`, que solo leen el
 -- admin y el contador (decisión D1: la utilidad es información del dueño).
--- El default de la empresa sí va en `empresa_config` (el cliente no la lee).
+-- El default de la empresa TAMPOCO va en `empresa_config`: esa fila la leen el
+-- supervisor y el colaborador (0017/0022). Va en `empresa_margen` (SEG-B3).
+--
+-- ENDURECIMIENTO (revisión de seguridad, docs/PROGRESO_ALCANCE.md, SEG-*)
+-- ─────────────────────────────────────────────────────────────────────
+-- · SEG-A1: un extra que ya salió de BORRADOR no se borra FÍSICAMENTE, ni
+--   directo ni en la cascada de borrar la obra (trigger BEFORE DELETE).
+-- · SEG-M1: la foto de un extra enviado no se borra del bucket.
+-- · SEG-B3: el margen objetivo de la empresa en tabla aparte.
+-- · SEG-B9: las policies de Storage convierten la carpeta con `uuid_o_null`.
+
+-- ════════════════════════════════════════════════════════════════════════════
+-- 0. Utilidades compartidas del endurecimiento
+-- ════════════════════════════════════════════════════════════════════════════
+-- Se definen con `create or replace` y el MISMO cuerpo en cada migración que
+-- las usa (0036, 0037, 0038, 0039, 0040, 0041, 0043): varias de ellas se
+-- escribieron para poder correr sin las otras, y así ninguna depende de que
+-- otra haya corrido antes. Si cambias una, cámbiala en todas.
+
+-- Texto → uuid sin reventar (generaliza `compras_uuid` de 0038): las policies
+-- de Storage reciben rutas que escribe el navegador, y un cast directo lanzaría
+-- error en vez de negar.
+create or replace function public.uuid_o_null(p text)
+returns uuid
+language sql
+immutable
+as $$
+  select case
+    when p ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then p::uuid
+    else null
+  end
+$$;
+
+-- La evidencia no se borra físicamente (SEG-A1). La condición de "qué fila es
+-- evidencia" va en el WHEN de cada trigger; esta función solo decide si el
+-- borrado es la cascada de ELIMINAR LA EMPRESA COMPLETA (la fila de `empresas`
+-- ya no existe; mismo criterio que `actividad_inmutable` de 0042), que es lo
+-- único que se deja pasar. Un BEFORE DELETE se dispara también dentro de la
+-- cascada de `on delete cascade`: borrar la obra que tiene evidencia falla.
+create or replace function public._evidencia_no_se_borra()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (select 1 from public.empresas e where e.id = old.empresa_id) then
+    return old;
+  end if;
+  raise exception 'EVIDENCIA_INMUTABLE: un registro de % que ya es evidencia no se borra (usa el borrado lógico o cancélalo).',
+    tg_table_name using errcode = 'P0001';
+end $$;
+revoke all on function public._evidencia_no_se_borra() from public, anon, authenticated;
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 1. Categoría de costo en los movimientos de caja (RD1.2)
@@ -72,18 +124,38 @@ comment on column public.movimientos.categoria_costo is
 -- ════════════════════════════════════════════════════════════════════════════
 -- 2. Margen objetivo
 -- ════════════════════════════════════════════════════════════════════════════
--- 2a. Default de la empresa. 15% es el ejemplo del plan (RF1.7).
-alter table public.empresa_config
-  add column if not exists margen_objetivo double precision not null default 15;
+-- 2a. Default de la empresa. 15% es el ejemplo del plan (RF1.7). Sin fila = 15
+-- (la web usa el mismo respaldo). Tabla aparte y no columna de
+-- `empresa_config`: esa fila la leen supervisor, colaborador y residente, y el
+-- margen es información del dueño (D1, SEG-B3).
+create table if not exists public.empresa_margen (
+  empresa_id         uuid primary key references public.empresas(id) on delete cascade,
+  margen_objetivo    double precision not null default 15,
+  created_at         bigint not null default (extract(epoch from now()) * 1000)::bigint,
+  updated_at         bigint not null default (extract(epoch from now()) * 1000)::bigint,
+  server_updated_at  bigint not null default 0,
+  deleted_at         bigint,
+  constraint empresa_margen_valido check (margen_objetivo >= 0 and margen_objetivo < 100)
+);
 
-alter table public.empresa_config
-  drop constraint if exists empresa_config_margen_valido;
-alter table public.empresa_config
-  add constraint empresa_config_margen_valido
-  check (margen_objetivo >= 0 and margen_objetivo < 100);
+comment on table public.empresa_margen is
+  'Margen de utilidad objetivo (%) de la empresa para el semáforo de rentabilidad. Solo admin/contador (D1). Una obra puede pisarlo en obra_margen_objetivo.';
 
-comment on column public.empresa_config.margen_objetivo is
-  'Margen de utilidad objetivo (%) para el semáforo de rentabilidad. Una obra puede pisarlo en obra_margen_objetivo.';
+alter table public.empresa_margen enable row level security;
+
+drop policy if exists empresa_margen_read on public.empresa_margen;
+create policy empresa_margen_read on public.empresa_margen
+  for select using (public.auth_tiene_rol(empresa_id, 'admin', 'contador'));
+
+drop policy if exists empresa_margen_insert on public.empresa_margen;
+create policy empresa_margen_insert on public.empresa_margen
+  for insert with check (public.auth_tiene_rol(empresa_id, 'admin'));
+
+drop policy if exists empresa_margen_update on public.empresa_margen;
+create policy empresa_margen_update on public.empresa_margen
+  for update
+  using (public.auth_tiene_rol(empresa_id, 'admin'))
+  with check (public.auth_tiene_rol(empresa_id, 'admin'));
 
 -- 2b. Por obra, opcional. Sin fila = usa el de la empresa.
 create table if not exists public.obra_margen_objetivo (
@@ -301,6 +373,14 @@ drop trigger if exists trg_orden_cambio_guarda on public.orden_cambio;
 create trigger trg_orden_cambio_guarda
   before update on public.orden_cambio
   for each row execute function public._orden_cambio_guarda();
+
+-- 5b'. Y tampoco se borra FÍSICAMENTE (SEG-A1): ni directo ni en la cascada de
+-- borrar la obra. Un borrador sí (nunca lo vio nadie fuera de la oficina).
+drop trigger if exists trg_orden_cambio_evidencia on public.orden_cambio;
+create trigger trg_orden_cambio_evidencia
+  before delete on public.orden_cambio
+  for each row when (old.estado <> 'BORRADOR')
+  execute function public._evidencia_no_se_borra();
 
 -- 5c. Los renglones solo se tocan mientras el extra es BORRADOR. SECURITY
 -- DEFINER para leer el estado del padre sin depender de la RLS.
@@ -678,12 +758,32 @@ on conflict (id) do update set
   file_size_limit    = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
+-- ¿El objeto es la foto de un extra que ya salió de BORRADOR? Entonces es
+-- evidencia y no se borra (SEG-M1). SECURITY DEFINER: la respuesta no puede
+-- depender de qué filas deja ver la RLS de quien borra (una fila que no ve no
+-- debe "desproteger" el archivo). Sin policy de UPDATE en el bucket, tampoco se
+-- sobreescribe (un upsert de Storage necesita UPDATE).
+create or replace function public._extras_obj_protegido(p_name text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.orden_cambio oc
+     where oc.foto_uri = p_name and oc.estado <> 'BORRADOR'
+  )
+$$;
+revoke all on function public._extras_obj_protegido(text) from public, anon;
+grant execute on function public._extras_obj_protegido(text) to authenticated;
+
 drop policy if exists extras_oficina_select on storage.objects;
 create policy extras_oficina_select on storage.objects
   for select to authenticated
   using (
     bucket_id = 'extras'
-    and public.auth_tiene_rol((storage.foldername(name))[1]::uuid, 'admin', 'supervisor', 'contador')
+    and public.auth_tiene_rol(public.uuid_o_null((storage.foldername(name))[1]), 'admin', 'supervisor', 'contador')
   );
 
 drop policy if exists extras_gestion_insert on storage.objects;
@@ -691,7 +791,7 @@ create policy extras_gestion_insert on storage.objects
   for insert to authenticated
   with check (
     bucket_id = 'extras'
-    and public.auth_tiene_rol((storage.foldername(name))[1]::uuid, 'admin', 'supervisor')
+    and public.auth_tiene_rol(public.uuid_o_null((storage.foldername(name))[1]), 'admin', 'supervisor')
   );
 
 drop policy if exists extras_gestion_delete on storage.objects;
@@ -699,7 +799,8 @@ create policy extras_gestion_delete on storage.objects
   for delete to authenticated
   using (
     bucket_id = 'extras'
-    and public.auth_tiene_rol((storage.foldername(name))[1]::uuid, 'admin', 'supervisor')
+    and public.auth_tiene_rol(public.uuid_o_null((storage.foldername(name))[1]), 'admin', 'supervisor')
+    and not public._extras_obj_protegido(name)
   );
 
 -- El cliente ve la foto del extra que le mandaron para decidir. Solo esa: la
@@ -709,7 +810,7 @@ create policy extras_cliente_select on storage.objects
   for select to authenticated
   using (
     bucket_id = 'extras'
-    and (storage.foldername(name))[1]::uuid in (select public.auth_cliente_empresa_ids())
+    and public.uuid_o_null((storage.foldername(name))[1]) in (select public.auth_cliente_empresa_ids())
     and exists (
       select 1 from public.orden_cambio oc
        where oc.foto_uri = storage.objects.name
@@ -732,7 +833,7 @@ create policy extras_cliente_select on storage.objects
 do $$
 declare t text;
 begin
-  foreach t in array array['orden_cambio', 'orden_cambio_renglon', 'obra_margen_objetivo'] loop
+  foreach t in array array['orden_cambio', 'orden_cambio_renglon', 'obra_margen_objetivo', 'empresa_margen'] loop
     execute format('drop trigger if exists trg_srv_upd on public.%I;', t);
     execute format(
       'create trigger trg_srv_upd before insert or update on public.%I '

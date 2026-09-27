@@ -180,10 +180,12 @@ async function leerDatos(empresaId: string, obraId?: string): Promise<{ d: Datos
           .is('deleted_at', null)
         .match(deLaObra).range(a, b),
     ),
+    // Tabla aparte (0036, SEG-B3): `empresa_config` la leen roles de campo.
     supabase
-      .from('empresa_config')
+      .from('empresa_margen')
       .select('margen_objetivo')
       .eq('empresa_id', empresaId)
+      .is('deleted_at', null)
       .maybeSingle(),
     leerTodo<DatosCrudos['margenesObra'][number]>((a, b) =>
               supabase
@@ -229,7 +231,7 @@ async function leerDatos(empresaId: string, obraId?: string): Promise<{ d: Datos
   // proyección usa el avance manual, como antes.
   const avanceFisico = await avanceFisicoPorObra(empresaId, obraId);
 
-  // Sin la columna (0036 sin aplicar) o sin fila: el objetivo de siempre.
+  // Sin la tabla (0036 sin aplicar), sin permiso o sin fila: el objetivo de siempre.
   const margenEmpresa = Number(config.data?.margen_objetivo ?? MARGEN_OBJETIVO_POR_DEFECTO);
 
   return {
@@ -420,7 +422,7 @@ export async function guardarMargenObra(obraId: string, margen: number | null): 
   return { ok: true };
 }
 
-/** Margen objetivo por defecto de la empresa. Solo admin (policy de 0018). */
+/** Margen objetivo por defecto de la empresa. Solo admin (RLS de `empresa_margen`, 0036). */
 export async function guardarMargenEmpresa(margen: number): Promise<Resultado> {
   const yo = await rolActual();
   if (!yo || !puedeFijarMargen(yo.rol)) {
@@ -430,13 +432,18 @@ export async function guardarMargenEmpresa(margen: number): Promise<Resultado> {
     return { ok: false, error: 'El margen debe ser un número de 0 a 99.' };
   }
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('empresa_config')
-    .update({ margen_objetivo: margen, updated_at: Date.now() })
-    .eq('empresa_id', yo.empresaId)
-    .select('empresa_id');
+  // Una fila por empresa (se crea la primera vez). Se escriben TODAS las
+  // columnas de la fila: no es un upsert parcial sobre configuración (RT7).
+  const { error } = await supabase.from('empresa_margen').upsert(
+    {
+      empresa_id: yo.empresaId,
+      margen_objetivo: margen,
+      deleted_at: null,
+      updated_at: Date.now(),
+    },
+    { onConflict: 'empresa_id' },
+  );
   if (error) return { ok: false, error: error.message };
-  if (!data || data.length === 0) return { ok: false, error: 'No se encontró la configuración de la empresa.' };
   return { ok: true };
 }
 
@@ -445,11 +452,13 @@ export async function getMargenEmpresa(): Promise<number> {
   const yo = await rolActual();
   if (!yo) return MARGEN_OBJETIVO_POR_DEFECTO;
   const supabase = await createClient();
+  // Sin la tabla (0036 sin aplicar), sin permiso o sin fila → 15.
   const { data } = await supabase
-    .from('empresa_config')
+    .from('empresa_margen')
     .select('margen_objetivo')
     .eq('empresa_id', yo.empresaId)
+    .is('deleted_at', null)
     .maybeSingle();
-  const m = Number(data?.margen_objetivo);
+  const m = data?.margen_objetivo == null ? NaN : Number(data.margen_objetivo);
   return Number.isFinite(m) ? m : MARGEN_OBJETIVO_POR_DEFECTO;
 }
