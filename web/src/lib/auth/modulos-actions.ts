@@ -57,6 +57,29 @@ export async function guardarModulos(claves: string[]): Promise<ResultadoModulos
   return { ok: true, modulos: final };
 }
 
+/**
+ * "No me interesa" en una sugerencia de módulo (plan §4.3): se recuerda en
+ * `perfil.sugerencias_descartadas` y no vuelve a salir, en ningún dispositivo.
+ */
+export async function descartarSugerenciaModulo(clave: string): Promise<{ ok: boolean; error?: string }> {
+  if (!esClaveModulo(clave)) return { ok: false, error: 'Módulo desconocido.' };
+  const r = await guardarPerfil((p) => ({
+    ...p,
+    sugerenciasDescartadas: [...new Set([...(p.sugerenciasDescartadas ?? []), clave])],
+  }));
+  if (r.ok) revalidatePath('/admin');
+  return r;
+}
+
+/** "Prenderlo" desde una sugerencia: lo prendido de siempre + ese módulo (con dependencias). */
+export async function prenderModuloSugerido(clave: string): Promise<ResultadoModulos> {
+  if (!esClaveModulo(clave) || !modulo(clave).disponible) {
+    return { ok: false, error: 'Ese módulo no está disponible.' };
+  }
+  const { activos } = await getModulosEmpresa();
+  return guardarModulos([...activos, clave]);
+}
+
 /** Cierra para siempre la tarjeta "Siguiente paso" del inicio (se guarda en `perfil`). */
 export async function descartarSiguientePaso(): Promise<{ ok: boolean; error?: string }> {
   const r = await guardarPerfil((p) => ({ ...p, siguientePasoDescartado: true }));

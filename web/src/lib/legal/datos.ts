@@ -30,6 +30,8 @@
 // 2026-09-27: F5 agrega datos IMSS/fiscales de colaboradores y el expediente
 // de subcontratistas (cambio de fondo: nuevas categorías de datos).
 // 2026-09-27: F7 agrega datos de salud de incidentes de trabajo (solo admin).
+// 2026-09-27: F2 agrega proveedores (RFC opcional), sus facturas y las fotos de
+// remisiones. Mismo día y todavía sin publicar: no se abre otra versión.
 export const VERSION_LEGAL = '2026-09-27';
 
 /**
@@ -156,6 +158,11 @@ export const CATEGORIAS_DATOS = [
       'Nombre o razón social, RFC, contacto y los documentos de su expediente: registro REPSE, constancia de situación fiscal y opiniones de cumplimiento del SAT y del IMSS. Solo los ven el administrador y el contador. El supervisor ve los contratos, pero no el RFC ni el expediente.',
   },
   {
+    titulo: 'De tus proveedores (solo si usas «Compras y material»)',
+    detalle:
+      'Nombre o razón social, RFC (opcional), contacto, días de crédito, las órdenes de compra, lo que les pagas y sus facturas (XML y PDF), además de las fotos de las remisiones de lo que llega a la obra. Lo que se les paga y sus saldos lo ven solo el administrador y el contador; el supervisor ve las órdenes y las entregas para poder recibir.',
+  },
+  {
     titulo: 'De tus clientes y obras',
     detalle: 'Nombre y contacto del cliente, cotizaciones, presupuestos, pagos y movimientos de caja.',
   },
@@ -246,6 +253,13 @@ export const ARCHIVOS = {
       limite: '10 MB por archivo',
       quienVe:
         'El personal de oficina (administrador, supervisor y contador) y el cliente que las subió, solo en los reportes de sus obras. El cliente no puede borrarlas: son la evidencia del reporte.',
+    },
+    {
+      // Bucket `compras` (0038): privado, 10 MB, imágenes, PDF y XML.
+      que: 'Remisiones y facturas de proveedores',
+      ejemplos: 'Foto de la remisión de lo que llega a la obra; XML y PDF de la factura del proveedor.',
+      limite: '10 MB por archivo',
+      quienVe: 'Solo el personal de oficina: administrador, supervisor y contador. Ni el personal de campo ni tus clientes.',
     },
     {
       que: 'Documentos fiscales',

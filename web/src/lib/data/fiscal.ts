@@ -23,6 +23,7 @@ import { getEstimacion } from './estimaciones';
 import type { ConceptoOrigen, DocumentoOrigen, EntradaHoja, EstimacionHoja } from '@/lib/fiscal/hoja';
 import { pareceAnticipo } from '@/lib/fiscal/calculo';
 import type { GastoPaquete } from '@/lib/fiscal/paquete';
+import { facturasDeMovimientos, type FacturaDeGasto } from './compras';
 import type {
   ClienteFiscal,
   Cobro,
@@ -664,17 +665,17 @@ export async function listEntradasPeriodo(
 export async function listGastosPeriodo(
   desde: number,
   hasta: number,
-): Promise<{ data: GastoPaquete[]; error: string | null }> {
+): Promise<{ data: GastoPaquete[]; error: string | null; facturasProveedor: FacturaDeGasto[] }> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('movimientos')
-    .select('obra_id, fecha, categoria, concepto, nombre, monto, metodo_pago, referencia')
+    .select('id, obra_id, fecha, categoria, concepto, nombre, monto, metodo_pago, referencia')
     .eq('tipo', 'SALIDA')
     .is('deleted_at', null)
     .gte('fecha', desde)
     .lt('fecha', hasta)
     .order('fecha');
-  if (error) return { data: [], error: error.message };
+  if (error) return { data: [], error: error.message, facturasProveedor: [] };
   const filas = (data ?? []) as Record<string, unknown>[];
   const obraIds = [...new Set(filas.map((f) => f.obra_id as string))];
   const nombres = new Map<string, string>();
@@ -682,18 +683,36 @@ export async function listGastosPeriodo(
     const { data: obras } = await supabase.from('obras').select('id, nombre').in('id', obraIds);
     for (const o of (obras ?? []) as { id: string; nombre: string }[]) nombres.set(o.id, o.nombre);
   }
+  // Pagos de órdenes de compra (0038): su factura del proveedor. Sin 0038 o sin
+  // permiso el mapa sale vacío y la hoja queda como antes.
+  const facturas = await facturasDeMovimientos(filas.map((f) => f.id as string));
   return {
-    data: filas.map((f) => ({
-      obra: nombres.get(f.obra_id as string) ?? 'Obra',
-      fecha: f.fecha as number,
-      categoria: (f.categoria as string) ?? '',
-      concepto: (f.concepto as string) ?? '',
-      nombre: (f.nombre as string) ?? '',
-      monto: f.monto as number,
-      metodo: (f.metodo_pago as string) ?? '',
-      referencia: (f.referencia as string) ?? '',
-    })),
+    data: filas.map((f) => {
+      const fac = facturas.get(f.id as string);
+      return {
+        obra: nombres.get(f.obra_id as string) ?? 'Obra',
+        fecha: f.fecha as number,
+        categoria: (f.categoria as string) ?? '',
+        concepto: (f.concepto as string) ?? '',
+        nombre: (f.nombre as string) ?? '',
+        monto: f.monto as number,
+        metodo: (f.metodo_pago as string) ?? '',
+        referencia: (f.referencia as string) ?? '',
+        ...(fac
+          ? {
+              factura: {
+                uuid: fac.uuid,
+                rfc: fac.rfc,
+                proveedor: fac.proveedor,
+                ordenFolio: fac.ordenFolio,
+                iva: fac.iva,
+              },
+            }
+          : {}),
+      };
+    }),
     error: null,
+    facturasProveedor: [...facturas.values()],
   };
 }
 

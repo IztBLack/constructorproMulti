@@ -34,6 +34,7 @@ function tabsFor(obraId: string) {
     { href: `${base}/extras`, label: 'Extras' },
     { href: `${base}/avance`, label: 'Avance' },
     { href: `${base}/estimaciones`, label: 'Estimaciones' },
+    { href: `${base}/material`, label: 'Material' },
     { href: `${base}/utilidad`, label: 'Utilidad' },
     { href: `${base}/bitacora`, label: 'Bitácora' },
     { href: `${base}/programa`, label: 'Programa' },

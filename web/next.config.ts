@@ -61,6 +61,10 @@ const nextConfig: NextConfig = {
     '/admin/subcontratos/\\[id\\]/pdf/descargar': [
       './node_modules/@sparticuz/chromium/**/*',
     ],
+    // Orden de compra al proveedor (módulo compras, F2): mismo Chromium.
+    '/admin/compras/ordenes/\[id\]/pdf/descargar': [
+      './node_modules/@sparticuz/chromium/**/*',
+    ],
     // Hoja para facturar (módulo fiscal, F1b): mismo Chromium.
     '/admin/facturacion/hoja/\\[origen\\]/\\[id\\]/pdf': [
       './node_modules/@sparticuz/chromium/**/*',

@@ -21,12 +21,19 @@
  * cosas distintas.
  */
 
-export type TipoDocumento = 'cotizacion' | 'nota' | 'estado_cuenta' | 'extra' | 'subcontrato' | 'estimacion';
+export type TipoDocumento =
+  | 'cotizacion'
+  | 'nota'
+  | 'estado_cuenta'
+  | 'extra'
+  | 'subcontrato'
+  | 'estimacion'
+  | 'orden_compra';
 
 /**
- * `extra` (0036), `subcontrato` (0040) y `estimacion` (0039) llegaron después:
- * el móvil no los conoce, pero como nunca escribe `pdf_config.textos` (0032),
- * una clave nueva en ese jsonb no le afecta.
+ * `extra` (0036), `orden_compra` (0038), `estimacion` (0039) y `subcontrato`
+ * (0040) llegaron después: el móvil no los conoce, pero como nunca escribe
+ * `pdf_config.textos` (0032), una clave nueva en ese jsonb no le afecta.
  */
 export const TIPOS_DOCUMENTO: TipoDocumento[] = [
   'cotizacion',
@@ -35,6 +42,7 @@ export const TIPOS_DOCUMENTO: TipoDocumento[] = [
   'extra',
   'subcontrato',
   'estimacion',
+  'orden_compra',
 ];
 
 /** Cómo se llama cada tipo en la interfaz (Ajustes → PDF). */
@@ -45,6 +53,7 @@ export const NOMBRE_TIPO: Record<TipoDocumento, string> = {
   extra: 'Extra (orden de cambio)',
   subcontrato: 'Contrato de subcontrato',
   estimacion: 'Estimación (cobro por avance)',
+  orden_compra: 'Orden de compra (al proveedor)',
 };
 
 /** Textos generales por tipo, tal como se guardan en `pdf_config.textos`. */
@@ -101,6 +110,15 @@ export function textoIntegrado(tipo: TipoDocumento, ctx: ContextoTextoFinal): st
         'sin IVA. Una vez aprobado, el importe se suma a su estado de cuenta. ' +
         `Para cualquier aclaración comuníquese con ${empresa}.`
       );
+
+    case 'orden_compra':
+      return (
+        'Favor de surtir lo indicado en esta orden y entregar en la obra señalada. ' +
+        'Precios en pesos mexicanos (MXN), sin IVA; el IVA va desglosado. ' +
+        'Anote el folio de esta orden en su remisión y en su factura. ' +
+        `Cualquier cambio de precio o de cantidad debe autorizarlo ${empresa} antes de surtir.`
+      );
+
     case 'subcontrato': {
       const quien = ctx.destinatario?.trim() || 'el subcontratista';
       return (

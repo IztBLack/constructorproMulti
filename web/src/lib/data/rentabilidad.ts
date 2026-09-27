@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getEmpresaUsuario } from './empresa';
 import { SELECT_CON_SUELDO, aplanarSueldos } from './colaborador-sueldo';
 import { calcularTotales, type RenglonNota } from './notas-obra-calculo';
+import { comprometidoComprasPorObra } from './compras';
 import type { Asistencia, Destajo, Obra, Puesto } from './types';
 import { puedeFijarMargen, puedeVerUtilidad } from '@/lib/auth/utilidad';
 import { totalExtrasAprobados } from '@/lib/cambios/extras';
@@ -78,6 +79,8 @@ interface DatosCrudos {
   margenesObra: { obra_id: string; margen_objetivo: number }[];
   /** % físico por obra desde `avance_partida` (F3); solo las que tienen capturas. */
   avanceFisico: Map<string, number>;
+  /** Saldo por pagar a proveedores por obra (compras, 0038). Vacío sin el módulo. */
+  comprometidoCompras: Map<string, number>;
 }
 
 /**
@@ -244,6 +247,8 @@ async function leerDatos(empresaId: string, obraId?: string): Promise<{ d: Datos
       margenEmpresa: Number.isFinite(margenEmpresa) ? margenEmpresa : MARGEN_OBJETIVO_POR_DEFECTO,
       margenesObra: margenesObra.data,
       avanceFisico,
+      // Sin 0038 o sin permiso regresa un mapa vacío: la utilidad queda como antes.
+      comprometidoCompras: await comprometidoComprasPorObra(obras.map((o) => o.id as string)),
     },
     error: null,
   };
@@ -299,6 +304,7 @@ function calcularTodas(d: DatosCrudos): RentabilidadObra[] {
       avance: obra.avance ?? null,
       avanceFisico: d.avanceFisico.get(obra.id) ?? null,
       margenObjetivo: margenObjetivoDe(margenObra, d.margenEmpresa),
+      comprometidoCompras: d.comprometidoCompras.get(obra.id) ?? 0,
     });
 
     return {

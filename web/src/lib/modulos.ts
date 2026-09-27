@@ -254,8 +254,11 @@ export const MODULOS: readonly Modulo[] = [
     descripcion: 'Pide material desde la obra, compra, recibe y sabe cuánto costó en cada obra.',
     grupo: 'obra',
     dependeDe: [],
-    rutas: [],
-    disponible: false,
+    // La mesa de compras (requisiciones, órdenes, pagos a proveedores y los
+    // catálogos de materiales y proveedores) y la pestaña "Material" de cada obra.
+    rutas: ['/admin/compras', '/admin/obras/*/material'],
+    nav: [{ href: '/admin/compras', label: 'Compras', orden: 38 }],
+    disponible: true,
   },
   {
     clave: 'bitacora',
@@ -659,6 +662,11 @@ export interface PerfilEmpresa {
   saltado: boolean;
   /** Cerró la tarjeta "Siguiente paso" del inicio. */
   siguientePasoDescartado: boolean;
+  /**
+   * Módulos cuya sugerencia por uso ("¿Quieres controlar tu material?") el
+   * admin descartó para siempre (plan §4.3). Ausente = ninguna.
+   */
+  sugerenciasDescartadas?: ClaveModulo[];
 }
 
 const TIPOS = new Set<string>(TIPOS_EMPRESA.map((t) => t.valor));
@@ -687,6 +695,10 @@ export function leerPerfil(crudo: unknown): PerfilEmpresa | null {
     proximamente: ordenar(lista(o.proximamente).filter(esClaveModulo)),
     saltado: o.saltado === true,
     siguientePasoDescartado: o.siguiente_paso_descartado === true,
+    ...(() => {
+      const d = ordenar(lista(o.sugerencias_descartadas).filter(esClaveModulo));
+      return d.length ? { sugerenciasDescartadas: d } : {};
+    })(),
   };
 }
 
@@ -725,7 +737,46 @@ export function perfilAJson(p: PerfilEmpresa): Record<string, unknown> {
     proximamente: p.proximamente,
     saltado: p.saltado,
     siguiente_paso_descartado: p.siguientePasoDescartado,
+    ...(p.sugerenciasDescartadas?.length ? { sugerencias_descartadas: p.sugerenciasDescartadas } : {}),
   };
+}
+
+// ── Sugerencias de módulo por uso (plan §4.3) ───────────────────────────────
+
+export interface SugerenciaModulo {
+  clave: ClaveModulo;
+  titulo: string;
+  descripcion: string;
+}
+
+/** Salidas de material a partir de las cuales se sugiere Compras ("más de 3"). */
+export const UMBRAL_SUGERENCIA_COMPRAS = 3;
+
+/**
+ * La sugerencia de módulo que toca, o `null`. MÁXIMO UNA a la vez (plan §4.3) y
+ * nunca una que el admin ya descartó. Hoy solo existe la de Compras: se sugiere
+ * cuando está apagado y la empresa ya registró más de 3 salidas de caja
+ * clasificadas como material (`categoria_costo = MATERIAL`).
+ */
+export function sugerenciaModulo(p: {
+  activos: readonly ClaveModulo[];
+  perfil: PerfilEmpresa | null;
+  salidasMaterial: number;
+}): SugerenciaModulo | null {
+  const descartadas = new Set(p.perfil?.sugerenciasDescartadas ?? []);
+  if (
+    modulo('compras').disponible &&
+    !p.activos.includes('compras') &&
+    !descartadas.has('compras') &&
+    p.salidasMaterial > UMBRAL_SUGERENCIA_COMPRAS
+  ) {
+    return {
+      clave: 'compras',
+      titulo: '¿Quieres controlar tu material?',
+      descripcion: `Ya llevas ${p.salidasMaterial} gastos de material en caja. Con Compras pides desde la obra, compras, recibes con la foto de la remisión y el pago cae solo en la caja.`,
+    };
+  }
+  return null;
 }
 
 // ── Siguiente paso (plan §4.3) ──────────────────────────────────────────────

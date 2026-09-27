@@ -7,6 +7,7 @@ import {
   listGastosPeriodo,
 } from '@/lib/data/fiscal';
 import { getNombreEmpresa } from '@/lib/data/empresa';
+import { descargarArchivoCompras } from '@/lib/data/compras';
 import { hoyMxMs } from '@/lib/data/tz';
 import { LEYENDA_NO_ES_FACTURA } from '@/lib/fiscal/catalogos';
 import { armarPaquete } from '@/lib/fiscal/paquete';
@@ -69,10 +70,22 @@ export async function GET(request: NextRequest) {
       rutas.set(f.complemento_xml_path, `complementos/${f.complemento_uuid ?? e.cobro.id}.xml`);
     }
   }
+  // Facturas de proveedores de las compras pagadas en el mes (bucket `compras`).
+  const rutasCompras = new Map<string, string>();
+  for (const f of gastos.facturasProveedor) {
+    const base = f.uuid ?? `OC-${f.ordenFolio}`;
+    if (f.xmlPath) rutasCompras.set(f.xmlPath, `facturas-proveedores/${base}.xml`);
+    if (f.pdfPath) rutasCompras.set(f.pdfPath, `facturas-proveedores/${base}.pdf`);
+  }
+
   const archivos: ArchivoZip[] = [];
   const faltaron: string[] = [];
-  for (const [ruta, destino] of [...rutas].slice(0, MAX_ARCHIVOS)) {
-    const datos = await descargarArchivoFiscal(ruta);
+  const todas: [string, string, 'fiscal' | 'compras'][] = [
+    ...[...rutas].map(([r, d]) => [r, d, 'fiscal'] as [string, string, 'fiscal']),
+    ...[...rutasCompras].map(([r, d]) => [r, d, 'compras'] as [string, string, 'compras']),
+  ];
+  for (const [ruta, destino, bucket] of todas.slice(0, MAX_ARCHIVOS)) {
+    const datos = bucket === 'fiscal' ? await descargarArchivoFiscal(ruta) : await descargarArchivoCompras(ruta);
     if (datos) archivos.push({ ruta: destino, datos });
     else faltaron.push(destino);
   }
@@ -83,7 +96,8 @@ export async function GET(request: NextRequest) {
     `${nombreExcel}: por facturar, complementos de pago, facturado, gastos por obra, raya y resumen de IVA.`,
     'El resumen de IVA es un ESTIMADO, no es declaración.',
     'facturas/ y complementos/: los XML y PDF que se subieron a la app.',
-    rutas.size > MAX_ARCHIVOS ? `Solo se incluyeron ${MAX_ARCHIVOS} archivos de ${rutas.size}.` : '',
+    rutasCompras.size ? 'facturas-proveedores/: las facturas de las compras pagadas en el mes.' : '',
+    todas.length > MAX_ARCHIVOS ? `Solo se incluyeron ${MAX_ARCHIVOS} archivos de ${todas.length}.` : '',
     faltaron.length ? `No se pudieron incluir: ${faltaron.join(', ')}` : '',
     '',
     LEYENDA_NO_ES_FACTURA,

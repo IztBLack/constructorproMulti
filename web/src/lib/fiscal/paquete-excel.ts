@@ -159,10 +159,22 @@ export async function construirExcelPaquete(p: {
   hoja(
     libro,
     'Gastos por obra',
-    'Salidas de caja del periodo, con o sin factura. La app no sabe cuáles tienen factura: márcalas aquí para tus deducciones.',
-    [...columnasGasto, { titulo: '¿Tiene factura?', ancho: 14 }],
+    'Salidas de caja del periodo, con o sin factura. Los pagos de órdenes de compra traen la factura del proveedor si se subió; en los demás, marca aquí cuáles tienen factura para tus deducciones.',
+    [
+      ...columnasGasto,
+      { titulo: '¿Tiene factura?', ancho: 14 },
+      { titulo: 'Folio fiscal (UUID)', ancho: 38 },
+      { titulo: 'RFC del proveedor', ancho: 16 },
+      { titulo: 'IVA de la factura', ancho: 14, formato: 'moneda' },
+      { titulo: 'Orden de compra', ancho: 12 },
+    ],
     paquete.gastos.map((g) => [
-      g.obra, fechaMx(g.fecha), g.categoria, g.concepto, g.nombre, g.monto, g.metodo, g.referencia, '',
+      g.obra, fechaMx(g.fecha), g.categoria, g.concepto, g.nombre, g.monto, g.metodo, g.referencia,
+      g.factura?.uuid ? 'Sí' : g.factura ? 'Falta subirla' : '',
+      g.factura?.uuid ?? '',
+      g.factura?.rfc ?? '',
+      g.factura?.uuid ? g.factura.iva : null,
+      g.factura ? `OC-${g.factura.ordenFolio}` : '',
     ]),
   );
 
@@ -188,7 +200,13 @@ export async function construirExcelPaquete(p: {
     [
       ['IVA cobrado en cobros ya facturados', r.ivaFacturado],
       ['IVA de cobros todavía por facturar', r.ivaPorFacturar],
-      ['IVA pagado en gastos, SI todos tuvieran factura al 16%', r.ivaGastos],
+      [
+        r.gastosConFactura > 0
+          ? 'IVA pagado en gastos: real en los que traen factura del proveedor, y SI los demás tuvieran factura al 16%'
+          : 'IVA pagado en gastos, SI todos tuvieran factura al 16%',
+        r.ivaGastos,
+      ],
+      ['   · de eso, IVA real de facturas de proveedores (compras)', r.ivaGastosConFactura],
       ['Diferencia (IVA facturado − IVA de gastos)', r.diferencia],
     ],
   );

@@ -24,6 +24,19 @@ export interface GastoPaquete {
   monto: number;
   metodo: string;
   referencia: string;
+  /**
+   * Factura del proveedor cuando el gasto es el pago de una orden de compra
+   * (módulo `compras`, 0038). Con ella el gasto deja de ser "¿tiene factura? —
+   * no sé": se sabe su folio y su IVA real (proporcional a este pago).
+   */
+  factura?: {
+    uuid: string | null;
+    rfc: string;
+    proveedor: string;
+    ordenFolio: number;
+    /** IVA real de la factura que toca a este pago; null si la orden no tiene factura. */
+    iva: number | null;
+  };
 }
 
 export interface FilaPorFacturar {
@@ -79,6 +92,10 @@ export interface ResumenIva {
   ivaFacturado: number;
   ivaPorFacturar: number;
   ivaGastos: number;
+  /** Parte de `ivaGastos` que sale de facturas reales de proveedores (compras). */
+  ivaGastosConFactura: number;
+  /** Gastos que ya traen factura del proveedor ligada. */
+  gastosConFactura: number;
   diferencia: number;
   cobrosFacturados: number;
   cobrosPorFacturar: number;
@@ -205,7 +222,16 @@ export function armarPaquete(entradas: EntradaHoja[], gastosYRaya: GastoPaquete[
 
   const gastos = gastosYRaya.filter((g) => !esRaya(g.categoria));
   const raya = gastosYRaya.filter((g) => esRaya(g.categoria));
-  const ivaGastos = centavos(gastos.reduce((s, g) => s + ivaSiTuvieraFactura(g.monto), 0));
+  // IVA de gastos: el REAL de la factura del proveedor cuando la hay (compras);
+  // el estimado al 16% en los demás.
+  const conFactura = gastos.filter((g) => g.factura?.uuid && g.factura.iva != null);
+  const ivaGastosConFactura = centavos(conFactura.reduce((s, g) => s + (g.factura?.iva ?? 0), 0));
+  const ivaGastos = centavos(
+    gastos.reduce(
+      (s, g) => s + (g.factura?.uuid && g.factura.iva != null ? g.factura.iva : ivaSiTuvieraFactura(g.monto)),
+      0,
+    ),
+  );
 
   const orden = <T extends { fecha?: number; fechaPago?: number; fechaCobro?: number }>(a: T, b: T) =>
     (a.fecha ?? a.fechaPago ?? a.fechaCobro ?? 0) - (b.fecha ?? b.fechaPago ?? b.fechaCobro ?? 0);
@@ -220,6 +246,8 @@ export function armarPaquete(entradas: EntradaHoja[], gastosYRaya: GastoPaquete[
       ivaFacturado: centavos(ivaFacturado),
       ivaPorFacturar: centavos(ivaPorFacturar),
       ivaGastos,
+      ivaGastosConFactura,
+      gastosConFactura: conFactura.length,
       diferencia: centavos(ivaFacturado - ivaGastos),
       cobrosFacturados: facturado.length,
       cobrosPorFacturar: porFacturar.length,
