@@ -125,7 +125,7 @@ en local (PGlite).
 | F1b | 🔄 | | agente en curso |
 | F2 | ⏳ | | |
 | F3 | ⏳ | | |
-| F5 | ⏳ | | |
+| F5 | 🔄 | | agente en curso (adelantada) |
 | F4 | ✅ parcial | 27b64ea, 88bdfa9, 77328b6, 343f8ba, c8920b0, a1a358d | Web: bitácora (timeline, fotos, aclaraciones, cierre 24 h, PDF por periodo, portal del cliente) y programa (tabla, barras CSS, atrasos). 0041 escrita y probada en PGlite (31 tests), **sin aplicar a ningún Supabase**. Pendiente: "programado vs real" con `avance_partida` de F3 (F4-13), captura sin conexión → móvil (F4-10), colaborador/residente escribe en su obra → F6 (F4-2), verificación visual en navegador (no se levantó contra producción), paginación de la bitácora larga en el portal |
 | F6 | ⏳ | | |
 | F7 | ⏳ | | |
