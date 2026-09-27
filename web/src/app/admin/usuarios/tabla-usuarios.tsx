@@ -4,25 +4,27 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, Field, Modal, Select, TableContainer, THead, Th, TBody, Tr, Td } from '@/components/ui';
 import { EstadoFormulario } from '@/components/ajustes/estado-formulario';
-import { cambiarRol, revocarAcceso } from './actions';
+import { cambiarRol, guardarObrasAsignadas, revocarAcceso } from './actions';
+import { DESCRIPCION_ROL, ROLES_INVITABLES, nombreRol, usaObrasAsignadas } from '@/lib/auth/roles';
 import type { UsuarioEmpresa } from '@/lib/data/usuarios-empresa';
 import type { BadgeTone } from '@/components/ui';
 
 const TONO_ROL: Record<string, BadgeTone> = {
   admin: 'purple',
   supervisor: 'blue',
+  residente: 'blue',
+  compras: 'amber',
+  almacen: 'amber',
   contador: 'amber',
   colaborador: 'neutral',
   cliente: 'green',
 };
 
-const NOMBRE_ROL: Record<string, string> = {
-  admin: 'Administrador',
-  supervisor: 'Supervisor',
-  contador: 'Contador',
-  colaborador: 'Colaborador',
-  cliente: 'Cliente',
-};
+export interface ObraLite {
+  id: string;
+  nombre: string;
+  activa: boolean;
+}
 
 /**
  * Quién tiene acceso a la empresa.
@@ -35,12 +37,19 @@ const NOMBRE_ROL: Record<string, string> = {
 export function TablaUsuarios({
   usuarios,
   miUserId,
+  obras,
+  asignadas,
 }: {
   usuarios: UsuarioEmpresa[];
   miUserId: string;
+  /** Obras de la empresa, para asignar a residentes y colaboradores (0042). */
+  obras: ObraLite[];
+  /** user_id → obras asignadas vivas. */
+  asignadas: Record<string, string[]>;
 }) {
   const router = useRouter();
   const [editando, setEditando] = useState<UsuarioEmpresa | null>(null);
+  const [asignando, setAsignando] = useState<UsuarioEmpresa | null>(null);
   const [revocando, setRevocando] = useState<UsuarioEmpresa | null>(null);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,9 +99,12 @@ export function TablaUsuarios({
                     {u.nombre && <div className="text-xs text-neutral-500">{u.email}</div>}
                   </Td>
                   <Td>
-                    <Badge tone={TONO_ROL[u.rol] ?? 'neutral'}>
-                      {NOMBRE_ROL[u.rol] ?? u.rol}
-                    </Badge>
+                    <Badge tone={TONO_ROL[u.rol] ?? 'neutral'}>{nombreRol(u.rol)}</Badge>
+                    {usaObrasAsignadas(u.rol) && (
+                      <div className="mt-1 text-xs text-neutral-600">
+                        {resumenObras(asignadas[u.user_id] ?? [], obras, u.rol)}
+                      </div>
+                    )}
                   </Td>
                   <Td className="text-right">
                     {esCliente ? (
@@ -104,7 +116,12 @@ export function TablaUsuarios({
                         Otro admin puede cambiarte el rol
                       </span>
                     ) : (
-                      <div className="flex justify-end gap-2">
+                      <div className="flex flex-wrap justify-end gap-2">
+                        {usaObrasAsignadas(u.rol) && (
+                          <Button size="sm" variant="secondary" onClick={() => setAsignando(u)}>
+                            Obras
+                          </Button>
+                        )}
                         <Button size="sm" variant="secondary" onClick={() => setEditando(u)}>
                           Cambiar rol
                         </Button>
@@ -139,10 +156,11 @@ export function TablaUsuarios({
           >
             <Field label="Rol">
               <Select name="rol" defaultValue={editando.rol} disabled={cargando}>
-                <option value="colaborador">Colaborador — pase de lista y captura</option>
-                <option value="contador">Contador — maneja la caja, ve todo lo demás</option>
-                <option value="supervisor">Supervisor — además edita obras y cotizaciones</option>
-                <option value="admin">Administrador — control total, incluidos usuarios</option>
+                {[...ROLES_INVITABLES, 'admin' as const].map((r) => (
+                  <option key={r} value={r}>
+                    {nombreRol(r)} — {DESCRIPCION_ROL[r]}
+                  </option>
+                ))}
               </Select>
             </Field>
 
@@ -157,6 +175,74 @@ export function TablaUsuarios({
                 variant="secondary"
                 disabled={cargando}
                 onClick={() => (setEditando(null), setError(null))}
+              >
+                Cancelar
+              </Button>
+            </div>
+          </form>
+        )}
+      </Modal>
+
+      {/* ── Obras asignadas (residente / colaborador) ── */}
+      <Modal
+        open={asignando !== null}
+        onClose={() => !cargando && (setAsignando(null), setError(null))}
+        title={`Obras de ${asignando?.nombre ?? asignando?.email ?? ''}`}
+        size="sm"
+      >
+        {asignando && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              fd.set('user_id', asignando.user_id);
+              enviar(guardarObrasAsignadas, fd, () => setAsignando(null));
+            }}
+            className="space-y-4"
+          >
+            <p className="text-sm text-neutral-700">
+              {asignando.rol === 'residente'
+                ? 'El residente solo ve y trabaja en las obras que marques aquí. Sin obras, no ve ninguna.'
+                : 'El colaborador puede anotar en la bitácora de las obras que marques. Lo demás no cambia.'}
+            </p>
+            {obras.length === 0 ? (
+              <p className="text-sm text-neutral-600">Todavía no hay obras.</p>
+            ) : (
+              <fieldset className="max-h-72 space-y-1 overflow-y-auto rounded-lg border border-neutral-200 p-2">
+                <legend className="sr-only">Obras</legend>
+                {obras.map((o) => (
+                  <label
+                    key={o.id}
+                    className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-2 text-sm text-neutral-900 hover:bg-neutral-50"
+                  >
+                    <input
+                      type="checkbox"
+                      name="obra_id"
+                      value={o.id}
+                      defaultChecked={(asignadas[asignando.user_id] ?? []).includes(o.id)}
+                      disabled={cargando}
+                      className="h-5 w-5 rounded border-neutral-400"
+                    />
+                    <span>
+                      {o.nombre}
+                      {!o.activa && <span className="ml-1 text-neutral-600">(terminada)</span>}
+                    </span>
+                  </label>
+                ))}
+              </fieldset>
+            )}
+
+            <EstadoFormulario tono="error" mensaje={error} />
+
+            <div className="flex items-center gap-3">
+              <Button type="submit" disabled={cargando}>
+                {cargando ? 'Guardando…' : 'Guardar obras'}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={cargando}
+                onClick={() => (setAsignando(null), setError(null))}
               >
                 Cancelar
               </Button>
@@ -214,4 +300,14 @@ export function TablaUsuarios({
       </Modal>
     </>
   );
+}
+
+/** "Casa Juárez, Bodega Norte" o "Sin obras asignadas". */
+function resumenObras(ids: string[], obras: ObraLite[], rol: string): string {
+  const nombres = ids.map((id) => obras.find((o) => o.id === id)?.nombre).filter(Boolean) as string[];
+  if (nombres.length === 0) {
+    return rol === 'residente' ? 'Sin obras asignadas: no ve ninguna' : 'Sin obras asignadas';
+  }
+  if (nombres.length <= 3) return nombres.join(', ');
+  return `${nombres.slice(0, 3).join(', ')} y ${nombres.length - 3} más`;
 }

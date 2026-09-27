@@ -22,18 +22,11 @@ import { SeccionFiscal } from '@/components/ajustes/seccion-fiscal';
 import { getEmpresaFiscal } from '@/lib/data/fiscal';
 import { SeccionMargen } from '@/components/ajustes/seccion-margen';
 import { getMargenEmpresa } from '@/lib/data/rentabilidad';
+import { nombreRol } from '@/lib/auth/roles';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata = { title: 'Ajustes' };
-
-const NOMBRE_ROL: Record<string, string> = {
-  admin: 'Administrador',
-  supervisor: 'Supervisor',
-  contador: 'Contador',
-  colaborador: 'Colaborador',
-  cliente: 'Cliente',
-};
 
 /**
  * Ajustes del panel de oficina.
@@ -105,7 +98,7 @@ export default async function AjustesPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow={`Entraste como ${NOMBRE_ROL[rol] ?? rol}`}
+        eyebrow={`Entraste como ${nombreRol(rol)}`}
         title="Ajustes"
         description="Tu cuenta, tus preferencias y la configuración de la empresa."
       />

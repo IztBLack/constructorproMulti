@@ -7,11 +7,12 @@ import { EstadoFormulario } from '@/components/ajustes/estado-formulario';
 import { createClient } from '@/lib/supabase/client';
 import { Turnstile, captchaConfigurado } from '@/components/auth/turnstile';
 import { invitarUsuario, invitarSocio } from './actions';
+import { DESCRIPCION_ROL, ROLES_INVITABLES, nombreRol } from '@/lib/auth/roles';
 
 /**
  * Invitar a alguien a la empresa. Dos canales según el rol:
  *
- * · Colaborador / contador / supervisor → CÓDIGO de 6 dígitos que el admin dicta
+ * · Colaborador, residente, supervisor, compras, almacén o contador → CÓDIGO de 6 dígitos que el admin dicta
  *   por teléfono o WhatsApp. Es de campo, no técnico: hay gente en obra sin correo
  *   propio, y un mecanismo que falla para media plantilla no puede ser el principal.
  *   La persona tiene que REGISTRARSE primero y luego elegir "Me invitaron".
@@ -187,9 +188,11 @@ export function InvitarUsuario({ urlBase }: { urlBase: string }) {
                 onChange={(e) => setRol(e.target.value)}
                 disabled={cargando}
               >
-                <option value="colaborador">Colaborador — pase de lista y captura</option>
-                <option value="contador">Contador — maneja la caja, ve todo lo demás</option>
-                <option value="supervisor">Supervisor — además edita obras y cotizaciones</option>
+                {ROLES_INVITABLES.map((r) => (
+                  <option key={r} value={r}>
+                    {nombreRol(r)} — {DESCRIPCION_ROL[r]}
+                  </option>
+                ))}
                 <option value="admin">Socio — administrador, se invita por correo</option>
               </Select>
             </Field>
