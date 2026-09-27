@@ -52,6 +52,50 @@
 --   7. RPC del portal: `mis_datos_fiscales()` y `confirmar_mis_datos_fiscales(...)`.
 --   8. RPC `guardar_claves_sat(...)`: el contador captura claves sin poder
 --      editar precios ni descripciones.
+--
+-- ENDURECIMIENTO (revisión de seguridad, docs/PROGRESO_ALCANCE.md, SEG-*)
+-- ─────────────────────────────────────────────────────────────────────
+-- · SEG-B1: `cobro_fiscal_oficina` se crea SOLO si no existe; la versión
+--   definitiva (con la rama `estimacion_id`) es la de 0039. Así re-correr 0037
+--   sola no le quita a la base una rama que agregó una migración posterior.
+-- · SEG-B5: el cliente sube como máximo 10 archivos a su carpeta de constancias.
+-- · SEG-B7: `fiscales_confirmados_at/_por` solo los pone el cliente dueño; si
+--   escribe otro (la oficina), un trigger los conserva o los borra, nunca los
+--   deja inventar.
+-- · SEG-B9: las policies de Storage convierten la carpeta con `uuid_o_null`.
+
+-- ══════════════════════════════════════════════════════════════════════════════
+-- 0. Utilidades compartidas del endurecimiento (mismo cuerpo que en 0036)
+-- ══════════════════════════════════════════════════════════════════════════════
+create or replace function public.uuid_o_null(p text)
+returns uuid
+language sql
+immutable
+as $$
+  select case
+    when p ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then p::uuid
+    else null
+  end
+$$;
+
+-- Cuántos objetos hay en una carpeta de un bucket (con TODO lo que hay, lo vea
+-- o no la RLS de quien pregunta: un archivo subido y nunca ligado también ocupa
+-- lugar). Sirve para topar lo que sube el cliente (SEG-B5). Compara el prefijo
+-- como texto, sin LIKE, para que un `_` o `%` en la ruta no cuente de más.
+create or replace function public.storage_objetos_en_carpeta(p_bucket text, p_prefijo text)
+returns integer
+language sql
+stable
+security definer
+set search_path = public, storage
+as $$
+  select count(*)::integer
+    from storage.objects o
+   where o.bucket_id = p_bucket
+     and left(o.name, length(p_prefijo)) = p_prefijo
+$$;
+revoke all on function public.storage_objetos_en_carpeta(text, text) from public, anon;
+grant execute on function public.storage_objetos_en_carpeta(text, text) to authenticated;
 
 -- ══════════════════════════════════════════════════════════════════════════════
 -- 1. Catálogos (para los CHECK)
@@ -188,6 +232,52 @@ drop trigger if exists trg_srv_upd on public.cliente_fiscal;
 create trigger trg_srv_upd before insert or update on public.cliente_fiscal
   for each row execute function public.set_server_updated_at();
 
+-- "Confirmados por el cliente" solo lo puede decir el cliente (SEG-B7). La
+-- oficina escribe esta tabla por su policy; sin esto podría poner una fecha de
+-- confirmación que el cliente nunca dio. Si quien escribe NO es el cliente dueño
+-- (su `clientes.user_id`):
+--   · al crear la fila, la confirmación nace vacía;
+--   · al editar, si cambió algún dato fiscal la confirmación se BORRA (F1b-5:
+--     ya no son "los que confirmó el cliente"); si no cambió nada, se CONSERVA
+--     la que había, diga lo que diga el UPDATE.
+-- Sin sesión (llave de servicio / mantenimiento) no se toca. No lanza: corrige.
+create or replace function public._cliente_fiscal_confirmacion()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null then
+    return new;
+  end if;
+  if exists (
+    select 1 from public.clientes c
+     where c.id = new.cliente_id and c.user_id = auth.uid() and c.deleted_at is null
+  ) then
+    return new;
+  end if;
+
+  if tg_op = 'INSERT' then
+    new.fiscales_confirmados_at  := null;
+    new.fiscales_confirmados_por := null;
+  elsif (new.rfc, new.razon_social, new.regimen, new.cp_fiscal, new.uso_cfdi, new.correo_factura)
+        is distinct from
+        (old.rfc, old.razon_social, old.regimen, old.cp_fiscal, old.uso_cfdi, old.correo_factura) then
+    new.fiscales_confirmados_at  := null;
+    new.fiscales_confirmados_por := null;
+  else
+    new.fiscales_confirmados_at  := old.fiscales_confirmados_at;
+    new.fiscales_confirmados_por := old.fiscales_confirmados_por;
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists trg_cliente_fiscal_confirmacion on public.cliente_fiscal;
+create trigger trg_cliente_fiscal_confirmacion
+  before insert or update on public.cliente_fiscal
+  for each row execute function public._cliente_fiscal_confirmacion();
+
 -- ══════════════════════════════════════════════════════════════════════════════
 -- 4. Claves SAT de los conceptos
 -- ══════════════════════════════════════════════════════════════════════════════
@@ -309,26 +399,41 @@ alter table public.cobro_fiscal enable row level security;
 
 -- Solo oficina. El cobro referenciado tiene que ser de la MISMA empresa, y si es
 -- un movimiento, una ENTRADA (una salida es un gasto, no un cobro al cliente).
-drop policy if exists cobro_fiscal_oficina on public.cobro_fiscal;
-create policy cobro_fiscal_oficina on public.cobro_fiscal
-  for all
-  using (public.auth_tiene_rol(empresa_id, 'admin', 'contador'))
-  with check (
-    public.auth_tiene_rol(empresa_id, 'admin', 'contador')
-    and (
-      (pago_id is not null and exists (
-        select 1 from public.pagos p
-         where p.id = cobro_fiscal.pago_id and p.empresa_id = cobro_fiscal.empresa_id
-      ))
-      or
-      (movimiento_id is not null and exists (
-        select 1 from public.movimientos m
-         where m.id = cobro_fiscal.movimiento_id
-           and m.empresa_id = cobro_fiscal.empresa_id
-           and m.tipo = 'ENTRADA'
-      ))
-    )
-  );
+--
+-- SEG-B1: se crea SOLO si no existe. 0039 la reemplaza con una rama más
+-- (`estimacion_id`); con el `drop policy … create policy` de antes, re-correr
+-- 0037 sola (algo normal en el SQL Editor) le quitaba esa rama a la base y la
+-- factura de una estimación dejaba de poderse guardar. La versión DEFINITIVA de
+-- esta policy vive en 0039; aquí queda la base para una instalación que todavía
+-- no tiene estimaciones.
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+     where schemaname = 'public' and tablename = 'cobro_fiscal'
+       and policyname = 'cobro_fiscal_oficina'
+  ) then
+    create policy cobro_fiscal_oficina on public.cobro_fiscal
+      for all
+      using (public.auth_tiene_rol(empresa_id, 'admin', 'contador'))
+      with check (
+        public.auth_tiene_rol(empresa_id, 'admin', 'contador')
+        and (
+          (pago_id is not null and exists (
+            select 1 from public.pagos p
+             where p.id = cobro_fiscal.pago_id and p.empresa_id = cobro_fiscal.empresa_id
+          ))
+          or
+          (movimiento_id is not null and exists (
+            select 1 from public.movimientos m
+             where m.id = cobro_fiscal.movimiento_id
+               and m.empresa_id = cobro_fiscal.empresa_id
+               and m.tipo = 'ENTRADA'
+          ))
+        )
+      );
+  end if;
+end $$;
 
 drop trigger if exists trg_srv_upd on public.cobro_fiscal;
 create trigger trg_srv_upd before insert or update on public.cobro_fiscal
@@ -358,7 +463,7 @@ create policy fiscal_oficina_select on storage.objects
   for select to authenticated
   using (
     bucket_id = 'fiscal'
-    and public.auth_tiene_rol((storage.foldername(name))[1]::uuid, 'admin', 'contador')
+    and public.auth_tiene_rol(public.uuid_o_null((storage.foldername(name))[1]), 'admin', 'contador')
   );
 
 drop policy if exists fiscal_oficina_insert on storage.objects;
@@ -366,7 +471,7 @@ create policy fiscal_oficina_insert on storage.objects
   for insert to authenticated
   with check (
     bucket_id = 'fiscal'
-    and public.auth_tiene_rol((storage.foldername(name))[1]::uuid, 'admin', 'contador')
+    and public.auth_tiene_rol(public.uuid_o_null((storage.foldername(name))[1]), 'admin', 'contador')
   );
 
 drop policy if exists fiscal_oficina_delete on storage.objects;
@@ -374,7 +479,7 @@ create policy fiscal_oficina_delete on storage.objects
   for delete to authenticated
   using (
     bucket_id = 'fiscal'
-    and public.auth_tiene_rol((storage.foldername(name))[1]::uuid, 'admin', 'contador')
+    and public.auth_tiene_rol(public.uuid_o_null((storage.foldername(name))[1]), 'admin', 'contador')
   );
 
 -- Cliente del portal: solo SU carpeta de constancias (ver y subir; no borrar,
@@ -395,6 +500,10 @@ create policy fiscal_cliente_select on storage.objects
     )
   );
 
+-- Tope de 10 archivos en SU carpeta (SEG-B5): una constancia se sube una o dos
+-- veces; sin tope, una cuenta de cliente podría llenar el bucket de la empresa.
+-- Cuenta todo lo que hay en la carpeta (también lo que subió y nunca ligó). Si
+-- llega al tope, la oficina borra las viejas (el cliente no borra, ver arriba).
 drop policy if exists fiscal_cliente_insert on storage.objects;
 create policy fiscal_cliente_insert on storage.objects
   for insert to authenticated
@@ -407,6 +516,8 @@ create policy fiscal_cliente_insert on storage.objects
          and c.deleted_at is null
          and c.empresa_id::text = (storage.foldername(name))[1]
          and c.id::text = (storage.foldername(name))[3]
+         and public.storage_objetos_en_carpeta(
+               'fiscal', c.empresa_id::text || '/constancias/' || c.id::text || '/') < 10
     )
   );
 
