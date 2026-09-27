@@ -4,6 +4,10 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { IVA_POR_DEFECTO } from './types';
+import { listExtrasAprobadosCliente, type ExtraAprobado } from './cambios';
+import { totalesEstadoCuenta } from '@/lib/cliente/estado-cuenta-calculo';
+
+export type { ExtraAprobado };
 
 // ─── Tipos propios del portal ─────────────────────────────────────────────────
 
@@ -371,11 +375,18 @@ export interface EntradaPortal {
 }
 
 export interface EstadoCuentaObra {
+  /** Σ partidas del presupuesto (el trato original). */
+  presupuesto: number;
+  /** Σ extras APROBADOS (0036). Línea aparte. */
+  totalExtras: number;
+  /** presupuesto + extras aprobados. */
   costoTotal: number;
   recibido: number;
   pendiente: number;
   pagadoPct: number;
   partidas: PartidaPresupuestoPortal[];
+  /** Extras aprobados, con el total de su foto. */
+  extras: ExtraAprobado[];
   entradas: EntradaPortal[];
 }
 
@@ -415,20 +426,19 @@ export async function listEntradasObraCliente(obraId: string): Promise<EntradaPo
   return data as EntradaPortal[];
 }
 
-/// Estado de cuenta de UNA obra: COSTO TOTAL (presupuesto) vs RECIBIDO (ENTRADAS).
+/// Estado de cuenta de UNA obra: COSTO TOTAL (presupuesto + extras aprobados)
+/// vs RECIBIDO (ENTRADAS). Los extras los deja leer la RLS de 0036 solo si son
+/// de una obra del cliente; si la migración no está aplicada, la consulta falla y
+/// quedan en cero, que es exactamente el estado de cuenta de antes.
 export async function getEstadoCuentaObra(obraId: string): Promise<EstadoCuentaObra> {
-  const [partidas, entradas] = await Promise.all([
+  const [partidas, entradas, extras] = await Promise.all([
     listPresupuestoObraCliente(obraId),
     listEntradasObraCliente(obraId),
+    listExtrasAprobadosCliente(obraId),
   ]);
 
-  const costoTotal = partidas.reduce((acc, p) => acc + p.cantidad * p.precio_unitario, 0);
-  const recibido = entradas.reduce((acc, e) => acc + e.monto, 0);
-  const pendiente = costoTotal - recibido;
-  const pagadoPct =
-    costoTotal > 0 ? Math.min(100, Math.round((recibido / costoTotal) * 100)) : 0;
-
-  return { costoTotal, recibido, pendiente, pagadoPct, partidas, entradas };
+  const t = totalesEstadoCuenta({ partidas, entradas, extras: extras.data });
+  return { ...t, partidas, extras: extras.data, entradas };
 }
 
 /// Estado de cuenta global del cliente, sumando TODAS sus obras (modelo real por
@@ -445,10 +455,18 @@ export async function getEstadoCuentaCliente(): Promise<{
     .select('cantidad, precio_unitario')
     .is('deleted_at', null);
 
-  const totalPresupuestado = (presData ?? []).reduce(
-    (acc, p) => acc + (p.cantidad as number) * (p.precio_unitario as number),
-    0,
-  );
+  // Los extras APROBADOS también son parte de lo que el cliente debe (RF1.4).
+  const { data: extData } = await supabase
+    .from('orden_cambio')
+    .select('total_enviado')
+    .eq('estado', 'APROBADA')
+    .is('deleted_at', null);
+
+  const totalPresupuestado =
+    (presData ?? []).reduce(
+      (acc, p) => acc + (p.cantidad as number) * (p.precio_unitario as number),
+      0,
+    ) + (extData ?? []).reduce((acc, e) => acc + Number(e.total_enviado ?? 0), 0);
 
   const { data: entData } = await supabase
     .from('movimientos')

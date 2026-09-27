@@ -15,18 +15,36 @@ import { PAQUETE_POR_DEFECTO, rutaVisible, type ClaveModulo } from '@/lib/modulo
  */
 const ModulosContext = createContext<readonly ClaveModulo[]>(PAQUETE_POR_DEFECTO);
 
+/**
+ * Rol del usuario en su empresa, para ocultar lo que no le toca (p. ej. la
+ * pestaña "Utilidad" al supervisor, decisión D1). PRESENTACIÓN: cada página lo
+ * vuelve a comprobar en el servidor. Fuera del proveedor vale '' (sin permisos
+ * extra: ante la duda, menos).
+ */
+const RolContext = createContext<string>('');
+
 export function ModulosProvider({
   activos,
+  rol = '',
   children,
 }: {
   activos: readonly ClaveModulo[];
+  rol?: string;
   children: ReactNode;
 }) {
-  return <ModulosContext.Provider value={activos}>{children}</ModulosContext.Provider>;
+  return (
+    <ModulosContext.Provider value={activos}>
+      <RolContext.Provider value={rol}>{children}</RolContext.Provider>
+    </ModulosContext.Provider>
+  );
 }
 
 export function useModulos(): readonly ClaveModulo[] {
   return useContext(ModulosContext);
+}
+
+export function useRol(): string {
+  return useContext(RolContext);
 }
 
 /** ¿Se muestra un enlace a esta ruta? (Lo que no es de un módulo, siempre.) */

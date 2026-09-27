@@ -16,6 +16,7 @@ import {
 } from '@/lib/data/presupuesto-obra';
 import type { TipoMovimiento } from '@/lib/data/types';
 import { fechaInputAMs } from '@/lib/data/tz';
+import { leerCategoriaCosto } from '@/lib/rentabilidad/categorias';
 
 export interface ActionResult {
   ok: boolean;
@@ -78,6 +79,10 @@ function parseMovimientoFormData(
   const metodoPago = String(formData.get('metodo_pago') ?? '').trim();
   const referencia = String(formData.get('referencia') ?? '').trim();
   const nombre = String(formData.get('nombre') ?? '').trim();
+  // Solo si el formulario trae el selector (módulo de utilidad prendido). Si no
+  // viene, no se toca la columna: apagar el módulo no borra la clasificación.
+  const traeCategoriaCosto = formData.has('categoria_costo');
+  const categoriaCosto = leerCategoriaCosto(formData.get('categoria_costo'));
 
   if (!TIPOS_VALIDOS.includes(tipo as TipoMovimiento)) {
     return { error: 'El tipo de movimiento no es válido.' };
@@ -108,6 +113,8 @@ function parseMovimientoFormData(
       metodoPago,
       referencia,
       nombre,
+      // Una ENTRADA no es costo: nunca lleva categoría de costo.
+      ...(traeCategoriaCosto ? { categoriaCosto: tipo === 'SALIDA' ? categoriaCosto : null } : {}),
     },
   };
 }

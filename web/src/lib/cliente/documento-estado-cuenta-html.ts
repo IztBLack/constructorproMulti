@@ -27,7 +27,9 @@ export function construirEstadoCuentaClienteHtml(params: {
     empresa: pdf.textos,
     ctx: { nombreEmpresa },
   });
-  const { costoTotal, recibido, pendiente, pagadoPct, partidas, entradas } = estado;
+  const { costoTotal, recibido, pendiente, pagadoPct, partidas, entradas, presupuesto, totalExtras } =
+    estado;
+  const extras = estado.extras ?? [];
   const folio = folioCorto(obra.id);
 
   const filasPresupuesto =
@@ -46,6 +48,41 @@ export function construirEstadoCuentaClienteHtml(params: {
               </tr>`;
           })
           .join('');
+
+  // Extras aprobados (0036): van en su propia tabla, después del presupuesto,
+  // para que se lea qué era el trato original y qué se agregó después.
+  const seccionExtras =
+    extras.length === 0
+      ? ''
+      : `
+    <div class="seccion avoid">
+      <div class="seccion-titulo"><h2>Extras aprobados</h2></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Extra</th>
+            <th class="c">Aprobado el</th>
+            <th class="r">Importe</th>
+          </tr>
+        </thead>
+        <tbody>${extras
+          .map(
+            (e) => `
+              <tr>
+                <td class="fuerte">Extra ${e.folio}${e.titulo ? ` · ${esc(e.titulo)}` : ''}</td>
+                <td class="c">${formatDate(e.aprobadoEl)}</td>
+                <td class="r fuerte">${formatCurrency(e.total)}</td>
+              </tr>`,
+          )
+          .join('')}</tbody>
+      </table>
+    </div>`;
+
+  const filasExtrasTotales =
+    extras.length === 0
+      ? ''
+      : `<div class="tot-fila"><span>Presupuesto</span><span class="r">${formatCurrency(presupuesto)}</span></div>
+        <div class="tot-fila"><span>Extras aprobados</span><span class="r">${formatCurrency(totalExtras)}</span></div>`;
 
   const filasPagos =
     entradas.length === 0
@@ -108,6 +145,7 @@ export function construirEstadoCuentaClienteHtml(params: {
         <tbody>${filasPresupuesto}</tbody>
       </table>
     </div>
+${seccionExtras}
 
     <div class="seccion">
       <div class="seccion-titulo"><h2>Pagos recibidos</h2></div>
@@ -126,6 +164,7 @@ export function construirEstadoCuentaClienteHtml(params: {
 
     <div class="totales avoid">
       <div class="totales-caja">
+        ${filasExtrasTotales}
         <div class="tot-fila"><span>Costo total</span><span class="r">${formatCurrency(costoTotal)}</span></div>
         <div class="tot-fila"><span>Pagado</span><span class="r verde">${formatCurrency(recibido)}</span></div>
         <div class="tot-total"><span class="lbl">PENDIENTE</span><span class="val">${formatCurrency(pendiente)}</span></div>

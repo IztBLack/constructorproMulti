@@ -28,7 +28,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // Módulos prendidos de la empresa: deciden qué enlaces se ven en la barra, en
   // la paleta y en las pestañas de la obra. Se leen UNA vez aquí y bajan por
   // props y por contexto (`ModulosProvider`).
-  const { activos } = await getModulosEmpresa();
+  const { activos, rol } = await getModulosEmpresa();
   // Aviso global de gente a medio registrar. Va en el layout y no en una
   // pantalla porque el pendiente es del negocio: quien da de alta en la obra
   // no suele ser quien completa los datos en la oficina. Es del módulo
@@ -78,6 +78,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           className="flex gap-1 overflow-x-auto border-t border-neutral-100 px-4 py-2 sm:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden mx-auto max-w-6xl"
           itemClassName="shrink-0"
           modulos={activos}
+          rol={rol}
         />
       </header>
 
@@ -92,7 +93,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <AvisoIncompletos datos={incompletos} />
           </div>
         )}
-        <ModulosProvider activos={activos}>{children}</ModulosProvider>
+        <ModulosProvider activos={activos} rol={rol}>
+          {children}
+        </ModulosProvider>
       </main>
 
       {/* Vive en el layout para responder desde CUALQUIER pantalla de /admin.

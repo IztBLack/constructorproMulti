@@ -48,11 +48,13 @@ interface NavLinksProps {
   itemClassName?: string;
   /** Módulos prendidos de la empresa; los lee el layout (servidor). */
   modulos: readonly ClaveModulo[];
+  /** Rol del usuario: quita los enlaces restringidos (p. ej. Utilidad, D1). */
+  rol?: string;
 }
 
-export function NavLinks({ className = '', itemClassName = '', modulos }: NavLinksProps) {
+export function NavLinks({ className = '', itemClassName = '', modulos, rol }: NavLinksProps) {
   const pathname = usePathname();
-  const enlaces = navDeModulos(modulos);
+  const enlaces = navDeModulos(modulos, rol);
 
   return (
     <nav aria-label="Secciones del panel" className={className}>

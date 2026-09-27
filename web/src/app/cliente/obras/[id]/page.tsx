@@ -20,6 +20,8 @@ import { getObraCliente, getEstadoCuentaObra, mapEstadoObra } from '@/lib/data/p
 import type { EstadoObraPortal } from '@/lib/data/portal-cliente';
 import { listBitacoraObra } from '@/lib/data/bitacora';
 import { BitacoraCliente } from './bitacora-cliente';
+import { listExtrasObraCliente } from '@/lib/data/cambios';
+import { ExtrasCliente } from './_extras';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,8 +50,13 @@ export default async function ObraDetallePage({
 
   // Estado de cuenta REAL de ESTA obra: COSTO TOTAL (presupuesto) vs RECIBIDO
   // (movimientos tipo='ENTRADA'). Las SALIDA (pagos internos) nunca se exponen.
-  const [{ costoTotal, recibido, pendiente, pagadoPct, entradas }, bitacora] = await Promise.all([
+  const [
+    { costoTotal, recibido, pendiente, pagadoPct, entradas, presupuesto, totalExtras },
+    extras,
+    bitacora,
+  ] = await Promise.all([
     getEstadoCuentaObra(obra.id),
+    listExtrasObraCliente(obra.id),
     // Bitácora publicada (0041). La RLS entrega SOLO lo marcado para el
     // cliente; si falla o no hay nada, la sección simplemente no aparece.
     listBitacoraObra(obra.id),
@@ -117,6 +124,9 @@ export default async function ObraDetallePage({
         </Card>
       </section>
 
+      {/* ── Extras (0036): lo que se le mandó a aprobar ──────────────────── */}
+      <ExtrasCliente obraId={obra.id} extras={extras} />
+
       {/* ── Estado de cuenta de la obra ─────────────────────────────────── */}
       <section aria-labelledby="estado-cuenta-heading">
         <div className="mb-4 flex items-center justify-between gap-4">
@@ -165,6 +175,21 @@ export default async function ObraDetallePage({
                 <p className="mt-1 text-xs text-amber-700/80">{100 - pagadoPct}% restante</p>
               </div>
             </div>
+
+            {/* Los extras aprobados van como línea aparte (RF1.4): el cliente ve
+                qué era el trato original y qué se agregó después. */}
+            {totalExtras > 0 && (
+              <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm text-neutral-700">
+                <div>
+                  <dt className="inline">Presupuesto: </dt>
+                  <dd className="inline font-medium tabular-nums text-neutral-900">{formatCurrency(presupuesto)}</dd>
+                </div>
+                <div>
+                  <dt className="inline">Extras aprobados: </dt>
+                  <dd className="inline font-medium tabular-nums text-neutral-900">{formatCurrency(totalExtras)}</dd>
+                </div>
+              </dl>
+            )}
 
             {/* Barra de avance de pago */}
             <div className="mt-4 space-y-1">

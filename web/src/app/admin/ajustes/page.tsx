@@ -20,6 +20,8 @@ import { SeccionModulos } from '@/components/ajustes/seccion-modulos';
 import { getModulosEmpresa } from '@/lib/data/modulos';
 import { SeccionFiscal } from '@/components/ajustes/seccion-fiscal';
 import { getEmpresaFiscal } from '@/lib/data/fiscal';
+import { SeccionMargen } from '@/components/ajustes/seccion-margen';
+import { getMargenEmpresa } from '@/lib/data/rentabilidad';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,6 +81,9 @@ export default async function AjustesPage() {
   // quien no factura no se le pide nada.
   const verFiscal = secciones.includes('fiscal') && activos.includes('fiscal');
   const emisor = verFiscal ? await getEmpresaFiscal() : null;
+  // El margen objetivo solo tiene sentido con la utilidad por obra prendida.
+  const verMargen = verOperacion && activos.includes('rentabilidad');
+  const margenEmpresa = verMargen ? await getMargenEmpresa() : 15;
 
   // Solo se consulta si se va a mostrar: la RPC exige rol admin y lanzaría para
   // cualquier otro rol.
@@ -149,6 +154,7 @@ export default async function AjustesPage() {
               descripcion="Valores con los que arrancan las cotizaciones nuevas. No modifican las ya creadas."
             >
               <SeccionOperacion ivaActual={ivaPorcentaje} modulos={activos} />
+              {verMargen && <SeccionMargen margenActual={margenEmpresa} />}
               <SeccionPdf configActual={pdf} />
             </GrupoAjustes>
           )}

@@ -33,8 +33,10 @@ describe('perfilDeRespuestas (lo que manda el navegador no se cree)', () => {
     expect(p.tipo).toBe('empresa');
     expect(p.necesidades).toEqual(['material']);
     expect(p.proximamente).toEqual(
-      expect.arrayContaining(['compras', 'rentabilidad', 'estimaciones', 'cumplimiento']),
+      expect.arrayContaining(['compras', 'estimaciones', 'cumplimiento']),
     );
+    // La utilidad ya existe (F1): se prende, no queda en "próximamente".
+    expect(p.proximamente).not.toContain('rentabilidad');
     expect(p.siguientePasoDescartado).toBe(false);
   });
 
@@ -56,7 +58,9 @@ describe('necesidadProximamente', () => {
   test('se decide por el módulo que la resuelve', () => {
     expect(necesidadProximamente('cotizar', null)).toBe(false);
     expect(necesidadProximamente('cuadrillas', null)).toBe(false);
-    expect(necesidadProximamente('ganancia', null)).toBe(true); // prende cotizaciones, pero es utilidad
+    expect(necesidadProximamente('ganancia', null)).toBe(false); // la utilidad salió en F1
+    expect(necesidadProximamente('extras', null)).toBe(false);
+    expect(necesidadProximamente('facturar', null)).toBe(false); // F1b ya salió
     expect(necesidadProximamente('material', 'empresa')).toBe(true);
     expect(necesidadProximamente('tratos', 'constructora')).toBe(false);
   });
@@ -64,7 +68,8 @@ describe('necesidadProximamente', () => {
 
 describe('paleta de comandos', () => {
   test('con todo prendido no se pierde ningún comando', () => {
-    expect(soloModulosActivos(COMANDOS_FIJOS, CLAVES_MODULO)).toEqual(COMANDOS_FIJOS);
+    const todo = MODULOS.filter((m) => m.disponible).map((m) => m.clave);
+    expect(soloModulosActivos(COMANDOS_FIJOS, todo)).toEqual(COMANDOS_FIJOS);
   });
 
   test('Facturación solo aparece con el módulo fiscal (no viene en el paquete de siempre)', () => {
@@ -72,6 +77,16 @@ describe('paleta de comandos', () => {
     expect(titulos(PAQUETE_POR_DEFECTO)).not.toContain('Facturación');
     expect(titulos([...PAQUETE_POR_DEFECTO, 'fiscal'])).toContain('Facturación');
     expect(navDeModulos([...PAQUETE_POR_DEFECTO, 'fiscal']).map((n) => n.href)).toContain('/admin/facturacion');
+  });
+
+  test('extras y utilidad solo con su módulo prendido', () => {
+    const titulos = (activos: ClaveModulo[]) =>
+      soloModulosActivos([...COMANDOS_FIJOS, ...comandosDeObra('o1')], activos).map((c) => c.titulo);
+    expect(titulos([...PAQUETE_POR_DEFECTO])).not.toContain('Extras');
+    expect(titulos([...PAQUETE_POR_DEFECTO])).not.toContain('Utilidad por obra');
+    expect(titulos([...PAQUETE_POR_DEFECTO, 'cambios', 'rentabilidad'])).toEqual(
+      expect.arrayContaining(['Extras', 'Utilidad', 'Utilidad por obra']),
+    );
   });
 
   test('con solo el núcleo desaparecen cotizaciones, equipo, caja y demás', () => {
@@ -184,6 +199,10 @@ describe('rutaPerteneceAModulo', () => {
     ['/admin/obras/abc/exportar', 'caja'],
     ['/admin/obras/abc/estado-cuenta-cliente/descargar', 'caja'],
     ['/admin/ajustes#pdf', null],
+    ['/admin/obras/abc/extras', 'cambios'],
+    ['/admin/obras/abc/extras/e1/pdf/descargar', 'cambios'],
+    ['/admin/obras/abc/utilidad', 'rentabilidad'],
+    ['/admin/rentabilidad', 'rentabilidad'],
   ];
   test.each(casos)('%s → %s', (ruta, esperado) => {
     expect(rutaPerteneceAModulo(ruta)).toBe(esperado);
@@ -214,6 +233,15 @@ describe('navDeModulos', () => {
     ]);
   });
 
+  test('Utilidad solo para admin y contador (D1), y solo con el módulo prendido', () => {
+    const conUtilidad = [...PAQUETE_POR_DEFECTO, 'rentabilidad'] as ClaveModulo[];
+    expect(navDeModulos(conUtilidad, 'admin').map((n) => n.label)).toContain('Utilidad');
+    expect(navDeModulos(conUtilidad, 'contador').map((n) => n.label)).toContain('Utilidad');
+    expect(navDeModulos(conUtilidad, 'supervisor').map((n) => n.label)).not.toContain('Utilidad');
+    expect(navDeModulos(conUtilidad).map((n) => n.label)).not.toContain('Utilidad');
+    expect(navDeModulos(PAQUETE_POR_DEFECTO, 'admin').map((n) => n.label)).not.toContain('Utilidad');
+  });
+
   test('lo apagado desaparece de la barra', () => {
     const labels = navDeModulos(['obras', 'caja']).map((n) => n.label);
     expect(labels).toEqual(['Inicio', 'Obras', 'Clientes']);
@@ -239,14 +267,15 @@ describe('modulosPorPerfil (plan §4.2)', () => {
 
   test('empresa: lo que aún no existe queda en "próximamente", no se prende', () => {
     const r = modulosPorPerfil('empresa', [], 'no');
-    expect(r.proximamente).toEqual(['rentabilidad', 'compras', 'estimaciones']);
+    expect(r.activos).toContain('rentabilidad');
+    expect(r.proximamente).toEqual(['compras', 'estimaciones']);
     for (const c of r.activos) expect(MODULOS.find((m) => m.clave === c)?.disponible).toBe(true);
   });
 
   test('constructora acumula los paquetes anteriores', () => {
     const r = modulosPorPerfil('constructora', [], 'no');
-    // F4 ya existe: bitácora y programa se prenden de verdad.
-    expect(r.activos.sort()).toEqual([...PAQUETE_POR_DEFECTO, 'bitacora', 'programa'].sort());
+    // F1 y F4 ya existen: utilidad, bitácora y programa se prenden de verdad.
+    expect(r.activos.sort()).toEqual([...PAQUETE_POR_DEFECTO, 'rentabilidad', 'bitacora', 'programa'].sort());
     expect(r.proximamente).toEqual(
       expect.arrayContaining(['cumplimiento', 'subcontratos', 'compras']),
     );
@@ -267,10 +296,16 @@ describe('modulosPorPerfil (plan §4.2)', () => {
     );
   });
 
-  test('"ganancia" prende cotizaciones aunque la utilidad todavía no exista', () => {
+  test('"ganancia" prende la utilidad y su dependencia (F1)', () => {
     const r = modulosPorPerfil('independiente', ['ganancia'], 'no');
-    expect(r.activos).toContain('cotizaciones');
-    expect(r.proximamente).toContain('rentabilidad');
+    expect(r.activos).toEqual(expect.arrayContaining(['rentabilidad', 'cotizaciones']));
+    expect(r.proximamente).not.toContain('rentabilidad');
+  });
+
+  test('"extras" prende cambios con cotizaciones (F1)', () => {
+    const r = modulosPorPerfil('independiente', ['extras'], 'no');
+    expect(r.activos).toEqual(expect.arrayContaining(['cambios', 'cotizaciones']));
+    expect(r.proximamente).toEqual([]);
   });
 
   test('tratos: subcontratos solo para perfiles con oficina', () => {

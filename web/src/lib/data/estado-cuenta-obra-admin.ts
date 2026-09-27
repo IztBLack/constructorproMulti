@@ -18,6 +18,8 @@
 
 import { getObra, listMovimientosByObra } from './obras';
 import { listPresupuestoObra } from './presupuesto-obra';
+import { listExtrasAprobadosObra } from './cambios';
+import { totalesEstadoCuenta } from '@/lib/cliente/estado-cuenta-calculo';
 import type {
   EntradaPortal,
   EstadoCuentaObra,
@@ -40,18 +42,23 @@ export async function getEstadoCuentaObraAdmin(
     { data: obra, error: errObra },
     { data: partidasRaw, error: errPres },
     { data: movimientos, error: errMov },
+    extras,
   ] = await Promise.all([
     getObra(obraId),
     listPresupuestoObra(obraId),
     listMovimientosByObra(obraId),
+    listExtrasAprobadosObra(obraId),
   ]);
 
   const vacio: EstadoCuentaObra = {
+    presupuesto: 0,
+    totalExtras: 0,
     costoTotal: 0,
     recibido: 0,
     pendiente: 0,
     pagadoPct: 0,
     partidas: [],
+    extras: [],
     entradas: [],
   };
 
@@ -84,17 +91,16 @@ export async function getEstadoCuentaObraAdmin(
       referencia: m.referencia,
     }));
 
-  // Mismo modelo que `getEstadoCuentaObra`: COSTO TOTAL = Σ presupuesto,
-  // RECIBIDO = Σ entradas, PENDIENTE = costo − recibido.
-  const costoTotal = partidas.reduce((acc, p) => acc + p.cantidad * p.precio_unitario, 0);
-  const recibido = entradas.reduce((acc, e) => acc + e.monto, 0);
-  const pendiente = costoTotal - recibido;
-  const pagadoPct =
-    costoTotal > 0 ? Math.min(100, Math.round((recibido / costoTotal) * 100)) : 0;
+  // Mismo modelo que `getEstadoCuentaObra` (y la misma función):
+  // COSTO TOTAL = Σ presupuesto + extras aprobados, RECIBIDO = Σ entradas.
+  // Si leer los extras falla (0036 sin aplicar), cuentan como cero: es el
+  // estado de cuenta de antes, no uno roto.
+  const extrasAprobados = extras.error ? [] : extras.data;
+  const t = totalesEstadoCuenta({ partidas, entradas, extras: extrasAprobados });
 
   return {
     obra,
-    estado: { costoTotal, recibido, pendiente, pagadoPct, partidas, entradas },
+    estado: { ...t, partidas, extras: extrasAprobados, entradas },
     error: null,
   };
 }
