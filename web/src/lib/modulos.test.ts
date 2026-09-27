@@ -79,6 +79,17 @@ describe('paleta de comandos', () => {
     expect(navDeModulos([...PAQUETE_POR_DEFECTO, 'fiscal']).map((n) => n.href)).toContain('/admin/facturacion');
   });
 
+  test('seguridad, herramienta y garantías solo con su módulo prendido', () => {
+    const titulos = (activos: ClaveModulo[]) =>
+      soloModulosActivos([...COMANDOS_FIJOS, ...comandosDeObra('o1')], activos).map((c) => c.titulo);
+    expect(titulos([...PAQUETE_POR_DEFECTO])).not.toContain('Seguridad');
+    expect(titulos([...PAQUETE_POR_DEFECTO])).not.toContain('Herramienta y maquinaria');
+    expect(titulos([...PAQUETE_POR_DEFECTO])).not.toContain('Garantías');
+    expect(titulos([...PAQUETE_POR_DEFECTO, 'seguridad', 'herramienta', 'postventa'])).toEqual(
+      expect.arrayContaining(['Seguridad', 'Herramienta y maquinaria', 'Garantías']),
+    );
+  });
+
   test('extras y utilidad solo con su módulo prendido', () => {
     const titulos = (activos: ClaveModulo[]) =>
       soloModulosActivos([...COMANDOS_FIJOS, ...comandosDeObra('o1')], activos).map((c) => c.titulo);
@@ -203,6 +214,11 @@ describe('rutaPerteneceAModulo', () => {
     ['/admin/obras/abc/extras/e1/pdf/descargar', 'cambios'],
     ['/admin/obras/abc/utilidad', 'rentabilidad'],
     ['/admin/rentabilidad', 'rentabilidad'],
+    ['/admin/obras/abc/seguridad', 'seguridad'],
+    ['/admin/herramienta', 'herramienta'],
+    ['/admin/herramienta/h1', 'herramienta'],
+    ['/admin/postventa', 'postventa'],
+    ['/admin/postventa/r1', 'postventa'],
   ];
   test.each(casos)('%s → %s', (ruta, esperado) => {
     expect(rutaPerteneceAModulo(ruta)).toBe(esperado);
@@ -240,6 +256,18 @@ describe('navDeModulos', () => {
     expect(navDeModulos(conUtilidad, 'supervisor').map((n) => n.label)).not.toContain('Utilidad');
     expect(navDeModulos(conUtilidad).map((n) => n.label)).not.toContain('Utilidad');
     expect(navDeModulos(PAQUETE_POR_DEFECTO, 'admin').map((n) => n.label)).not.toContain('Utilidad');
+  });
+
+  test('F7: Herramienta y Garantías para la oficina, nunca para el colaborador', () => {
+    const f7 = [...PAQUETE_POR_DEFECTO, 'seguridad', 'herramienta', 'postventa'] as ClaveModulo[];
+    for (const rol of ['admin', 'supervisor', 'contador']) {
+      expect(navDeModulos(f7, rol).map((n) => n.label)).toEqual(expect.arrayContaining(['Herramienta', 'Garantías']));
+    }
+    expect(navDeModulos(f7, 'colaborador').map((n) => n.label)).not.toContain('Herramienta');
+    expect(navDeModulos(f7, 'colaborador').map((n) => n.label)).not.toContain('Garantías');
+    // Seguridad vive en la obra: no pone enlace en la barra.
+    expect(navDeModulos(f7, 'admin').map((n) => n.label)).not.toContain('Seguridad');
+    expect(navDeModulos(PAQUETE_POR_DEFECTO, 'admin').map((n) => n.label)).not.toContain('Herramienta');
   });
 
   test('lo apagado desaparece de la barra', () => {
