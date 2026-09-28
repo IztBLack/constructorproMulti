@@ -1,11 +1,11 @@
--- 0044_residente_seguridad_postventa.sql â€” RESIDENTE en seguridad, garantÃ­as y herramienta (F6)
+-- 0044_residente_seguridad_postventa.sql — RESIDENTE en seguridad, garantías y herramienta (F6)
 -- Depende de: 0042 (auth_residente_obra, usuario_obra), 0043 (tablas y buckets
 --             `seguridad` y `postventa`), 0038 (compras_uuid).
 --
--- Por quÃ© va aparte: 0042 es el nÃºmero reservado de F6, pero las tablas de F7
--- (0043) se crean DESPUÃ‰S en una base nueva (orden alfabÃ©tico). Estas policies
--- son la continuaciÃ³n de la secciÃ³n 3 de 0042, con las mismas reglas: lo que
--- el supervisor hace en seguridad, garantÃ­as y herramienta, el residente lo
+-- Por qué va aparte: 0042 es el número reservado de F6, pero las tablas de F7
+-- (0043) se crean DESPUÉS en una base nueva (orden alfabético). Estas policies
+-- son la continuación de la sección 3 de 0042, con las mismas reglas: lo que
+-- el supervisor hace en seguridad, garantías y herramienta, el residente lo
 -- hace SOLO en sus obras. Aditivo e idempotente; no toca policies existentes.
 -- NUNCA `incidente_salud` (D8: solo el admin) ni la carpeta `incidentes/` del
 -- bucket `seguridad` (F7-2).
@@ -16,12 +16,12 @@
 --
 -- REVERSA: borrar las policies con sufijo `_residente` de este archivo.
 
--- GarantÃ­a de la obra (fecha de entrega y meses): solo lectura, como el supervisor.
+-- Garantía de la obra (fecha de entrega y meses): solo lectura, como el supervisor.
 drop policy if exists obra_garantia_residente_read on public.obra_garantia;
 create policy obra_garantia_residente_read on public.obra_garantia
   for select using (public.auth_residente_obra(empresa_id, obra_id));
 
--- 3k. GarantÃ­as (0043) de su obra.
+-- 3k. Garantías (0043) de su obra.
 drop policy if exists garantia_reporte_residente_read on public.garantia_reporte;
 create policy garantia_reporte_residente_read on public.garantia_reporte
   for select using (public.auth_residente_obra(empresa_id, obra_id));
@@ -133,8 +133,8 @@ create policy epp_entrega_residente_update on public.epp_entrega
     and (evidencia_path is null or evidencia_path like empresa_id::text || '/epp/' || id::text || '/%')
   );
 
--- 3m. Herramienta (0043): ve lo que estÃ¡ prestado a SU obra y puede registrar
--- que regresÃ³ (cerrar el prÃ©stamo). Prestar, dar de alta o de baja es de la
+-- 3m. Herramienta (0043): ve lo que está prestado a SU obra y puede registrar
+-- que regresó (cerrar el préstamo). Prestar, dar de alta o de baja es de la
 -- oficina (F6-5).
 drop policy if exists herramienta_asignacion_residente_read on public.herramienta_asignacion;
 create policy herramienta_asignacion_residente_read on public.herramienta_asignacion
@@ -156,7 +156,7 @@ create policy herramienta_residente_read on public.herramienta
 
 
 -- Storage del residente en los buckets de F7.
--- GarantÃ­as (0043): <empresa>/<obra>/<reporte>/<archivo>
+-- Garantías (0043): <empresa>/<obra>/<reporte>/<archivo>
 drop policy if exists postventa_obj_residente_select on storage.objects;
 create policy postventa_obj_residente_select on storage.objects
   for select to authenticated
