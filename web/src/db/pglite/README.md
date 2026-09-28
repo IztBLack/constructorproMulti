@@ -138,6 +138,31 @@ describe('0038 compras', () => {
 - Si lo que falla es un **bug real** de la migración, no lo escondas: arréglalo en la
   migración (si aún no está en producción) o repórtalo.
 
+## Escotillas y la foto del esquema de producción
+
+- **Escotillas** (`ESCOTILLAS` en `crear-db.ts`): migraciones que están en la
+  carpeta pero NO se aplican en producción en condiciones normales (hoy, la
+  `0030_revertir_0029_sueldo_columnas.sql`). El harness no las aplica por
+  defecto; un test que las necesite pasa `{ incluirEscotillas: true }` a
+  `crearDbMigrada` / `aplicarMigraciones`.
+- **`esquema-prod.json`**: foto del esquema `public` de producción, solo nombres
+  de tablas y columnas (`tabla → [columnas]`), sin datos. `../esquema-prod.test.ts`
+  compara el PGlite migrado contra ella y lista cada diferencia; las ya
+  diagnosticadas van en `DIFERENCIAS_CONOCIDAS` con su porqué (falla si aparece
+  una nueva o si una conocida desaparece).
+- Para refrescar la foto (después de aplicar migraciones en producción), por la
+  Management API o el SQL Editor:
+
+  ```sql
+  select json_agg(json_build_object('t', table_name, 'c', column_name) order by table_name, column_name) as cols
+    from information_schema.columns
+   where table_schema = 'public'
+     and table_name in (select table_name from information_schema.tables
+                         where table_schema = 'public' and table_type = 'BASE TABLE');
+  ```
+
+  y normalizar a `{ tabla: [columnas ordenadas] }` con las tablas ordenadas.
+
 ## Límites
 
 - No prueba GoTrue, PostgREST ni el servidor de Storage: prueba el SQL, las policies y
