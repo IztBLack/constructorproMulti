@@ -42,3 +42,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# SQL de datos demo generado (ids reales de una cuenta): no se versiona
+/src/db/seed/out/
