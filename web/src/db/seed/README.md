@@ -35,7 +35,8 @@ selector de rol del SQL Editor). Trae su propio `begin; … commit;` (quítalo c
 `--sin-transaccion` si quien lo corre ya abre la transacción). Si algo falla, no
 queda nada a medias.
 
-Requisitos: las migraciones **0001 → 0045** aplicadas y que `--user-id` sea
+Requisitos: las migraciones **0001 → 0045** aplicadas **sin la escotilla 0030**
+(el esquema de producción: el sueldo vive solo en `colaborador_sueldo`) y que `--user-id` sea
 **admin** de `--empresa-id` (si no, el script se detiene con
 `DEMO: el usuario … no es admin de la empresa …`).
 
@@ -156,8 +157,12 @@ permitida para eso).
 npx vitest run src/db/seed    # ~30 s: PGlite con las 45 migraciones
 ```
 
-`demo-seis-meses.test.ts` crea usuario y empresa con los helpers del harness,
-corre el SQL y comprueba: los conteos por módulo **leídos como el admin (RLS)**
+`demo-seis-meses.test.ts` crea usuario y empresa con los helpers del harness
+(que aplica lo mismo que tiene producción: sin escotillas, ver
+`../pglite/README.md`), corre el SQL y comprueba: que **toda columna que el SQL
+inserta o actualiza existe en la foto del esquema de producción**
+(`../pglite/esquema-prod.json`; así se habría atrapado la primera carga fallida,
+que escribía `colaboradores.periodo_pago`); los conteos por módulo **leídos como el admin (RLS)**
 coinciden con lo que el guion dice que creó; los estados de cada historia; cada
 estimación **recalculada al centavo** con `lib/estimaciones/calculo.ts`; la raya
 en caja = la raya calculada por semana con `calcularNomina`; pagos a

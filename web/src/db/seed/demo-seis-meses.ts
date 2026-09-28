@@ -1503,14 +1503,15 @@ class Guion {
           contacto_telefono: tel(),
           contacto_parentesco: g.contacto[1],
           activo: !g.baja,
-          periodo_pago: 'SEMANAL',
-          dias_semana: 6,
           orden: (i + 1) * 100,
           created_at: t,
           updated_at: g.baja ? ms(g.baja, 18) : t,
         };
       }),
     );
+    // El sueldo vive SOLO en `colaborador_sueldo` (0027): en producción la 0029
+    // ya quitó esas columnas de `colaboradores`. Lo escribe el dueño por RLS.
+    // Quien no tiene fila cobra el salario de su puesto (así calcula la raya).
     this.insertar(
       'colaborador_sueldo',
       GENTE.filter((g) => g.sueldo).map((g) => {

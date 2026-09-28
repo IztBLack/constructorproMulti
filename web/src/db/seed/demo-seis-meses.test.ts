@@ -343,6 +343,24 @@ describe('demo de seis meses', () => {
     expect(semaforos).toContain('verde');
   });
 
+  it('solo escribe columnas que existen en la foto del esquema de producción', () => {
+    const foto: Record<string, string[]> = JSON.parse(
+      readFileSync(new URL('../pglite/esquema-prod.json', import.meta.url), 'utf8'),
+    );
+    const faltan: string[] = [];
+    for (const m of demo.sql.matchAll(/insert into public\.(\w+) \(([^)]*)\)/g)) {
+      for (const c of m[2].split(',').map((x) => x.trim())) {
+        if (!foto[m[1]]?.includes(c)) faltan.push(`${m[1]}.${c}`);
+      }
+    }
+    for (const m of demo.sql.matchAll(/update public\.(\w+) set (.*?) where /g)) {
+      for (const c of m[2].matchAll(/(?:^|, )(\w+) = /g)) {
+        if (!foto[m[1]]?.includes(c[1])) faltan.push(`${m[1]}.${c[1]}`);
+      }
+    }
+    expect([...new Set(faltan)]).toEqual([]);
+  });
+
   it('es determinista: mismos parámetros, mismo SQL', () => {
     const otra = generarSqlDemo({ userId: emp.adminId, empresaId: emp.empresaId, hoy: HOY_GUION });
     expect(otra).toBe(demo.sql);
