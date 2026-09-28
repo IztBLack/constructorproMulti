@@ -217,11 +217,11 @@ describe('demo de seis meses', () => {
     const atrasadas = await comoUsuario(db, emp.adminId, (tx) =>
       filas(
         tx,
-        `select p.id from public.programa_partida p where p.empresa_id = $1 and not p.terminada and p.fecha_fin < $2 and p.deleted_at is null`,
+        `select p.concepto from public.programa_partida p where p.empresa_id = $1 and not p.terminada and p.fecha_fin < $2 and p.deleted_at is null`,
         [emp.empresaId, HOY_MS],
       ),
     );
-    expect(atrasadas.length).toBeGreaterThanOrEqual(1);
+    expect(atrasadas.map((x) => String(x.concepto))).toEqual(['LC-04 Estructura metálica y cubierta de multitecho']);
   });
 
   it('la revisión de seguridad usa la plantilla NOM-031 de la web', () => {

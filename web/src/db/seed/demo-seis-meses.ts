@@ -510,9 +510,9 @@ const OBRAS: ObraGuion[] = [
       p('ENC-04', 'Estructura', 'Muros de block 15x20x40 junteado con mortero', 'm²', 1260, 610, SAT.albanileria, ['2026-05-04', '2026-07-24']),
       p('ENC-05', 'Estructura', 'Castillos y dalas de concreto armado', 'ml', 1080, 360, SAT.albanileria, ['2026-05-04', '2026-07-31']),
       p('ENC-06', 'Estructura', 'Losa de entrepiso de vigueta y bovedilla', 'm²', 348, 1340, SAT.albanileria, ['2026-06-15', '2026-08-14']),
-      p('ENC-07', 'Estructura', 'Losa de azotea de vigueta y bovedilla', 'm²', 372, 1380, SAT.albanileria, ['2026-07-20', '2026-09-25'], ['2026-07-27', '2026-10-09']),
-      p('ENC-08', 'Instalaciones', 'Instalación hidrosanitaria completa', 'casa', 6, 56000, SAT.plomeria, ['2026-06-01', '2026-09-30'], ['2026-06-08', '2026-10-23']),
-      p('ENC-09', 'Instalaciones', 'Instalación eléctrica completa', 'casa', 6, 49000, SAT.electrica, ['2026-06-15', '2026-10-09'], ['2026-06-22', '2026-10-30']),
+      p('ENC-07', 'Estructura', 'Losa de azotea de vigueta y bovedilla', 'm²', 372, 1380, SAT.albanileria, ['2026-07-27', '2026-10-09']),
+      p('ENC-08', 'Instalaciones', 'Instalación hidrosanitaria completa', 'casa', 6, 56000, SAT.plomeria, ['2026-06-08', '2026-10-23']),
+      p('ENC-09', 'Instalaciones', 'Instalación eléctrica completa', 'casa', 6, 49000, SAT.electrica, ['2026-06-22', '2026-10-30']),
       p('ENC-10', 'Acabados', 'Aplanado de yeso en muros interiores', 'm²', 2520, 190, SAT.albanileria, ['2026-07-06', '2026-10-16']),
       p('ENC-11', 'Acabados', 'Piso cerámico 60x60 con zoclo', 'm²', 570, 560, SAT.albanileria, ['2026-08-24', '2026-10-30']),
       p('ENC-12', 'Acabados', 'Impermeabilización de azoteas', 'm²', 372, 245, SAT.impermeabilizacion, ['2026-09-07', '2026-10-16']),
@@ -535,9 +535,9 @@ const OBRAS: ObraGuion[] = [
       p('ALB-01', 'Ampliación de recámara', 'Cimentación corrida de piedra con dala', 'ml', 18, 1450, SAT.albanileria, ['2026-04-27', '2026-05-15']),
       p('ALB-02', 'Ampliación de recámara', 'Muros de block de 15 cm', 'm²', 52, 540, SAT.albanileria, ['2026-05-11', '2026-06-05']),
       p('ALB-03', 'Ampliación de recámara', 'Losa de vigueta y bovedilla', 'm²', 20, 1250, SAT.albanileria, ['2026-06-01', '2026-06-12']),
-      p('COC-01', 'Cocina', 'Cocina integral con cubierta de granito', 'lote', 1, 118000, SAT.carpinteria, ['2026-08-24', '2026-09-25'], ['2026-08-24', '2026-10-09']),
+      p('COC-01', 'Cocina', 'Cocina integral con cubierta de granito', 'lote', 1, 118000, SAT.carpinteria, ['2026-08-24', '2026-10-09']),
       p('COC-02', 'Cocina', 'Instalación hidráulica y de gas en cocina', 'lote', 1, 16500, SAT.plomeria, ['2026-05-04', '2026-05-22']),
-      p('BAN-01', 'Baños', 'Remodelación completa de baño', 'pza', 2, 58000, SAT.remodelacion, ['2026-08-03', '2026-09-18'], ['2026-08-03', '2026-09-30']),
+      p('BAN-01', 'Baños', 'Remodelación completa de baño', 'pza', 2, 58000, SAT.remodelacion, ['2026-08-03', '2026-09-30']),
       p('ELE-01', 'Instalación eléctrica', 'Recableado y centro de carga nuevo', 'lote', 1, 38500, SAT.electrica, ['2026-05-18', '2026-06-05']),
       p('ACA-01', 'Acabados', 'Piso cerámico 60x60', 'm²', 128, 520, SAT.albanileria, ['2026-07-27', '2026-09-04']),
       p('ACA-02', 'Acabados', 'Aplanado y pasta en muros', 'm²', 310, 175, SAT.albanileria, ['2026-07-27', '2026-08-28']),
@@ -559,10 +559,10 @@ const OBRAS: ObraGuion[] = [
       p('LC-02', 'Preliminares y cimentación', 'Excavación para cimentación', 'm³', 95, 210, SAT.excavacion, ['2026-06-17', '2026-06-30']),
       p('LC-03', 'Preliminares y cimentación', 'Zapatas y contratrabes de concreto armado', 'm³', 42, 5200, SAT.albanileria, ['2026-06-24', '2026-07-24'], ['2026-06-24', '2026-08-07']),
       p('LC-04', 'Estructura', 'Estructura metálica y cubierta de multitecho', 'm²', 380, 1650, SAT.techado, ['2026-07-20', '2026-09-11'], ['2026-08-03', '2026-11-06']),
-      p('LC-05', 'Estructura', 'Muros de block de 15 cm', 'm²', 420, 560, SAT.albanileria, ['2026-08-03', '2026-09-18'], ['2026-08-10', '2026-10-02']),
-      p('LC-06', 'Estructura', 'Firme de concreto pulido', 'm²', 380, 420, SAT.albanileria, ['2026-09-07', '2026-09-25'], ['2026-09-21', '2026-10-09']),
+      p('LC-05', 'Estructura', 'Muros de block de 15 cm', 'm²', 420, 560, SAT.albanileria, ['2026-08-10', '2026-10-02']),
+      p('LC-06', 'Estructura', 'Firme de concreto pulido', 'm²', 380, 420, SAT.albanileria, ['2026-09-21', '2026-10-09']),
       p('LC-07', 'Instalaciones', 'Instalación eléctrica y alumbrado', 'lote', 1, 185000, SAT.electrica, ['2026-08-17', '2026-10-16']),
-      p('LC-08', 'Instalaciones', 'Instalación hidrosanitaria', 'lote', 1, 72000, SAT.plomeria, ['2026-08-24', '2026-09-25'], ['2026-08-24', '2026-10-02']),
+      p('LC-08', 'Instalaciones', 'Instalación hidrosanitaria', 'lote', 1, 72000, SAT.plomeria, ['2026-08-24', '2026-10-02']),
       p('LC-09', 'Instalaciones', 'Preparación para aire acondicionado', 'lote', 1, 48000, SAT.apoyo, ['2026-10-05', '2026-10-23']),
       p('LC-10', 'Acabados', 'Muros de tablaroca y plafón reticular', 'm²', 320, 395, SAT.albanileria, ['2026-08-24', '2026-10-16']),
       p('LC-11', 'Acabados', 'Pintura vinílica', 'm²', 900, 92, SAT.pintura, ['2026-10-12', '2026-10-30']),
@@ -3085,7 +3085,9 @@ class Guion {
           }).filter((f) => Number(f.cantidad_recibida) > 0),
         );
       });
-      for (const [i, x] of items.entries()) this.recibidoPorMaterial(o.obra, x.mat, recibido.get(i) ?? 0);
+      if (entregas.length) {
+        for (const [i, x] of items.entries()) this.recibidoPorMaterial(o.obra, x.mat, recibido.get(i) ?? 0, entregas[0].fecha);
+      }
 
       // Pagos (RPC: crea la SALIDA de caja MATERIAL y el pago al proveedor).
       const ultimaEntrega = entregas.length ? entregas[entregas.length - 1].fecha : o.fecha;
@@ -3118,7 +3120,7 @@ class Guion {
     }
     // Requisición rechazada y una por aprobar.
     const extra: [string, ClaveObra, string, string, string | null, [string, number][]][] = [
-      ['rechazada', 'C', '2026-07-28', 'Más block para el muro de colindancia', 'Hay 300 piezas sobrantes en la bodega de la nave 4; se traspasan a esta obra.', [['block15', 400]]],
+      ['rechazada', 'C', '2026-07-28', 'Más block para el muro de colindancia', 'Hay block sobrante en la bodega de la nave 4; se traspasa a esta obra.', [['block15', 400]]],
       ['pendiente', 'A', '2026-09-25', 'Material para el aplanado de las casas 5 y 6', null, [['yeso', 180], ['cal', 60], ['arena', 6]]],
     ];
     for (const [k, obra, fecha, notas, motivo, renglones] of extra) {
@@ -3161,20 +3163,42 @@ class Guion {
     return pagadoPorObra;
   }
 
-  private recibido = new Map<string, number>();
-  private recibidoPorMaterial(obra: ClaveObra, mat: string, cant: number): void {
+  /** Lo recibido por (obra, material) y el día de la primera entrega. */
+  private recibido = new Map<string, { cant: number; desde: string }>();
+  private recibidoPorMaterial(obra: ClaveObra, mat: string, cant: number, fecha: string): void {
     const k = `${obra}:${mat}`;
-    this.recibido.set(k, (this.recibido.get(k) ?? 0) + cant);
+    const a = this.recibido.get(k);
+    this.recibido.set(k, { cant: (a?.cant ?? 0) + cant, desde: a && a.desde < fecha ? a.desde : fecha });
   }
 
-  /** Consumos, un traspaso y un ajuste (existencias por obra). */
+  /**
+   * Consumos, un traspaso y un ajuste (existencias por obra). El concreto y el
+   * bombeo se gastan el día que llegan; lo demás se va usando en tres salidas
+   * de almacén hasta hoy. La bodega (terminada) consume todo menos el block que
+   * sobró y se traspasa al local.
+   */
   private materialEnObra(r: () => number): void {
     const movs: Fila[] = [];
-    const consumo = (obra: ClaveObra, mat: string, fechas: string[], parte: number, nota: string) => {
-      const total = this.recibido.get(`${obra}:${mat}`) ?? 0;
-      if (total <= 0) return;
-      const porVez = Math.max(1, Math.floor((total * parte) / fechas.length));
-      fechas.forEach((f, i) => {
+    const nota: Record<string, string> = {
+      cemento: 'Plantillas, castillos y junteo',
+      block15: 'Levantamiento de muros',
+      var38: 'Castillos y dalas',
+      var12: 'Zapatas y trabes',
+      alambre: 'Amarres de acero',
+    };
+    for (const [k, { cant: total, desde }] of [...this.recibido.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+      const [obra, mat] = k.split(':') as [ClaveObra, string];
+      const alDia = mat === 'c200' || mat === 'c250' || mat === 'bombeo';
+      const fraccion = alDia ? 1 : obra === 'D' ? (mat === 'block15' ? 0.85 : 1) : mat === 'cemento' && obra === 'A' ? 0.8 : 0.7 + r() * 0.22;
+      const usar = Math.floor(total * fraccion + 1e-9);
+      if (usar <= 0) continue;
+      const fin = this.finObra(obra) < this.hoy ? this.finObra(obra) : this.hoy;
+      const veces = alDia || usar < 3 ? 1 : 3;
+      let resto = usar;
+      for (let i = 0; i < veces; i++) {
+        const cantidad = i === veces - 1 ? resto : Math.floor(usar / veces);
+        resto -= cantidad;
+        const f = alDia ? desde : sumarDias(desde, Math.min(diasEntre(desde, fin), Math.round(((i + 1) * diasEntre(desde, fin)) / (veces + 0.5))));
         const t = this.sello(f, r, 15, 18);
         movs.push({
           id: this.id(`consumo:${obra}:${mat}:${i}`),
@@ -3182,23 +3206,15 @@ class Guion {
           obra_id: this.obraId(obra),
           material_id: this.id(`material:${mat}`),
           tipo: 'CONSUMO',
-          cantidad: porVez,
+          cantidad,
           fecha: ms(f, 12),
-          notas: nota,
+          notas: alDia ? 'Colado del día' : (nota[mat] ?? 'Salida de almacén'),
           created_at: t,
           updated_at: t,
         });
-      });
-    };
-    consumo('A', 'cemento', ['2026-04-24', '2026-05-08', '2026-05-22', '2026-06-05'], 0.92, 'Consumo de la semana');
-    consumo('A', 'block15', ['2026-05-22', '2026-06-12', '2026-07-03', '2026-07-24'], 0.95, 'Muros de planta baja y alta');
-    consumo('A', 'var38', ['2026-05-15', '2026-06-19'], 0.9, 'Castillos y dalas');
-    consumo('D', 'cemento', ['2026-04-17', '2026-05-15'], 0.97, 'Dados y plantillas');
-    consumo('D', 'block15', ['2026-05-22', '2026-06-12'], 0.85, 'Muros perimetrales');
-    consumo('C', 'cemento', ['2026-07-03', '2026-07-24', '2026-08-14'], 0.9, 'Zapatas y plantillas');
-    consumo('C', 'var12', ['2026-07-10', '2026-07-31'], 0.95, 'Zapatas y contratrabes');
-    consumo('B', 'cemento', ['2026-05-08', '2026-06-05'], 0.95, 'Cimentación y losa de la ampliación');
-    const bloqD = this.recibido.get('D:block15') ?? 0;
+      }
+    }
+    const bloqD = this.recibido.get('D:block15')?.cant ?? 0;
     const sobrante = Math.max(1, Math.round(bloqD * 0.15) - 1);
     movs.push({
       id: this.id('traspaso:D:C:block15'),
@@ -3271,63 +3287,82 @@ class Guion {
   private costosDeCierre(capturas: Map<ClaveObra, Captura[]>): void {
     this.comentario('Indirectos (renta, fletes, combustible, trámites) y material menor pagado directo en caja');
     const r = this.azar('cierre');
-    const indirectos: [string, number, string, string][] = [
-      ['Renta de retroexcavadora', 0.22, 'Renta de Maquinaria Escobedo, S.A. de C.V.', 'TRANSFERENCIA'],
-      ['Fletes de material y retiro de escombro', 0.18, 'Fletes Hernández', 'EFECTIVO'],
-      ['Gasolina y diésel', 0.16, 'Gasolinera', 'EFECTIVO'],
-      ['Renta de andamios y puntales adicionales', 0.12, 'Renta de Maquinaria Escobedo, S.A. de C.V.', 'TRANSFERENCIA'],
-      ['Luz de obra (CFE provisional) y agua', 0.07, 'CFE', 'TRANSFERENCIA'],
-      ['Renta de sanitario portátil', 0.05, 'Sanitarios Portátiles del Norte', 'TRANSFERENCIA'],
-      ['Pruebas de laboratorio de concreto', 0.08, 'Laboratorio de Materiales Regio', 'TRANSFERENCIA'],
-      ['Licencia de construcción y trámites', 0.12, 'Municipio', 'TRANSFERENCIA'],
+    // [concepto, peso, a quién, forma de pago, cómo se paga]
+    const indirectos: [string, number, string, string, 'mensual' | 'varias' | 'una'][] = [
+      ['Renta de retroexcavadora', 0.22, 'Renta de Maquinaria Escobedo, S.A. de C.V.', 'TRANSFERENCIA', 'varias'],
+      ['Fletes de material y retiro de escombro', 0.18, 'Fletes Hernández', 'EFECTIVO', 'mensual'],
+      ['Gasolina y diésel', 0.16, 'Gasolinera', 'EFECTIVO', 'mensual'],
+      ['Renta de andamios y puntales adicionales', 0.12, 'Renta de Maquinaria Escobedo, S.A. de C.V.', 'TRANSFERENCIA', 'mensual'],
+      ['Luz de obra (CFE provisional) y agua', 0.07, 'CFE', 'TRANSFERENCIA', 'mensual'],
+      ['Renta de sanitario portátil', 0.05, 'Sanitarios Portátiles del Norte', 'TRANSFERENCIA', 'mensual'],
+      ['Pruebas de laboratorio de concreto', 0.08, 'Laboratorio de Materiales Regio', 'TRANSFERENCIA', 'varias'],
+      ['Licencia de construcción y trámites', 0.12, 'Municipio', 'TRANSFERENCIA', 'una'],
     ];
-    const directos: [string, number][] = [
-      ['Ferretería: discos, brocas, tornillería y cinta', 0.2],
-      ['Material eléctrico menor', 0.15],
-      ['Cemento y arena comprados en depósito cercano (urgencia)', 0.25],
-      ['Herramienta menor y consumibles (cuñas, hilos, cubetas)', 0.12],
-      ['Tubería y conexiones sueltas', 0.13],
-      ['Clavo, alambre y madera de reposición', 0.15],
+    const directos = [
+      'Ferretería: discos, brocas, tornillería y cinta',
+      'Material eléctrico de mostrador',
+      'Cemento y arena en depósito cercano (urgencia)',
+      'Consumibles de obra: cuñas, hilos, cubetas, cepillos',
+      'Tubería y conexiones sueltas',
+      'Clavo, alambre y madera de reposición',
+      'Mortero y pegazulejo por saco',
+      'Selladores, silicón y espuma',
     ];
     for (const o of OBRAS) {
       const buscado = this.costoBuscado(o.clave, capturas);
       const ind = r2(buscado * o.pctIndirectos);
-      const fin = this.finObra(o.clave);
+      const fin = this.finObra(o.clave) < this.hoy ? this.finObra(o.clave) : this.hoy;
       const span = diasEntre(o.inicio, fin);
+      const meses = Math.max(1, Math.round(span / 30));
       const filas: Fila[] = [];
+      const lista = indirectos.filter(
+        ([concepto]) => !(o.clave === 'B' && (concepto.startsWith('Renta de retro') || concepto.startsWith('Pruebas'))),
+      );
+      const pesoTotal = lista.reduce((a, x) => a + x[1], 0);
       let acumInd = 0;
-      indirectos.forEach(([concepto, peso, nombre, metodo], i) => {
-        if (o.clave === 'B' && (concepto.startsWith('Renta de retro') || concepto.startsWith('Pruebas'))) return;
-        const monto = i === indirectos.length - 1 ? r2(ind - acumInd) : r2(ind * peso);
-        acumInd = r2(acumInd + monto);
-        const f = sumarDias(o.inicio, Math.floor(span * (0.1 + 0.8 * r())));
-        filas.push(
-          this.movimiento(
-            {
-              id: this.id(`indirecto:${o.clave}:${i}`),
-              obra: o.clave,
-              fecha: f > this.hoy ? this.hoy : f,
-              tipo: 'SALIDA',
-              categoria: 'Indirectos',
-              concepto,
-              monto,
-              metodo,
-              nombre,
-              categoriaCosto: 'INDIRECTO',
-            },
-            r,
-          ),
-        );
+      lista.forEach(([concepto, peso, nombre, metodo, modo], i) => {
+        const totalConcepto = i === lista.length - 1 ? r2(ind - acumInd) : r2((ind * peso) / pesoTotal);
+        acumInd = r2(acumInd + totalConcepto);
+        const veces = modo === 'mensual' ? meses : modo === 'varias' ? Math.min(3, meses) : 1;
+        let pagado = 0;
+        for (let v = 0; v < veces; v++) {
+          const monto = v === veces - 1 ? r2(totalConcepto - pagado) : r2(totalConcepto / veces);
+          pagado = r2(pagado + monto);
+          const dia = modo === 'una' ? 3 + Math.floor(r() * 5) : Math.floor(((v + 0.3 + r() * 0.5) * span) / veces);
+          const f = sumarDias(o.inicio, Math.min(span, dia));
+          filas.push(
+            this.movimiento(
+              {
+                id: this.id(`indirecto:${o.clave}:${i}:${v}`),
+                obra: o.clave,
+                fecha: f,
+                tipo: 'SALIDA',
+                categoria: 'Indirectos',
+                concepto: veces > 1 ? `${concepto} (${v + 1} de ${veces})` : concepto,
+                monto,
+                metodo,
+                nombre,
+                categoriaCosto: 'INDIRECTO',
+              },
+              r,
+            ),
+          );
+        }
       });
-      // Lo que falta para llegar al costo buscado es material comprado directo.
+      // Lo que falta para llegar al costo buscado es material comprado directo,
+      // en tickets de mostrador de unos $15,000.
       const yaEnCosto = r2((this.salidasPorObra.get(o.clave) ?? 0) - (this.nominaEnCaja.get(o.clave) ?? 0) + (this.rayaTotal.get(o.clave) ?? 0));
       const falta = r2(buscado - yaEnCosto);
       if (falta <= 0) throw new Error(`Guion descuadrado en ${o.clave}: no queda material directo (${falta}).`);
+      const tickets = Math.min(18, Math.max(5, Math.round(falta / 15_000)));
+      const pesos = Array.from({ length: tickets }, () => 0.6 + r() * 0.8);
+      const sumaPesos = pesos.reduce((a, b) => a + b, 0);
       let acum = 0;
-      directos.forEach(([concepto, peso], i) => {
-        const monto = i === directos.length - 1 ? r2(falta - acum) : r2(falta * peso);
+      pesos.forEach((peso, i) => {
+        const monto = i === tickets - 1 ? r2(falta - acum) : r2((falta * peso) / sumaPesos);
         acum = r2(acum + monto);
-        const f = sumarDias(o.inicio, Math.floor(span * (0.05 + 0.9 * r())));
+        const concepto = directos[i % directos.length];
+        const f = sumarDias(o.inicio, Math.floor(span * ((i + 0.2 + 0.6 * r()) / tickets)));
         filas.push(
           this.movimiento(
             {
