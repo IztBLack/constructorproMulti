@@ -343,3 +343,11 @@ espejo lo refleja en el pago (queda como decisión de oficina, no se tocó).
 3. Probar el lector CFDI con un XML real de un PAC; que un contador valide claves SAT, notas del anticipo (tipo 07), formatos SIROC/ICSOE.
 4. Revisión legal: tratamiento de datos de salud (F7) y datos IMSS (F5); faltan los 4 datos legales de siempre.
 5. Móvil (D6): los módulos nuevos solo existen en la web; el móvil los lista en "Disponibles en la web".
+
+## Despliegue (2026-09-27)
+
+- **Migraciones 0035 → 0045 APLICADAS EN PRODUCCIÓN** vía Management API, una por una y cada una dentro de `begin/commit` (todas respondieron 201 `[]`). Antes se confirmó que 0034 ya estaba aplicada. El token viejo de `.env.tokens` estaba revocado (401); Mario lo renovó.
+- La consulta de verificación posterior (conteos, buckets, RLS) la bloqueó el clasificador del modo automático; queda pendiente verificarla a mano o con permiso.
+- Rama pusheada → **preview de Vercel OK**: https://constructorpro-e0kziyg2q-mrs4.vercel.app (landing y registro cargan sin errores de consola).
+- **La web de producción (main) sigue con el código anterior**, que es compatible con el esquema nuevo (todo aditivo; `crear_empresa` conserva la llamada de un argumento por los defaults).
+- Pendiente: revisión de las pantallas con sesión iniciada en el preview y merge a `main`.
