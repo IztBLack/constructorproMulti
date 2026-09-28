@@ -164,8 +164,8 @@ const FUNCIONES = [
 ];
 
 // Perfiles de "Para quién es". Regla: cada viñeta describe algo que la app YA
-// hace. Los módulos planeados (compras, estimaciones, bitácora…) no se anuncian
-// hasta que existan — ver docs/PLAN_ALCANCE_AMPLIADO.md.
+// hace. Los módulos de empresa (compras, estimaciones, bitácora…) salieron con
+// el alcance ampliado (0035–0045); si uno se retira, se retira de aquí también.
 const PERFILES = [
   {
     titulo: 'Trabajas por tu cuenta',
@@ -189,9 +189,9 @@ const PERFILES = [
     titulo: 'Tienes una empresa u oficina',
     texto: 'Con supervisores, quien lleve el dinero y clientes que piden cuentas.',
     items: [
-      'Cada quien entra con su rol: supervisor, contador, cliente',
-      'La caja de cada obra con sus comprobantes',
-      'Tu marca en cada PDF y un portal para tus clientes',
+      'Cada quien entra con su rol: residente, supervisor, compras, contador, cliente',
+      'Compras de material, estimaciones y bitácora con fotos',
+      'La utilidad de cada obra y todo listo para tu contador',
     ],
   },
 ];
