@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { PGlite } from '@electric-sql/pglite';
 import {
+  ESCOTILLAS,
   REEMPLAZOS,
   aplicarMigraciones,
   comoAnonimo,
@@ -49,6 +50,31 @@ describe('migraciones', () => {
   it('cada reemplazo textual documenta su porqué', () => {
     for (const r of REEMPLAZOS) expect(r.porque.trim().length).toBeGreaterThan(20);
   });
+
+  it('las escotillas no se aplican por defecto, existen y documentan su porqué', () => {
+    const todas = listarMigraciones({ incluirEscotillas: true });
+    for (const e of ESCOTILLAS) {
+      expect(todas).toContain(e.archivo);
+      expect(listarMigraciones()).not.toContain(e.archivo);
+      expect(e.porque.trim().length).toBeGreaterThan(20);
+    }
+  });
+
+  it(
+    'con incluirEscotillas también aplican (la 0030 devuelve las columnas de sueldo)',
+    async () => {
+      const db = await crearDbConShim();
+      const aplicadas = await aplicarMigraciones(db, { incluirEscotillas: true });
+      expect(aplicadas).toEqual(listarMigraciones({ incluirEscotillas: true }));
+      const r = await db.query<{ c: string }>(
+        `select column_name as c from information_schema.columns
+          where table_schema = 'public' and table_name = 'colaboradores' and column_name = 'periodo_pago'`,
+      );
+      expect(r.rows).toHaveLength(1);
+      await db.close();
+    },
+    LENTO,
+  );
 
   it(
     'toda tabla de public tiene RLS activado',

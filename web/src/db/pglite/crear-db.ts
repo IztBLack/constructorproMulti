@@ -41,13 +41,59 @@ export interface Reemplazo {
 export const REEMPLAZOS: readonly Reemplazo[] = [];
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Escotillas: migraciones que NO se aplican por defecto
+// ─────────────────────────────────────────────────────────────────────────────
+// Hay archivos en `supabase/migrations/` que no son pasos normales sino
+// "escotillas de salida": se corren a mano solo si algo sale mal, y en
+// producción NO están aplicadas. Si el harness las aplicara, las pruebas
+// correrían contra un esquema que producción no tiene (así pasó con la carga
+// del demo: probado con las columnas de sueldo en `colaboradores`, que en
+// producción ya no existen).
+//
+// `esquema-prod.test.ts` compara el PGlite migrado con la foto del esquema de
+// producción (`esquema-prod.json`): si alguien agrega una escotilla sin
+// listarla aquí, o una migración deja de estar aplicada en producción, esa
+// prueba lo dice.
+export interface Escotilla {
+  archivo: string;
+  porque: string;
+}
+
+export const ESCOTILLAS: readonly Escotilla[] = [
+  {
+    archivo: '0030_revertir_0029_sueldo_columnas.sql',
+    porque:
+      'Revierte la 0029 (devuelve salario_personalizado, periodo_pago, salario_periodo y dias_semana a ' +
+      '`colaboradores`). Su encabezado dice "NO se corre en condiciones normales": solo si un teléfono ' +
+      'anterior a Drift v10 se atora tras la 0029. En producción está aplicada la 0029 y NO la 0030; el ' +
+      'sueldo vive solo en `colaborador_sueldo` (0027).',
+  },
+];
+
+function esEscotilla(archivo: string): boolean {
+  return ESCOTILLAS.some((e) => e.archivo === archivo);
+}
+
+export interface OpcionesMigrar {
+  /** Inclusive, p. ej. `'0019'`: probar una migración contra el estado previo a las que siguen. */
+  hasta?: string;
+  /** Aplicar también las escotillas (p. ej. para probar la propia 0030). Por defecto no. */
+  incluirEscotillas?: boolean;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Construcción
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Archivos `NNNN_*.sql` en orden alfabético (= orden de aplicación en Supabase). */
-export function listarMigraciones(): string[] {
+/**
+ * Archivos `NNNN_*.sql` en orden alfabético (= orden de aplicación en Supabase),
+ * SIN las escotillas salvo que se pidan: es la lista de lo que está aplicado en
+ * producción.
+ */
+export function listarMigraciones(opciones: { incluirEscotillas?: boolean } = {}): string[] {
   return readdirSync(DIR_MIGRACIONES)
     .filter((f) => f.endsWith('.sql'))
+    .filter((f) => opciones.incluirEscotillas || !esEscotilla(f))
     .sort();
 }
 
@@ -79,14 +125,12 @@ export async function crearDbConShim(): Promise<PGlite> {
  * como lo hace el CLI de Supabase: si uno falla, el error dice cuál.
  *
  * `hasta` (inclusive, p. ej. `'0019'`) sirve para probar una migración contra
- * el estado previo a las que siguen.
+ * el estado previo a las que siguen. Las `ESCOTILLAS` no se aplican salvo con
+ * `incluirEscotillas: true`.
  */
-export async function aplicarMigraciones(
-  db: PGlite,
-  opciones: { hasta?: string } = {},
-): Promise<string[]> {
+export async function aplicarMigraciones(db: PGlite, opciones: OpcionesMigrar = {}): Promise<string[]> {
   const aplicadas: string[] = [];
-  for (const archivo of listarMigraciones()) {
+  for (const archivo of listarMigraciones({ incluirEscotillas: opciones.incluirEscotillas })) {
     if (opciones.hasta && archivo.slice(0, opciones.hasta.length) > opciones.hasta) break;
     const sql = leerMigracion(archivo);
     try {
@@ -102,10 +146,13 @@ export async function aplicarMigraciones(
   return aplicadas;
 }
 
-/** DB nueva con shim + todas las migraciones. Tarda unos segundos: ver `dbMigrada`. */
-export async function crearDbMigrada(): Promise<PGlite> {
+/**
+ * DB nueva con shim + las migraciones que están en producción (sin escotillas,
+ * salvo que se pidan). Tarda unos segundos: ver `dbMigrada`.
+ */
+export async function crearDbMigrada(opciones: OpcionesMigrar = {}): Promise<PGlite> {
   const db = await crearDbConShim();
-  await aplicarMigraciones(db);
+  await aplicarMigraciones(db, opciones);
   return db;
 }
 
