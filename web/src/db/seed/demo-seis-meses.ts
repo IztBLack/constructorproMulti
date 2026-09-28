@@ -185,7 +185,10 @@ function pctC(baseC: number, pct: number): number {
 // ── Literales SQL ────────────────────────────────────────────────────────────
 
 class Crudo {
-  constructor(readonly sql: string) {}
+  readonly sql: string;
+  constructor(sql: string) {
+    this.sql = sql;
+  }
 }
 type Valor = string | number | boolean | null | undefined | Crudo;
 
@@ -1085,14 +1088,21 @@ class Guion {
   private readonly salidasPorObra = new Map<ClaveObra, number>();
   private readonly nominaEnCaja = new Map<ClaveObra, number>();
   private readonly rayaTotal = new Map<ClaveObra, number>();
+  // Campos explícitos (no "parameter properties"): Node solo quita tipos que se
+  // pueden borrar, y el script de línea de comandos importa este archivo tal cual.
+  private readonly userId: string;
+  private readonly empresaId: string;
+  private readonly hoy: string;
+  private readonly semilla: string;
+  private readonly transaccion: boolean;
 
-  constructor(
-    private readonly userId: string,
-    private readonly empresaId: string,
-    private readonly hoy: string,
-    private readonly semilla: string,
-    private readonly transaccion: boolean,
-  ) {}
+  constructor(userId: string, empresaId: string, hoy: string, semilla: string, transaccion: boolean) {
+    this.userId = userId;
+    this.empresaId = empresaId;
+    this.hoy = hoy;
+    this.semilla = semilla;
+    this.transaccion = transaccion;
+  }
 
   // ── herramientas de armado ────────────────────────────────────────────────
 
@@ -2894,7 +2904,6 @@ class Guion {
       return m;
     };
 
-    let folioReq = 0;
     const aprobaciones: Fila[] = [];
     for (const o of ORDENES) {
       const pesoObra = ORDENES.filter((x) => x.obra === o.obra && x.peso > 0).reduce((a, x) => a + x.peso, 0);
@@ -2910,7 +2919,6 @@ class Guion {
       const total = r2(subtotal + iva);
 
       // Requisición (la pide el supervisor; en la demo, el dueño).
-      folioReq += 1;
       const req = this.id(`requisicion:${o.key}`);
       const fr = sumarDias(o.fecha, -2);
       const tr = this.sello(fr, r, 8, 11);
