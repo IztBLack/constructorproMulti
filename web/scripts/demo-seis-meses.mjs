@@ -68,3 +68,10 @@ console.log(`Obra marca (si existe, el script no vuelve a sembrar): ${demo.resum
 for (const o of demo.resumen.obras) {
   console.log(`  ${o.clave} · ${o.nombre}: contratado $${o.contratado.toLocaleString('es-MX')}, avance ${o.avanceFisico} %, margen buscado ${o.margenBuscado} %`);
 }
+// Para comparar después de cargar: `select count(*) from public.<tabla> where empresa_id = '<empresa>'`.
+// (catalogo_conceptos suma a los 10 que siembra crear_empresa; empresa_fiscal es 1 fila.)
+console.log('Filas que crea por tabla:');
+const filas = Object.entries(demo.resumen.conteos).sort((a, b) => a[0].localeCompare(b[0]));
+for (let i = 0; i < filas.length; i += 4) {
+  console.log('  ' + filas.slice(i, i + 4).map(([t, c]) => `${t} ${c}`.padEnd(34)).join(''));
+}
