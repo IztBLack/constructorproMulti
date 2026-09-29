@@ -512,6 +512,7 @@
     "id",
     "notas",
     "obra_id",
+    "permanente",
     "recibio_nombre",
     "server_updated_at",
     "updated_at"
