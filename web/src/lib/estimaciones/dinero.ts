@@ -65,6 +65,22 @@ export function porcentajeCentavos(baseCentavos: number, pct: number): number {
   return Number(dividirRedondeando(BigInt(Math.trunc(baseCentavos)) * escalar(pct, 4), BigInt(1_000_000)));
 }
 
+/**
+ * Base SIN IVA de un monto que YA trae el IVA, en centavos:
+ * round(monto / (1 + pct/100)). El IVA es la resta (monto − base), así que
+ * base + IVA da SIEMPRE el monto exacto, sin centavos perdidos.
+ */
+export function baseSinIvaCentavos(montoCentavos: number, pct: number): number {
+  // monto × 10⁶ / (10⁶ + pct ×10⁴)
+  const millon = BigInt(1_000_000);
+  return Number(dividirRedondeando(BigInt(Math.trunc(montoCentavos)) * millon, millon + escalar(pct, 4)));
+}
+
+/** round(a × b / c) en enteros (centavos), a la mitad alejándose del cero. c > 0. */
+export function proporcionCentavos(a: number, b: number, c: number): number {
+  return Number(dividirRedondeando(BigInt(Math.trunc(a)) * BigInt(Math.trunc(b)), BigInt(Math.trunc(c))));
+}
+
 /** Cantidad redondeada a 4 decimales (lo que cabe en la base). */
 export function cantidad4(n: number): number {
   return Number(escalar(n, 4)) / 10_000;
