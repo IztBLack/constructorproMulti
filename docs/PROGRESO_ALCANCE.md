@@ -275,6 +275,36 @@ doblemente codificados (texto como `Ã­`), no afecta al SQL; el supervisor sigu
 pudiendo borrar físicamente movimientos de caja (0020), también ligados: el
 espejo lo refleja en el pago (queda como decisión de oficina, no se tocó).
 
+### IVA cobrado en el estado de cuenta (migración 0047, 2026-09-28)
+
+**Problema visto con datos reales:** COSTO TOTAL (presupuesto + extras) va SIN
+IVA, pero RECIBIDO sumaba las ENTRADAS, que en obras que cobran con IVA ya lo
+traen (anticipo "30 % más IVA" de $1,692,167.40 sobre una base de $1,458,765).
+PENDIENTE y "% cobrado" salían inflados por el IVA. **Decisión de Mario:
+separar el IVA cobrado.**
+
+| # | Decisión | Por qué |
+|---|---|---|
+| IVA-1 | **Tasa de la obra**, en este orden: `obra_contrato.iva_pct` si la obra tiene fila de contrato (**aunque diga 0**) → la cotización de origen (`obras.cotizacion_origen_id`) → una cotización CONVERTIDA con ese `obra_id` o, si la obra ya existía, la ACEPTADA ligada (la más vieja) → **sin IVA** (todo como antes). De la cotización: `iva_porcentaje` si `iva_enabled`, si no 0 | El contrato es el IVA que ya usan las estimaciones de la obra (F3-11): una sola tasa por obra. Un 0 guardado ahí es "sin IVA" a propósito. `cotizacion_origen_id` es la liga que pone "convertir en obra" y la que ya usa la hoja para facturar (`lib/data/fiscal.ts`) |
+| IVA-2 | **Fijar/corregir la tasa** desde el estado de cuenta de la obra ("IVA con que cobras esta obra", botón **Fijar**/**Cambiar**, solo admin) **reusa `obra_contrato.iva_pct`**: sin tabla ni columna nueva. Se guarda la fila COMPLETA del contrato con lo que ya tenía (RT7); si no había contrato nace uno sin anticipo ni retenciones | "Sin fila = todo en cero" (0039), así que crear la fila no cambia nada más que el IVA. `obras` no sirve: la leen colaborador y cliente (lección F1-2), y otra tabla sería una segunda fuente del mismo dato |
+| IVA-3 | **0047 = solo una función**, `iva_obras(uuid[]) → (obra_id, iva_pct, origen)`, SECURITY DEFINER. Contesta a la oficina (admin, supervisor, contador), al residente con la obra asignada y al **cliente dueño**; a nadie más (colaborador, otra empresa, anónimo: sin filas / sin permiso). Test PGlite `src/db/iva-obra.test.ts` (8) | El cliente no lee `obra_contrato` (trae anticipo, retenciones y notas) pero tiene que ver los mismos números que la oficina; la tasa sola no es secreta (viene en su factura). Una sola regla para las dos vías y la utilidad. Recibe arreglo para que el comparativo de utilidad haga una llamada. **Sin 0047 aplicada, la web cuenta la obra como sin IVA** (el estado de cuenta de antes): se puede desplegar en cualquier orden (F0-9) |
+| IVA-4 | **Cálculo por ENTRADA, en centavos enteros:** base = round(monto / (1 + t)) a la mitad alejándose del cero (BigInt, `baseSinIvaCentavos`), IVA = monto − base. RECIBIDO (con IVA) = base + IVA **exacto**; PENDIENTE = costo − base; % cobrado = base / costo | Cada entrada es un pago con su factura, que lleva su propio IVA redondeado. Por entrada puede diferir de "total / 1.16" en ≤ 1 centavo por entrada (3 × $100 → base 258.63, no 258.62), pero nunca se pierde un centavo al sumar. Test de 2,000 listas al azar |
+| IVA-5 | La entrada con que se cobró una **ESTIMACIÓN** (`estimaciones.movimiento_id`) no se divide entre 1 + t: lleva el **IVA de la estimación** (proporcional si la entrada no fue por el neto; nunca más que la entrada). Se respeta aunque hoy la obra diga sin IVA | El neto ya trae descontados fondo de garantía y retenciones, que se calculan sobre la base: dividir entre 1.16 le quitaría de menos al IVA ($344.83 en el ejemplo del test). **Doble conteo revisado:** las estimaciones no suman a lo recibido (F3-18); "estimado" es importe bruto (sin IVA); "autorizado por cobrar" sigue siendo el neto CON IVA porque es lo que el cliente paga; el "Financiero (lo cobrado)" del físico vs financiero usa la base |
+| IVA-6 | **No se usa `cobro_fiscal.iva_modo`** (el IVA por cobro que captura el contador en F1b) | Lo leen solo admin y contador: el portal no podría mostrar lo mismo. La regla es la tasa de la obra. Si un cobro fue exento de verdad, hoy no hay cómo marcarlo en el estado de cuenta (pendiente si aparece el caso) |
+| IVA-7 | **Copy.** Oficina (detalle, PDF de caja, Excel, vista rápida): "Costo total (sin IVA)", "Cobrado (sin IVA)", "Por cobrar (sin IVA)", "IVA cobrado (16 %)", "Recibido con IVA" y la nota **"El IVA cobrado no es tuyo: se entera al SAT."** Portal y PDF del cliente: "Pagado (sin IVA)", "IVA pagado", "Saldo pendiente (sin IVA)", **sin la nota del SAT**. Obras sin IVA: las etiquetas de siempre | La nota es para el dueño (ese dinero no es suyo); al cliente no le toca. Sin IVA, agregar "(sin IVA)" en todos lados sería ruido |
+| IVA-8 | **"Saldo por obra" del inicio NO cambia**, ni el SALDO del PDF de caja | Es caja (entradas − salidas): el dinero que físicamente entró y salió, IVA incluido. No es el estado de cuenta (costo vs cobrado) |
+| IVA-9 | El **PDF de caja interno y el Excel** ahora salen de `totalesEstadoCuenta` y **suman los extras aprobados** al costo total (pendiente de F1 cerrado). Las filas nuevas del Excel ("EXTRAS APROBADOS", "IVA COBRADO", "COBRADO (SIN IVA)", "POR COBRAR (SIN IVA)", la nota) las salta el importador (test de ida y vuelta) | Mismos números en todos los documentos; el Excel exportado se vuelve a importar |
+| IVA-10 | **Utilidad por obra:** `cobrado` = lo cobrado SIN IVA (+ `ivaCobrado` aparte); el avance financiero de último recurso = base / contratado. Los costos (salidas) no se tocan | Lo contratado no lleva IVA. Las salidas pueden traer IVA acreditable de proveedores: es otro tema (fiscal), no se mezcló aquí |
+| IVA-11 | El resumen del **inicio del portal** suma obra por obra (cada una con su IVA) en vez de sumar tablas sueltas | Una obra puede cobrar con IVA y otra no. De paso ya no cuenta presupuesto de obras borradas |
+| IVA-12 | **Estimaciones sin contrato siguen sin IVA** (F3-11 intacta). Al capturar el contrato se **propone** el IVA de la cotización, y mientras no exista la tarjeta del contrato avisa "la cotización lleva IVA de X %, pero las estimaciones salen sin IVA" | Cambiar el IVA de las estimaciones sin contrato cambiaría F3; se dejó para que lo decida Mario. **Pendiente de decisión:** ¿las estimaciones sin contrato deberían tomar el IVA de la cotización? |
+
+**Pendiente:** aplicar **0047** en producción (solo crea la función; sin ella la
+web se comporta como antes); revisión visual en navegador (no se levantó la web:
+el `.env.local` apunta a producción); fijar el IVA de las obras que se crearon
+sin cotización (importadas de Excel o a mano), porque para esas la tasa sale 0
+hasta que el admin la fije; el móvil (Flutter) sigue mostrando RECIBIDO con IVA
+(D6).
+
 ---
 
 ## Convenciones para todos los agentes
@@ -304,6 +334,8 @@ espejo lo refleja en el pago (queda como decisión de oficina, no se tocó).
   | 0043 | F7 seguridad, postventa, herramienta |
   | 0044 | F6 (parte 2): residente sobre las tablas de 0043 |
   | 0045 | Endurecimiento tras la revisión de seguridad (policies ya en prod) |
+  | 0046 | Registro del REVOKE de `_cotizacion_snapshot` (ya hecho a mano en prod) |
+  | 0047 | IVA de la obra: función `iva_obras` para separar el IVA cobrado (IVA-1…IVA-12) |
 
 - **Registro de módulos:** `web/src/lib/modulos.ts` es la **única** fuente. Cada fase
   cambia `disponible: true` en su módulo y registra su entrada de nav. No crees listas
@@ -334,6 +366,7 @@ espejo lo refleja en el pago (queda como decisión de oficina, no se tocó).
 | F6 | ✅ | 5df7122, 9dc0015, a8c94d5, 7914cc1, 6d9168c, 51128a1 | 0042 (roles residente/compras/almacén, `usuario_obra`, residente sobre 0002–0041 y 0038, colaborador en bitácora, compras/almacén, visto bueno, actividad) y **0044 = residente sobre tablas de 0043**, escritas y probadas en PGlite (`roles.test.ts`, 34 tests; los 266 de db pasan), **sin aplicar a ningún Supabase**. Web: roles en barra/paleta/Ajustes/middleware, Usuarios (invitar + asignar obras), `/admin/actividad`, Ajustes → Visto bueno, pedir visto bueno en extras y órdenes. Móvil: compras/almacén de solo lectura y residente en sueldos (`rol_permiso_test.dart`). RF6.5 solo evaluado. Pendiente: verificación visual en navegador (no se levantó contra producción), aviso de privacidad (la actividad guarda nombre y rol de quien cambia), notificaciones del visto bueno, selector de empresa si alguien pide RF6.5, precios de almacén en tabla aparte si hace falta (F6-9), UI móvil del residente (D6) |
 | F7 web | ✅ | 2d28084, 9f64fe9, a45b052, 4ccd4e1, 4e04c0d, 5bd0d4b, 8b6c038, 097e401 | Web: pestaña Seguridad (revisión diaria NOM-031, incidentes, recordatorio ST-7, salud solo admin), EPP en la ficha del colaborador, `/admin/herramienta`, `/admin/postventa` y "Reportar un problema" en el portal. 0043 escrita y probada en PGlite (28 tests), **sin aplicar a ningún Supabase** (crea los buckets `seguridad` y `postventa`). Pendiente: revisión legal de los datos de salud (F7-19), PDF de revisión e incidentes (RT3), fotos de la oficina en garantías, captura sin conexión → móvil (D6), verificación visual en navegador (no se levantó contra producción) |
 | Endurecimiento (SEG) | ✅ | b0ee22b, 2f6db85, 76532f9, 57aa9ca, 596760b, 153c194 | Hallazgos de la revisión de seguridad (A1, M1–M3, B1–B9) corregidos en 0036–0044 (sin aplicar) y en la nueva **0045** (policies de 0014/0020). `endurecimiento.test.ts` (27 tests) afirma que cada hueco ya no existe; 0035→0045 aplicadas dos veces sin error; eliminar una empresa completa sigue funcionando. Web: margen de la empresa en `empresa_margen`, vista previa de estimación sin notas. **Sin aplicar a ningún Supabase**. Pendiente: pantalla del borrado ARCO de salud |
+| IVA cobrado (estado de cuenta) | ✅ | a706523, 736d36f, b9310d0, 2b5f7b6, 3d1d9a7 | Web: el IVA de lo cobrado va aparte en el detalle de obra, portal (detalle, lista, inicio, PDF), PDF del cliente desde oficina, PDF de caja interno, Excel, vista rápida, físico vs financiero y utilidad. **0047** (solo la función `iva_obras`) probada en PGlite (8 tests), **sin aplicar a ningún Supabase**. De paso, el PDF/Excel de caja interno ya suman los extras aprobados (el pendiente de F1). `vitest` 890/890, `tsc`, `eslint` de lo tocado y `next build` OK. Pendiente: aplicar 0047, revisión visual en navegador, IVA-12 |
 | **Verificación final** | ✅ | — | Rama de integración completa (0035–0045): `vitest` 843/843 (incluye PGlite con las 45 migraciones, RLS por rol e idempotencia), `tsc`, `eslint src` limpio, `next build` OK, todas las rutas de PDF con Chromium registradas; móvil `flutter test` 317/317. **Nada aplicado a producción ni pusheado.** |
 
 ## Pendiente para salir a producción
