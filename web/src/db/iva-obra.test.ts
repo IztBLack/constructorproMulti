@@ -122,6 +122,17 @@ describe('0047 iva_obras', () => {
     expect((await tasas(db, a.adminId, [obra]))[obra]).toEqual([16, 'cotizacion']);
   });
 
+  it('la cotización de origen de la obra (cotizacion_origen_id) gana, aunque no traiga obra_id', async () => {
+    const origen = await crearCotizacion(db, a.empresaId, null, { estado: 'CONVERTIDA', ivaPct: 8, fecha: 5 });
+    const obra = await crearObra(db, a.empresaId, { cotizacion_origen_id: origen });
+    await crearCotizacion(db, a.empresaId, obra, { estado: 'CONVERTIDA', ivaPct: 16, fecha: 1 });
+    expect((await tasas(db, a.adminId, [obra]))[obra]).toEqual([8, 'cotizacion']);
+    // Una cotización de OTRA empresa con ese id no cuenta.
+    const ajena = await crearCotizacion(db, b.empresaId, null, { estado: 'CONVERTIDA', ivaPct: 8 });
+    const obra2 = await crearObra(db, a.empresaId, { cotizacion_origen_id: ajena });
+    expect((await tasas(db, a.adminId, [obra2]))[obra2]).toEqual([0, 'ninguno']);
+  });
+
   it('un contrato borrado (lógico) ya no cuenta', async () => {
     const obra = await crearObra(db, a.empresaId);
     await crearCotizacion(db, a.empresaId, obra, { estado: 'CONVERTIDA', ivaPct: 16 });

@@ -20,9 +20,11 @@
 --      "esta obra se cobra sin IVA". Es también donde el admin la fija o la
 --      corrige desde el detalle de la obra (sin anticipo ni retenciones, una
 --      fila de contrato no cambia nada más: "sin fila = todo en cero").
---   2. si no, la cotización de la que nació la obra: la CONVERTIDA con ese
---      `obra_id` (o, si la obra ya existía y se le ligó, la ACEPTADA), la más
---      vieja: `iva_porcentaje` si `iva_enabled`, 0 si se cotizó sin IVA.
+--   2. si no, la cotización de la que nació la obra: `obras.cotizacion_origen_id`
+--      (lo pone "convertir en obra", 0002); si no está, la CONVERTIDA con ese
+--      `obra_id` o, si la obra ya existía y se le ligó, la ACEPTADA; la más
+--      vieja. `iva_porcentaje` si `iva_enabled`, 0 si se cotizó sin IVA (es
+--      el mismo criterio que la hoja para facturar, `lib/data/fiscal.ts`).
 --   3. si no hay ninguna, 0: la obra no cobra IVA y el estado de cuenta queda
 --      exactamente como antes.
 --
@@ -63,11 +65,12 @@ as $$
     left join lateral (
       select (case when k.iva_enabled then k.iva_porcentaje else 0 end)::numeric as iva_pct
         from public.cotizaciones k
-       where k.obra_id = o.id
-         and k.empresa_id = o.empresa_id
+       where k.empresa_id = o.empresa_id
          and k.deleted_at is null
-         and k.estado in ('CONVERTIDA', 'ACEPTADA')
-       order by (k.estado = 'CONVERTIDA') desc, k.fecha, k.created_at, k.id
+         and (   k.id = o.cotizacion_origen_id
+              or (k.obra_id = o.id and k.estado in ('CONVERTIDA', 'ACEPTADA')))
+       order by (k.id = o.cotizacion_origen_id) desc nulls last,
+                (k.estado = 'CONVERTIDA') desc, k.fecha, k.created_at, k.id
        limit 1
     ) q on true
    where auth.uid() is not null
