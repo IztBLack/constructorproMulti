@@ -173,6 +173,25 @@ describe('proyección a término', () => {
     expect(r.margenProyectado).toBe(20);
   });
 
+  test('con IVA, proyecta con lo cobrado SIN IVA (el contrato no lleva IVA)', () => {
+    // Contratado 100,000; entró 58,000 = 50,000 + 16 % de IVA. El avance
+    // financiero es 50 %, no 58 %.
+    const r = calcularRentabilidad(
+      datos({ movimientos: [salida(40_000, 'MATERIAL'), entrada(58_000)], iva: { tasaPct: 16 } }),
+    );
+    expect(r.cobrado).toBe(50_000);
+    expect(r.ivaCobrado).toBe(8_000);
+    expect(r.fuenteAvance).toBe('cobrado');
+    expect(r.avanceUsado).toBe(50);
+    expect(r.costoProyectado).toBe(80_000);
+    expect(r.margenProyectado).toBe(20);
+    // Sin tasa, igual que siempre.
+    const sin = calcularRentabilidad(datos({ movimientos: [salida(40_000, 'MATERIAL'), entrada(58_000)] }));
+    expect(sin.cobrado).toBe(58_000);
+    expect(sin.ivaCobrado).toBe(0);
+    expect(sin.avanceUsado).toBe(58);
+  });
+
   test('sin avance ni cobros no se proyecta', () => {
     const r = calcularRentabilidad(datos({ movimientos: [salida(1_000, 'MATERIAL')] }));
     expect(r.fuenteAvance).toBe('ninguna');

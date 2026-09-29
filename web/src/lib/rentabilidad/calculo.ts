@@ -38,7 +38,9 @@
  *   1. avance FÍSICO por partida (F3, `avance_partida` 0039, ponderado por
  *      dinero con `lib/estimaciones/avance.ts`) si ya hay capturas;
  *   2. si no, el avance capturado a mano en la obra (0–100) si es > 0;
- *   3. si no, el avance FINANCIERO = cobrado / contratado.
+ *   3. si no, el avance FINANCIERO = cobrado SIN IVA / contratado (lo
+ *      contratado no lleva IVA; el IVA cobrado se separa igual que en el
+ *      estado de cuenta, `separarIvaCobrado`).
  *   costo proyectado = costo real / avance, y nunca menos que
  *                      costo real + comprometido en notas.
  * Sin ningún avance no hay proyección (y el semáforo dice "sin datos"): al
@@ -59,6 +61,7 @@ import {
   renglonDeCosto,
   type RenglonCosto,
 } from './categorias';
+import { separarIvaCobrado, type IvaEstadoCuenta } from '@/lib/cliente/estado-cuenta-calculo';
 
 /** Puntos de margen por debajo del objetivo que todavía se pintan en amarillo. */
 export const TOLERANCIA_AMARILLO = 5;
@@ -69,6 +72,8 @@ export const MARGEN_OBJETIVO_POR_DEFECTO = 15;
 export type Semaforo = 'verde' | 'amarillo' | 'rojo' | 'sin_datos';
 
 export interface MovimientoCosto {
+  /** Para ligar la entrada con la estimación que cobró (su IVA). Opcional. */
+  id?: string;
   tipo: 'ENTRADA' | 'SALIDA' | string;
   monto: number;
   categoria?: string | null;
@@ -113,6 +118,11 @@ export interface DatosRentabilidad {
    * eso nunca se cuenta dos veces. Opcional: sin compras, 0.
    */
   comprometidoCompras?: number;
+  /**
+   * IVA con que cobra la obra (0047) y estimaciones cobradas: para que lo
+   * cobrado se compare SIN IVA contra lo contratado. Sin esto: sin IVA.
+   */
+  iva?: IvaEstadoCuenta | null;
 }
 
 export type FuenteAvance = 'partidas' | 'obra' | 'cobrado' | 'ninguna';
@@ -121,7 +131,10 @@ export interface ResultadoRentabilidad {
   presupuesto: number;
   extras: number;
   contratado: number;
+  /** Lo cobrado SIN IVA (Σ entradas menos el IVA que traían). */
   cobrado: number;
+  /** IVA que venía en las entradas (no es de la constructora). */
+  ivaCobrado: number;
 
   /** Salidas de caja por renglón de costo (incluye "Sin clasificar"). */
   salidasPorCategoria: Record<RenglonCosto, number>;
@@ -221,18 +234,20 @@ export function calcularRentabilidad(d: DatosRentabilidad): ResultadoRentabilida
   const contratado = redondear(presupuesto + extras);
 
   const salidasPorCategoria = cerosPorCategoria();
-  let cobrado = 0;
+  const entradas: { id?: string; monto: number }[] = [];
   let nominaEnCaja = 0;
   for (const m of d.movimientos) {
     const monto = finito(m.monto);
     if (m.tipo === 'ENTRADA') {
-      cobrado += monto;
+      entradas.push({ id: m.id, monto });
       continue;
     }
     if (m.tipo !== 'SALIDA') continue;
     salidasPorCategoria[renglonDeCosto(m)] += monto;
     if ((m.categoria ?? '').trim().toUpperCase() === 'NOMINA') nominaEnCaja += monto;
   }
+  const sepIva = separarIvaCobrado(entradas, d.iva);
+  const cobrado = sepIva.base;
   for (const k of Object.keys(salidasPorCategoria) as RenglonCosto[]) {
     salidasPorCategoria[k] = redondear(salidasPorCategoria[k]);
   }
@@ -301,6 +316,7 @@ export function calcularRentabilidad(d: DatosRentabilidad): ResultadoRentabilida
     extras,
     contratado,
     cobrado: redondear(cobrado),
+    ivaCobrado: sepIva.iva,
     salidasPorCategoria,
     totalSalidas,
     rayaSinCaja,

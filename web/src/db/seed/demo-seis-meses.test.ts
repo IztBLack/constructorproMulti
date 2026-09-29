@@ -467,6 +467,13 @@ async function calcularUtilidadComoLaWeb(db: PGlite, emp: EmpresaDePrueba): Prom
       e,
     );
     const pagosProv = await filas<Fila>(tx, 'select orden_compra_id, monto, deleted_at from public.pagos_proveedor where empresa_id = $1', e);
+    // IVA de cada obra (0047) y estimaciones cobradas: lo cobrado va SIN IVA.
+    const tasas = await filas<Fila>(tx, 'select obra_id, iva_pct from public.iva_obras($1::uuid[])', [d.obras.map((o) => o.id)]);
+    const estCobradas = await filas<Fila>(
+      tx,
+      'select obra_id, movimiento_id, iva, neto from public.estimaciones where empresa_id = $1 and movimiento_id is not null and deleted_at is null',
+      e,
+    );
 
     const out = new Map<string, ResultadoRentabilidad>();
     for (const o of d.obras) {
@@ -503,7 +510,7 @@ async function calcularUtilidadComoLaWeb(db: PGlite, emp: EmpresaDePrueba): Prom
           ),
           movimientos: d.movimientos
             .filter((m) => m.obra_id === o.id)
-            .map((m) => ({ tipo: String(m.tipo), monto: n(m.monto), categoria: m.categoria as string | null, categoria_costo: m.categoria_costo as string | null })),
+            .map((m) => ({ id: String(m.id), tipo: String(m.tipo), monto: n(m.monto), categoria: m.categoria as string | null, categoria_costo: m.categoria_costo as string | null })),
           rayaCalculada: rayaCalculada({
             colaboradores: d.colaboradores,
             asistencias: d.asistencias.filter((a) => a.obra_id === o.id),
@@ -515,6 +522,12 @@ async function calcularUtilidadComoLaWeb(db: PGlite, emp: EmpresaDePrueba): Prom
           avanceFisico: fis.hayCapturas ? fis.pct : null,
           margenObjetivo: margenObjetivoDe(margenObra ? n(margenObra.margen_objetivo) : null, margenEmp ? n(margenEmp.margen_objetivo) : null),
           comprometidoCompras: comprometido,
+          iva: {
+            tasaPct: n(tasas.find((t) => t.obra_id === o.id)?.iva_pct ?? 0),
+            estimacionesCobradas: estCobradas
+              .filter((x) => x.obra_id === o.id)
+              .map((x) => ({ movimientoId: String(x.movimiento_id), iva: n(x.iva), neto: n(x.neto) })),
+          },
         }),
       );
     }
