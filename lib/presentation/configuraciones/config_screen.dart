@@ -8,7 +8,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/crash/crash_logger.dart';
+import '../../core/modulos/modulos.dart';
+import '../../core/modulos/modulos_provider.dart';
 import '../../core/settings/settings_provider.dart';
+import '../../core/sync/cloud_providers.dart';
+import '../../core/sync/rol_provider.dart';
 import '../../data/demo_data.dart';
 import '../../data/providers.dart';
 import '../onboarding/tutorial_screen.dart';
@@ -24,6 +28,11 @@ class ConfigScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
+    // Cada entrada se va con su módulo (F0). Apagar oculta, no borra.
+    final modulos = ref.watch(modulosProvider);
+    final usaEquipo = modulos.usa(ClaveModulo.equipo);
+    final usaCotizaciones = modulos.usa(ClaveModulo.cotizaciones);
+    final soloEnLaWeb = modulos.soloEnLaWeb;
 
     return Scaffold(
       appBar: AppBar(
@@ -51,27 +60,31 @@ class ConfigScreen extends ConsumerWidget {
               ),
             ],
           ),
-          _Seccion(
-            titulo: 'Recordatorios',
-            children: [_reminderTiles(context, ref)],
-          ),
+          // El recordatorio es de la raya: sin equipo no hay nómina que pagar.
+          if (usaEquipo)
+            _Seccion(
+              titulo: 'Recordatorios',
+              children: [_reminderTiles(context, ref)],
+            ),
           _Seccion(
             titulo: 'Catálogos',
             children: [
-              ListTile(
-                leading: const Icon(Icons.badge_outlined),
-                title: const Text('Puestos y salarios'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const PuestosScreen())),
-              ),
-              ListTile(
-                leading: const Icon(Icons.menu_book_outlined),
-                title: const Text('Catálogo de conceptos'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const CatalogoScreen())),
-              ),
+              if (usaEquipo)
+                ListTile(
+                  leading: const Icon(Icons.badge_outlined),
+                  title: const Text('Puestos y salarios'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const PuestosScreen())),
+                ),
+              if (usaCotizaciones)
+                ListTile(
+                  leading: const Icon(Icons.menu_book_outlined),
+                  title: const Text('Catálogo de conceptos'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const CatalogoScreen())),
+                ),
               ListTile(
                 leading: const Icon(Icons.picture_as_pdf_outlined),
                 title: const Text('Personalizar PDF'),
@@ -80,17 +93,36 @@ class ConfigScreen extends ConsumerWidget {
                 onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => const PdfConfigScreen())),
               ),
-              ListTile(
-                leading: const Icon(Icons.percent),
-                title: const Text('IVA por defecto'),
-                // Cada cotización congela su tasa al crearse; cambiar este valor
-                // solo afecta a las que se creen de aquí en adelante.
-                subtitle: Text(
-                    '${ref.watch(ivaPorcentajeProvider).toStringAsFixed(0)}% · no recalcula cotizaciones existentes'),
-                onTap: () => _editarIva(context, ref),
-              ),
+              if (usaCotizaciones)
+                ListTile(
+                  leading: const Icon(Icons.percent),
+                  title: const Text('IVA por defecto'),
+                  // Cada cotización congela su tasa al crearse; cambiar este
+                  // valor solo afecta a las que se creen de aquí en adelante.
+                  subtitle: Text(
+                      '${ref.watch(ivaPorcentajeProvider).toStringAsFixed(0)}% · no recalcula cotizaciones existentes'),
+                  onTap: () => _editarIva(context, ref),
+                ),
             ],
           ),
+          _Seccion(
+            titulo: 'Partes de la app',
+            children: [_modulosInfo(ref)],
+          ),
+          // Lo que la empresa prendió en la web y el celular todavía no tiene.
+          // Solo texto: no hay pantalla a la cual mandar, así que no hay enlace.
+          if (soloEnLaWeb.isNotEmpty)
+            _Seccion(
+              titulo: 'Disponibles en la web',
+              children: [
+                for (final m in soloEnLaWeb)
+                  ListTile(
+                    leading: const Icon(Icons.language),
+                    title: Text(m.nombre),
+                    subtitle: Text(m.descripcion),
+                  ),
+              ],
+            ),
           _Seccion(
             titulo: 'Nube',
             children: [
@@ -211,6 +243,31 @@ class ConfigScreen extends ConsumerWidget {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('$titulo: hecho.')));
     }
+  }
+
+  /// Quién decide qué partes se ven y dónde se cambia. En el celular NO hay
+  /// interruptores, ni para el admin: se cambian en la web (Ajustes →
+  /// Módulos), que avisa de las dependencias y confirma antes de apagar.
+  Widget _modulosInfo(WidgetRef ref) {
+    final conSesion = ref.watch(currentUserProvider) != null;
+    final rol = ref.watch(rolUsuarioProvider).asData?.value;
+    final String texto;
+    if (!conSesion) {
+      texto = 'Sin cuenta conectada se ven todas las partes que tiene el '
+          'celular.';
+    } else if (rol == 'admin') {
+      texto = 'Las prendes o apagas desde la web, en Ajustes → Módulos. '
+          'Aquí se aplican solas. Apagar una parte la oculta; tus datos se '
+          'conservan.';
+    } else {
+      texto = 'Las elige el administrador de tu empresa desde la web. '
+          'Si te falta alguna, pídesela.';
+    }
+    return ListTile(
+      leading: const Icon(Icons.widgets_outlined),
+      title: const Text('Qué partes de la app usa tu empresa'),
+      subtitle: Text(texto),
+    );
   }
 
   static const _dias = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];

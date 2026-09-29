@@ -8,6 +8,8 @@ import {
 import { listObras } from '@/lib/data/obras';
 import { hayCambiosSinAprobar } from '@/lib/data/cotizacion-diff';
 import { listPagosByCotizacion, sumaPagos } from '@/lib/data/pagos';
+import { getAccesoFiscal, listCobros } from '@/lib/data/fiscal';
+import { estadoDe, type EstadoFiscal } from '@/lib/fiscal/tipos';
 import { listArchivosCotizacion } from '@/lib/data/archivos';
 import { listClientes } from '@/lib/data/clientes';
 import { formatCurrency } from '@/lib/data/format';
@@ -21,6 +23,7 @@ import { CotizacionHeader } from '../cotizacion-header';
 import { SeccionesList } from '../secciones-list';
 import PagosSection from './pagos-section';
 import ArchivosSection from './archivos-section';
+import { capturaEnObra } from '@/lib/auth/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,6 +69,14 @@ export default async function CotizacionDetallePage({
       .catch(() => ''),
   ]);
   const totalPagado = sumaPagos(pagos ?? []);
+
+  // Estado fiscal de cada pago (módulo `fiscal`): solo admin y contador.
+  const fiscal = await getAccesoFiscal();
+  let estadosFiscales: Record<string, EstadoFiscal> | undefined;
+  if (fiscal.activo && fiscal.puede) {
+    const { data: cobros } = await listCobros({ cotizacionId: id, soloOrigen: 'pago' });
+    estadosFiscales = Object.fromEntries(cobros.map((c) => [c.id, estadoDe(c)]));
+  }
 
   // Obras activas para "Vincular a obra" (paridad móvil).
   const obrasActivas = (obras ?? [])
@@ -172,7 +183,7 @@ export default async function CotizacionDetallePage({
           documento: cotizacion.texto_final,
           empresa: pdf.textos,
         })}
-        puedeEditar={['admin', 'supervisor'].includes(rol)}
+        puedeEditar={capturaEnObra(rol)}
       />
 
       <PagosSection
@@ -180,6 +191,7 @@ export default async function CotizacionDetallePage({
         totalCotizacion={totales.total}
         pagos={pagos ?? []}
         totalPagado={totalPagado}
+        estadosFiscales={estadosFiscales}
       />
 
       <ArchivosSection cotizacionId={cotizacion.id} archivos={archivos ?? []} />

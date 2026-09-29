@@ -10,7 +10,7 @@ export interface ResultadoTextoFinal {
 }
 
 /**
- * Guarda el párrafo final de UN documento. Una sola acción para los tres tipos:
+ * Guarda el párrafo final de UN documento. Una sola acción para todos los tipos:
  * la tarjeta que la llama también es una sola.
  *
  * `texto = null` restaura el texto general.
@@ -38,10 +38,19 @@ export async function guardarTextoFinalAction(
     case 'estado_cuenta':
       revalidatePath(`/admin/obras/${id}`);
       break;
+    case 'orden_compra':
+      revalidatePath('/admin/compras', 'layout');
+      break;
+    case 'extra':
+    case 'estimacion':
     case 'nota':
       // La nota no conoce el id de su obra desde aquí, y la ruta lo lleva
       // adentro. Revalidar la rama completa es barato y no falla nunca.
       revalidatePath('/admin/obras', 'layout');
+      break;
+    case 'subcontrato':
+      revalidatePath(`/admin/subcontratos/${id}`);
+      revalidatePath(`/admin/subcontratos/${id}/pdf`);
       break;
   }
 

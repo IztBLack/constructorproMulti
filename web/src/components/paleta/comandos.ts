@@ -8,7 +8,14 @@
  * borre, cobre o mande algo a un cliente. Una paleta se usa a ciegas —tres
  * letras y Enter—, que es justo el modo en el que no se debe confirmar algo
  * irreversible ni tocar dinero. Llevar hasta la pantalla donde eso vive: sí.
+ *
+ * MÓDULOS: los comandos no declaran a qué módulo pertenecen; se deduce de su
+ * `href` con el catálogo (`lib/modulos.ts`). Un comando nuevo queda filtrado
+ * solo, sin que nadie se acuerde de marcarlo.
  */
+
+import { rutaVisible, type ClaveModulo } from '@/lib/modulos';
+import { rutaBloqueadaPara } from '@/lib/auth/roles';
 
 export interface Comando {
   /** Texto que se lee. */
@@ -35,11 +42,20 @@ export const COMANDOS_FIJOS: Comando[] = [
   { titulo: 'Equipo', href: '/admin/equipo', grupo: 'Ir a', alias: 'trabajadores gente colaboradores personal albañiles' },
   { titulo: 'Cuadrillas', href: '/admin/cuadrillas', grupo: 'Ir a', alias: 'grupos brigadas' },
   { titulo: 'Clientes', href: '/admin/clientes', grupo: 'Ir a', alias: 'contratantes' },
+  { titulo: 'Facturación', detalle: 'Hoja para facturar y paquete para el contador', href: '/admin/facturacion', grupo: 'Ir a', alias: 'factura sat cfdi rfc contador complemento xml' },
+  { titulo: 'Compras', detalle: 'Requisiciones, órdenes de compra y lo que se debe a proveedores', href: '/admin/compras', grupo: 'Ir a', alias: 'material requisicion orden compra proveedor pedido remision' },
+  { titulo: 'Catálogo de materiales', href: '/admin/compras/materiales', grupo: 'Ir a', alias: 'material cemento varilla precios insumos' },
+  { titulo: 'Proveedores', href: '/admin/compras/proveedores', grupo: 'Ir a', alias: 'ferreteria casa de materiales credito rfc' },
   { titulo: 'Proyección de nómina', href: '/admin/proyeccion', grupo: 'Ir a', alias: 'raya esperada semana estimado sueldos' },
+  { titulo: 'Utilidad por obra', href: '/admin/rentabilidad', grupo: 'Ir a', alias: 'ganancia margen rentabilidad comparativo dinero' },
   { titulo: 'Pase de lista de hoy', href: '/campo', grupo: 'Ir a', alias: 'asistencia lista campo jornada faltas' },
+  { titulo: 'Herramienta y maquinaria', href: '/admin/herramienta', grupo: 'Ir a', alias: 'inventario equipo prestamo revolvedora andamio donde esta' },
+  { titulo: 'Garantías', detalle: 'Reportes de tus clientes después de entregar', href: '/admin/postventa', grupo: 'Ir a', alias: 'postventa reclamos quejas reportes garantia' },
   { titulo: 'Catálogo de conceptos', href: '/admin/catalogo', grupo: 'Ir a', alias: 'precios partidas conceptos' },
   { titulo: 'Puestos', href: '/admin/puestos', grupo: 'Ir a', alias: 'oficios salarios' },
-  { titulo: 'Usuarios y roles', href: '/admin/usuarios', grupo: 'Ir a', alias: 'permisos accesos socios' },
+  { titulo: 'Usuarios y roles', href: '/admin/usuarios', grupo: 'Ir a', alias: 'permisos accesos socios residente obras asignadas' },
+  { titulo: 'Registro de actividad', detalle: 'Quién cambió qué', href: '/admin/actividad', grupo: 'Ir a', alias: 'bitacora auditoria cambios historial quien movimientos' },
+  { titulo: 'Visto bueno', detalle: 'Reglas y solicitudes pendientes', href: '/admin/ajustes#aprobaciones', grupo: 'Ir a', alias: 'aprobaciones autorizar aprobar monto compras extras' },
   { titulo: 'Ajustes', href: '/admin/ajustes', grupo: 'Ir a', alias: 'configuracion preferencias empresa' },
   { titulo: 'Vincular un dispositivo', href: '/admin/vincular', grupo: 'Ir a', alias: 'codigo celular tableta invitar' },
 
@@ -80,6 +96,11 @@ export function comandosDeObra(obraId: string, nombre?: string): Comando[] {
     { titulo: `Asistencia${suf}`, href: `/admin/obras/${obraId}/asistencia`, grupo: 'En esta obra', alias: 'pase lista jornada faltas' },
     { titulo: `Nómina${suf}`, href: `/admin/obras/${obraId}/nomina`, grupo: 'En esta obra', alias: 'raya semana pago sueldo' },
     { titulo: `Notas de trato${suf}`, href: `/admin/obras/${obraId}/notas`, grupo: 'En esta obra', alias: 'socios acuerdos tratos' },
+    { titulo: `Extras${suf}`, href: `/admin/obras/${obraId}/extras`, grupo: 'En esta obra', alias: 'cambios adicionales orden de cambio cobrar' },
+    { titulo: `Avance${suf}`, href: `/admin/obras/${obraId}/avance`, grupo: 'En esta obra', alias: 'lo que se hizo partidas medir porcentaje' },
+    { titulo: `Estimaciones${suf}`, href: `/admin/obras/${obraId}/estimaciones`, grupo: 'En esta obra', alias: 'cobrar por avance anticipo amortización retención' },
+    { titulo: `Utilidad${suf}`, href: `/admin/obras/${obraId}/utilidad`, grupo: 'En esta obra', alias: 'ganancia margen rentabilidad' },
+    { titulo: `Seguridad${suf}`, href: `/admin/obras/${obraId}/seguridad`, grupo: 'En esta obra', alias: 'revision checklist epp accidente incidente nom-031 imss st-7' },
     { titulo: `PDF de caja${suf}`, href: `/admin/obras/${obraId}/pdf`, grupo: 'En esta obra', alias: 'imprimir documento movimientos', nuevaPestana: true },
     {
       titulo: `Estado de cuenta del cliente${suf}`,
@@ -119,6 +140,32 @@ export function normalizar(s: string): string {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
+}
+
+/**
+ * Quita lo que lleva a un módulo apagado. Aplica también a lo reciente: un
+ * comando guardado cuando el módulo estaba prendido no debe reaparecer.
+ */
+export function soloModulosActivos(
+  comandos: Comando[],
+  activos: readonly ClaveModulo[],
+): Comando[] {
+  return comandos.filter((c) => rutaVisible(c.href, activos));
+}
+
+/** Pantallas que solo abre el administrador. */
+const SOLO_ADMIN = ['/admin/usuarios', '/admin/actividad', '/admin/ajustes#aprobaciones'];
+
+/**
+ * Quita lo que el rol no puede abrir (F6). Presentación: la RLS y las guardias
+ * de cada página siguen siendo la barrera.
+ */
+export function soloParaRol(comandos: Comando[], rol: string | undefined): Comando[] {
+  return comandos.filter((c) => {
+    if (rol !== 'admin' && SOLO_ADMIN.includes(c.href)) return false;
+    const ruta = c.href.split(/[?#]/)[0];
+    return !rutaBloqueadaPara(rol, ruta);
+  });
 }
 
 /** ¿Este comando responde a lo que se escribió? Todas las palabras, en cualquier orden. */

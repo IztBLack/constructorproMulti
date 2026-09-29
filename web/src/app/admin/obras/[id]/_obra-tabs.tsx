@@ -3,6 +3,8 @@
 import { useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useRol, useRutaVisible } from '@/components/modulos/modulos-context';
+import { puedeVerUtilidad } from '@/lib/auth/utilidad';
 
 interface ObraTabsProps {
   obraId: string;
@@ -29,6 +31,14 @@ function tabsFor(obraId: string) {
     { href: `${base}/asistencia`, label: 'Asistencia' },
     { href: `${base}/nomina`, label: 'Nómina' },
     { href: `${base}/notas`, label: 'Notas' },
+    { href: `${base}/extras`, label: 'Extras' },
+    { href: `${base}/avance`, label: 'Avance' },
+    { href: `${base}/estimaciones`, label: 'Estimaciones' },
+    { href: `${base}/material`, label: 'Material' },
+    { href: `${base}/utilidad`, label: 'Utilidad' },
+    { href: `${base}/bitacora`, label: 'Bitácora' },
+    { href: `${base}/programa`, label: 'Programa' },
+    { href: `${base}/seguridad`, label: 'Seguridad' },
     { href: `${base}/importar`, label: 'Importar' },
   ];
 }
@@ -47,7 +57,17 @@ function isActive(pathname: string, href: string, base: string): boolean {
 export default function ObraTabs({ obraId }: ObraTabsProps) {
   const pathname = usePathname();
   const base = `/admin/obras/${obraId}`;
-  const tabs = tabsFor(obraId);
+  // Las pestañas de un módulo apagado no se ofrecen (Asistencia y Nómina son de
+  // `equipo`, Notas de `notas`, Bitácora de `bitacora`, Programa de `programa`,
+  // Seguridad de `seguridad`, Avance y Estimaciones de `estimaciones`, Importar de
+  // `caja`). Detalle es del núcleo.
+  const visible = useRutaVisible();
+  // "Utilidad" además es solo de admin y contador (D1). La página lo vuelve a
+  // comprobar en el servidor; esto solo evita ofrecer una pestaña vacía.
+  const verUtilidad = puedeVerUtilidad(useRol());
+  const tabs = tabsFor(obraId).filter(
+    (t) => visible(t.href) && (verUtilidad || !t.href.endsWith('/utilidad')),
+  );
 
   const enLinea = useSyncExternalStore(
     suscribirRed,

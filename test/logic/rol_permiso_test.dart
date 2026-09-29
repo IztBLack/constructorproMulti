@@ -17,6 +17,12 @@ void main() {
       expect(puedeEditarOperacionSegunRol('supervisor'), isTrue);
     });
 
+    test('roles de 0042: compras y almacén solo leen; residente edita', () {
+      expect(puedeEditarOperacionSegunRol('compras'), isFalse);
+      expect(puedeEditarOperacionSegunRol('almacen'), isFalse);
+      expect(puedeEditarOperacionSegunRol('residente'), isTrue);
+    });
+
     test('desconocido / null / vacío → acceso total (conservador)', () {
       expect(puedeEditarOperacionSegunRol(null), isTrue);
       expect(puedeEditarOperacionSegunRol(''), isTrue);
@@ -44,6 +50,12 @@ void main() {
     test('colaborador y cliente no', () {
       expect(puedeVerSueldosSegunRol('colaborador'), isFalse);
       expect(puedeVerSueldosSegunRol('cliente'), isFalse);
+    });
+
+    test('roles de 0042: residente sí (sus obras); compras y almacén no', () {
+      expect(puedeVerSueldosSegunRol('residente'), isTrue);
+      expect(puedeVerSueldosSegunRol('compras'), isFalse);
+      expect(puedeVerSueldosSegunRol('almacen'), isFalse);
     });
 
     test('un rol que no existe todavía queda FUERA por omisión', () {

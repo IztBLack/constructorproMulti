@@ -5,6 +5,9 @@ import { getCliente, listObrasDeCliente, listCotizacionesDeCliente } from '@/lib
 import { formatDate } from '@/lib/data/format';
 import EditarClienteForm from './editar-cliente-form';
 import CodigoAcceso from './codigo-acceso';
+import { getModulosEmpresa } from '@/lib/data/modulos';
+import { getAccesoFiscal, getClienteFiscal } from '@/lib/data/fiscal';
+import { DatosFiscalesCliente } from './datos-fiscales';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,10 +36,17 @@ export default async function ClienteDetallePage({
   }
   if (!cliente) notFound();
 
-  const [{ data: obras }, { data: cotizaciones }] = await Promise.all([
+  const [{ data: obras }, { data: cotizaciones }, { activos }] = await Promise.all([
     listObrasDeCliente(id),
     listCotizacionesDeCliente(id),
+    getModulosEmpresa(),
   ]);
+  const conPortal = activos.includes('portal');
+  const conCotizaciones = activos.includes('cotizaciones');
+  // Datos para factura: solo admin y contador (RR1b.1) y con el módulo prendido.
+  const fiscal = await getAccesoFiscal();
+  const verFiscal = fiscal.activo && fiscal.puede;
+  const datosFiscales = verFiscal ? await getClienteFiscal(id) : null;
 
   return (
     <div className="space-y-6">
@@ -56,12 +66,22 @@ export default async function ClienteDetallePage({
         <EditarClienteForm cliente={cliente} />
       </header>
 
-      <Card>
-        <CardTitle as="h2" className="mb-3 text-sm font-semibold text-neutral-700">
-          Acceso al portal
-        </CardTitle>
-        <CodigoAcceso clienteId={cliente.id} vinculado={cliente.user_id !== null} />
-      </Card>
+      {/* Dar acceso al portal es lo que controla el módulo `portal` en el panel.
+          Apagarlo NO desvincula a quien ya entra: el portal (/cliente) no lee
+          empresa_config (la RLS no se lo permite al rol cliente) y quitarle el
+          acceso a alguien es una decisión aparte, no efecto de un interruptor. */}
+      {conPortal && (
+        <Card>
+          <CardTitle as="h2" className="mb-3 text-sm font-semibold text-neutral-700">
+            Acceso al portal
+          </CardTitle>
+          <CodigoAcceso clienteId={cliente.id} vinculado={cliente.user_id !== null} />
+        </Card>
+      )}
+
+      {verFiscal && (
+        <DatosFiscalesCliente clienteId={cliente.id} datos={datosFiscales} conPortal={conPortal} />
+      )}
 
       <section className="space-y-3">
         <h2 className="text-sm font-medium text-neutral-700">Obras asignadas</h2>
@@ -100,38 +120,40 @@ export default async function ClienteDetallePage({
         )}
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-medium text-neutral-700">Cotizaciones asignadas</h2>
-        {cotizaciones.length === 0 ? (
-          <EmptyState
-            title="Sin cotizaciones asignadas"
-            description="Asigna este cliente a una cotización al crearla o editarla."
-          />
-        ) : (
-          <TableContainer>
-            <THead>
-              <Th>Proyecto</Th>
-              <Th>Fecha</Th>
-              <Th>Estado</Th>
-            </THead>
-            <TBody>
-              {cotizaciones.map((c) => (
-                <Tr key={c.id}>
-                  <Td className="font-medium text-neutral-900">
-                    <Link href={`/admin/cotizaciones/${c.id}`} className="hover:underline">
-                      {c.nombre_proyecto}
-                    </Link>
-                  </Td>
-                  <Td className="text-neutral-600">{formatDate(c.fecha)}</Td>
-                  <Td>
-                    <Badge tone="neutral">{ESTADO_LABEL[c.estado] ?? c.estado}</Badge>
-                  </Td>
-                </Tr>
-              ))}
-            </TBody>
-          </TableContainer>
-        )}
-      </section>
+      {conCotizaciones && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-medium text-neutral-700">Cotizaciones asignadas</h2>
+          {cotizaciones.length === 0 ? (
+            <EmptyState
+              title="Sin cotizaciones asignadas"
+              description="Asigna este cliente a una cotización al crearla o editarla."
+            />
+          ) : (
+            <TableContainer>
+              <THead>
+                <Th>Proyecto</Th>
+                <Th>Fecha</Th>
+                <Th>Estado</Th>
+              </THead>
+              <TBody>
+                {cotizaciones.map((c) => (
+                  <Tr key={c.id}>
+                    <Td className="font-medium text-neutral-900">
+                      <Link href={`/admin/cotizaciones/${c.id}`} className="hover:underline">
+                        {c.nombre_proyecto}
+                      </Link>
+                    </Td>
+                    <Td className="text-neutral-600">{formatDate(c.fecha)}</Td>
+                    <Td>
+                      <Badge tone="neutral">{ESTADO_LABEL[c.estado] ?? c.estado}</Badge>
+                    </Td>
+                  </Tr>
+                ))}
+              </TBody>
+            </TableContainer>
+          )}
+        </section>
+      )}
     </div>
   );
 }

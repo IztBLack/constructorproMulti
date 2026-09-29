@@ -15,7 +15,19 @@ export type TipoPago = 'DIA' | 'DESTAJO';
 /// El salario diario se deriva de aquí (ver `lib/data/salario.ts`).
 export type PeriodoPago = 'SEMANAL' | 'QUINCENAL' | 'MENSUAL';
 export type TipoMovimiento = 'ENTRADA' | 'SALIDA';
-export type Rol = 'admin' | 'supervisor' | 'colaborador' | 'cliente' | string;
+/// Roles de `usuarios_empresa.rol` (0001, 0022 contador, 0042 residente/compras/almacén).
+/// Queda abierto a `string`: un rol que esta versión no conozca cae al mínimo
+/// en cada lista blanca (`lib/auth/`), nunca al máximo.
+export type Rol =
+  | 'admin'
+  | 'supervisor'
+  | 'colaborador'
+  | 'cliente'
+  | 'contador'
+  | 'residente'
+  | 'compras'
+  | 'almacen'
+  | (string & {});
 
 export interface Obra {
   id: string;
@@ -90,6 +102,10 @@ export interface Partida {
   cantidad: number;
   precio_unitario: number;
   orden: number;
+  /** Clave de producto o servicio del SAT (0037). Ausente si la migración no está. */
+  clave_sat?: string | null;
+  /** Clave de unidad del SAT (0037). */
+  unidad_sat?: string | null;
   created_at: number;
   updated_at: number;
   server_updated_at: number | null;
@@ -180,6 +196,10 @@ export interface Movimiento {
   /// Ruta del comprobante en el bucket privado `comprobantes` (migración 0024).
   /// Null si no se adjuntó. Solo la ve/gestiona el personal de oficina.
   comprobante_uri?: string | null;
+  /// Clasificación de costo para la utilidad por obra (migración 0036):
+  /// MANO_OBRA | MATERIAL | SUBCONTRATO | INDIRECTO | OTRO. Null = sin
+  /// clasificar. Opcional porque las filas previas a 0036 no la traen.
+  categoria_costo?: string | null;
   created_at: number;
   updated_at: number;
   server_updated_at: number | null;
@@ -198,6 +218,9 @@ export interface PartidaPresupuesto {
   cantidad: number;
   precio_unitario: number;
   orden: number;
+  /** Claves SAT (0037), opcionales. */
+  clave_sat?: string | null;
+  unidad_sat?: string | null;
   created_at: number;
   updated_at: number;
   deleted_at: number | null;
@@ -251,6 +274,9 @@ export interface CatalogoConcepto {
   precio_unitario_default: number;
   categoria: string | null;
   es_personalizado: boolean;
+  /** Claves SAT (0037), opcionales. Se copian a la partida al cotizar. */
+  clave_sat?: string | null;
+  unidad_sat?: string | null;
   created_at: number;
   updated_at: number;
   server_updated_at: number | null;

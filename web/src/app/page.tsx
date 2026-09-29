@@ -9,7 +9,7 @@ import { BrandMark } from '@/components/marca/brand-mark';
 export const metadata: Metadata = {
   title: { absolute: 'ConstructorPro — Lleva tus obras en orden' },
   description:
-    'Lleva las cuentas, el equipo y los pagos de tus obras en un solo lugar. Fácil de usar, con un espacio para ti y otro para tus clientes.',
+    'Lleva las cuentas, el equipo y los pagos de tus obras en un solo lugar. Para el contratista que trabaja solo, el que lleva cuadrillas y la constructora con oficina, formal o no.',
 };
 
 // ---------------------------------------------------------------------------
@@ -163,6 +163,39 @@ const FUNCIONES = [
   },
 ];
 
+// Perfiles de "Para quién es". Regla: cada viñeta describe algo que la app YA
+// hace. Los módulos de empresa (compras, estimaciones, bitácora…) salieron con
+// el alcance ampliado (0035–0045); si uno se retira, se retira de aquí también.
+const PERFILES = [
+  {
+    titulo: 'Trabajas por tu cuenta',
+    texto: 'Tú solo o con unos cuantos ayudantes.',
+    items: [
+      'Cotizaciones bien presentadas desde el celular',
+      'La lista y la raya de tus ayudantes',
+      'Lo que te han pagado y lo que te deben',
+    ],
+  },
+  {
+    titulo: 'Llevas cuadrillas',
+    texto: 'Varias obras a la vez y gente que depende de ti cada viernes.',
+    items: [
+      'Pase de lista por cuadrilla, aunque no haya señal',
+      'Raya semanal y destajos repartidos',
+      'Los tratos con tus maestros, anotados',
+    ],
+  },
+  {
+    titulo: 'Tienes una empresa u oficina',
+    texto: 'Con supervisores, quien lleve el dinero y clientes que piden cuentas.',
+    items: [
+      'Cada quien entra con su rol: residente, supervisor, compras, contador, cliente',
+      'Compras de material, estimaciones y bitácora con fotos',
+      'La utilidad de cada obra y todo listo para tu contador',
+    ],
+  },
+];
+
 const PASOS = [
   {
     titulo: 'Cotiza y arma tu presupuesto',
@@ -251,8 +284,8 @@ export default function Home() {
 
               <p className="mt-5 max-w-xl text-lg leading-relaxed text-neutral-600">
                 ConstructorPro junta las cuentas, tu gente y los pagos de todas tus obras en un solo
-                lugar. Así tú tienes el control, y tus clientes pueden ver cómo va su obra cuando
-                quieran.
+                lugar. Sirve igual si trabajas por tu cuenta, si llevas varias cuadrillas o si
+                tienes una empresa con oficina, estés dado de alta o no.
               </p>
 
               <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -402,11 +435,36 @@ export default function Home() {
             <div className="max-w-2xl">
               <p className="text-sm font-semibold text-neutral-500">Para quién es</p>
               <h2 className="mt-2 text-3xl font-semibold tracking-tight">
-                Un espacio para ti y otro para tus clientes
+                Para quien construye, del tamaño que sea
               </h2>
+              <p className="mt-3 text-neutral-600">
+                No importa si eres contratista independiente o una constructora, ni si ya estás
+                formalizado o apenas vas empezando: usas lo que necesitas y creces cuando quieras.
+              </p>
             </div>
 
-            <div className="mt-10 grid gap-6 md:grid-cols-2">
+            <div className="mt-10 grid gap-4 md:grid-cols-3">
+              {PERFILES.map((perfil) => (
+                <div key={perfil.titulo} className="rounded-xl border border-neutral-200 bg-neutral-50 p-6">
+                  <h3 className="text-lg font-semibold">{perfil.titulo}</h3>
+                  <p className="mt-1.5 text-sm text-neutral-600">{perfil.texto}</p>
+                  <ul className="mt-5 space-y-2.5 text-sm text-neutral-700">
+                    {perfil.items.map((item) => (
+                      <li key={item} className="flex items-start gap-2.5">
+                        <IconCheck className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+
+            <h3 className="mt-16 text-2xl font-semibold tracking-tight">
+              Un espacio para ti y otro para tus clientes
+            </h3>
+
+            <div className="mt-6 grid gap-6 md:grid-cols-2">
               {/* Oficina */}
               <div className="flex flex-col rounded-2xl border border-neutral-200 bg-neutral-50 p-8">
                 <h3 className="text-xl font-semibold">Si construyes o llevas obras</h3>

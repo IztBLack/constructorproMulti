@@ -6,6 +6,8 @@ import { listUsuariosEmpresa } from '@/lib/data/usuarios-empresa';
 import { BackLink, EmptyState, PageHeader } from '@/components/ui';
 import { TablaUsuarios } from './tabla-usuarios';
 import { InvitarUsuario } from './invitar-usuario';
+import { listObras } from '@/lib/data/obras';
+import { listAsignaciones } from '@/lib/data/usuario-obra';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,7 +41,13 @@ export default async function UsuariosPage() {
   }
   if (rol !== 'admin') redirect('/admin');
 
-  const { data: usuarios, error } = await listUsuariosEmpresa();
+  const [{ data: usuarios, error }, { data: obras }, { data: asignaciones }] = await Promise.all([
+    listUsuariosEmpresa(),
+    listObras(),
+    listAsignaciones(),
+  ]);
+  const asignadas: Record<string, string[]> = {};
+  for (const a of asignaciones) (asignadas[a.user_id] ??= []).push(a.obra_id);
 
   // La URL real de este despliegue, para poder dictársela a quien se invita.
   const h = await headers();
@@ -68,7 +76,12 @@ export default async function UsuariosPage() {
           description="Invita a tu equipo para que capture asistencia y lleve las obras contigo."
         />
       ) : (
-        <TablaUsuarios usuarios={usuarios} miUserId={user.id} />
+        <TablaUsuarios
+          usuarios={usuarios}
+          miUserId={user.id}
+          obras={obras.map((o) => ({ id: o.id, nombre: o.nombre, activa: o.activa }))}
+          asignadas={asignadas}
+        />
       )}
     </div>
   );

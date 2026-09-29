@@ -2,6 +2,12 @@ import type { Movimiento, Obra, PartidaPresupuesto } from '@/lib/data/types';
 import type { PdfConfig } from '@/lib/data/empresa-config';
 import { formatCurrency, formatDate } from '@/lib/data/format';
 import { envolverDocumento, esc, folioCorto } from '@/lib/pdf/documento-base';
+import {
+  muestraIva,
+  textoTasaIva,
+  totalesEstadoCuenta,
+  type IvaEstadoCuenta,
+} from '@/lib/cliente/estado-cuenta-calculo';
 
 /**
  * HTML del "estado de cuenta / flujo de caja" de una obra: el mismo documento que
@@ -10,6 +16,12 @@ import { envolverDocumento, esc, folioCorto } from '@/lib/pdf/documento-base';
  * Orden espejando al Excel: encabezado de obra → indicadores (costo/recibido/
  * pendiente) → presupuesto → movimientos (ledger cronológico) → pagado por
  * persona / recibido por tipo → nota de conciliación.
+ *
+ * Costo, recibido y pendiente salen de `totalesEstadoCuenta`, la misma cuenta
+ * del estado de cuenta del cliente: costo = presupuesto + extras aprobados, y
+ * si la obra cobra con IVA, lo recibido se parte en cobrado sin IVA + IVA
+ * cobrado (el pendiente sale de lo cobrado sin IVA). El SALDO de caja (entradas
+ * − salidas) sigue siendo el dinero tal como entró y salió.
  */
 
 const ESTILOS = `
@@ -25,18 +37,25 @@ export function construirCajaDocumentoHtml(params: {
   notaCaja?: string | null;
   nombreEmpresa: string;
   pdf: PdfConfig;
+  /** Extras APROBADOS (0036): suman al costo total. */
+  extras?: { total: number }[];
+  /** Tasa de IVA de la obra (0047). Sin esto: sin IVA, como antes. */
+  iva?: IvaEstadoCuenta | null;
 }): string {
   const { obra, partidas, movimientos, notaCaja, nombreEmpresa, pdf } = params;
   const folio = folioCorto(obra.id);
 
-  const costoTotal = partidas.reduce((s, p) => s + p.cantidad * p.precio_unitario, 0);
-  const recibido = movimientos
-    .filter((m) => m.tipo === 'ENTRADA')
-    .reduce((s, m) => s + m.monto, 0);
+  const t = totalesEstadoCuenta({
+    partidas,
+    entradas: movimientos.filter((m) => m.tipo === 'ENTRADA'),
+    extras: params.extras ?? [],
+    iva: params.iva,
+  });
+  const conIva = muestraIva(t);
+  const { costoTotal, recibido, pendiente } = t;
   const salidas = movimientos
     .filter((m) => m.tipo === 'SALIDA')
     .reduce((s, m) => s + m.monto, 0);
-  const pendiente = costoTotal - recibido;
   const saldo = recibido - salidas;
 
   // Ledger en orden cronológico (como el apunte del Excel), sin mutar el arreglo.
@@ -135,10 +154,20 @@ export function construirCajaDocumentoHtml(params: {
     </section>
 
     <div class="stat-row avoid">
-      <div class="stat-box"><p class="etiqueta">Costo total</p><p class="valor chico">${formatCurrency(costoTotal)}</p></div>
-      <div class="stat-box verde"><p class="etiqueta">Recibido</p><p class="valor chico">${formatCurrency(recibido)}</p></div>
-      <div class="stat-box rojo"><p class="etiqueta">Pendiente</p><p class="valor chico">${formatCurrency(pendiente)}</p></div>
+      <div class="stat-box"><p class="etiqueta">Costo total${conIva ? ' (sin IVA)' : ''}</p><p class="valor chico">${formatCurrency(costoTotal)}</p></div>
+      <div class="stat-box verde"><p class="etiqueta">${conIva ? 'Cobrado (sin IVA)' : 'Recibido'}</p><p class="valor chico">${formatCurrency(conIva ? t.recibidoSinIva : recibido)}</p></div>
+      <div class="stat-box rojo"><p class="etiqueta">${conIva ? 'Por cobrar (sin IVA)' : 'Pendiente'}</p><p class="valor chico">${formatCurrency(pendiente)}</p></div>
     </div>
+    ${
+      conIva
+        ? `<div class="notas avoid"><p class="notas-texto">IVA cobrado${t.tasaIva > 0 ? ` (${textoTasaIva(t.tasaIva)})` : ''}: <strong>${formatCurrency(t.ivaCobrado)}</strong> · Recibido con IVA: <strong>${formatCurrency(recibido)}</strong>. El IVA cobrado no es tuyo: se entera al SAT.</p></div>`
+        : ''
+    }
+    ${
+      t.totalExtras > 0
+        ? `<div class="notas avoid"><p class="notas-texto">Presupuesto ${formatCurrency(t.presupuesto)} + extras aprobados ${formatCurrency(t.totalExtras)}.</p></div>`
+        : ''
+    }
 
     <div class="seccion avoid">
       <div class="seccion-titulo"><h2>Presupuesto</h2></div>

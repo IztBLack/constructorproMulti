@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
+import { bloquearSiApagado } from '@/lib/data/modulos';
 import { getObra, listMovimientosByObra } from '@/lib/data/obras';
 import { listPresupuestoObra } from '@/lib/data/presupuesto-obra';
 import { getNotaCaja } from '@/lib/data/caja-nota';
+import { listExtrasAprobadosObra } from '@/lib/data/cambios';
+import { getIvaEstadoCuenta } from '@/lib/data/iva-obra';
 import { createClient } from '@/lib/supabase/server';
 import { construirExcelEstadoCuenta } from '@/lib/excel/estado-cuenta-excel';
 
@@ -20,6 +23,8 @@ export async function GET(
   if (!user) {
     return NextResponse.json({ error: 'No autenticado.' }, { status: 401 });
   }
+  const apagado = await bloquearSiApagado('caja');
+  if (apagado) return apagado;
 
   // ── Cargar datos ───────────────────────────────────────────────────────────
   const { id } = await params;
@@ -29,11 +34,17 @@ export async function GET(
     { data: partidas, error: partidasError },
     { data: movimientos, error: movError },
     notaCaja,
+    extras,
+    iva,
   ] = await Promise.all([
     getObra(id),
     listPresupuestoObra(id),
     listMovimientosByObra(id),
     getNotaCaja(id),
+    // Mismos totales que el estado de cuenta: extras aprobados en el costo y el
+    // IVA cobrado aparte. Si falla (0036/0047 sin aplicar): cero y sin IVA.
+    listExtrasAprobadosObra(id),
+    getIvaEstadoCuenta(id),
   ]);
 
   if (obraError) {
@@ -57,6 +68,8 @@ export async function GET(
       partidas: partidas ?? [],
       movimientos: movimientos ?? [],
       notaCaja,
+      extras: extras.error ? [] : extras.data,
+      iva,
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Error desconocido al generar el Excel.';

@@ -433,7 +433,9 @@ export function TablaProyeccion(props: Props) {
   const rangoTexto = useMemo(() => {
     const l = partesTz(lunesMs);
     const d = partesTz(fechaDelDia(lunesMs, 6));
-    return `${l.day}/${l.month} al ${d.day}/${d.month}`;
+    // `partesTz` da el mes 0-based (como Date): sin el +1 la semana del
+    // 28 sep – 4 oct se leía "28/8 al 4/9".
+    return `${l.day}/${l.month + 1} al ${d.day}/${d.month + 1}`;
   }, [lunesMs]);
 
   const renglonAbierto = resultado.renglones.find((r) => r.colaborador.id === fichaAbierta);

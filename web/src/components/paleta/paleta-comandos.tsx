@@ -7,9 +7,12 @@ import {
   coincide,
   comandosDeCotizacion,
   comandosDeObra,
+  soloModulosActivos,
+  soloParaRol,
   type Comando,
 } from './comandos';
 import { cargarEntidades } from './acciones';
+import type { ClaveModulo } from '@/lib/modulos';
 
 const CLAVE_RECIENTES = 'paleta_recientes';
 const MAX_RECIENTES = 5;
@@ -32,7 +35,14 @@ const MAX_RECIENTES = 5;
  * Solo NAVEGA. Nada que borre, cobre o mande algo a un cliente entra aquí; ver
  * la regla de admisión en `comandos.ts`.
  */
-export function PaletaComandos() {
+export function PaletaComandos({
+  modulos,
+  rol,
+}: {
+  modulos: readonly ClaveModulo[];
+  /** Rol del usuario: quita lo que no le toca (F6). */
+  rol?: string;
+}) {
   const [abierta, setAbierta] = useState(false);
   // Las entidades viven en el PADRE para pedirlas una sola vez; el diálogo se
   // remonta en cada apertura y las perdería.
@@ -64,7 +74,9 @@ export function PaletaComandos() {
   }, [abierta, entidades.length]);
 
   if (!abierta) return null;
-  return <Dialogo entidades={entidades} onCerrar={() => setAbierta(false)} />;
+  return (
+    <Dialogo entidades={entidades} modulos={modulos} rol={rol} onCerrar={() => setAbierta(false)} />
+  );
 }
 
 /**
@@ -73,7 +85,18 @@ export function PaletaComandos() {
  * nadie tenga que reiniciarlo. Es lo que evita tener que tocar estado dentro de
  * un efecto, que es de donde salían los avisos del linter.
  */
-function Dialogo({ entidades, onCerrar }: { entidades: Comando[]; onCerrar: () => void }) {
+function Dialogo({
+  entidades,
+  modulos,
+  rol,
+  onCerrar,
+}: {
+  entidades: Comando[];
+  /** Lo de un módulo apagado no se ofrece: ni pantallas, ni recientes, ni entidades. */
+  modulos: readonly ClaveModulo[];
+  rol?: string;
+  onCerrar: () => void;
+}) {
   const router = useRouter();
   const ruta = usePathname();
 
@@ -97,11 +120,13 @@ function Dialogo({ entidades, onCerrar }: { entidades: Comando[]; onCerrar: () =
   }, [ruta]);
 
   const visibles = useMemo(() => {
-    if (!consulta.trim()) return [...contextuales, ...recientes].slice(0, 12);
-    return [...contextuales, ...COMANDOS_FIJOS, ...entidades]
+    if (!consulta.trim()) {
+      return soloParaRol(soloModulosActivos([...contextuales, ...recientes], modulos), rol).slice(0, 12);
+    }
+    return soloParaRol(soloModulosActivos([...contextuales, ...COMANDOS_FIJOS, ...entidades], modulos), rol)
       .filter((c) => coincide(c, consulta))
       .slice(0, 40);
-  }, [consulta, contextuales, entidades, recientes]);
+  }, [consulta, contextuales, entidades, recientes, modulos, rol]);
 
   const ejecutar = useCallback(
     (c: Comando) => {

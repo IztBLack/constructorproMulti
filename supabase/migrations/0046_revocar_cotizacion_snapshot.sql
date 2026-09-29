@@ -1,0 +1,30 @@
+-- 0046_revocar_cotizacion_snapshot.sql
+-- REGISTRO de un cambio que YA está aplicado en producción a mano.
+--
+-- ══ En producción esto ya está hecho: correrla ahí no cambia nada ═══════════
+--
+-- Qué: `public._cotizacion_snapshot(uuid)` (0011) arma la foto aprobada de una
+-- cotización. Es SECURITY DEFINER: corre con los permisos de su dueño y se salta
+-- la RLS, así que cualquiera que pudiera ejecutarla leía los conceptos y precios
+-- de CUALQUIER cotización de CUALQUIER empresa con solo conocer el id.
+--
+-- El 2026-07-20 (hallazgo de la auditoría de seguridad) se le quitó EXECUTE a
+-- `anon` y `authenticated` directo en el SQL Editor. Ese REVOKE nunca quedó en
+-- una migración: el harness PGlite (y cualquier base nueva) seguía dejando
+-- ejecutarla a cualquier sesión, y el generador de datos demo la llamaba como
+-- el usuario; en producción tronó con 42501. ACL en producción al 2026-09-28:
+-- `{postgres=X/postgres,service_role=X/postgres}`.
+--
+-- Quién la necesita: SOLO las RPC SECURITY DEFINER de 0011
+-- (`cliente_responder_cotizacion` y `cliente_aprobar_cambios`), que corren como
+-- su dueño y la siguen pudiendo ejecutar. Ni la web ni el móvil la llaman con
+-- la sesión de un usuario: la web arma la misma foto en TypeScript
+-- (`buildSnapshot`, `web/src/lib/data/cotizacion-diff.ts`, usado en
+-- `cambiarEstadoCotizacion` de `web/src/lib/data/cotizaciones.ts`) y el móvil
+-- no la menciona. Verificado con búsqueda en `web/src` y `lib/`.
+--
+-- Idempotente: REVOKE de un privilegio que no se tiene no hace nada.
+-- `esquema-prod.test.ts` compara el EXECUTE de cada función contra la foto de
+-- producción (`web/src/db/pglite/esquema-prod-seguridad.json`).
+
+revoke all on function public._cotizacion_snapshot(uuid) from public, anon, authenticated;

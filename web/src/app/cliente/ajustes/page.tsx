@@ -7,6 +7,8 @@ import { SeccionNombre } from '@/components/ajustes/seccion-nombre';
 import { SeccionCorreo } from '@/components/ajustes/seccion-correo';
 import { SeccionContrasena } from '@/components/ajustes/seccion-contrasena';
 import { SeccionPreferencias } from '@/components/ajustes/seccion-preferencias';
+import { leerMisDatosFiscales } from '@/lib/data/fiscal-portal';
+import { MisDatosFiscalesCard } from './mis-datos-fiscales';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +36,10 @@ export default async function AjustesClientePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
+  // "Mis datos para factura": solo con los contratistas que usan el módulo
+  // `fiscal`. A quien no factura no se le pide nada.
+  const fiscales = (await leerMisDatosFiscales()).filter((d) => d.modulo_activo);
+
   return (
     <div className="space-y-8">
       <PageHeader title="Ajustes" description="Tu cuenta y tus preferencias." />
@@ -48,6 +54,19 @@ export default async function AjustesClientePage() {
           <SeccionNombre nombreActual={nombreUsuario(user)} />
           <SeccionCorreo correoActual={user.email ?? '—'} destino="/cliente/ajustes" />
         </GrupoAjustes>
+
+        {fiscales.length > 0 && (
+          <GrupoAjustes
+            id="factura"
+            titulo="Mis datos para factura"
+            alcance="Tu contratista"
+            descripcion="Para que tu factura salga bien a la primera. Nunca te pediremos tu e.firma ni tu contraseña del SAT."
+          >
+            {fiscales.map((d) => (
+              <MisDatosFiscalesCard key={d.cliente_id} datos={d} />
+            ))}
+          </GrupoAjustes>
+        )}
 
         <GrupoAjustes
           id="seguridad"

@@ -388,7 +388,7 @@ export default function PaseLista() {
           ←
         </Button>
         <div className="text-center">
-          <p className="text-sm font-medium capitalize text-neutral-900">
+          <p className="text-sm font-medium text-neutral-900 first-letter:uppercase">
             {FMT_DIA.format(new Date(dia))}
           </p>
           {dia !== hoy && (

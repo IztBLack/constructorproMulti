@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { bloquearSiApagado } from '@/lib/data/modulos';
 import { getObra } from '@/lib/data/obras';
 import {
   calcularNomina,
@@ -31,6 +32,8 @@ export async function GET(
   if (!user) {
     return NextResponse.json({ error: 'No autenticado.' }, { status: 401 });
   }
+  const apagado = await bloquearSiApagado('equipo');
+  if (apagado) return apagado;
 
   // Misma puerta que `/admin/proyeccion/pdf`: este documento lleva el sueldo de
   // cada persona, así que no basta con estar autenticado. Faltaba hasta agosto

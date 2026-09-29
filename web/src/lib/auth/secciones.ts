@@ -33,7 +33,22 @@ export type SeccionAjustes =
   /** Nombre/marca de la constructora y datos del PDF. */
   | 'empresa'
   /** Altas de usuarios y asignación de roles. */
-  | 'usuarios';
+  | 'usuarios'
+  /**
+   * Qué partes de la app usa la empresa (0035). Solo admin: la RPC
+   * `activar_modulos` rechaza a cualquier otro rol (plan RR0.1).
+   */
+  | 'modulos'
+  /**
+   * Datos fiscales del emisor (0037). Admin y contador (RR1b.1), y solo con el
+   * módulo `fiscal` prendido (eso lo decide la página, no este mapa).
+   */
+  | 'fiscal'
+  /**
+   * Visto bueno configurable (0042, RF6.3): reglas y solicitudes. Solo admin:
+   * la RLS de `regla_aprobacion` solo le deja escribir a él.
+   */
+  | 'aprobaciones';
 
 /** Secciones que aporta cada rol, ADEMÁS de las del rol anterior. */
 const APORTA: Record<string, SeccionAjustes[]> = {
@@ -47,7 +62,7 @@ const APORTA: Record<string, SeccionAjustes[]> = {
   // base — mostrarle a un supervisor un formulario que le va a fallar al guardar
   // es peor que no mostrárselo.
   // (El supervisor sigue llegando al catálogo y a los puestos desde el menú.)
-  admin: ['operacion', 'empresa', 'usuarios'],
+  admin: ['operacion', 'modulos', 'empresa', 'usuarios', 'fiscal', 'aprobaciones'],
 };
 
 /** Orden de menor a mayor privilegio. El acumulado define lo concéntrico. */
@@ -61,6 +76,14 @@ const ESCALERA: readonly string[] = ['cliente', 'colaborador', 'supervisor', 'ad
  * menos privilegio.
  */
 export function seccionesDe(rol: Rol): SeccionAjustes[] {
+  // El contador no está en la escalera: no es "más" que un supervisor, es
+  // otra cosa (la tesorera). Ve lo suyo y los datos para facturar.
+  if (rol === 'contador') return [...APORTA.cliente, 'fiscal'];
+  // F6: el residente pisa la obra como el supervisor (recordatorios y datos
+  // sin conexión); compras y almacén son oficina sin configuración de empresa.
+  // Ninguno llega a operación, módulos, empresa, fiscal ni usuarios.
+  if (rol === 'residente') return [...APORTA.cliente, ...APORTA.colaborador];
+  if (rol === 'compras' || rol === 'almacen') return [...APORTA.cliente];
   const hasta = ESCALERA.indexOf(rol);
   if (hasta === -1) return [...APORTA.cliente];
 

@@ -57,7 +57,7 @@ export async function cargarDatosProyeccion(
       supabase.from('asistencias').select('*').gte('fecha', inicioMs).lte('fecha', finMs).is('deleted_at', null),
       supabase.from('destajos').select('*').gte('fecha', inicioMs).lte('fecha', finMs).is('deleted_at', null),
       supabase.from('obras').select('id, nombre, activa').is('deleted_at', null),
-      supabase.from('obra_colaborador').select('colaborador_id, obra_id, fecha_entrada').is('fecha_salida', null),
+      supabase.from('obra_colaborador').select('colaborador_id, obra_id, fecha_ingreso').is('fecha_salida', null),
       supabase.from('cuadrillas').select('id, nombre').is('deleted_at', null),
       // `fecha_salida` importa tanto como `deleted_at`: sin ella, un exmiembro
       // seguiría recibiendo su parte de los ajustes de la cuadrilla.
@@ -68,8 +68,11 @@ export async function cargarDatosProyeccion(
         .is('deleted_at', null),
     ]);
 
+  // `asigRes` también cuenta: la columna se llamaba mal (`fecha_entrada` en vez
+  // de `fecha_ingreso`), PostgREST respondía error, nadie lo revisaba y la
+  // proyección arrancaba sin participantes en todas las empresas.
   const primerError =
-    colabsRes.error ?? puestosRes.error ?? asisRes.error ?? destRes.error ?? obrasRes.error;
+    colabsRes.error ?? puestosRes.error ?? asisRes.error ?? destRes.error ?? obrasRes.error ?? asigRes.error;
   if (primerError) return { ...vacio, error: primerError.message };
 
   const obras = (obrasRes.data ?? []) as { id: string; nombre: string; activa: boolean }[];
@@ -82,10 +85,10 @@ export async function cargarDatosProyeccion(
   for (const a of (asigRes.data ?? []) as {
     colaborador_id: string;
     obra_id: string;
-    fecha_entrada: number | null;
+    fecha_ingreso: number | null;
   }[]) {
     if (!obrasActivas.has(a.obra_id)) continue;
-    const entrada = a.fecha_entrada ?? 0;
+    const entrada = a.fecha_ingreso ?? 0;
     if (obraPorColaborador[a.colaborador_id] === undefined || entrada >= entradaPorColab[a.colaborador_id]) {
       obraPorColaborador[a.colaborador_id] = a.obra_id;
       entradaPorColab[a.colaborador_id] = entrada;

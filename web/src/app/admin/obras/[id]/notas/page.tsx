@@ -5,6 +5,7 @@ import { listColaboradores } from '@/lib/data/equipo';
 import { getEmpresaUsuario } from '@/lib/data/empresa';
 import ObraTabs from '../_obra-tabs';
 import NotasLista from './notas-lista';
+import { capturaEnObra } from '@/lib/auth/roles';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,7 +42,7 @@ export default async function NotasObraPage({
   }
   if (!obra) notFound();
 
-  const puedeEditar = ['admin', 'supervisor'].includes(rol);
+  const puedeEditar = capturaEnObra(rol);
 
   return (
     <div className="space-y-6">

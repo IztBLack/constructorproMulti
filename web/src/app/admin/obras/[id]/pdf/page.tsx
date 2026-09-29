@@ -4,6 +4,8 @@ import { listPresupuestoObra } from '@/lib/data/presupuesto-obra';
 import { getNotaCaja } from '@/lib/data/caja-nota';
 import { getNombreEmpresa } from '@/lib/data/empresa';
 import { getEmpresaConfig } from '@/lib/data/empresa-config';
+import { listExtrasAprobadosObra } from '@/lib/data/cambios';
+import { getIvaEstadoCuenta } from '@/lib/data/iva-obra';
 import { construirCajaDocumentoHtml } from '@/lib/obra/documento-caja-html';
 import { DocumentShell } from '@/components/pdf/document-shell';
 import { DocumentActions } from '@/components/pdf/document-actions';
@@ -25,6 +27,8 @@ export default async function CajaPdfPage({ params }: Props) {
     notaCaja,
     nombreEmpresa,
     { pdf },
+    extras,
+    iva,
   ] = await Promise.all([
     getObra(id),
     listPresupuestoObra(id),
@@ -32,6 +36,10 @@ export default async function CajaPdfPage({ params }: Props) {
     getNotaCaja(id),
     getNombreEmpresa(),
     getEmpresaConfig(),
+    // Costo total = presupuesto + extras aprobados; con IVA, lo cobrado se
+    // separa. Si falla (0036/0047 sin aplicar): cero extras y sin IVA.
+    listExtrasAprobadosObra(id),
+    getIvaEstadoCuenta(id),
   ]);
 
   if (error) {
@@ -46,6 +54,8 @@ export default async function CajaPdfPage({ params }: Props) {
     notaCaja,
     nombreEmpresa: nombreEmpresa ?? 'ConstructorPro',
     pdf,
+    extras: extras.error ? [] : extras.data,
+    iva,
   });
 
   return (

@@ -3,6 +3,7 @@ import type { PdfConfig } from '@/lib/data/empresa-config';
 import { formatCurrency, formatDate } from '@/lib/data/format';
 import { envolverDocumento, esc, folioCorto } from '@/lib/pdf/documento-base';
 import { resolverTextoFinal } from '@/lib/pdf/textos-finales';
+import { muestraIva, textoTasaIva } from './estado-cuenta-calculo';
 
 /**
  * HTML del estado de cuenta que ve el CLIENTE de una obra. A diferencia del de
@@ -27,7 +28,15 @@ export function construirEstadoCuentaClienteHtml(params: {
     empresa: pdf.textos,
     ctx: { nombreEmpresa },
   });
-  const { costoTotal, recibido, pendiente, pagadoPct, partidas, entradas } = estado;
+  const { costoTotal, recibido, pendiente, pagadoPct, partidas, entradas, presupuesto, totalExtras } =
+    estado;
+  // Obra que se cobra con IVA: el costo no lo lleva, así que lo pagado se
+  // compara SIN IVA y el IVA pagado va en su renglón (base + IVA = pagado).
+  // Sin la nota del SAT: esa es para la constructora, no para el cliente.
+  const conIva = muestraIva(estado);
+  const sinIva = conIva ? ' (sin IVA)' : '';
+  const etiquetaIva = `IVA pagado${estado.tasaIva > 0 ? ` (${textoTasaIva(estado.tasaIva)})` : ''}`;
+  const extras = estado.extras ?? [];
   const folio = folioCorto(obra.id);
 
   const filasPresupuesto =
@@ -46,6 +55,41 @@ export function construirEstadoCuentaClienteHtml(params: {
               </tr>`;
           })
           .join('');
+
+  // Extras aprobados (0036): van en su propia tabla, después del presupuesto,
+  // para que se lea qué era el trato original y qué se agregó después.
+  const seccionExtras =
+    extras.length === 0
+      ? ''
+      : `
+    <div class="seccion avoid">
+      <div class="seccion-titulo"><h2>Extras aprobados</h2></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Extra</th>
+            <th class="c">Aprobado el</th>
+            <th class="r">Importe</th>
+          </tr>
+        </thead>
+        <tbody>${extras
+          .map(
+            (e) => `
+              <tr>
+                <td class="fuerte">Extra ${e.folio}${e.titulo ? ` · ${esc(e.titulo)}` : ''}</td>
+                <td class="c">${formatDate(e.aprobadoEl)}</td>
+                <td class="r fuerte">${formatCurrency(e.total)}</td>
+              </tr>`,
+          )
+          .join('')}</tbody>
+      </table>
+    </div>`;
+
+  const filasExtrasTotales =
+    extras.length === 0
+      ? ''
+      : `<div class="tot-fila"><span>Presupuesto</span><span class="r">${formatCurrency(presupuesto)}</span></div>
+        <div class="tot-fila"><span>Extras aprobados</span><span class="r">${formatCurrency(totalExtras)}</span></div>`;
 
   const filasPagos =
     entradas.length === 0
@@ -88,9 +132,9 @@ export function construirEstadoCuentaClienteHtml(params: {
     </section>
 
     <div class="stat-row avoid">
-      <div class="stat-box"><p class="etiqueta">Costo total</p><p class="valor chico">${formatCurrency(costoTotal)}</p></div>
-      <div class="stat-box verde"><p class="etiqueta">Pagado (${pagadoPct}%)</p><p class="valor chico">${formatCurrency(recibido)}</p></div>
-      <div class="stat-box rojo"><p class="etiqueta">Pendiente</p><p class="valor chico">${formatCurrency(pendiente)}</p></div>
+      <div class="stat-box"><p class="etiqueta">Costo total${sinIva}</p><p class="valor chico">${formatCurrency(costoTotal)}</p></div>
+      <div class="stat-box verde"><p class="etiqueta">Pagado${sinIva} (${pagadoPct}%)</p><p class="valor chico">${formatCurrency(conIva ? estado.recibidoSinIva : recibido)}</p></div>
+      <div class="stat-box rojo"><p class="etiqueta">Pendiente${sinIva}</p><p class="valor chico">${formatCurrency(pendiente)}</p></div>
     </div>
 
     <div class="seccion avoid">
@@ -108,6 +152,7 @@ export function construirEstadoCuentaClienteHtml(params: {
         <tbody>${filasPresupuesto}</tbody>
       </table>
     </div>
+${seccionExtras}
 
     <div class="seccion">
       <div class="seccion-titulo"><h2>Pagos recibidos</h2></div>
@@ -126,9 +171,16 @@ export function construirEstadoCuentaClienteHtml(params: {
 
     <div class="totales avoid">
       <div class="totales-caja">
-        <div class="tot-fila"><span>Costo total</span><span class="r">${formatCurrency(costoTotal)}</span></div>
-        <div class="tot-fila"><span>Pagado</span><span class="r verde">${formatCurrency(recibido)}</span></div>
-        <div class="tot-total"><span class="lbl">PENDIENTE</span><span class="val">${formatCurrency(pendiente)}</span></div>
+        ${filasExtrasTotales}
+        <div class="tot-fila"><span>Costo total${sinIva}</span><span class="r">${formatCurrency(costoTotal)}</span></div>
+        ${
+          conIva
+            ? `<div class="tot-fila"><span>Pagado (con IVA)</span><span class="r">${formatCurrency(recibido)}</span></div>
+        <div class="tot-fila"><span>${etiquetaIva}</span><span class="r">−${formatCurrency(estado.ivaCobrado)}</span></div>
+        <div class="tot-fila"><span>Pagado sin IVA</span><span class="r verde">${formatCurrency(estado.recibidoSinIva)}</span></div>`
+            : `<div class="tot-fila"><span>Pagado</span><span class="r verde">${formatCurrency(recibido)}</span></div>`
+        }
+        <div class="tot-total"><span class="lbl">PENDIENTE${conIva ? ' (SIN IVA)' : ''}</span><span class="val">${formatCurrency(pendiente)}</span></div>
       </div>
     </div>
 

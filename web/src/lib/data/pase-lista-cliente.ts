@@ -490,5 +490,6 @@ export async function cargarExtrasCampo(): Promise<ExtrasCampo> {
 export const PUESTO_POR_DEFINIR_NOMBRE = 'Por definir';
 
 export function puedeAltaRapida(rol: string | null): boolean {
+  // El residente NO: la plantilla es de toda la empresa y solo la lee (0042).
   return rol === 'admin' || rol === 'supervisor';
 }

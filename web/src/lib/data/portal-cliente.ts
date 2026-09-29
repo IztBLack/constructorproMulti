@@ -4,6 +4,11 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { IVA_POR_DEFECTO } from './types';
+import { listExtrasAprobadosCliente, type ExtraAprobado } from './cambios';
+import { totalesEstadoCuenta, type TotalesEstadoCuenta } from '@/lib/cliente/estado-cuenta-calculo';
+import { getIvaEstadoCuenta } from './iva-obra';
+
+export type { ExtraAprobado };
 
 // ─── Tipos propios del portal ─────────────────────────────────────────────────
 
@@ -370,12 +375,16 @@ export interface EntradaPortal {
   referencia: string | null;
 }
 
-export interface EstadoCuentaObra {
-  costoTotal: number;
-  recibido: number;
-  pendiente: number;
-  pagadoPct: number;
+/**
+ * Estado de cuenta de una obra (`totalesEstadoCuenta`) con su detalle. RECIBIDO
+ * trae el IVA si la obra cobra con IVA; PENDIENTE y el % salen de lo recibido
+ * SIN IVA (ver `lib/cliente/estado-cuenta-calculo.ts`).
+ */
+export interface EstadoCuentaObra
+  extends Omit<TotalesEstadoCuenta, 'estimacionesPorCobrar' | 'fondoGarantiaRetenido'> {
   partidas: PartidaPresupuestoPortal[];
+  /** Extras aprobados, con el total de su foto. */
+  extras: ExtraAprobado[];
   entradas: EntradaPortal[];
 }
 
@@ -415,53 +424,44 @@ export async function listEntradasObraCliente(obraId: string): Promise<EntradaPo
   return data as EntradaPortal[];
 }
 
-/// Estado de cuenta de UNA obra: COSTO TOTAL (presupuesto) vs RECIBIDO (ENTRADAS).
+/// Estado de cuenta de UNA obra: COSTO TOTAL (presupuesto + extras aprobados)
+/// vs RECIBIDO (ENTRADAS), con el IVA cobrado aparte si la obra cobra con IVA
+/// (`iva_obras`, 0047: el cliente no lee `obra_contrato`, la función le da solo
+/// la tasa). Los extras los deja leer la RLS de 0036 solo si son de una obra
+/// del cliente; si la migración no está aplicada, la consulta falla y quedan en
+/// cero, que es exactamente el estado de cuenta de antes. Igual con el IVA.
 export async function getEstadoCuentaObra(obraId: string): Promise<EstadoCuentaObra> {
-  const [partidas, entradas] = await Promise.all([
+  const [partidas, entradas, extras, iva] = await Promise.all([
     listPresupuestoObraCliente(obraId),
     listEntradasObraCliente(obraId),
+    listExtrasAprobadosCliente(obraId),
+    getIvaEstadoCuenta(obraId),
   ]);
 
-  const costoTotal = partidas.reduce((acc, p) => acc + p.cantidad * p.precio_unitario, 0);
-  const recibido = entradas.reduce((acc, e) => acc + e.monto, 0);
-  const pendiente = costoTotal - recibido;
-  const pagadoPct =
-    costoTotal > 0 ? Math.min(100, Math.round((recibido / costoTotal) * 100)) : 0;
-
-  return { costoTotal, recibido, pendiente, pagadoPct, partidas, entradas };
+  const t = totalesEstadoCuenta({ partidas, entradas, extras: extras.data, iva });
+  return { ...t, partidas, extras: extras.data, entradas };
 }
 
-/// Estado de cuenta global del cliente, sumando TODAS sus obras (modelo real por
-/// obra). RLS restringe ambas tablas a las obras del cliente autenticado.
+/// Estado de cuenta global del cliente: la suma de sus obras, cada una con su
+/// propio IVA (una obra puede cobrar con IVA y otra no). RLS restringe todo a
+/// las obras del cliente autenticado.
 export async function getEstadoCuentaCliente(): Promise<{
   totalPresupuestado: number;
   totalPagado: number;
+  totalPagadoSinIva: number;
+  totalIva: number;
   totalSaldo: number;
 }> {
-  const supabase = await createClient();
-
-  const { data: presData } = await supabase
-    .from('obra_presupuesto')
-    .select('cantidad, precio_unitario')
-    .is('deleted_at', null);
-
-  const totalPresupuestado = (presData ?? []).reduce(
-    (acc, p) => acc + (p.cantidad as number) * (p.precio_unitario as number),
-    0,
-  );
-
-  const { data: entData } = await supabase
-    .from('movimientos')
-    .select('monto')
-    .eq('tipo', 'ENTRADA')
-    .is('deleted_at', null);
-
-  const totalPagado = (entData ?? []).reduce((acc, m) => acc + (m.monto as number), 0);
-
+  const obras = await listObrasCliente();
+  const estados = await Promise.all(obras.map((o) => getEstadoCuentaObra(o.id)));
+  const suma = (f: (e: EstadoCuentaObra) => number) =>
+    Math.round(estados.reduce((acc, e) => acc + f(e), 0) * 100) / 100;
   return {
-    totalPresupuestado,
-    totalPagado,
-    totalSaldo: totalPresupuestado - totalPagado,
+    totalPresupuestado: suma((e) => e.costoTotal),
+    totalPagado: suma((e) => e.recibido),
+    totalPagadoSinIva: suma((e) => e.recibidoSinIva),
+    totalIva: suma((e) => e.ivaCobrado),
+    totalSaldo: suma((e) => e.pendiente),
   };
 }
 

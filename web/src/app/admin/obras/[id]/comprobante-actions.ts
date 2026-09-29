@@ -7,7 +7,8 @@ import { getEmpresaUsuario } from '@/lib/data/empresa';
 const BUCKET = 'comprobantes';
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB, igual que el límite del bucket
 const TIPOS_OK = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-const ROLES_OFICINA = ['admin', 'supervisor', 'contador'];
+// + residente (0042): la policy de Storage lo limita a las carpetas de sus obras.
+const ROLES_OFICINA = ['admin', 'supervisor', 'contador', 'residente'];
 
 export interface ResultadoComprobante {
   ok: boolean;

@@ -21,15 +21,39 @@
  * cosas distintas.
  */
 
-export type TipoDocumento = 'cotizacion' | 'nota' | 'estado_cuenta';
+export type TipoDocumento =
+  | 'cotizacion'
+  | 'nota'
+  | 'estado_cuenta'
+  | 'extra'
+  | 'subcontrato'
+  | 'estimacion'
+  | 'orden_compra';
 
-export const TIPOS_DOCUMENTO: TipoDocumento[] = ['cotizacion', 'nota', 'estado_cuenta'];
+/**
+ * `extra` (0036), `orden_compra` (0038), `estimacion` (0039) y `subcontrato`
+ * (0040) llegaron después: el móvil no los conoce, pero como nunca escribe
+ * `pdf_config.textos` (0032), una clave nueva en ese jsonb no le afecta.
+ */
+export const TIPOS_DOCUMENTO: TipoDocumento[] = [
+  'cotizacion',
+  'nota',
+  'estado_cuenta',
+  'extra',
+  'subcontrato',
+  'estimacion',
+  'orden_compra',
+];
 
 /** Cómo se llama cada tipo en la interfaz (Ajustes → PDF). */
 export const NOMBRE_TIPO: Record<TipoDocumento, string> = {
   cotizacion: 'Cotización',
   nota: 'Nota de obra',
   estado_cuenta: 'Estado de cuenta del cliente',
+  extra: 'Extra (orden de cambio)',
+  subcontrato: 'Contrato de subcontrato',
+  estimacion: 'Estimación (cobro por avance)',
+  orden_compra: 'Orden de compra (al proveedor)',
 };
 
 /** Textos generales por tipo, tal como se guardan en `pdf_config.textos`. */
@@ -41,7 +65,7 @@ export interface ContextoTextoFinal {
   /** Cotización: si lleva IVA y a qué tasa. */
   ivaEnabled?: boolean;
   ivaPct?: number;
-  /** Nota de obra: a nombre de quién va. */
+  /** Nota de obra y subcontrato: a nombre de quién va. */
   destinatario?: string;
 }
 
@@ -78,6 +102,37 @@ export function textoIntegrado(tipo: TipoDocumento, ctx: ContextoTextoFinal): st
       return (
         'Documento informativo del avance de pagos de su obra. Los montos están expresados en ' +
         `pesos mexicanos (MXN). Para cualquier aclaración comuníquese con ${empresa}.`
+      );
+
+    case 'extra':
+      return (
+        'Trabajo adicional al presupuesto original de la obra. Montos en pesos mexicanos (MXN), ' +
+        'sin IVA. Una vez aprobado, el importe se suma a su estado de cuenta. ' +
+        `Para cualquier aclaración comuníquese con ${empresa}.`
+      );
+
+    case 'orden_compra':
+      return (
+        'Favor de surtir lo indicado en esta orden y entregar en la obra señalada. ' +
+        'Precios en pesos mexicanos (MXN), sin IVA; el IVA va desglosado. ' +
+        'Anote el folio de esta orden en su remisión y en su factura. ' +
+        `Cualquier cambio de precio o de cantidad debe autorizarlo ${empresa} antes de surtir.`
+      );
+
+    case 'subcontrato': {
+      const quien = ctx.destinatario?.trim() || 'el subcontratista';
+      return (
+        `Leído el presente contrato, ${empresa} y ${quien} lo firman de conformidad. ` +
+        'Montos en pesos mexicanos (MXN).'
+      );
+    }
+
+    case 'estimacion':
+      return (
+        'Estimación de los trabajos ejecutados en el periodo indicado, valuados a los precios unitarios ' +
+        'del contrato. Las cantidades se sustentan en los números generadores anexos. Montos en pesos ' +
+        'mexicanos (MXN). El fondo de garantía retenido se devuelve al concluir la obra. ' +
+        `Para cualquier aclaración comuníquese con ${empresa}.`
       );
   }
 }

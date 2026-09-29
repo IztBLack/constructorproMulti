@@ -23,6 +23,12 @@ describe('puedeVerSueldos', () => {
     expect(puedeVerSueldos('cliente')).toBe(false);
   });
 
+  test('roles de 0042: residente sí (sus obras); compras y almacén no', () => {
+    expect(puedeVerSueldos('residente')).toBe(true);
+    expect(puedeVerSueldos('compras')).toBe(false);
+    expect(puedeVerSueldos('almacen')).toBe(false);
+  });
+
   test('un rol que no existe todavía queda FUERA por omisión', () => {
     // Es lo que hace que esto sea una lista BLANCA: un rol que se agregue
     // mañana tiene que pedir el permiso, no heredarlo.
@@ -60,14 +66,26 @@ describe('seccionesDe / puedeVer (Ajustes)', () => {
     expect(puedeVer('admin', 'campo')).toBe(true);
   });
 
-  test('usuarios, empresa y operación son solo del admin', () => {
+  test('usuarios, empresa, operación y módulos son solo del admin', () => {
     // `operacion` bajó del supervisor al admin cuando 0018 restringió
     // `empresa_config`: el IVA toca el dinero de toda cotización nueva.
-    for (const seccion of ['operacion', 'empresa', 'usuarios'] as const) {
+    // `modulos` (0035): la RPC `activar_modulos` solo acepta al admin.
+    for (const seccion of ['operacion', 'modulos', 'empresa', 'usuarios'] as const) {
       expect(puedeVer('admin', seccion)).toBe(true);
       expect(puedeVer('supervisor', seccion)).toBe(false);
       expect(puedeVer('colaborador', seccion)).toBe(false);
     }
+  });
+
+  test('datos para facturar: admin y contador, nadie más (RR1b.1)', () => {
+    expect(puedeVer('admin', 'fiscal')).toBe(true);
+    expect(puedeVer('contador', 'fiscal')).toBe(true);
+    for (const rol of ['supervisor', 'colaborador', 'cliente']) {
+      expect(puedeVer(rol, 'fiscal')).toBe(false);
+    }
+    // El contador no gana por eso lo del admin.
+    expect(puedeVer('contador', 'usuarios')).toBe(false);
+    expect(puedeVer('contador', 'operacion')).toBe(false);
   });
 
   test('un rol desconocido cae al mínimo, no al máximo', () => {

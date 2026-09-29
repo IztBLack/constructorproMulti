@@ -41,6 +41,34 @@ const nextConfig: NextConfig = {
     '/admin/obras/\\[id\\]/estado-cuenta-cliente/descargar': [
       './node_modules/@sparticuz/chromium/**/*',
     ],
+    // Bitácora de obra por periodo (0041): mismo Chromium.
+    '/admin/obras/\\[id\\]/bitacora/pdf/descargar': [
+      './node_modules/@sparticuz/chromium/**/*',
+    ],
+    // Extra (orden de cambio, F1): faltaba y daría 500 en Vercel.
+    '/admin/obras/\\[id\\]/extras/\\[extraId\\]/pdf/descargar': [
+      './node_modules/@sparticuz/chromium/**/*',
+    ],
+    // Estimación con números generadores (F3, 0039): mismo Chromium.
+    '/admin/obras/\\[id\\]/estimaciones/\\[estId\\]/pdf/descargar': [
+      './node_modules/@sparticuz/chromium/**/*',
+    ],
+    // Proyección de nómina: usaba Chromium desde antes y nunca estuvo aquí.
+    '/admin/proyeccion/pdf': [
+      './node_modules/@sparticuz/chromium/**/*',
+    ],
+    // Contrato de subcontrato (F5, 0040): mismo Chromium.
+    '/admin/subcontratos/\\[id\\]/pdf/descargar': [
+      './node_modules/@sparticuz/chromium/**/*',
+    ],
+    // Orden de compra al proveedor (módulo compras, F2): mismo Chromium.
+    '/admin/compras/ordenes/\[id\]/pdf/descargar': [
+      './node_modules/@sparticuz/chromium/**/*',
+    ],
+    // Hoja para facturar (módulo fiscal, F1b): mismo Chromium.
+    '/admin/facturacion/hoja/\\[origen\\]/\\[id\\]/pdf': [
+      './node_modules/@sparticuz/chromium/**/*',
+    ],
   },
 
   async headers() {

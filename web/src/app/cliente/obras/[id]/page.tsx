@@ -18,6 +18,19 @@ import {
 import { formatCurrency, formatDate } from '@/lib/data/format';
 import { getObraCliente, getEstadoCuentaObra, mapEstadoObra } from '@/lib/data/portal-cliente';
 import type { EstadoObraPortal } from '@/lib/data/portal-cliente';
+import { listBitacoraObra } from '@/lib/data/bitacora';
+import { BitacoraCliente } from './bitacora-cliente';
+import { listExtrasObraCliente } from '@/lib/data/cambios';
+import { ExtrasCliente } from './_extras';
+import { getAvanceFisicoPortal, listEstimacionesCliente } from '@/lib/data/estimaciones';
+import { avanceFinanciero } from '@/lib/estimaciones/avance';
+import { AvanceFisicoFinanciero } from '@/components/estimaciones/avance-fisico-financiero';
+import { EstimacionesCliente } from './_estimaciones';
+import { getGarantiaObra, listReportesObra, postventaDisponible } from '@/lib/data/postventa';
+import { estadoGarantia } from '@/lib/postventa/garantia';
+import { hoyMxMs } from '@/lib/data/tz';
+import { PostventaCliente } from './postventa-cliente';
+import { muestraIva, textoTasaIva } from '@/lib/cliente/estado-cuenta-calculo';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,8 +59,45 @@ export default async function ObraDetallePage({
 
   // Estado de cuenta REAL de ESTA obra: COSTO TOTAL (presupuesto) vs RECIBIDO
   // (movimientos tipo='ENTRADA'). Las SALIDA (pagos internos) nunca se exponen.
-  const { costoTotal, recibido, pendiente, pagadoPct, entradas } =
-    await getEstadoCuentaObra(obra.id);
+  const [
+    estadoCuenta,
+    extras,
+    bitacora,
+    fisico,
+    estimaciones,
+    postventaActiva,
+    garantiaObra,
+    reportes,
+  ] = await Promise.all([
+    getEstadoCuentaObra(obra.id),
+    listExtrasObraCliente(obra.id),
+    // Bitácora publicada (0041). La RLS entrega SOLO lo marcado para el
+    // cliente; si falla o no hay nada, la sección simplemente no aparece.
+    listBitacoraObra(obra.id),
+    // Avance por partida y estimaciones (0039). Como los extras (F1-11), se
+    // muestran aunque el módulo esté apagado: el cliente no puede leer los
+    // módulos y lo que ya se le mandó es suyo. Si 0039 no está, no aparecen.
+    getAvanceFisicoPortal(obra.id),
+    listEstimacionesCliente(obra.id),
+    // Garantías (0043): el botón de reportar solo si su contratista usa el
+    // módulo; lo ya reportado y el periodo se ven siempre (RLS: solo lo suyo).
+    postventaDisponible(obra.id),
+    getGarantiaObra(obra.id),
+    listReportesObra(obra.id),
+  ]);
+
+  const { costoTotal, recibido, recibidoSinIva, ivaCobrado, tasaIva, pendiente, pagadoPct, entradas, presupuesto, totalExtras } =
+    estadoCuenta;
+  // La obra se cobra con IVA: el costo total no lo lleva, así que lo pagado
+  // se compara SIN IVA y el IVA se enseña aparte.
+  const conIva = muestraIva(estadoCuenta);
+
+  const porCobrarEst = estimaciones
+    .filter((e) => e.estado === 'AUTORIZADA')
+    .reduce((s, e) => s + e.foto.importes.neto, 0);
+  const fondoRetenido = estimaciones
+    .filter((e) => e.estado !== 'RECHAZADA')
+    .reduce((s, e) => s + e.foto.importes.fondoGarantia, 0);
 
   const tieneEstadoCuenta = costoTotal > 0 || entradas.length > 0;
 
@@ -83,7 +133,20 @@ export default async function ObraDetallePage({
         </p>
       </div>
 
-      {/* ── Avance de obra ───────────────────────────────────────────────── */}
+      {/* ── Avance: hecho (medido por partida) vs pagado (RF3.7) ─────────── */}
+      {fisico && (
+        <AvanceFisicoFinanciero
+          paraCliente
+          fisico={fisico.pct}
+          financiero={avanceFinanciero(recibidoSinIva, costoTotal)}
+          sinIva={conIva}
+          porCobrar={Math.round(porCobrarEst * 100) / 100}
+          fondoRetenido={Math.round(fondoRetenido * 100) / 100}
+        />
+      )}
+
+      {/* ── Avance de obra (el que captura la constructora a mano) ─────────── */}
+      {!fisico && (
       <section aria-labelledby="avance-heading">
         <Card padding="md">
           <CardHeader>
@@ -110,6 +173,13 @@ export default async function ObraDetallePage({
           </p>
         </Card>
       </section>
+      )}
+
+      {/* ── Estimaciones (0039): lo que se le mandó a autorizar ──────────── */}
+      <EstimacionesCliente obraId={obra.id} estimaciones={estimaciones} />
+
+      {/* ── Extras (0036): lo que se le mandó a aprobar ──────────────────── */}
+      <ExtrasCliente obraId={obra.id} extras={extras} />
 
       {/* ── Estado de cuenta de la obra ─────────────────────────────────── */}
       <section aria-labelledby="estado-cuenta-heading">
@@ -137,28 +207,64 @@ export default async function ObraDetallePage({
           <>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div className="rounded-xl border border-neutral-200 bg-white px-4 py-3">
-                <div className="text-xs font-medium text-neutral-500">Costo total</div>
+                <div className="text-xs font-medium text-neutral-500">
+                  {conIva ? 'Costo total (sin IVA)' : 'Costo total'}
+                </div>
                 <p className="mt-1.5 text-2xl font-semibold text-neutral-900 tabular-nums">
                   {formatCurrency(costoTotal)}
                 </p>
               </div>
 
               <div className="rounded-xl border border-neutral-200 bg-white px-4 py-3">
-                <div className="text-xs font-medium text-neutral-500">Pagado</div>
+                <div className="text-xs font-medium text-neutral-500">
+                  {conIva ? 'Pagado (sin IVA)' : 'Pagado'}
+                </div>
                 <p className="mt-1.5 text-2xl font-semibold text-green-700 tabular-nums">
-                  {formatCurrency(recibido)}
+                  {formatCurrency(conIva ? recibidoSinIva : recibido)}
                 </p>
                 <p className="mt-1 text-xs text-neutral-500">{pagadoPct}% del costo</p>
               </div>
 
               <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
-                <div className="text-xs font-medium text-amber-800">Saldo pendiente</div>
+                <div className="text-xs font-medium text-amber-800">
+                  {conIva ? 'Saldo pendiente (sin IVA)' : 'Saldo pendiente'}
+                </div>
                 <p className="mt-1.5 text-2xl font-semibold text-amber-700 tabular-nums">
                   {formatCurrency(pendiente)}
                 </p>
                 <p className="mt-1 text-xs text-amber-700/80">{100 - pagadoPct}% restante</p>
               </div>
             </div>
+
+            {/* Lo que pagó con IVA, desglosado: base + IVA = lo que salió de su
+                bolsa. Sin la nota interna del SAT (esa es de la constructora). */}
+            {conIva && (
+              <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm text-neutral-700">
+                <div>
+                  <dt className="inline">IVA pagado{tasaIva > 0 ? ` (${textoTasaIva(tasaIva)})` : ''}: </dt>
+                  <dd className="inline font-medium tabular-nums text-neutral-900">{formatCurrency(ivaCobrado)}</dd>
+                </div>
+                <div>
+                  <dt className="inline">Total pagado con IVA: </dt>
+                  <dd className="inline font-medium tabular-nums text-neutral-900">{formatCurrency(recibido)}</dd>
+                </div>
+              </dl>
+            )}
+
+            {/* Los extras aprobados van como línea aparte (RF1.4): el cliente ve
+                qué era el trato original y qué se agregó después. */}
+            {totalExtras > 0 && (
+              <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm text-neutral-700">
+                <div>
+                  <dt className="inline">Presupuesto: </dt>
+                  <dd className="inline font-medium tabular-nums text-neutral-900">{formatCurrency(presupuesto)}</dd>
+                </div>
+                <div>
+                  <dt className="inline">Extras aprobados: </dt>
+                  <dd className="inline font-medium tabular-nums text-neutral-900">{formatCurrency(totalExtras)}</dd>
+                </div>
+              </dl>
+            )}
 
             {/* Barra de avance de pago */}
             <div className="mt-4 space-y-1">
@@ -183,6 +289,17 @@ export default async function ObraDetallePage({
           </>
         )}
       </section>
+
+      {/* ── Bitácora publicada ──────────────────────────────────────────── */}
+      <BitacoraCliente entradas={bitacora.data} />
+
+      {/* ── Garantía y reportes (0043) ──────────────────────────────────── */}
+      <PostventaCliente
+        obraId={obra.id}
+        disponible={postventaActiva}
+        garantia={estadoGarantia(garantiaObra, hoyMxMs())}
+        reportes={reportes.data}
+      />
 
       {/* ── Historial de pagos (ENTRADAS de esta obra) ──────────────────── */}
       {entradas.length > 0 && (
@@ -261,7 +378,7 @@ export default async function ObraDetallePage({
           <div className="mt-4 flex justify-end">
             <div className="rounded-lg border border-neutral-200 bg-white px-5 py-3 text-sm">
               <div className="flex items-center gap-6">
-                <span className="text-neutral-600">Total pagado</span>
+                <span className="text-neutral-600">{conIva ? 'Total pagado (con IVA)' : 'Total pagado'}</span>
                 <span className="tabular-nums font-semibold text-neutral-900">
                   {formatCurrency(recibido)}
                 </span>

@@ -1,21 +1,47 @@
+import Link from 'next/link';
 import { Card, CardTitle, THead, Th, TBody, Tr, Td, LinkButton } from '@/components/ui';
 import { formatCurrency } from '@/lib/data/format';
 import type { Movimiento, PartidaPresupuesto } from '@/lib/data/types';
-import { costoTotal } from '@/lib/data/presupuesto-obra';
+import type { ExtraAprobado } from '@/lib/data/cambios';
+import type { OrigenIva } from '@/lib/data/iva-obra';
+import {
+  muestraIva,
+  textoTasaIva,
+  totalesEstadoCuenta,
+  type IvaEstadoCuenta,
+} from '@/lib/cliente/estado-cuenta-calculo';
+import { IvaObra } from './iva-obra';
 
 interface Props {
   obraId: string;
   partidas: PartidaPresupuesto[];
   movimientos: Movimiento[];
+  /** Extras APROBADOS (0036). Suman al costo total como línea aparte. */
+  extras?: ExtraAprobado[];
+  /** Tasa de IVA de la obra (0047) y estimaciones cobradas. Sin esto: sin IVA. */
+  iva?: IvaEstadoCuenta & { origen: OrigenIva };
+  /** Solo el admin fija o corrige el IVA de la obra. */
+  puedeCambiarIva?: boolean;
 }
 
-export default function EstadoCuenta({ obraId, partidas, movimientos }: Props) {
+export default function EstadoCuenta({
+  obraId,
+  partidas,
+  movimientos,
+  extras = [],
+  iva,
+  puedeCambiarIva = false,
+}: Props) {
   // ── Cálculos principales ────────────────────────────────────────────────
-  const costo = costoTotal(partidas);
-  const recibido = movimientos
-    .filter((m) => m.tipo === 'ENTRADA')
-    .reduce((acc, m) => acc + m.monto, 0);
-  const pendiente = costo - recibido;
+  // La MISMA función que el estado de cuenta del cliente: COSTO TOTAL =
+  // presupuesto + extras aprobados (RF1.4, sin IVA); lo recibido se parte en
+  // cobrado sin IVA + IVA cobrado, y lo pendiente sale de lo cobrado sin IVA.
+  const entradas = movimientos.filter((m) => m.tipo === 'ENTRADA');
+  const t = totalesEstadoCuenta({ partidas, entradas, extras, iva });
+  const costo = t.costoTotal;
+  const recibido = t.recibido;
+  const pendiente = t.pendiente;
+  const conIva = muestraIva(t);
 
   // ── Resumen: Pagado por persona (SALIDAS agrupadas por nombre) ───────────
   const porPersona = new Map<string, number>();
@@ -88,25 +114,68 @@ export default function EstadoCuenta({ obraId, partidas, movimientos }: Props) {
           </div>
         )}
 
-        {/* Totales clave */}
+        {/* Extras aprobados: línea aparte, para que se vea qué era el trato
+            original y qué se agregó después. */}
+        {extras.length > 0 && (
+          <div className="mb-4 space-y-1">
+            <p className="text-xs font-medium uppercase tracking-wide text-neutral-600">Extras aprobados</p>
+            {extras.map((e) => (
+              <div key={e.id} className="flex items-baseline justify-between gap-4 text-sm">
+                <Link href={`/admin/obras/${obraId}/extras/${e.id}`} className="text-neutral-700 hover:underline">
+                  Extra {e.folio}
+                  {e.titulo ? ` · ${e.titulo}` : ''}
+                </Link>
+                <span className="tabular-nums font-medium text-neutral-900">{formatCurrency(e.total)}</span>
+              </div>
+            ))}
+            <div className="mt-2 border-t border-neutral-200 pt-2" />
+          </div>
+        )}
+
+        {/* Totales clave. Con IVA, lo que se compara con el costo es lo cobrado
+            SIN IVA; el IVA va aparte porque no es de la constructora. */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StatBox
-            label="COSTO TOTAL"
+            label={conIva ? 'COSTO TOTAL (SIN IVA)' : 'COSTO TOTAL'}
             value={formatCurrency(costo)}
             valueClass="text-neutral-900"
           />
           <StatBox
-            label="RECIBIDO"
-            value={formatCurrency(recibido)}
+            label={conIva ? 'COBRADO (SIN IVA)' : 'RECIBIDO'}
+            value={formatCurrency(conIva ? t.recibidoSinIva : recibido)}
             valueClass="text-green-700"
+            hint={costo > 0 ? `${t.pagadoPct}% del costo` : undefined}
           />
           <StatBox
-            label="PENDIENTE"
+            label={conIva ? 'POR COBRAR (SIN IVA)' : 'PENDIENTE'}
             value={formatCurrency(pendiente)}
             valueClass={pendiente > 0 ? 'text-red-600' : 'text-green-700'}
             hint={pendiente > 0 ? 'Por cobrar' : 'Al corriente'}
           />
         </div>
+
+        {conIva && (
+          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-neutral-800">
+            <dl className="flex flex-wrap gap-x-6 gap-y-1">
+              <div>
+                <dt className="inline">IVA cobrado{t.tasaIva > 0 ? ` (${textoTasaIva(t.tasaIva)})` : ''}: </dt>
+                <dd className="inline font-semibold tabular-nums">{formatCurrency(t.ivaCobrado)}</dd>
+              </div>
+              <div>
+                <dt className="inline">Recibido con IVA: </dt>
+                <dd className="inline font-semibold tabular-nums">{formatCurrency(recibido)}</dd>
+              </div>
+            </dl>
+            <p className="mt-1 text-neutral-700">El IVA cobrado no es tuyo: se entera al SAT.</p>
+          </div>
+        )}
+
+        <IvaObra
+          obraId={obraId}
+          tasaPct={t.tasaIva}
+          origen={iva?.origen ?? 'ninguno'}
+          puedeCambiar={puedeCambiarIva}
+        />
       </Card>
 
       {/* ── Resúmenes ─────────────────────────────────────────────────────── */}

@@ -7,8 +7,16 @@ import { formatCurrency } from '@/lib/data/format';
 import type { CatalogoConcepto } from '@/lib/data/types';
 import { eliminarConcepto } from './actions';
 import EditarConceptoForm from './editar-concepto-form';
+import { ClavesConcepto } from '@/components/fiscal/claves-concepto';
 
-export default function TablaConceptos({ conceptos }: { conceptos: CatalogoConcepto[] }) {
+export default function TablaConceptos({
+  conceptos,
+  conFiscal = false,
+}: {
+  conceptos: CatalogoConcepto[];
+  /** Módulo `fiscal` prendido y rol admin/contador: se pueden guardar claves SAT. */
+  conFiscal?: boolean;
+}) {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [editandoConcepto, setEditandoConcepto] = useState<CatalogoConcepto | null>(null);
@@ -126,6 +134,22 @@ export default function TablaConceptos({ conceptos }: { conceptos: CatalogoConce
             onDone={() => setEditandoConcepto(null)}
             onCancel={() => setEditandoConcepto(null)}
           />
+        )}
+        {editandoConcepto && conFiscal && (
+          <div className="mt-6 border-t border-neutral-100 pt-4">
+            <p className="text-sm font-medium text-neutral-800">Claves para facturar</p>
+            <p className="text-xs text-neutral-600">
+              Se copian a cada partida que saques de este concepto.
+              {editandoConcepto.clave_sat ? ` Ahora: ${editandoConcepto.clave_sat} · ${editandoConcepto.unidad_sat ?? ''}` : ''}
+            </p>
+            <ClavesConcepto
+              tabla="catalogo_conceptos"
+              id={editandoConcepto.id}
+              clave={editandoConcepto.clave_sat ?? ''}
+              unidad={editandoConcepto.unidad_sat ?? ''}
+              volverA="/admin/catalogo"
+            />
+          </div>
         )}
       </Modal>
     </div>

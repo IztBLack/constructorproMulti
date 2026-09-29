@@ -8,6 +8,12 @@
 import ExcelJS from 'exceljs';
 import type { Movimiento, PartidaPresupuesto, Obra } from '@/lib/data/types';
 import { medianocheMx } from '@/lib/data/tz';
+import {
+  muestraIva,
+  textoTasaIva,
+  totalesEstadoCuenta,
+  type IvaEstadoCuenta,
+} from '@/lib/cliente/estado-cuenta-calculo';
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -124,6 +130,10 @@ export interface ExportInput {
   movimientos: Movimiento[];
   /** Nota de conciliación de caja (migración 0023). Opcional. */
   notaCaja?: string;
+  /** Extras APROBADOS (0036): suman al costo total. */
+  extras?: { total: number }[];
+  /** Tasa de IVA de la obra (0047). Sin esto: sin IVA, como antes. */
+  iva?: IvaEstadoCuenta | null;
 }
 
 export async function construirExcelEstadoCuenta({
@@ -131,6 +141,8 @@ export async function construirExcelEstadoCuenta({
   partidas,
   movimientos,
   notaCaja,
+  extras = [],
+  iva,
 }: ExportInput): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
   wb.creator = 'ConstructorPro';
@@ -204,11 +216,37 @@ export async function construirExcelEstadoCuenta({
     rowIdx++;
   }
 
+  // ── Totales: la misma cuenta que el estado de cuenta del cliente ─────────
+  // COSTO TOTAL = presupuesto + extras aprobados (sin IVA). Si la obra cobra
+  // con IVA, lo recibido se parte en cobrado sin IVA + IVA cobrado y lo
+  // pendiente sale de lo cobrado sin IVA. Todas las etiquetas de estas filas
+  // las salta el importador (ver `parsearExcelObra`).
+  const t = totalesEstadoCuenta({
+    partidas,
+    entradas: movimientos.filter((m) => m.tipo === 'ENTRADA'),
+    extras,
+    iva,
+  });
+  const conIva = muestraIva(t);
+  const filaTotal = (etiqueta: string, valor: number, negrita = false) => {
+    const row = ws.getRow(rowIdx);
+    row.getCell(1).value = etiqueta;
+    row.getCell(1).font = boldFont;
+    row.getCell(3).value = valor;
+    row.getCell(3).numFmt = moneyFmt;
+    if (negrita) row.getCell(3).font = boldFont;
+    row.commit();
+    rowIdx++;
+  };
+
+  // ── Fila EXTRAS APROBADOS (solo si hay) ──────────────────────────────────
+  if (t.totalExtras > 0) filaTotal('EXTRAS APROBADOS:', t.totalExtras);
+
   // ── Fila COSTO TOTAL ─────────────────────────────────────────────────────
-  const costoTotalVal = partidas.reduce((s, p) => s + p.cantidad * p.precio_unitario, 0);
+  const costoTotalVal = t.costoTotal;
   {
     const row = ws.getRow(rowIdx);
-    row.getCell(1).value = 'COSTO TOTAL:';
+    row.getCell(1).value = conIva ? 'COSTO TOTAL (SIN IVA):' : 'COSTO TOTAL:';
     row.getCell(1).font = boldFont;
     row.getCell(3).value = costoTotalVal;
     row.getCell(3).numFmt = moneyFmt;
@@ -217,29 +255,22 @@ export async function construirExcelEstadoCuenta({
     rowIdx++;
   }
 
-  // ── Fila RECIBIDO / PENDIENTE ────────────────────────────────────────────
-  const recibido = movimientos
-    .filter((m) => m.tipo === 'ENTRADA')
-    .reduce((s, m) => s + m.monto, 0);
-  const pendiente = costoTotalVal - recibido;
-
-  {
-    const row = ws.getRow(rowIdx);
-    row.getCell(1).value = 'RECIBIDO:';
-    row.getCell(1).font = boldFont;
-    row.getCell(3).value = recibido;
-    row.getCell(3).numFmt = moneyFmt;
-    row.commit();
-    rowIdx++;
-  }
-  {
-    const row = ws.getRow(rowIdx);
-    row.getCell(1).value = 'PENDIENTE:';
-    row.getCell(1).font = boldFont;
-    row.getCell(3).value = pendiente;
-    row.getCell(3).numFmt = moneyFmt;
-    row.commit();
-    rowIdx++;
+  // ── Filas RECIBIDO / (IVA) / PENDIENTE ──────────────────────────────────
+  if (conIva) {
+    filaTotal('RECIBIDO (CON IVA):', t.recibido);
+    filaTotal(`IVA COBRADO${t.tasaIva > 0 ? ` (${textoTasaIva(t.tasaIva)})` : ''}:`, t.ivaCobrado);
+    filaTotal('COBRADO (SIN IVA):', t.recibidoSinIva);
+    filaTotal('POR COBRAR (SIN IVA):', t.pendiente);
+    {
+      const row = ws.getRow(rowIdx);
+      row.getCell(1).value = 'El IVA cobrado no es tuyo: se entera al SAT.';
+      row.getCell(1).font = { italic: true };
+      row.commit();
+      rowIdx++;
+    }
+  } else {
+    filaTotal('RECIBIDO:', t.recibido);
+    filaTotal('PENDIENTE:', t.pendiente);
   }
 
   // ── Fila en blanco separadora ────────────────────────────────────────────
@@ -534,6 +565,11 @@ export async function parsearExcelObra(buffer: ArrayBuffer): Promise<ParsedObraD
         a.includes('COSTO TOTAL') ||
         a.includes('RECIBIDO') ||
         a.includes('PENDIENTE') ||
+        a.includes('EXTRAS APROBADOS') ||
+        a.includes('IVA COBRADO') ||
+        a.includes('COBRADO (SIN IVA)') ||
+        a.includes('POR COBRAR (SIN IVA)') ||
+        a.startsWith('EL IVA COBRADO') ||
         a === ''
       ) continue;
 

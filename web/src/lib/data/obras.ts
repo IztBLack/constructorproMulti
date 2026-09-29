@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { getEmpresaUsuario } from './empresa';
 import type { Movimiento, Obra, TipoMovimiento } from './types';
+import type { CategoriaCosto } from '@/lib/rentabilidad/categorias';
 
 export async function listObras(): Promise<{ data: Obra[]; error: string | null }> {
   const supabase = await createClient();
@@ -138,16 +139,40 @@ export interface MovimientoInput {
   metodoPago: string;
   referencia: string;
   nombre: string;
+  /**
+   * Categoría de costo (0036). `undefined` = no se toca la columna: así los
+   * llamados que no la conocen (la nómina de antes, una web desplegada antes que
+   * la migración) no la escriben ni la borran.
+   */
+  categoriaCosto?: CategoriaCosto | null;
+}
+
+/** La columna solo viaja si quien llama la trae. */
+function columnaCategoriaCosto(input: MovimientoInput): { categoria_costo?: CategoriaCosto | null } {
+  return input.categoriaCosto === undefined ? {} : { categoria_costo: input.categoriaCosto };
+}
+
+/**
+ * ¿La base todavía no tiene `categoria_costo` (0036 sin aplicar)? PostgREST
+ * responde PGRST204 ("Could not find the 'categoria_costo' column"). En ese caso
+ * se guarda el movimiento SIN clasificar en vez de perderlo: la web y la
+ * migración pueden desplegarse en cualquier orden (mismo criterio que F0-9).
+ */
+export function faltaColumnaCategoria(error: { code?: string; message: string } | null): boolean {
+  return (
+    !!error &&
+    (error.code === 'PGRST204' || /could not find.*categoria_costo/i.test(error.message))
+  );
 }
 
 export async function crearMovimiento(
   input: MovimientoInput,
-): Promise<{ error: string | null }> {
+): Promise<{ error: string | null; id?: string }> {
   const { empresaId } = await getEmpresaUsuario();
   const supabase = await createClient();
   const now = Date.now();
 
-  const { error } = await supabase.from('movimientos').insert({
+  const fila = {
     id: crypto.randomUUID(),
     empresa_id: empresaId,
     obra_id: input.obraId,
@@ -163,10 +188,17 @@ export async function crearMovimiento(
     partida_id: null,
     created_at: now,
     updated_at: now,
-  });
+  };
+
+  let { error } = await supabase
+    .from('movimientos')
+    .insert({ ...fila, ...columnaCategoriaCosto(input) });
+  if (faltaColumnaCategoria(error) && input.categoriaCosto !== undefined) {
+    ({ error } = await supabase.from('movimientos').insert(fila));
+  }
 
   if (error) return { error: error.message };
-  return { error: null };
+  return { error: null, id: fila.id };
 }
 
 export async function actualizarMovimiento(
@@ -176,20 +208,25 @@ export async function actualizarMovimiento(
   const supabase = await createClient();
   const now = Date.now();
 
-  const { error } = await supabase
+  const cambios = {
+    fecha: input.fecha,
+    tipo: input.tipo,
+    categoria: input.categoria,
+    concepto: input.concepto,
+    monto: input.monto,
+    metodo_pago: input.metodoPago,
+    referencia: input.referencia,
+    nombre: input.nombre,
+    updated_at: now,
+  };
+
+  let { error } = await supabase
     .from('movimientos')
-    .update({
-      fecha: input.fecha,
-      tipo: input.tipo,
-      categoria: input.categoria,
-      concepto: input.concepto,
-      monto: input.monto,
-      metodo_pago: input.metodoPago,
-      referencia: input.referencia,
-      nombre: input.nombre,
-      updated_at: now,
-    })
+    .update({ ...cambios, ...columnaCategoriaCosto(input) })
     .eq('id', id);
+  if (faltaColumnaCategoria(error) && input.categoriaCosto !== undefined) {
+    ({ error } = await supabase.from('movimientos').update(cambios).eq('id', id));
+  }
 
   if (error) return { error: error.message };
   return { error: null };

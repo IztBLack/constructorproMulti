@@ -347,6 +347,10 @@ export async function convertirCotizacionEnObra(
       cantidad: p.cantidad,
       precio_unitario: p.precio_unitario,
       orden: 0,
+      // Claves SAT (0037): viajan de la partida al presupuesto de la obra. Solo
+      // si la columna existe (la partida la trae en el `select *`); así esta
+      // conversión sigue funcionando aunque la migración no esté aplicada.
+      ...('clave_sat' in p ? { clave_sat: p.clave_sat ?? null, unidad_sat: p.unidad_sat ?? null } : {}),
       created_at: now,
       updated_at: now,
       deleted_at: null,
@@ -490,6 +494,29 @@ export async function eliminarSeccion(id: string): Promise<{ error: string | nul
   return { error: null };
 }
 
+/**
+ * Claves SAT (0037) del concepto del catálogo con esa clave interna, para que
+ * una partida sacada del catálogo ya nazca con ellas: "se captura una vez y se
+ * reusa en cada cotización" (RD1b.3). Devuelve `{}` si no hay, si el concepto no
+ * las tiene o si la migración todavía no existe (la columna no se manda).
+ */
+async function clavesSatDelCatalogo(
+  clave: string | null,
+): Promise<{ clave_sat?: string; unidad_sat?: string | null }> {
+  const c = clave?.trim();
+  if (!c) return {};
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('catalogo_conceptos')
+    .select('clave_sat, unidad_sat')
+    .eq('clave', c)
+    .is('deleted_at', null)
+    .limit(1)
+    .maybeSingle();
+  if (error || !data?.clave_sat) return {};
+  return { clave_sat: data.clave_sat as string, unidad_sat: (data.unidad_sat as string | null) ?? null };
+}
+
 export interface NuevaPartidaInput {
   seccion_id: string;
   clave: string | null;
@@ -519,6 +546,7 @@ export async function crearPartida(
     cantidad: input.cantidad,
     precio_unitario: input.precio_unitario,
     orden: input.orden,
+    ...(await clavesSatDelCatalogo(input.clave)),
     created_at: now,
     updated_at: now,
     deleted_at: null,

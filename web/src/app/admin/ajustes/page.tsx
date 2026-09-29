@@ -16,18 +16,19 @@ import { SeccionPdf } from '@/components/ajustes/seccion-pdf';
 import { SeccionEmpresa } from '@/components/ajustes/seccion-empresa';
 import { SeccionUsuarios } from '@/components/ajustes/seccion-usuarios';
 import { listUsuariosEmpresa } from '@/lib/data/usuarios-empresa';
+import { SeccionModulos } from '@/components/ajustes/seccion-modulos';
+import { getModulosEmpresa } from '@/lib/data/modulos';
+import { SeccionFiscal } from '@/components/ajustes/seccion-fiscal';
+import { getEmpresaFiscal } from '@/lib/data/fiscal';
+import { SeccionMargen } from '@/components/ajustes/seccion-margen';
+import { getMargenEmpresa } from '@/lib/data/rentabilidad';
+import { nombreRol } from '@/lib/auth/roles';
+import { SeccionAprobaciones } from '@/components/ajustes/seccion-aprobaciones';
+import { listReglas, listSolicitudes } from '@/lib/data/aprobaciones';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata = { title: 'Ajustes' };
-
-const NOMBRE_ROL: Record<string, string> = {
-  admin: 'Administrador',
-  supervisor: 'Supervisor',
-  contador: 'Contador',
-  colaborador: 'Colaborador',
-  cliente: 'Cliente',
-};
 
 /**
  * Ajustes del panel de oficina.
@@ -67,12 +68,26 @@ export default async function AjustesPage() {
   const nombreEmpresa = await getNombreEmpresa();
 
   const verOperacion = secciones.includes('operacion');
+  const verModulos = secciones.includes('modulos');
   const verEmpresa = secciones.includes('empresa');
   const verUsuarios = secciones.includes('usuarios');
+  const verAprobaciones = secciones.includes('aprobaciones');
+  const { activos, perfil } = await getModulosEmpresa();
+  // Datos para facturar: por rol (admin/contador) Y con el módulo prendido. A
+  // quien no factura no se le pide nada.
+  const verFiscal = secciones.includes('fiscal') && activos.includes('fiscal');
+  const emisor = verFiscal ? await getEmpresaFiscal() : null;
+  // El margen objetivo solo tiene sentido con la utilidad por obra prendida.
+  const verMargen = verOperacion && activos.includes('rentabilidad');
+  const margenEmpresa = verMargen ? await getMargenEmpresa() : 15;
 
   // Solo se consulta si se va a mostrar: la RPC exige rol admin y lanzaría para
   // cualquier otro rol.
   const usuarios = verUsuarios ? (await listUsuariosEmpresa()).data : [];
+  // Visto bueno (0042): si la migración no está aplicada, las listas llegan vacías.
+  const [reglas, pendientes] = verAprobaciones
+    ? await Promise.all([listReglas().then((r) => r.data), listSolicitudes('PENDIENTE').then((r) => r.data)])
+    : [[], []];
 
   // El índice se arma con los grupos que este rol realmente ve, para que no
   // ofrezca saltar a una sección inexistente.
@@ -81,14 +96,17 @@ export default async function AjustesPage() {
     { id: 'seguridad', titulo: 'Seguridad' },
     { id: 'preferencias', titulo: 'Preferencias' },
     ...(verOperacion ? [{ id: 'operacion', titulo: 'Operación' }] : []),
+    ...(verModulos ? [{ id: 'modulos', titulo: 'Módulos' }] : []),
     ...(verEmpresa ? [{ id: 'empresa', titulo: 'Empresa' }] : []),
+    ...(verFiscal ? [{ id: 'fiscal', titulo: 'Datos para facturar' }] : []),
+    ...(verAprobaciones ? [{ id: 'aprobaciones', titulo: 'Visto bueno' }] : []),
     ...(verUsuarios ? [{ id: 'usuarios', titulo: 'Usuarios' }] : []),
   ];
 
   return (
     <div className="space-y-8">
       <PageHeader
-        eyebrow={`Entraste como ${NOMBRE_ROL[rol] ?? rol}`}
+        eyebrow={`Entraste como ${nombreRol(rol)}`}
         title="Ajustes"
         description="Tu cuenta, tus preferencias y la configuración de la empresa."
       />
@@ -136,8 +154,23 @@ export default async function AjustesPage() {
               alcance="A toda la empresa"
               descripcion="Valores con los que arrancan las cotizaciones nuevas. No modifican las ya creadas."
             >
-              <SeccionOperacion ivaActual={ivaPorcentaje} />
+              <SeccionOperacion ivaActual={ivaPorcentaje} modulos={activos} />
+              {verMargen && <SeccionMargen margenActual={margenEmpresa} />}
               <SeccionPdf configActual={pdf} />
+            </GrupoAjustes>
+          )}
+
+          {verModulos && (
+            <GrupoAjustes
+              id="modulos"
+              titulo="Módulos"
+              alcance="A toda la empresa"
+              descripcion="Qué partes de la app usa tu empresa. Lo apagado no aparece en el menú de nadie, pero sus datos se conservan."
+            >
+              <SeccionModulos
+                activosIniciales={activos}
+                pedidos={perfil?.proximamente ?? []}
+              />
             </GrupoAjustes>
           )}
 
@@ -149,6 +182,28 @@ export default async function AjustesPage() {
               descripcion="Datos de la constructora que aparecen en la aplicación y en el portal del cliente."
             >
               <SeccionEmpresa nombreActual={nombreEmpresa ?? 'ConstructorPro'} />
+            </GrupoAjustes>
+          )}
+
+          {verFiscal && (
+            <GrupoAjustes
+              id="fiscal"
+              titulo="Datos para facturar"
+              alcance="Solo administrador y contador"
+              descripcion="Tu RFC, razón social, régimen y código postal. Los ves tú y tu contador; nadie más del equipo."
+            >
+              <SeccionFiscal valores={emisor} />
+            </GrupoAjustes>
+          )}
+
+          {verAprobaciones && (
+            <GrupoAjustes
+              id="aprobaciones"
+              titulo="Visto bueno"
+              alcance="A toda la empresa"
+              descripcion="Desde qué monto un extra o una orden de compra necesita tu visto bueno antes de salir. Sin regla, solo tú los mandas."
+            >
+              <SeccionAprobaciones reglas={reglas} pendientes={pendientes} />
             </GrupoAjustes>
           )}
 

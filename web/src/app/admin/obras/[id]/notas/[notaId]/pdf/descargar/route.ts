@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { bloquearSiApagado } from '@/lib/data/modulos';
 import { getObra } from '@/lib/data/obras';
 import { getNotaObra } from '@/lib/data/notas-obra';
 import { getNombreEmpresa } from '@/lib/data/empresa';
@@ -30,6 +31,8 @@ export async function GET(
   if (!user) {
     return NextResponse.json({ error: 'No autenticado.' }, { status: 401 });
   }
+  const apagado = await bloquearSiApagado('notas');
+  if (apagado) return apagado;
 
   const { id, notaId } = await params;
   const [{ data: obra, error }, { data: nota, error: notaError }] = await Promise.all([

@@ -6,6 +6,12 @@ import { Button, Field, Input } from '@/components/ui';
 import type { Movimiento, TipoMovimiento } from '@/lib/data/types';
 import { msAFechaInput } from '@/lib/data/tz';
 import { actualizarMovimientoAction, crearMovimientoAction } from './actions';
+import { useModulos } from '@/components/modulos/modulos-context';
+import {
+  CATEGORIAS_COSTO,
+  ETIQUETA_CORTA_CATEGORIA,
+  leerCategoriaCosto,
+} from '@/lib/rentabilidad/categorias';
 
 const CONCEPTOS_FRECUENTES = [
   'Anticipo construcción',
@@ -67,6 +73,10 @@ export default function MovimientoForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fechaDefault] = useState(() => toDateInputValue(movimiento?.fecha ?? Date.now()));
+  // Categoría de costo (0036): solo con la utilidad por obra prendida. Con el
+  // módulo apagado el campo no viaja y la columna no se toca (apagar oculta, no
+  // borra).
+  const conCategoriaCosto = useModulos().includes('rentabilidad');
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -131,6 +141,28 @@ export default function MovimientoForm({
           placeholder="Ej. materiales"
         />
       </Field>
+
+      {conCategoriaCosto &&
+        (tipo === 'SALIDA' ? (
+          <Field label="¿En qué se gastó?" hint="Para saber cuánto te deja la obra. Si no sabes, déjalo sin clasificar.">
+            <select
+              name="categoria_costo"
+              defaultValue={leerCategoriaCosto(movimiento?.categoria_costo) ?? ''}
+              className="w-full cursor-pointer rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 outline-none transition focus:border-neutral-900"
+            >
+              <option value="">Sin clasificar</option>
+              {CATEGORIAS_COSTO.map((c) => (
+                <option key={c} value={c}>
+                  {ETIQUETA_CORTA_CATEGORIA[c]}
+                </option>
+              ))}
+            </select>
+          </Field>
+        ) : (
+          // Una entrada no es costo: se manda vacío para limpiar la categoría si
+          // una salida se corrige a entrada.
+          <input type="hidden" name="categoria_costo" value="" />
+        ))}
 
       <Field label="Nombre" hint="A quién se paga o de quién se recibe.">
         <input
