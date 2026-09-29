@@ -147,13 +147,20 @@ export function resumenPrestamos(estados: (EstadoPrestamo | null)[]): {
   return { prestadas, asignadas, vencidas };
 }
 
+/**
+ * ¿El error dice que la base todavía no tiene `herramienta_asignacion.permanente`
+ * (0047 sin aplicar)? La web entonces lee sin la columna y todo es préstamo.
+ */
+export function faltaColumnaPermanente(msg: string): boolean {
+  return /permanente/.test(msg) && /(does not exist|schema cache|no existe)/i.test(msg);
+}
+
 /** Mensaje de obra para los errores de la base (triggers de 0043 y CHECK de 0047). */
 export function mensajeErrorHerramienta(msg: string): string {
   if (msg.includes('herramienta_permanente_sin_regreso')) {
     return 'Una asignación permanente no lleva fecha de regreso.';
   }
-  // 0047 sin aplicar todavía en esta base.
-  if (/permanente/.test(msg) && /(does not exist|schema cache|no existe)/i.test(msg)) {
+  if (faltaColumnaPermanente(msg)) {
     return 'Todavía no se puede asignar de planta: falta actualizar la base de datos. Por ahora regístrala como préstamo.';
   }
   if (msg.includes('HERRAMIENTA_BAJA')) return 'Esta herramienta está dada de baja: no se puede prestar.';

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import {
   esEstadoHerramienta,
   esTipoHerramienta,
+  faltaColumnaPermanente,
   type EstadoHerramienta,
   type TipoHerramienta,
 } from '@/lib/herramienta/herramienta';
@@ -25,6 +26,8 @@ export interface Prestamo {
   recibio_nombre: string;
   estado_regreso: EstadoHerramienta | null;
   notas: string;
+  /** Asignación de planta (0047): sin fecha de regreso ni alerta. */
+  permanente: boolean;
 }
 
 export interface Herramienta {
@@ -40,8 +43,22 @@ export interface Herramienta {
   prestamo: Prestamo | null;
 }
 
-const CAMPOS_PRESTAMO =
+const CAMPOS_PRESTAMO_0043 =
   'id, herramienta_id, obra_id, colaborador_id, desde, devolver_antes, hasta, entrego_nombre, recibio_nombre, estado_regreso, notas, obras(nombre), colaboradores(nombre)';
+const CAMPOS_PRESTAMO = `${CAMPOS_PRESTAMO_0043}, permanente`;
+
+type Respuesta = { data: unknown; error: { message: string } | null };
+
+/**
+ * Lee los préstamos con `permanente` (0047) y, si la base todavía no tiene la
+ * columna, vuelve a leer sin ella: todo sale como préstamo, igual que antes.
+ * Así la web puede desplegarse antes de aplicar la migración.
+ */
+async function conRespaldo0047(consulta: (campos: string) => PromiseLike<Respuesta>): Promise<Respuesta> {
+  const r = await consulta(CAMPOS_PRESTAMO);
+  if (r.error && faltaColumnaPermanente(r.error.message)) return consulta(CAMPOS_PRESTAMO_0043);
+  return r;
+}
 
 type FilaPrestamo = {
   id: string;
@@ -55,6 +72,7 @@ type FilaPrestamo = {
   recibio_nombre: string;
   estado_regreso: string | null;
   notas: string;
+  permanente?: boolean | null;
   obras: { nombre: string } | null;
   colaboradores: { nombre: string } | null;
 };
@@ -74,6 +92,7 @@ function aPrestamo(f: FilaPrestamo): Prestamo {
     recibio_nombre: f.recibio_nombre ?? '',
     estado_regreso: esEstadoHerramienta(f.estado_regreso) ? f.estado_regreso : null,
     notas: f.notas ?? '',
+    permanente: f.permanente === true,
   };
 }
 
@@ -101,12 +120,9 @@ export async function listHerramienta(): Promise<{ data: Herramienta[]; error: s
       .is('deleted_at', null)
       .order('nombre')
       .limit(2000),
-    supabase
-      .from('herramienta_asignacion')
-      .select(CAMPOS_PRESTAMO)
-      .is('hasta', null)
-      .is('deleted_at', null)
-      .limit(2000),
+    conRespaldo0047((campos) =>
+      supabase.from('herramienta_asignacion').select(campos).is('hasta', null).is('deleted_at', null).limit(2000),
+    ),
   ]);
   if (inv.error) return { data: [], error: inv.error.message };
   if (abiertos.error) return { data: [], error: abiertos.error.message };
@@ -134,13 +150,15 @@ export async function getHerramienta(
       .eq('id', id)
       .is('deleted_at', null)
       .maybeSingle(),
-    supabase
-      .from('herramienta_asignacion')
-      .select(CAMPOS_PRESTAMO)
-      .eq('herramienta_id', id)
-      .is('deleted_at', null)
-      .order('desde', { ascending: false })
-      .limit(500),
+    conRespaldo0047((campos) =>
+      supabase
+        .from('herramienta_asignacion')
+        .select(campos)
+        .eq('herramienta_id', id)
+        .is('deleted_at', null)
+        .order('desde', { ascending: false })
+        .limit(500),
+    ),
   ]);
   if (h.error) return { data: null, historial: [], error: h.error.message };
   if (hist.error) return { data: null, historial: [], error: hist.error.message };

@@ -8,10 +8,12 @@ import { hoyMxMs, msAFechaInput } from '@/lib/data/tz';
 import {
   ETIQUETA_ESTADO_HERRAMIENTA,
   ETIQUETA_TIPO_HERRAMIENTA,
+  destinoPrestamo,
   estadoPrestamo,
   pesoSemaforo,
+  resumenPrestamos,
 } from '@/lib/herramienta/herramienta';
-import { Devolver, FormHerramienta, Prestar } from './formularios';
+import { CambiarTipo, Devolver, FormHerramienta, Prestar } from './formularios';
 import { SemaforoPrestamo } from './semaforo';
 import { capturaEnObra } from '@/lib/auth/roles';
 
@@ -21,6 +23,15 @@ export const metadata = { title: 'Herramienta y maquinaria' };
 
 const TONO_ESTADO = { BUENO: 'green', REPARACION: 'amber', BAJA: 'neutral' } as const;
 
+/** Filtro "Mostrar": todo, solo préstamos, solo lo de planta o lo que está en bodega. */
+const MOSTRAR = [
+  ['', 'Todo'],
+  ['prestamos', 'Préstamos'],
+  ['planta', 'Asignadas de planta'],
+  ['bodega', 'En bodega'],
+] as const;
+type Mostrar = (typeof MOSTRAR)[number][0];
+
 /**
  * Inventario de herramienta y maquinaria (0043, RF7.3): qué hay, dónde está
  * cada cosa y quién la trae. Lo vencido sale arriba. Admin y supervisor
@@ -29,7 +40,7 @@ const TONO_ESTADO = { BUENO: 'green', REPARACION: 'amber', BAJA: 'neutral' } as 
 export default async function HerramientaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ obra?: string; ver?: string }>;
+  searchParams: Promise<{ obra?: string; ver?: string; mostrar?: string }>;
 }) {
   const sp = await searchParams;
   const hoy = hoyMxMs();
@@ -42,6 +53,9 @@ export default async function HerramientaPage({
   ]);
   const rol = empresa?.rol ?? '';
   const escribe = capturaEnObra(rol);
+  // Prestar, asignar de planta y cambiar entre las dos es de oficina (F6-5);
+  // el residente registra regresos de su obra.
+  const decide = rol === 'admin' || rol === 'supervisor';
 
   if (!['admin', 'supervisor', 'contador', 'residente'].includes(rol)) {
     return (
@@ -54,21 +68,28 @@ export default async function HerramientaPage({
 
   const conEstado = data.map((h) => ({
     h,
-    prestamo: h.prestamo ? estadoPrestamo(h.prestamo, hoy) : null,
+    prestamo: h.prestamo ? estadoPrestamo(h.prestamo, hoy, destinoPrestamo(h.prestamo)) : null,
   }));
   const filtroObra = sp.obra && obras.data.some((o) => o.id === sp.obra) ? sp.obra : '';
   const verBajas = sp.ver === 'bajas';
+  const mostrar: Mostrar = MOSTRAR.some(([v]) => v === sp.mostrar) ? (sp.mostrar as Mostrar) : '';
   const visibles = conEstado
     .filter(({ h }) => (verBajas ? true : h.estado !== 'BAJA'))
     .filter(({ h }) => !filtroObra || h.prestamo?.obra_id === filtroObra)
+    .filter(({ h }) => {
+      if (mostrar === 'prestamos') return !!h.prestamo && !h.prestamo.permanente;
+      if (mostrar === 'planta') return !!h.prestamo?.permanente;
+      if (mostrar === 'bodega') return !h.prestamo;
+      return true;
+    })
     .sort((a, b) => {
       const pa = a.prestamo ? pesoSemaforo(a.prestamo.semaforo) : 9;
       const pb = b.prestamo ? pesoSemaforo(b.prestamo.semaforo) : 9;
       return pa - pb || a.h.nombre.localeCompare(b.h.nombre, 'es');
     });
 
-  const fuera = conEstado.filter((x) => x.prestamo).length;
-  const vencidas = conEstado.filter((x) => x.prestamo?.semaforo === 'ROJO').length;
+  // Las de planta no son "prestadas" ni se vencen nunca (0047).
+  const resumen = resumenPrestamos(conEstado.map((x) => x.prestamo));
   const reparacion = data.filter((h) => h.estado === 'REPARACION').length;
   const valor = data.filter((h) => h.estado !== 'BAJA').reduce((s, h) => s + (h.costo ?? 0), 0);
 
@@ -86,10 +107,11 @@ export default async function HerramientaPage({
         </p>
       )}
 
-      <section aria-label="Resumen" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <section aria-label="Resumen" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {[
-          ['Prestadas', String(fuera)],
-          ['Vencidas', String(vencidas)],
+          ['Prestadas', String(resumen.prestadas)],
+          ['Asignadas de planta', String(resumen.asignadas)],
+          ['Vencidas', String(resumen.vencidas)],
           ['En reparación', String(reparacion)],
           ['Valor del inventario', formatCurrency(valor)],
         ].map(([t, v]) => (
@@ -112,6 +134,20 @@ export default async function HerramientaPage({
             {obras.data.map((o) => (
               <option key={o.id} value={o.id}>
                 {o.nombre}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-sm">
+          <span className="block font-medium text-neutral-700">Mostrar</span>
+          <select
+            name="mostrar"
+            defaultValue={mostrar}
+            className="mt-1 min-h-11 rounded-lg border border-neutral-300 bg-white px-3 text-sm"
+          >
+            {MOSTRAR.map(([v, t]) => (
+              <option key={v} value={v}>
+                {t}
               </option>
             ))}
           </select>
@@ -155,21 +191,35 @@ export default async function HerramientaPage({
                   {ETIQUETA_TIPO_HERRAMIENTA[h.tipo]}
                   {h.costo !== null ? ` · ${formatCurrency(h.costo)}` : ''}
                 </p>
-                <p className="text-sm text-neutral-800">
-                  {h.prestamo
-                    ? [h.prestamo.obra_nombre, h.prestamo.colaborador_nombre].filter(Boolean).join(' · ') ||
-                      'Prestada'
-                    : h.estado === 'BAJA'
-                      ? 'Dada de baja'
-                      : 'En bodega'}
-                </p>
+                {/* La de planta ya dice a quién está asignada en su semáforo. */}
+                {!h.prestamo?.permanente && (
+                  <p className="text-sm text-neutral-800">
+                    {h.prestamo
+                      ? destinoPrestamo(h.prestamo) || 'Prestada'
+                      : h.estado === 'BAJA'
+                        ? 'Dada de baja'
+                        : 'En bodega'}
+                  </p>
+                )}
                 {prestamo && <SemaforoPrestamo estado={prestamo} />}
               </div>
               {escribe && (
                 <div className="flex flex-wrap gap-2">
                   {h.prestamo ? (
-                    <Devolver herramienta={{ id: h.id, nombre: h.nombre }} prestamoId={h.prestamo.id} hoy={hoyInput} />
+                    <>
+                      <Devolver herramienta={{ id: h.id, nombre: h.nombre }} prestamoId={h.prestamo.id} hoy={hoyInput} />
+                      {decide && (
+                        <CambiarTipo
+                          herramienta={{ id: h.id, nombre: h.nombre }}
+                          prestamoId={h.prestamo.id}
+                          permanente={h.prestamo.permanente}
+                          destino={destinoPrestamo(h.prestamo)}
+                          desde={msAFechaInput(h.prestamo.desde)}
+                        />
+                      )}
+                    </>
                   ) : (
+                    decide &&
                     h.estado !== 'BAJA' && (
                       <Prestar
                         herramienta={{ id: h.id, nombre: h.nombre }}

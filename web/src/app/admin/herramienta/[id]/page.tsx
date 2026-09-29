@@ -8,9 +8,10 @@ import { hoyMxMs, msAFechaInput } from '@/lib/data/tz';
 import {
   ETIQUETA_ESTADO_HERRAMIENTA,
   ETIQUETA_TIPO_HERRAMIENTA,
+  destinoPrestamo,
   estadoPrestamo,
 } from '@/lib/herramienta/herramienta';
-import { Devolver, FormHerramienta, Prestar } from '../formularios';
+import { CambiarTipo, Devolver, FormHerramienta, Prestar } from '../formularios';
 import { SemaforoPrestamo } from '../semaforo';
 import { capturaEnObra } from '@/lib/auth/roles';
 
@@ -39,6 +40,8 @@ export default async function HerramientaDetallePage({ params }: { params: Promi
   if (!h) notFound();
   const rol = empresa?.rol ?? '';
   const escribe = capturaEnObra(rol);
+  // Prestar / de planta es de oficina (F6-5); el residente registra regresos.
+  const decide = rol === 'admin' || rol === 'supervisor';
 
   return (
     <div className="space-y-6">
@@ -57,8 +60,20 @@ export default async function HerramientaDetallePage({ params }: { params: Promi
         {h.notas && <span className="text-sm text-neutral-600">{h.notas}</span>}
         {escribe &&
           (h.prestamo ? (
-            <Devolver herramienta={{ id: h.id, nombre: h.nombre }} prestamoId={h.prestamo.id} hoy={hoyInput} />
+            <>
+              <Devolver herramienta={{ id: h.id, nombre: h.nombre }} prestamoId={h.prestamo.id} hoy={hoyInput} />
+              {decide && (
+                <CambiarTipo
+                  herramienta={{ id: h.id, nombre: h.nombre }}
+                  prestamoId={h.prestamo.id}
+                  permanente={h.prestamo.permanente}
+                  destino={destinoPrestamo(h.prestamo)}
+                  desde={msAFechaInput(h.prestamo.desde)}
+                />
+              )}
+            </>
           ) : (
+            decide &&
             h.estado !== 'BAJA' && (
               <Prestar herramienta={{ id: h.id, nombre: h.nombre }} obras={obras.data} responsables={responsables} hoy={hoyInput} />
             )
@@ -76,7 +91,10 @@ export default async function HerramientaDetallePage({ params }: { params: Promi
             {historial.map((p) => (
               <li key={p.id} className="space-y-1 p-4 text-sm">
                 <p className="font-medium text-neutral-900">
-                  {[p.obra_nombre, p.colaborador_nombre].filter(Boolean).join(' · ') || 'Sin destino registrado'}
+                  {destinoPrestamo(p) || 'Sin destino registrado'}
+                  <span className="ml-2 text-xs font-normal text-neutral-600">
+                    {p.permanente ? 'Asignación de planta' : 'Préstamo'}
+                  </span>
                 </p>
                 <p className="text-neutral-700">
                   Salió el {formatDate(p.desde)}
