@@ -81,13 +81,19 @@ describe('armarBarra: umbral de barra plana', () => {
     expect(armarBarra(enlaces.slice(0, UMBRAL_BARRA_PLANA + 1)).plana).toBe(false);
   });
 
-  test('el paquete de siempre (8 enlaces) ya pasa del umbral y se agrupa', () => {
+  test('el paquete de siempre (8 enlaces) conserva la barra plana que ya conocen', () => {
     const barra = armarBarra(navDeModulos(PAQUETE_POR_DEFECTO, 'admin'));
+    expect(barra.plana).toBe(true);
+  });
+
+  test('con un módulo más que el paquete de siempre ya se agrupa', () => {
+    const barra = armarBarra(navDeModulos([...PAQUETE_POR_DEFECTO, 'fiscal'], 'admin'));
     expect(barra.plana).toBe(false);
     expect(fila(barra.items)).toEqual([
       'Inicio',
       'Obras▾[Pase de lista,Obras,Cotizaciones,Clientes]',
       'Gente▾[Equipo,Cuadrillas,Proyección]',
+      'Facturación',
     ]);
   });
 

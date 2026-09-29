@@ -17,10 +17,12 @@ import { CATEGORIAS_NAV, type CategoriaNav, type EnlaceNav } from '@/lib/modulos
  * Con este número de enlaces visibles o menos (Inicio incluido), la barra va
  * PLANA, como siempre. El paquete del independiente (obras, cotizaciones,
  * equipo, caja) da 6 enlaces: esconder 5 pantallas detrás de menús le cobra un
- * clic extra a quien menos lo necesita. 7 es lo que cabe en una fila de
- * escritorio sin apretarse (MENU-3).
+ * clic extra a quien menos lo necesita. Es 8 y no 7 para que el paquete del
+ * contratista con cuadrillas (el de las empresas que ya usan la app: 8 enlaces)
+ * conserve la barra que ya conocen; se agrupa cuando se prenden más módulos
+ * (MENU-3, ajustado por el orquestador).
  */
-export const UMBRAL_BARRA_PLANA = 7;
+export const UMBRAL_BARRA_PLANA = 8;
 
 /** Un grupo de enlaces bajo el título de su categoría. */
 export interface GrupoNav {
