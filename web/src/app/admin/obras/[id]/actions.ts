@@ -15,6 +15,8 @@ import {
   eliminarPartidaPresupuesto,
 } from '@/lib/data/presupuesto-obra';
 import type { TipoMovimiento } from '@/lib/data/types';
+import { getContratoObra, guardarContratoObra } from '@/lib/data/estimaciones';
+import { getEmpresaUsuario } from '@/lib/data/empresa';
 import { fechaInputAMs } from '@/lib/data/tz';
 import { leerCategoriaCosto } from '@/lib/rentabilidad/categorias';
 
@@ -278,5 +280,35 @@ export async function eliminarPartidaPresupuestoAction(
   }
 
   revalidatePath(`/admin/obras/${obraId}`);
+  return { ok: true };
+}
+
+/**
+ * Fija o corrige el IVA con que cobra la obra (IVA-2). Vive en
+ * `obra_contrato.iva_pct` (0039), el mismo que usan sus estimaciones: una sola
+ * tasa por obra. Se guarda la fila COMPLETA del contrato con lo que ya tenía
+ * (nunca upsert parcial, RT7); si la obra no tenía contrato, nace uno sin
+ * anticipo ni retenciones, que no cambia nada más. Solo el admin (RLS de 0039).
+ */
+export async function guardarIvaObraAction(obraId: string, pctTexto: string): Promise<ActionResult> {
+  const limpio = pctTexto.trim().replace('%', '').replace(',', '.').trim();
+  const pct = limpio === '' ? 0 : Number(limpio);
+  if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+    return { ok: false, error: 'El IVA va de 0 a 100 %. Pon 0 si esta obra se cobra sin IVA.' };
+  }
+  const rol = await getEmpresaUsuario()
+    .then((e) => e.rol)
+    .catch(() => '');
+  if (rol !== 'admin') return { ok: false, error: 'Solo el administrador cambia el IVA de la obra.' };
+
+  const { data, error } = await getContratoObra(obraId);
+  if (error) return { ok: false, error: `No se pudo leer el contrato de la obra: ${error}` };
+  const r = await guardarContratoObra(obraId, { ...data.contrato, ivaPct: Math.round(pct * 10_000) / 10_000 });
+  if (!r.ok) return { ok: false, error: r.error ?? 'No se pudo guardar el IVA.' };
+
+  revalidatePath(`/admin/obras/${obraId}`);
+  revalidatePath(`/admin/obras/${obraId}/estimaciones`);
+  revalidatePath(`/admin/obras/${obraId}/utilidad`);
+  revalidatePath('/admin/rentabilidad');
   return { ok: true };
 }

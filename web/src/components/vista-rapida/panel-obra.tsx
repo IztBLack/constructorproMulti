@@ -91,13 +91,24 @@ export function PanelObra({
           <dl className="space-y-1 text-sm">
             <Fila etiqueta="Personas asignadas" valor={String(datos.personas ?? 0)} />
             <Fila etiqueta="Costo total" valor={formatCurrency(datos.costoTotal ?? 0)} />
+            {(datos.ivaCobrado ?? 0) !== 0 ? (
+              <>
+                <Fila
+                  etiqueta={`Cobrado sin IVA (${datos.pagadoPct ?? 0}%)`}
+                  valor={formatCurrency(datos.recibidoSinIva ?? 0)}
+                  tono="verde"
+                />
+                <Fila etiqueta="IVA cobrado" valor={formatCurrency(datos.ivaCobrado ?? 0)} />
+              </>
+            ) : (
+              <Fila
+                etiqueta={`Recibido (${datos.pagadoPct ?? 0}%)`}
+                valor={formatCurrency(datos.recibido ?? 0)}
+                tono="verde"
+              />
+            )}
             <Fila
-              etiqueta={`Recibido (${datos.pagadoPct ?? 0}%)`}
-              valor={formatCurrency(datos.recibido ?? 0)}
-              tono="verde"
-            />
-            <Fila
-              etiqueta="Pendiente"
+              etiqueta={(datos.ivaCobrado ?? 0) !== 0 ? 'Por cobrar sin IVA' : 'Pendiente'}
               valor={formatCurrency(datos.pendiente ?? 0)}
               tono={(datos.pendiente ?? 0) > 0 ? 'rojo' : 'verde'}
               fuerte

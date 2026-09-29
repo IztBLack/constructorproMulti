@@ -20,12 +20,19 @@ export function ContratoObraCard({
   contratado,
   entradas,
   esAdmin,
+  ivaSugerido = 0,
 }: {
   obraId: string;
   contrato: ContratoCompleto;
   contratado: number;
   entradas: { id: string; fecha: number; monto: number; concepto: string }[];
   esAdmin: boolean;
+  /**
+   * IVA de la obra cuando todavía no hay contrato (el de su cotización, 0047).
+   * Se propone al capturar el contrato: el mismo IVA separa lo cobrado en el
+   * estado de cuenta, y dejarlo en 0 sin querer lo apagaría.
+   */
+  ivaSugerido?: number;
 }) {
   const router = useRouter();
   const [editando, setEditando] = useState(false);
@@ -69,7 +76,14 @@ export function ContratoObraCard({
           <Dato etiqueta="Fondo de garantía" valor={pct(c.fondoGarantiaPct)} />
           <Dato etiqueta="IVA" valor={c.ivaPct > 0 ? pct(c.ivaPct) : 'Sin IVA'} />
         </dl>
-      ) : (
+      ) : null}
+      {!editando && !existe && ivaSugerido > 0 ? (
+        <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          La cotización de esta obra lleva IVA de {pct(ivaSugerido)}, pero mientras no captures el
+          contrato las estimaciones salen sin IVA. Al capturarlo ya viene propuesto.
+        </p>
+      ) : null}
+      {editando && (
         <form
           className="mt-3 grid gap-3 sm:grid-cols-2"
           onSubmit={(e) => {
@@ -102,8 +116,15 @@ export function ContratoObraCard({
           <Field label="Fondo de garantía (%)" hint="Lo típico es 5 %. Se regresa al cerrar la obra.">
             <Input name="fondo_garantia_pct" inputMode="decimal" defaultValue={String(c.fondoGarantiaPct || '')} />
           </Field>
-          <Field label="IVA de las estimaciones (%)" hint="0 si el presupuesto se cobra sin IVA.">
-            <Input name="iva_pct" inputMode="decimal" defaultValue={String(c.ivaPct || '')} />
+          <Field
+            label="IVA de la obra (%)"
+            hint="0 si se cobra sin IVA. Se usa en las estimaciones y para separar el IVA de lo cobrado."
+          >
+            <Input
+              name="iva_pct"
+              inputMode="decimal"
+              defaultValue={String((existe ? c.ivaPct : ivaSugerido) || '')}
+            />
           </Field>
           <Field label="¿Con qué entrada te pagaron el anticipo? (opcional)" hint="Sirve para relacionar su factura.">
             <Select name="anticipo_movimiento_id" defaultValue={c.anticipoMovimientoId ?? ''}>

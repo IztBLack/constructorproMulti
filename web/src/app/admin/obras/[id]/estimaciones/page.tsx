@@ -9,6 +9,7 @@ import {
   listEstimacionesObra,
 } from '@/lib/data/estimaciones';
 import { hoyMxMs, msAFechaInput } from '@/lib/data/tz';
+import { getIvaObra } from '@/lib/data/iva-obra';
 import ObraTabs from '../_obra-tabs';
 import { ContratoObraCard } from './contrato-obra';
 import { EstimacionesLista } from './estimaciones-lista';
@@ -26,13 +27,16 @@ export const dynamic = 'force-dynamic';
 export default async function EstimacionesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const [{ data: obra, error: obraError }, estimaciones, contrato, conceptos, entradas, yo] = await Promise.all([
+  const [{ data: obra, error: obraError }, estimaciones, contrato, conceptos, entradas, yo, ivaObra] = await Promise.all([
     getObra(id),
     listEstimacionesObra(id),
     getContratoObra(id),
     listConceptosObra(id),
     listEntradasObra(id),
     getEmpresaUsuario().catch(() => null),
+    // Sin contrato todavía, el IVA de la obra sale de su cotización (0047): se
+    // propone al capturar el contrato para no dejarlo en 0 sin querer.
+    getIvaObra(id),
   ]);
 
   if (obraError) {
@@ -86,6 +90,7 @@ export default async function EstimacionesPage({ params }: { params: Promise<{ i
             contratado={contratado}
             entradas={entradas}
             esAdmin={rol === 'admin'}
+            ivaSugerido={ivaObra.tasaPct}
           />
           <EstimacionesLista
             obraId={id}

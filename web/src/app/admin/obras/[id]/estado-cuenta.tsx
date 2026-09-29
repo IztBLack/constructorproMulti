@@ -2,8 +2,15 @@ import Link from 'next/link';
 import { Card, CardTitle, THead, Th, TBody, Tr, Td, LinkButton } from '@/components/ui';
 import { formatCurrency } from '@/lib/data/format';
 import type { Movimiento, PartidaPresupuesto } from '@/lib/data/types';
-import { costoTotal } from '@/lib/data/presupuesto-obra';
 import type { ExtraAprobado } from '@/lib/data/cambios';
+import type { OrigenIva } from '@/lib/data/iva-obra';
+import {
+  muestraIva,
+  textoTasaIva,
+  totalesEstadoCuenta,
+  type IvaEstadoCuenta,
+} from '@/lib/cliente/estado-cuenta-calculo';
+import { IvaObra } from './iva-obra';
 
 interface Props {
   obraId: string;
@@ -11,18 +18,30 @@ interface Props {
   movimientos: Movimiento[];
   /** Extras APROBADOS (0036). Suman al costo total como línea aparte. */
   extras?: ExtraAprobado[];
+  /** Tasa de IVA de la obra (0047) y estimaciones cobradas. Sin esto: sin IVA. */
+  iva?: IvaEstadoCuenta & { origen: OrigenIva };
+  /** Solo el admin fija o corrige el IVA de la obra. */
+  puedeCambiarIva?: boolean;
 }
 
-export default function EstadoCuenta({ obraId, partidas, movimientos, extras = [] }: Props) {
+export default function EstadoCuenta({
+  obraId,
+  partidas,
+  movimientos,
+  extras = [],
+  iva,
+  puedeCambiarIva = false,
+}: Props) {
   // ── Cálculos principales ────────────────────────────────────────────────
-  // COSTO TOTAL = presupuesto + extras aprobados (RF1.4), igual que el estado de
-  // cuenta que ve el cliente (`totalesEstadoCuenta`).
-  const totalExtras = extras.reduce((acc, e) => acc + e.total, 0);
-  const costo = costoTotal(partidas) + totalExtras;
-  const recibido = movimientos
-    .filter((m) => m.tipo === 'ENTRADA')
-    .reduce((acc, m) => acc + m.monto, 0);
-  const pendiente = costo - recibido;
+  // La MISMA función que el estado de cuenta del cliente: COSTO TOTAL =
+  // presupuesto + extras aprobados (RF1.4, sin IVA); lo recibido se parte en
+  // cobrado sin IVA + IVA cobrado, y lo pendiente sale de lo cobrado sin IVA.
+  const entradas = movimientos.filter((m) => m.tipo === 'ENTRADA');
+  const t = totalesEstadoCuenta({ partidas, entradas, extras, iva });
+  const costo = t.costoTotal;
+  const recibido = t.recibido;
+  const pendiente = t.pendiente;
+  const conIva = muestraIva(t);
 
   // ── Resumen: Pagado por persona (SALIDAS agrupadas por nombre) ───────────
   const porPersona = new Map<string, number>();
@@ -113,25 +132,50 @@ export default function EstadoCuenta({ obraId, partidas, movimientos, extras = [
           </div>
         )}
 
-        {/* Totales clave */}
+        {/* Totales clave. Con IVA, lo que se compara con el costo es lo cobrado
+            SIN IVA; el IVA va aparte porque no es de la constructora. */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StatBox
-            label="COSTO TOTAL"
+            label={conIva ? 'COSTO TOTAL (SIN IVA)' : 'COSTO TOTAL'}
             value={formatCurrency(costo)}
             valueClass="text-neutral-900"
           />
           <StatBox
-            label="RECIBIDO"
-            value={formatCurrency(recibido)}
+            label={conIva ? 'COBRADO (SIN IVA)' : 'RECIBIDO'}
+            value={formatCurrency(conIva ? t.recibidoSinIva : recibido)}
             valueClass="text-green-700"
+            hint={costo > 0 ? `${t.pagadoPct}% del costo` : undefined}
           />
           <StatBox
-            label="PENDIENTE"
+            label={conIva ? 'POR COBRAR (SIN IVA)' : 'PENDIENTE'}
             value={formatCurrency(pendiente)}
             valueClass={pendiente > 0 ? 'text-red-600' : 'text-green-700'}
             hint={pendiente > 0 ? 'Por cobrar' : 'Al corriente'}
           />
         </div>
+
+        {conIva && (
+          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-neutral-800">
+            <dl className="flex flex-wrap gap-x-6 gap-y-1">
+              <div>
+                <dt className="inline">IVA cobrado{t.tasaIva > 0 ? ` (${textoTasaIva(t.tasaIva)})` : ''}: </dt>
+                <dd className="inline font-semibold tabular-nums">{formatCurrency(t.ivaCobrado)}</dd>
+              </div>
+              <div>
+                <dt className="inline">Recibido con IVA: </dt>
+                <dd className="inline font-semibold tabular-nums">{formatCurrency(recibido)}</dd>
+              </div>
+            </dl>
+            <p className="mt-1 text-neutral-700">El IVA cobrado no es tuyo: se entera al SAT.</p>
+          </div>
+        )}
+
+        <IvaObra
+          obraId={obraId}
+          tasaPct={t.tasaIva}
+          origen={iva?.origen ?? 'ninguno'}
+          puedeCambiar={puedeCambiarIva}
+        />
       </Card>
 
       {/* ── Resúmenes ─────────────────────────────────────────────────────── */}

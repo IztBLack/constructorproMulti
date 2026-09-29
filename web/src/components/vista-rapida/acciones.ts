@@ -18,6 +18,10 @@ export interface ResumenObra {
   personas?: number;
   costoTotal?: number;
   recibido?: number;
+  /** Lo recibido sin IVA (lo que abona al costo). */
+  recibidoSinIva?: number;
+  /** IVA que venía en lo recibido; 0 si la obra no cobra IVA. */
+  ivaCobrado?: number;
   pendiente?: number;
   pagadoPct?: number;
   notas?: number;
@@ -38,6 +42,8 @@ export async function resumenObra(obraId: string): Promise<ResumenObra> {
       personas: equipo.length,
       costoTotal: estado.costoTotal,
       recibido: estado.recibido,
+      recibidoSinIva: estado.recibidoSinIva,
+      ivaCobrado: estado.ivaCobrado,
       pendiente: estado.pendiente,
       pagadoPct: estado.pagadoPct,
       notas: notas.length,
