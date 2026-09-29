@@ -30,6 +30,7 @@ import { getGarantiaObra, listReportesObra, postventaDisponible } from '@/lib/da
 import { estadoGarantia } from '@/lib/postventa/garantia';
 import { hoyMxMs } from '@/lib/data/tz';
 import { PostventaCliente } from './postventa-cliente';
+import { muestraIva, textoTasaIva } from '@/lib/cliente/estado-cuenta-calculo';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,7 +60,7 @@ export default async function ObraDetallePage({
   // Estado de cuenta REAL de ESTA obra: COSTO TOTAL (presupuesto) vs RECIBIDO
   // (movimientos tipo='ENTRADA'). Las SALIDA (pagos internos) nunca se exponen.
   const [
-    { costoTotal, recibido, pendiente, pagadoPct, entradas, presupuesto, totalExtras },
+    estadoCuenta,
     extras,
     bitacora,
     fisico,
@@ -84,6 +85,12 @@ export default async function ObraDetallePage({
     getGarantiaObra(obra.id),
     listReportesObra(obra.id),
   ]);
+
+  const { costoTotal, recibido, recibidoSinIva, ivaCobrado, tasaIva, pendiente, pagadoPct, entradas, presupuesto, totalExtras } =
+    estadoCuenta;
+  // La obra se cobra con IVA: el costo total no lo lleva, así que lo pagado
+  // se compara SIN IVA y el IVA se enseña aparte.
+  const conIva = muestraIva(estadoCuenta);
 
   const porCobrarEst = estimaciones
     .filter((e) => e.estado === 'AUTORIZADA')
@@ -131,7 +138,8 @@ export default async function ObraDetallePage({
         <AvanceFisicoFinanciero
           paraCliente
           fisico={fisico.pct}
-          financiero={avanceFinanciero(recibido, costoTotal)}
+          financiero={avanceFinanciero(recibidoSinIva, costoTotal)}
+          sinIva={conIva}
           porCobrar={Math.round(porCobrarEst * 100) / 100}
           fondoRetenido={Math.round(fondoRetenido * 100) / 100}
         />
@@ -199,28 +207,49 @@ export default async function ObraDetallePage({
           <>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div className="rounded-xl border border-neutral-200 bg-white px-4 py-3">
-                <div className="text-xs font-medium text-neutral-500">Costo total</div>
+                <div className="text-xs font-medium text-neutral-500">
+                  {conIva ? 'Costo total (sin IVA)' : 'Costo total'}
+                </div>
                 <p className="mt-1.5 text-2xl font-semibold text-neutral-900 tabular-nums">
                   {formatCurrency(costoTotal)}
                 </p>
               </div>
 
               <div className="rounded-xl border border-neutral-200 bg-white px-4 py-3">
-                <div className="text-xs font-medium text-neutral-500">Pagado</div>
+                <div className="text-xs font-medium text-neutral-500">
+                  {conIva ? 'Pagado (sin IVA)' : 'Pagado'}
+                </div>
                 <p className="mt-1.5 text-2xl font-semibold text-green-700 tabular-nums">
-                  {formatCurrency(recibido)}
+                  {formatCurrency(conIva ? recibidoSinIva : recibido)}
                 </p>
                 <p className="mt-1 text-xs text-neutral-500">{pagadoPct}% del costo</p>
               </div>
 
               <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
-                <div className="text-xs font-medium text-amber-800">Saldo pendiente</div>
+                <div className="text-xs font-medium text-amber-800">
+                  {conIva ? 'Saldo pendiente (sin IVA)' : 'Saldo pendiente'}
+                </div>
                 <p className="mt-1.5 text-2xl font-semibold text-amber-700 tabular-nums">
                   {formatCurrency(pendiente)}
                 </p>
                 <p className="mt-1 text-xs text-amber-700/80">{100 - pagadoPct}% restante</p>
               </div>
             </div>
+
+            {/* Lo que pagó con IVA, desglosado: base + IVA = lo que salió de su
+                bolsa. Sin la nota interna del SAT (esa es de la constructora). */}
+            {conIva && (
+              <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm text-neutral-700">
+                <div>
+                  <dt className="inline">IVA pagado{tasaIva > 0 ? ` (${textoTasaIva(tasaIva)})` : ''}: </dt>
+                  <dd className="inline font-medium tabular-nums text-neutral-900">{formatCurrency(ivaCobrado)}</dd>
+                </div>
+                <div>
+                  <dt className="inline">Total pagado con IVA: </dt>
+                  <dd className="inline font-medium tabular-nums text-neutral-900">{formatCurrency(recibido)}</dd>
+                </div>
+              </dl>
+            )}
 
             {/* Los extras aprobados van como línea aparte (RF1.4): el cliente ve
                 qué era el trato original y qué se agregó después. */}
@@ -349,7 +378,7 @@ export default async function ObraDetallePage({
           <div className="mt-4 flex justify-end">
             <div className="rounded-lg border border-neutral-200 bg-white px-5 py-3 text-sm">
               <div className="flex items-center gap-6">
-                <span className="text-neutral-600">Total pagado</span>
+                <span className="text-neutral-600">{conIva ? 'Total pagado (con IVA)' : 'Total pagado'}</span>
                 <span className="tabular-nums font-semibold text-neutral-900">
                   {formatCurrency(recibido)}
                 </span>

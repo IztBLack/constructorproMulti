@@ -55,7 +55,10 @@ export default async function ClienteResumenPage() {
     getEstadoCuentaCliente(),
   ]);
 
-  const { totalPresupuestado, totalPagado, totalSaldo } = estadoCuenta;
+  const { totalPresupuestado, totalPagado, totalPagadoSinIva, totalIva, totalSaldo } = estadoCuenta;
+  // Si alguna obra se cobra con IVA, lo pagado se compara sin IVA (el
+  // presupuesto no lo lleva) y el IVA va en una línea aparte.
+  const conIva = totalIva !== 0;
 
   // Cotizaciones con estado mapeado
   const cotizaciones = cotizacionesData.map((d) => d.cotizacion);
@@ -87,13 +90,22 @@ export default async function ClienteResumenPage() {
             </p>
           </div>
           <div className="rounded-xl border border-neutral-200 bg-white px-4 py-3">
-            <div className="text-xs font-medium text-neutral-500">Total pagado</div>
+            <div className="text-xs font-medium text-neutral-500">
+              {conIva ? 'Total pagado (sin IVA)' : 'Total pagado'}
+            </div>
             <p className="mt-1.5 text-2xl font-semibold text-green-700 tabular-nums">
-              {formatCurrency(totalPagado)}
+              {formatCurrency(conIva ? totalPagadoSinIva : totalPagado)}
             </p>
+            {conIva && (
+              <p className="mt-1 text-xs text-neutral-500 tabular-nums">
+                Más {formatCurrency(totalIva)} de IVA · {formatCurrency(totalPagado)} en total
+              </p>
+            )}
           </div>
           <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3">
-            <div className="text-xs font-medium text-amber-800">Saldo pendiente</div>
+            <div className="text-xs font-medium text-amber-800">
+              {conIva ? 'Saldo pendiente (sin IVA)' : 'Saldo pendiente'}
+            </div>
             <p className="mt-1.5 text-2xl font-semibold text-amber-700 tabular-nums">
               {formatCurrency(totalSaldo)}
             </p>

@@ -15,11 +15,14 @@ export function AvanceFisicoFinanciero({
   porCobrar,
   fondoRetenido,
   paraCliente = false,
+  sinIva = false,
 }: {
   /** % hecho (ponderado por dinero); null = no se ha capturado avance por partida. */
   fisico: number | null;
-  /** % pagado contra el costo total; null = sin costo. */
+  /** % pagado (SIN IVA) contra el costo total; null = sin costo. */
   financiero: number | null;
+  /** La obra cobra con IVA: la etiqueta aclara que lo pagado va sin IVA. */
+  sinIva?: boolean;
   /** % estimado (valuado en estimaciones) contra el costo total; solo oficina. */
   estimado?: number | null;
   porCobrar?: number;
@@ -57,7 +60,20 @@ export function AvanceFisicoFinanciero({
         {!paraCliente && estimado != null && (
           <Barra etiqueta="Estimado (valuado en estimaciones)" pct={estimado} vacio="—" color="bg-indigo-600" />
         )}
-        <Barra etiqueta={paraCliente ? 'Pagado' : 'Financiero (lo cobrado)'} pct={financiero} vacio="Sin costo capturado" color="bg-blue-600" />
+        <Barra
+          etiqueta={
+            paraCliente
+              ? sinIva
+                ? 'Pagado (sin IVA)'
+                : 'Pagado'
+              : sinIva
+                ? 'Financiero (lo cobrado sin IVA)'
+                : 'Financiero (lo cobrado)'
+          }
+          pct={financiero}
+          vacio="Sin costo capturado"
+          color="bg-blue-600"
+        />
       </div>
       {lectura && <p className="mt-3 text-sm text-neutral-700">{lectura}</p>}
       {((porCobrar ?? 0) > 0 || (fondoRetenido ?? 0) > 0) && (

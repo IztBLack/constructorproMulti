@@ -35,6 +35,8 @@ import { avanceFinanciero } from '@/lib/estimaciones/avance';
 import { costoTotal } from '@/lib/data/presupuesto-obra';
 import { AvanceFisicoFinanciero } from '@/components/estimaciones/avance-fisico-financiero';
 import { capturaEnObra } from '@/lib/auth/roles';
+import { getIvaEstadoCuenta } from '@/lib/data/iva-obra';
+import { separarIvaCobrado } from '@/lib/cliente/estado-cuenta-calculo';
 
 export const dynamic = 'force-dynamic';
 
@@ -99,6 +101,10 @@ export default async function ObraDetallePage({
   // sin aplicar), cuentan como cero: es el estado de cuenta de antes.
   const extrasAprobados =
     conCaja && conExtras ? await listExtrasAprobadosObra(id).then((r) => (r.error ? [] : r.data)) : [];
+  // Con qué IVA cobra la obra (0047) y las estimaciones cobradas, para separar
+  // el IVA de lo recibido. Si 0047 no está aplicada: sin IVA, como antes.
+  const conEstimaciones = activos.includes('estimaciones');
+  const iva = conCaja || conEstimaciones ? await getIvaEstadoCuenta(id) : null;
 
   // Cobros para facturar (módulo `fiscal`): admin y contador. Van con la caja
   // porque los cobros de la obra SON sus entradas de caja.
@@ -115,7 +121,6 @@ export default async function ObraDetallePage({
 
   // Avance físico vs financiero (RF3.7), con el módulo de estimaciones. Si 0039
   // no está aplicada, el físico sale "sin medir" y lo demás igual.
-  const conEstimaciones = activos.includes('estimaciones');
   let fisicoFinanciero: React.ComponentProps<typeof AvanceFisicoFinanciero> | null = null;
   if (conEstimaciones && !presupuestoError) {
     const [fisico, ests, extras] = await Promise.all([
@@ -124,11 +129,17 @@ export default async function ObraDetallePage({
       conExtras ? listExtrasAprobadosObra(id) : Promise.resolve({ total: 0, error: null }),
     ]);
     const contratado = costoTotal(partidas) + (extras.error ? 0 : extras.total);
-    const cobrado = (movimientos ?? []).filter((m) => m.tipo === 'ENTRADA').reduce((s, m) => s + m.monto, 0);
+    // Lo cobrado SIN IVA: el costo contratado no lleva IVA (misma cuenta que el
+    // estado de cuenta, `separarIvaCobrado`).
+    const cobrado = separarIvaCobrado(
+      (movimientos ?? []).filter((m) => m.tipo === 'ENTRADA'),
+      iva,
+    ).base;
     const ac = acumuladosDe(ests.error ? [] : ests.data, 0);
     fisicoFinanciero = {
       fisico: fisico?.hayCapturas ? fisico.pct : null,
       financiero: avanceFinanciero(cobrado, contratado),
+      sinIva: (iva?.tasaPct ?? 0) > 0,
       estimado: avanceFinanciero(ac.estimado, contratado),
       porCobrar: ac.porCobrar,
       fondoRetenido: ac.fondoRetenido,
@@ -172,6 +183,8 @@ export default async function ObraDetallePage({
               partidas={partidas}
               movimientos={movimientos ?? []}
               extras={extrasAprobados}
+              iva={iva ?? undefined}
+              puedeCambiarIva={rol === 'admin'}
             />
           )}
 

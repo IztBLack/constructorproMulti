@@ -20,6 +20,7 @@ import { getObra, listMovimientosByObra } from './obras';
 import { listPresupuestoObra } from './presupuesto-obra';
 import { listExtrasAprobadosObra } from './cambios';
 import { totalesEstadoCuenta } from '@/lib/cliente/estado-cuenta-calculo';
+import { getIvaEstadoCuenta, type OrigenIva } from './iva-obra';
 import type {
   EntradaPortal,
   EstadoCuentaObra,
@@ -30,6 +31,8 @@ import type { Obra } from './types';
 export interface EstadoCuentaObraAdminResult {
   obra: Obra | null;
   estado: EstadoCuentaObra;
+  /** De dónde salió la tasa de IVA (contrato, cotización o ninguno). */
+  origenIva: OrigenIva;
   error: string | null;
 }
 
@@ -43,11 +46,13 @@ export async function getEstadoCuentaObraAdmin(
     { data: partidasRaw, error: errPres },
     { data: movimientos, error: errMov },
     extras,
+    iva,
   ] = await Promise.all([
     getObra(obraId),
     listPresupuestoObra(obraId),
     listMovimientosByObra(obraId),
     listExtrasAprobadosObra(obraId),
+    getIvaEstadoCuenta(obraId),
   ]);
 
   const vacio: EstadoCuentaObra = {
@@ -55,6 +60,9 @@ export async function getEstadoCuentaObraAdmin(
     totalExtras: 0,
     costoTotal: 0,
     recibido: 0,
+    recibidoSinIva: 0,
+    ivaCobrado: 0,
+    tasaIva: 0,
     pendiente: 0,
     pagadoPct: 0,
     partidas: [],
@@ -63,8 +71,8 @@ export async function getEstadoCuentaObraAdmin(
   };
 
   const error = errObra ?? errPres ?? errMov;
-  if (error) return { obra: null, estado: vacio, error };
-  if (!obra) return { obra: null, estado: vacio, error: null };
+  if (error) return { obra: null, estado: vacio, origenIva: 'ninguno', error };
+  if (!obra) return { obra: null, estado: vacio, origenIva: 'ninguno', error: null };
 
   // Partidas del presupuesto → misma forma que espera el builder del cliente.
   const partidas: PartidaPresupuestoPortal[] = partidasRaw.map((p) => ({
@@ -92,15 +100,17 @@ export async function getEstadoCuentaObraAdmin(
     }));
 
   // Mismo modelo que `getEstadoCuentaObra` (y la misma función):
-  // COSTO TOTAL = Σ presupuesto + extras aprobados, RECIBIDO = Σ entradas.
+  // COSTO TOTAL = Σ presupuesto + extras aprobados, RECIBIDO = Σ entradas, con
+  // el IVA cobrado aparte (misma tasa que ve el cliente: `iva_obras`, 0047).
   // Si leer los extras falla (0036 sin aplicar), cuentan como cero: es el
   // estado de cuenta de antes, no uno roto.
   const extrasAprobados = extras.error ? [] : extras.data;
-  const t = totalesEstadoCuenta({ partidas, entradas, extras: extrasAprobados });
+  const t = totalesEstadoCuenta({ partidas, entradas, extras: extrasAprobados, iva });
 
   return {
     obra,
     estado: { ...t, partidas, extras: extrasAprobados, entradas },
+    origenIva: iva.origen,
     error: null,
   };
 }

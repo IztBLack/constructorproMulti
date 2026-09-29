@@ -64,7 +64,15 @@ export default async function UtilidadObraPage({ params }: { params: Promise<{ i
           valor={formatCurrency(r.contratado)}
           detalle={`Presupuesto ${formatCurrency(r.presupuesto)} + extras aprobados ${formatCurrency(r.extras)}`}
         />
-        <Dato etiqueta="Gastado hasta hoy" valor={formatCurrency(r.costoReal)} detalle={`Cobrado: ${formatCurrency(r.cobrado)}`} />
+        <Dato
+          etiqueta="Gastado hasta hoy"
+          valor={formatCurrency(r.costoReal)}
+          detalle={
+            r.ivaCobrado !== 0
+              ? `Cobrado sin IVA: ${formatCurrency(r.cobrado)} (más ${formatCurrency(r.ivaCobrado)} de IVA, que se entera al SAT)`
+              : `Cobrado: ${formatCurrency(r.cobrado)}`
+          }
+        />
         {/* Contratado − gastado: en una obra a medias es lo que queda del
             contrato, no la ganancia (esa es «Utilidad al terminar», abajo). En
             negativo sí es una alarma real: ya se gastó más de lo contratado. */}

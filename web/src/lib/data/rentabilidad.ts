@@ -7,6 +7,8 @@ import type { Asistencia, Destajo, Obra, Puesto } from './types';
 import { puedeFijarMargen, puedeVerUtilidad } from '@/lib/auth/utilidad';
 import { totalExtrasAprobados } from '@/lib/cambios/extras';
 import { avanceFisicoPorObra } from './estimaciones';
+import { getIvaEstadoCuentaObras } from './iva-obra';
+import type { IvaEstadoCuenta } from '@/lib/cliente/estado-cuenta-calculo';
 import {
   MARGEN_OBJETIVO_POR_DEFECTO,
   calcularRentabilidad,
@@ -62,6 +64,7 @@ interface DatosCrudos {
   obras: Pick<Obra, 'id' | 'nombre' | 'activa' | 'avance'>[];
   presupuesto: { obra_id: string; cantidad: number; precio_unitario: number }[];
   movimientos: {
+    id: string;
     obra_id: string;
     tipo: string;
     monto: number;
@@ -81,6 +84,8 @@ interface DatosCrudos {
   avanceFisico: Map<string, number>;
   /** Saldo por pagar a proveedores por obra (compras, 0038). Vacío sin el módulo. */
   comprometidoCompras: Map<string, number>;
+  /** IVA con que cobra cada obra (0047) y sus estimaciones cobradas. Vacío: sin IVA. */
+  iva: Map<string, IvaEstadoCuenta>;
 }
 
 /**
@@ -126,7 +131,7 @@ async function leerDatos(empresaId: string, obraId?: string): Promise<{ d: Datos
     leerTodo<DatosCrudos['movimientos'][number]>((a, b) =>
               supabase
           .from('movimientos')
-          .select('obra_id, tipo, monto, categoria, categoria_costo')
+          .select('id, obra_id, tipo, monto, categoria, categoria_costo')
           .eq('empresa_id', empresaId)
           .is('deleted_at', null)
         .match(deLaObra).range(a, b),
@@ -251,6 +256,8 @@ async function leerDatos(empresaId: string, obraId?: string): Promise<{ d: Datos
       avanceFisico,
       // Sin 0038 o sin permiso regresa un mapa vacío: la utilidad queda como antes.
       comprometidoCompras: await comprometidoComprasPorObra(obras.map((o) => o.id as string)),
+      // Lo cobrado se compara SIN IVA contra lo contratado. Sin 0047: sin IVA.
+      iva: await getIvaEstadoCuentaObras(obras.map((o) => o.id as string)),
     },
     error: null,
   };
@@ -307,6 +314,7 @@ function calcularTodas(d: DatosCrudos): RentabilidadObra[] {
       avanceFisico: d.avanceFisico.get(obra.id) ?? null,
       margenObjetivo: margenObjetivoDe(margenObra, d.margenEmpresa),
       comprometidoCompras: d.comprometidoCompras.get(obra.id) ?? 0,
+      iva: d.iva.get(obra.id) ?? null,
     });
 
     return {

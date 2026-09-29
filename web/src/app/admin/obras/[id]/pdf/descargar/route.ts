@@ -5,6 +5,8 @@ import { listPresupuestoObra } from '@/lib/data/presupuesto-obra';
 import { getNotaCaja } from '@/lib/data/caja-nota';
 import { getNombreEmpresa } from '@/lib/data/empresa';
 import { getEmpresaConfig } from '@/lib/data/empresa-config';
+import { listExtrasAprobadosObra } from '@/lib/data/cambios';
+import { getIvaEstadoCuenta } from '@/lib/data/iva-obra';
 import { createClient } from '@/lib/supabase/server';
 import { construirCajaDocumentoHtml } from '@/lib/obra/documento-caja-html';
 import { folioCorto } from '@/lib/pdf/documento-base';
@@ -29,7 +31,7 @@ export async function GET(
   if (apagado) return apagado;
 
   const { id } = await params;
-  const [{ data: obra, error }, { data: partidas }, { data: movimientos }, notaCaja, nombreEmpresa, { pdf }] =
+  const [{ data: obra, error }, { data: partidas }, { data: movimientos }, notaCaja, nombreEmpresa, { pdf }, extras, iva] =
     await Promise.all([
       getObra(id),
       listPresupuestoObra(id),
@@ -37,6 +39,10 @@ export async function GET(
       getNotaCaja(id),
       getNombreEmpresa(),
       getEmpresaConfig(),
+      // Costo total = presupuesto + extras aprobados; con IVA, lo cobrado se
+      // separa. Si falla (0036/0047 sin aplicar): cero extras y sin IVA.
+      listExtrasAprobadosObra(id),
+      getIvaEstadoCuenta(id),
     ]);
 
   if (error) {
@@ -53,6 +59,8 @@ export async function GET(
     notaCaja,
     nombreEmpresa: nombreEmpresa ?? 'ConstructorPro',
     pdf,
+    extras: extras.error ? [] : extras.data,
+    iva,
   });
 
   try {

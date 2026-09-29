@@ -133,9 +133,11 @@ export default async function ObrasPage() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-neutral-400">Pagado</p>
+                      <p className="text-neutral-400">
+                        {estadoCuenta.tasaIva > 0 || estadoCuenta.ivaCobrado !== 0 ? 'Pagado (sin IVA)' : 'Pagado'}
+                      </p>
                       <p className="mt-0.5 tabular-nums font-semibold text-green-700">
-                        {formatCurrency(estadoCuenta.recibido)}
+                        {formatCurrency(estadoCuenta.recibidoSinIva)}
                       </p>
                     </div>
                     <div>
