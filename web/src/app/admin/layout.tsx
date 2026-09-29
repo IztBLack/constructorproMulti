@@ -70,16 +70,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </form>
           </div>
         </div>
-        {/* Fila 2: navegación, siempre en su propio renglón y en todos los
-            tamaños (una sola implementación = un solo comportamiento). Se
-            desplaza en horizontal solo cuando no cabe; en escritorio entra
-            completa sin scroll. */}
-        <NavLinks
-          className="flex gap-1 overflow-x-auto border-t border-neutral-100 px-4 py-2 sm:px-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden mx-auto max-w-6xl"
-          itemClassName="shrink-0"
-          modulos={activos}
-          rol={rol}
-        />
+        {/* Fila 2: navegación, siempre en su propio renglón. Con pocos enlaces
+            va plana; con muchos, por categorías (menús en escritorio, un botón
+            "Menú" en el celular). La forma la decide `NavLinks`. */}
+        <NavLinks modulos={activos} rol={rol} />
       </header>
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-8 print:max-w-none print:p-0">
