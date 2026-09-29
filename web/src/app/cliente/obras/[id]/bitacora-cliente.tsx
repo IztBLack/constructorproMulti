@@ -33,7 +33,7 @@ export function BitacoraCliente({ entradas }: { entradas: EntradaBitacora[] }) {
       <ol className="space-y-6">
         {dias.map((d) => (
           <li key={d.clave}>
-            <h3 className="mb-2 text-sm font-semibold capitalize text-neutral-900">
+            <h3 className="mb-2 text-sm font-semibold text-neutral-900 first-letter:uppercase">
               {fmtDia.format(new Date(d.fecha))}
             </h3>
             <ol className="space-y-3 border-l-2 border-neutral-200 pl-4">

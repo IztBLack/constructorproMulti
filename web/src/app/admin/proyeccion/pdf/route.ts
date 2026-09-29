@@ -54,7 +54,8 @@ function leerEstado(x: unknown): ProyeccionEstado | null {
 function rangoTexto(lunesMs: number): string {
   const l = partesTz(lunesMs);
   const d = partesTz(fechaDelDia(lunesMs, 6));
-  return `${l.day}/${l.month}/${l.year} al ${d.day}/${d.month}/${d.year}`;
+  // `partesTz` da el mes 0-based: +1 para que el PDF no diga un mes antes.
+  return `${l.day}/${l.month + 1}/${l.year} al ${d.day}/${d.month + 1}/${d.year}`;
 }
 
 export async function POST(request: NextRequest) {

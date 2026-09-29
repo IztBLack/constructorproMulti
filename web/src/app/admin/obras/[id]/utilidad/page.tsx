@@ -65,10 +65,13 @@ export default async function UtilidadObraPage({ params }: { params: Promise<{ i
           detalle={`Presupuesto ${formatCurrency(r.presupuesto)} + extras aprobados ${formatCurrency(r.extras)}`}
         />
         <Dato etiqueta="Gastado hasta hoy" valor={formatCurrency(r.costoReal)} detalle={`Cobrado: ${formatCurrency(r.cobrado)}`} />
+        {/* Contratado − gastado: en una obra a medias es lo que queda del
+            contrato, no la ganancia (esa es «Utilidad al terminar», abajo). En
+            negativo sí es una alarma real: ya se gastó más de lo contratado. */}
         <Dato
-          etiqueta="Utilidad hasta hoy"
+          etiqueta="Queda del contrato"
           valor={formatCurrency(r.utilidad)}
-          detalle={`Margen: ${formatoMargen(r.margen)}`}
+          detalle={perdida ? 'Ya se gastó más de lo contratado' : 'Contratado menos gastado; no es ganancia hasta terminar'}
           tono={perdida ? 'rojo' : 'normal'}
         />
       </div>

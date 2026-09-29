@@ -68,7 +68,7 @@ export function TimelineBitacora({
     <ol className="space-y-8">
       {dias.map((d) => (
         <li key={d.clave} aria-labelledby={`dia-${d.clave}`}>
-          <h3 id={`dia-${d.clave}`} className="mb-3 text-sm font-semibold capitalize text-neutral-900">
+          <h3 id={`dia-${d.clave}`} className="mb-3 text-sm font-semibold text-neutral-900 first-letter:uppercase">
             {fmtDia.format(new Date(d.fecha))}
           </h3>
           <ol className="space-y-4 border-l-2 border-neutral-200 pl-4">

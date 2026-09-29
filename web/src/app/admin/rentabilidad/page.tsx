@@ -35,6 +35,14 @@ export default async function RentabilidadPage({
 
   const filas = ordenarComparativo(res.data.filas.filter((f) => verTodas || f.activa));
   const totales = totalesComparativo(filas);
+  // «Utilidad hoy» (contratado − gastado) confundía: en una obra a medias es lo
+  // que falta por gastar, no la ganancia (el local al 51 % salía con +$1 M y
+  // proyectaba pérdida). La tabla compara lo que cada obra dejará al terminar.
+  const conProyeccion = filas.filter((f) => f.r.utilidadProyectada !== null);
+  const utilidadAlTerminar = conProyeccion.reduce((s, f) => s + (f.r.utilidadProyectada ?? 0), 0);
+  const contratadoProyectado = conProyeccion.reduce((s, f) => s + f.r.contratado, 0);
+  const margenAlTerminar =
+    contratadoProyectado > 0 ? Math.round((utilidadAlTerminar / contratadoProyectado) * 1000) / 10 : null;
   const inactivas = res.data.filas.filter((f) => !f.activa).length;
 
   return (
@@ -69,7 +77,7 @@ export default async function RentabilidadPage({
                 <th scope="col" className="px-4 py-2 font-medium">Obra</th>
                 <th scope="col" className="px-4 py-2 text-right font-medium">Contratado</th>
                 <th scope="col" className="px-4 py-2 text-right font-medium">Gastado</th>
-                <th scope="col" className="px-4 py-2 text-right font-medium">Utilidad hoy</th>
+                <th scope="col" className="px-4 py-2 text-right font-medium">Utilidad al terminar</th>
                 <th scope="col" className="px-4 py-2 text-right font-medium">Margen al terminar</th>
                 <th scope="col" className="px-4 py-2 font-medium">Cómo va</th>
               </tr>
@@ -90,8 +98,10 @@ export default async function RentabilidadPage({
                   </th>
                   <td className="px-4 py-2 text-right tabular-nums">{formatCurrency(f.r.contratado)}</td>
                   <td className="px-4 py-2 text-right tabular-nums">{formatCurrency(f.r.costoReal)}</td>
-                  <td className={`px-4 py-2 text-right tabular-nums ${f.r.utilidad < 0 ? 'text-red-700' : ''}`}>
-                    {formatCurrency(f.r.utilidad)}
+                  <td
+                    className={`px-4 py-2 text-right tabular-nums ${(f.r.utilidadProyectada ?? 0) < 0 ? 'text-red-700' : ''}`}
+                  >
+                    {f.r.utilidadProyectada === null ? '—' : formatCurrency(f.r.utilidadProyectada)}
                   </td>
                   <td className="px-4 py-2 text-right tabular-nums">
                     {formatoMargen(f.r.margenProyectado)}
@@ -108,8 +118,10 @@ export default async function RentabilidadPage({
                 <th scope="row" className="px-4 py-2 text-left font-semibold">Todas</th>
                 <td className="px-4 py-2 text-right font-semibold tabular-nums">{formatCurrency(totales.contratado)}</td>
                 <td className="px-4 py-2 text-right font-semibold tabular-nums">{formatCurrency(totales.costoReal)}</td>
-                <td className="px-4 py-2 text-right font-semibold tabular-nums">{formatCurrency(totales.utilidad)}</td>
-                <td className="px-4 py-2 text-right text-xs text-neutral-600">hoy: {formatoMargen(totales.margen)}</td>
+                <td className="px-4 py-2 text-right font-semibold tabular-nums">
+                  {conProyeccion.length === 0 ? '—' : formatCurrency(utilidadAlTerminar)}
+                </td>
+                <td className="px-4 py-2 text-right text-xs text-neutral-600">{formatoMargen(margenAlTerminar)}</td>
                 <td />
               </tr>
             </tfoot>
@@ -118,8 +130,9 @@ export default async function RentabilidadPage({
       )}
 
       <p className="text-xs text-neutral-600">
-        El margen al terminar se proyecta con el avance medido por partida, el avance capturado de
-        cada obra o, si no hay, con lo cobrado. Montos sin IVA.
+        La utilidad y el margen al terminar se proyectan con el avance medido por partida, el
+        avance capturado de cada obra o, si no hay, con lo cobrado. «—» = todavía no hay con qué
+        proyectar. Montos sin IVA.
       </p>
     </div>
   );
