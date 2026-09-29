@@ -243,6 +243,34 @@ en local (PGlite).
 - **Sucursales** (misma razón social, varias plazas): con `usuario_obra` + residentes ya se reparte el trabajo por obra; si hace falta agrupar obras, basta un campo "sucursal" en la obra para filtrar, sin tocar permisos.
 - **Recomendación:** no hacer nada hasta que un cliente real lo pida; cuando pase, Opción A. Es lo que decide D5/§5 ("se hace cuando haya constructoras usándolo").
 
+### Menú del panel por categorías (MENU-*)
+
+Con todos los módulos prendidos la barra de `/admin` tenía 15 enlaces planos que no
+cabían y se desplazaban en horizontal. Decisión de Mario: agruparlos en menús por
+categoría. Código: `web/src/lib/modulos.ts` (campo `categoria` de cada `nav`),
+`web/src/lib/nav-categorias.ts` (+ `.test.ts`) y `web/src/app/admin/nav-links.tsx`.
+
+| # | Decisión | Por qué |
+|---|---|---|
+| MENU-1 | La categoría es un campo **`categoria` en cada entrada `nav` del catálogo** (`lib/modulos.ts`), con las categorías y su orden en `CATEGORIAS_NAV`. Inicio va suelto (no es de ningún módulo). No hay otra lista | Una sola fuente, como exige el catálogo. Un módulo nuevo que pone enlace en la barra está obligado por el tipo a decir en qué menú cae. Los nombres y descripciones de los módulos no se tocaron: los espejos TS↔SQL y del móvil siguen iguales |
+| MENU-2 | Agrupado: **Obras** (Pase de lista, Obras, Cotizaciones, Clientes) · **Gente** (Equipo, Cuadrillas, Proyección) · **Dinero** (Facturación, Compras, Utilidad, Subcontratos) · **Operación** (Garantías, Herramienta, IMSS y papeles). Se quedaron los nombres de la propuesta | Son palabras de obra y cortas (caben en un botón). "Operación" se prefirió a "Otros"/"Más", que no dicen nada. Son **distintas** de los grupos de Ajustes → Módulos (`GrupoModulo`): aquellos agrupan interruptores (qué contratas), estas agrupan pantallas del día (a dónde vas) |
+| MENU-3 | **Umbral: con 7 enlaces visibles o menos (Inicio incluido) la barra queda plana**, como antes (`UMBRAL_BARRA_PLANA`) | El paquete del independiente da 6: esconder 5 pantallas detrás de menús le cobra un clic a quien menos lo necesita. 7 cabe en una fila de escritorio sin apretarse. **Ojo:** el paquete de siempre (contratista con cuadrillas) da 8 enlaces, así que **ya se agrupa**: Inicio · Obras ▾ · Gente ▾. Compras y almacén (2 enlaces) quedan planos |
+| MENU-4 | Filtrado idéntico al de antes (`navDeModulos`: módulo prendido + `roles` + `rutaNavPermitida`); el agrupado solo decide la forma. Una categoría sin enlaces no sale; **una con un solo enlace va suelta** en su lugar (p. ej. el colaborador con todo prendido: "IMSS y papeles" suelto, porque pierde Herramienta y Garantías) | Un menú de uno es un clic de más para nada. En el panel del celular sí sale como sección con su encabezado: ahí no esconde nada y el título da contexto |
+| MENU-5 | Orden: categorías en el orden de `CATEGORIAS_NAV`; dentro de cada una, el **`orden` del catálogo** (el mismo de la barra plana). Por eso Pase de lista abre el menú Obras | No se inventa un segundo orden. Pase de lista es lo más usado del día; la barra plana ya lo ponía primero |
+| MENU-6 | Escritorio/tableta (≥ `sm`): cada categoría es un **disclosure** (`button` con `aria-expanded`/`aria-controls` + lista de enlaces), **no `role="menu"`**. Escape cierra y regresa el foco al botón; clic fuera, salir con Tab o hacer clic en un enlace cierran; flechas/Inicio/Fin dentro de la lista; flecha abajo en el botón abre y entra al primer enlace. El botón de la categoría de la página actual se ve activo y lleva `aria-current="true"` | Son enlaces de navegación: el patrón de menú de ARIA exige manejo de foco completo (roving tabindex, tipeo) que aquí no aporta y que, a medias, es peor que no tenerlo |
+| MENU-7 | Celular (< `sm`): un botón **"Menú"** (44 px, con el nombre de la página actual a un lado) que abre un **panel dentro del flujo** (empuja el contenido, no flota): Inicio arriba y las categorías como secciones en dos columnas. Sin desplazamiento horizontal (verificado a 375 px) | En el flujo no hace falta trampa de foco ni capa encima; dos columnas lo dejan en media pantalla con todo prendido |
+| MENU-8 | Lo abierto se guarda junto con la ruta en que se abrió; si la ruta cambia, se considera cerrado | Cerrar al navegar sin un `useEffect` que reinicie estado (lo marca el lint de React 19) |
+| MENU-9 | La **paleta de comandos no se tocó** | Sus comandos no salen de `nav` (tiene su propia lista con alias y más destinos que la barra); agrupar por categoría ahí no era trivial |
+| MENU-10 | `/campo` (Pase de lista) sigue fuera de `/admin`; solo cambia en qué menú aparece su enlace | F0-8: tiene que seguir siendo estático para el service worker |
+
+**Verificación:** tests puros en `nav-categorias.test.ts` (categorías del catálogo,
+filtrado por módulo y por rol —admin, supervisor, colaborador, residente, compras,
+almacén—, umbral, "un solo enlace suelto", orden estable, página activa). Visual: se
+revisó con una página temporal **sin sesión** (no se commiteó) en claro y oscuro, a
+800 px y a 375 px: menús, Escape con regreso de foco, flechas, Tab fuera, clic fuera,
+panel del celular y barra plana con el paquete del independiente. **Falta** verlo con
+la sesión real en `/admin` (página actual marcada dentro de un menú).
+
 ### Endurecimiento tras revisión de seguridad (0035–0045)
 
 Una revisión de seguridad de 0035–0044 demostró en PGlite cada hueco con un test.
@@ -335,6 +363,7 @@ espejo lo refleja en el pago (queda como decisión de oficina, no se tocó).
 | F7 web | ✅ | 2d28084, 9f64fe9, a45b052, 4ccd4e1, 4e04c0d, 5bd0d4b, 8b6c038, 097e401 | Web: pestaña Seguridad (revisión diaria NOM-031, incidentes, recordatorio ST-7, salud solo admin), EPP en la ficha del colaborador, `/admin/herramienta`, `/admin/postventa` y "Reportar un problema" en el portal. 0043 escrita y probada en PGlite (28 tests), **sin aplicar a ningún Supabase** (crea los buckets `seguridad` y `postventa`). Pendiente: revisión legal de los datos de salud (F7-19), PDF de revisión e incidentes (RT3), fotos de la oficina en garantías, captura sin conexión → móvil (D6), verificación visual en navegador (no se levantó contra producción) |
 | Endurecimiento (SEG) | ✅ | b0ee22b, 2f6db85, 76532f9, 57aa9ca, 596760b, 153c194 | Hallazgos de la revisión de seguridad (A1, M1–M3, B1–B9) corregidos en 0036–0044 (sin aplicar) y en la nueva **0045** (policies de 0014/0020). `endurecimiento.test.ts` (27 tests) afirma que cada hueco ya no existe; 0035→0045 aplicadas dos veces sin error; eliminar una empresa completa sigue funcionando. Web: margen de la empresa en `empresa_margen`, vista previa de estimación sin notas. **Sin aplicar a ningún Supabase**. Pendiente: pantalla del borrado ARCO de salud |
 | **Verificación final** | ✅ | — | Rama de integración completa (0035–0045): `vitest` 843/843 (incluye PGlite con las 45 migraciones, RLS por rol e idempotencia), `tsc`, `eslint src` limpio, `next build` OK, todas las rutas de PDF con Chromium registradas; móvil `flutter test` 317/317. **Nada aplicado a producción ni pusheado.** |
+| Menú por categorías (MENU) | ✅ | 9ee2759, 9e7d350 | Web: la barra de `/admin` se agrupa en Obras/Gente/Dinero/Operación con más de 7 enlaces (menús en escritorio, "Menú" en el celular); plana con 7 o menos. Pendiente: revisarlo con sesión en el navegador |
 
 ## Pendiente para salir a producción
 
