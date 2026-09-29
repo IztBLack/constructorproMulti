@@ -12,7 +12,15 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import type { PGlite, Transaction } from '@electric-sql/pglite';
 import { comoUsuario, crearDbMigrada } from '../pglite/crear-db';
 import { crearEmpresaDePrueba, type EmpresaDePrueba } from '../pglite/escenarios';
-import { HOY_GUION, NOMBRE_EMPRESA_DEMO, PUNTOS_NOM_031, generarDemo, generarSqlDemo, type DemoGenerado } from './demo-seis-meses';
+import {
+  COLUMNAS_CON_GUARDA,
+  HOY_GUION,
+  NOMBRE_EMPRESA_DEMO,
+  PUNTOS_NOM_031,
+  generarDemo,
+  generarSqlDemo,
+  type DemoGenerado,
+} from './demo-seis-meses';
 import { puntosPlantilla } from '@/lib/seguridad/plantilla';
 import { calcularImportes } from '@/lib/estimaciones/calculo';
 import { avanceFisico, ejecutadoPorConcepto } from '@/lib/estimaciones/avance';
@@ -200,6 +208,33 @@ describe('demo de seis meses', () => {
     );
     expect(vencidos.length).toBe(1);
 
+    // Asignaciones de planta (0047): la camioneta del maestro y la escalera y
+    // esmeriladora de la cuadrilla Ibarra; abiertas, sin fecha de regreso. Y
+    // sigue habiendo préstamos sin fecha de más de 30 días ("confirma dónde está").
+    const planta = await comoUsuario(db, emp.adminId, (tx) =>
+      filas<{ clave: string; devolver: number | null; hasta: number | null }>(
+        tx,
+        `select h.clave, a.devolver_antes as devolver, a.hasta
+           from public.herramienta_asignacion a join public.herramienta h on h.id = a.herramienta_id
+          where a.empresa_id = $1 and a.permanente order by h.clave`,
+        [emp.empresaId],
+      ),
+    );
+    expect(planta).toEqual([
+      { clave: 'H-008', devolver: null, hasta: null },
+      { clave: 'H-017', devolver: null, hasta: null },
+      { clave: 'H-025', devolver: null, hasta: null },
+    ]);
+    const sinFechaViejos = await comoUsuario(db, emp.adminId, (tx) =>
+      filas(
+        tx,
+        `select id from public.herramienta_asignacion
+          where empresa_id = $1 and hasta is null and not permanente and devolver_antes is null and desde < $2`,
+        [emp.empresaId, HOY_MS - 31 * 86_400_000],
+      ),
+    );
+    expect(sinFechaViejos.length).toBeGreaterThanOrEqual(1);
+
     // La salud del accidente la ve el admin; el incidente dice incapacidad corta.
     const inc = await comoUsuario(db, emp.adminId, (tx) =>
       filas<{ tipo: string; dias: number | null }>(tx, 'select tipo, dias_incapacidad as dias from public.incidente where empresa_id = $1 order by tipo', [emp.empresaId]),
@@ -358,8 +393,34 @@ describe('demo de seis meses', () => {
         if (!foto[m[1]]?.includes(c[1])) faltan.push(`${m[1]}.${c[1]}`);
       }
     }
-    expect([...new Set(faltan)]).toEqual([]);
+    // Las columnas de migraciones que quizá no estén aplicadas solo se escriben
+    // con guarda (si no existen, el demo carga igual) y nunca en un INSERT.
+    for (const { tabla, columna } of COLUMNAS_CON_GUARDA) {
+      expect(demo.sql).toContain(
+        `if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = '${tabla}' and column_name = '${columna}') then`,
+      );
+      for (const m of demo.sql.matchAll(/insert into public\.(\w+) \(([^)]*)\)/g)) {
+        if (m[1] === tabla) expect(m[2].split(',').map((x) => x.trim())).not.toContain(columna);
+      }
+    }
+    const conGuarda = new Set(COLUMNAS_CON_GUARDA.map((c) => `${c.tabla}.${c.columna}`));
+    expect([...new Set(faltan)].filter((f) => !conGuarda.has(f))).toEqual([]);
   });
+
+  it('carga también en una base SIN 0047 (las de planta quedan como préstamos sin fecha)', async () => {
+    const db2 = await crearDbMigrada({ hasta: '0046' });
+    try {
+      const e2 = await crearEmpresaDePrueba(db2, 'Sin 0047');
+      const d2 = generarDemo({ userId: e2.adminId, empresaId: e2.empresaId, hoy: HOY_GUION });
+      await db2.exec(d2.sql);
+      const r = await filas<{ n: number }>(db2, 'select count(*)::int as n from public.herramienta_asignacion where empresa_id = $1', [
+        e2.empresaId,
+      ]);
+      expect(r[0].n).toBe(d2.resumen.conteos.herramienta_asignacion);
+    } finally {
+      await db2.close();
+    }
+  }, 240_000);
 
   it('es determinista: mismos parámetros, mismo SQL', () => {
     const otra = generarSqlDemo({ userId: emp.adminId, empresaId: emp.empresaId, hoy: HOY_GUION });
