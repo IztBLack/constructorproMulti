@@ -1789,14 +1789,29 @@ class Guion {
     this.insertar('secciones', secciones);
     this.insertar('partidas', partidas);
     // Estados finales (la web hace estos cambios uno por uno; aquí de una vez).
+    const aceptadas: { id: string; tu: number }[] = [];
     for (const c of cots) {
       const id = this.id(`cotizacion:${c.key}`);
       const tu = ms(c.ultimo, 13);
       if (c.estado === 'BORRADOR') continue;
       const aceptada = c.estado === 'ACEPTADA' || c.estado === 'CONVERTIDA';
       this.sql(
-        `update public.cotizaciones set estado = ${lit(aceptada ? 'ACEPTADA' : c.estado)}${aceptada ? `, aprobado_snapshot_json = public._cotizacion_snapshot('${id}')::text` : ''}, updated_at = ${tu} where id = '${id}';`,
+        `update public.cotizaciones set estado = ${lit(aceptada ? 'ACEPTADA' : c.estado)}, updated_at = ${tu} where id = '${id}';`,
       );
+      if (aceptada) aceptadas.push({ id, tu });
+    }
+    // La foto de lo aprobado: en producción `_cotizacion_snapshot` NO se puede
+    // ejecutar con la sesión de un usuario (se revocó a mano el 2026-07-20 y
+    // 0046 lo registra); la web arma la misma foto en TS. Aquí se toma como
+    // sistema, solo esa columna, y se regresa enseguida a actuar como el dueño.
+    if (aceptadas.length > 0) {
+      this.comoSistema('foto de lo aprobado en cotizaciones aceptadas (_cotizacion_snapshot está revocada a usuarios)');
+      for (const { id, tu } of aceptadas) {
+        this.sql(
+          `update public.cotizaciones set aprobado_snapshot_json = public._cotizacion_snapshot('${id}')::text, updated_at = ${tu} where id = '${id}';`,
+        );
+      }
+      this.comoDueno();
     }
     this.pendientesConversion = cots.filter((c) => c.obra).map((c) => ({ id: this.id(`cotizacion:${c.key}`), obra: c.obra!, fecha: c.ultimo }));
     this.insertar('pagos', pagos);
