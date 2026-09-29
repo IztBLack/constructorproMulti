@@ -51,6 +51,18 @@ export const DIFERENCIAS_CONOCIDAS: readonly { diferencia: string; porque: strin
       'con `0034_nota_para_y_porcentaje.sql`. Al mergear esa rama hay que renumerarla (p. ej. 0046) y ' +
       'entonces sale de esta lista.',
   },
+  // ── Migraciones del repo PENDIENTES DE APLICAR en producción ──────────────
+  // La foto es de producción real: no se edita a mano para "adelantarla". Cada
+  // migración nueva que agrega columnas entra aquí hasta que se aplique; al
+  // aplicarla y volver a tomar la foto (README), esta prueba avisa que la
+  // diferencia ya no existe y se borra la entrada.
+  {
+    diferencia: 'herramienta_asignacion.permanente: está en el repo (PGlite) y NO en producción',
+    porque:
+      'La agrega `supabase/migrations/0047_herramienta_permanente.sql` (asignación de planta, HERR-1 en ' +
+      'docs/PROGRESO_ALCANCE.md), escrita y probada en PGlite pero SIN aplicar en producción. La web lee la ' +
+      'columna con respaldo: si no existe, todo se trata como préstamo (HERR-6).',
+  },
 ];
 
 describe('esquema de producción', () => {

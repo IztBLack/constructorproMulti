@@ -9,7 +9,7 @@ import {
   TIPOS_HERRAMIENTA,
 } from '@/lib/herramienta/herramienta';
 import type { Herramienta } from '@/lib/data/herramienta';
-import { devolverHerramienta, guardarHerramienta, prestarHerramienta } from './actions';
+import { cambiarTipoAsignacion, devolverHerramienta, guardarHerramienta, prestarHerramienta } from './actions';
 
 const CAMPO = 'mt-1 min-h-11 w-full rounded-lg border border-neutral-300 bg-white px-3 text-sm text-neutral-900';
 
@@ -140,7 +140,57 @@ export function FormHerramienta({ inicial, textoBoton }: { inicial: Herramienta 
   );
 }
 
-// ── Prestar ─────────────────────────────────────────────────────────────────
+// ── Prestar o asignar de planta ─────────────────────────────────────────────
+
+type Modo = 'PRESTAMO' | 'PLANTA';
+
+const MODOS: { valor: Modo; titulo: string; ayuda: string }[] = [
+  {
+    valor: 'PRESTAMO',
+    titulo: 'Préstamo (con fecha de regreso)',
+    ayuda:
+      'Va a regresar a bodega. Si pones la fecha, te avisa cuando se pase; sin fecha, a los 30 días pide confirmar dónde está.',
+  },
+  {
+    valor: 'PLANTA',
+    titulo: 'Asignación permanente (queda a cargo de alguien o de la obra)',
+    ayuda:
+      'Para la camioneta del cabo o el equipo que una cuadrilla trae toda la obra. No lleva fecha ni avisos; cuando vuelva, registras su regreso igual.',
+  },
+];
+
+/** Préstamo o de planta, con su explicación. Radios nativos: teclado y lector de pantalla sin trucos. */
+function ElegirModo({ modo, onChange, nombre }: { modo: Modo; onChange: (m: Modo) => void; nombre: string }) {
+  return (
+    <fieldset className="space-y-2">
+      <legend className="text-sm font-medium text-neutral-700">¿Cómo sale?</legend>
+      {MODOS.map((m) => (
+        <label
+          key={m.valor}
+          className={`flex min-h-11 cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm ${
+            modo === m.valor ? 'border-neutral-900 bg-neutral-50' : 'border-neutral-300 bg-white'
+          }`}
+        >
+          <input
+            type="radio"
+            name={nombre}
+            value={m.valor}
+            checked={modo === m.valor}
+            onChange={() => onChange(m.valor)}
+            aria-describedby={`${nombre}-${m.valor}-ayuda`}
+            className="mt-0.5 h-5 w-5 shrink-0"
+          />
+          <span>
+            <span className="block font-medium text-neutral-900">{m.titulo}</span>
+            <span id={`${nombre}-${m.valor}-ayuda`} className="block text-neutral-600">
+              {m.ayuda}
+            </span>
+          </span>
+        </label>
+      ))}
+    </fieldset>
+  );
+}
 
 export function Prestar({
   herramienta,
@@ -154,6 +204,7 @@ export function Prestar({
   hoy: string;
 }) {
   const [abierto, setAbierto] = useState(false);
+  const [modo, setModo] = useState<Modo>('PRESTAMO');
   const [obraId, setObraId] = useState('');
   const [colaboradorId, setColaboradorId] = useState('');
   const [desde, setDesde] = useState(hoy);
@@ -172,7 +223,8 @@ export function Prestar({
         obraId: obraId || null,
         colaboradorId: colaboradorId || null,
         desde,
-        devolverAntes: devolver || null,
+        devolverAntes: modo === 'PLANTA' ? null : devolver || null,
+        permanente: modo === 'PLANTA',
         entregoNombre: entrego,
         notas,
       });
@@ -184,11 +236,16 @@ export function Prestar({
   return (
     <>
       <Button size="sm" onClick={() => setAbierto(true)}>
-        Prestar
+        Prestar o asignar
       </Button>
-      <Modal open={abierto} onClose={() => setAbierto(false)} title={`Prestar: ${herramienta.nombre}`}>
+      <Modal open={abierto} onClose={() => setAbierto(false)} title={`Prestar o asignar: ${herramienta.nombre}`}>
         <form onSubmit={enviar} className="space-y-3">
-          <p className="text-sm text-neutral-600">Elige la obra, quién se la lleva o las dos.</p>
+          <ElegirModo modo={modo} onChange={setModo} nombre={`modo-${herramienta.id}`} />
+          <p className="text-sm text-neutral-600">
+            {modo === 'PLANTA'
+              ? 'Elige la obra, quién queda a cargo o las dos.'
+              : 'Elige la obra, quién se la lleva o las dos.'}
+          </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block text-sm">
               <span className="font-medium text-neutral-700">Obra</span>
@@ -216,10 +273,12 @@ export function Prestar({
               <span className="font-medium text-neutral-700">Sale el día</span>
               <input type="date" required value={desde} onChange={(e) => setDesde(e.target.value)} className={CAMPO} />
             </label>
-            <label className="block text-sm">
-              <span className="font-medium text-neutral-700">Debe regresar (opcional)</span>
-              <input type="date" min={desde} value={devolver} onChange={(e) => setDevolver(e.target.value)} className={CAMPO} />
-            </label>
+            {modo === 'PRESTAMO' && (
+              <label className="block text-sm">
+                <span className="font-medium text-neutral-700">Debe regresar (opcional)</span>
+                <input type="date" min={desde} value={devolver} onChange={(e) => setDevolver(e.target.value)} className={CAMPO} />
+              </label>
+            )}
           </div>
           <label className="block text-sm">
             <span className="font-medium text-neutral-700">Entregó</span>
@@ -238,7 +297,7 @@ export function Prestar({
           <ErrorForm error={error} />
           <div className="flex flex-wrap gap-2">
             <Button type="submit" disabled={pendiente}>
-              {pendiente ? 'Guardando…' : 'Prestar'}
+              {pendiente ? 'Guardando…' : modo === 'PLANTA' ? 'Asignar de planta' : 'Prestar'}
             </Button>
             <Button type="button" variant="secondary" onClick={() => setAbierto(false)} disabled={pendiente}>
               Cancelar
@@ -328,6 +387,84 @@ export function Devolver({
           <div className="flex flex-wrap gap-2">
             <Button type="submit" disabled={pendiente}>
               {pendiente ? 'Guardando…' : 'Registrar regreso'}
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => setAbierto(false)} disabled={pendiente}>
+              Cancelar
+            </Button>
+          </div>
+        </form>
+      </Modal>
+    </>
+  );
+}
+
+// ── Préstamo ↔ de planta (mientras siga abierto) ───────────────────────────
+
+export function CambiarTipo({
+  herramienta,
+  prestamoId,
+  permanente,
+  destino,
+  desde,
+}: {
+  herramienta: { id: string; nombre: string };
+  prestamoId: string;
+  permanente: boolean;
+  /** "Obra · Persona", para decir a cargo de quién queda. */
+  destino: string;
+  /** Día de salida (yyyy-mm-dd): la fecha de regreso no puede ser antes. */
+  desde: string;
+}) {
+  const [abierto, setAbierto] = useState(false);
+  const [devolver, setDevolver] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [pendiente, iniciar] = useTransition();
+  const aPlanta = !permanente;
+  const accion = aPlanta ? 'Dejar de planta' : 'Volver préstamo';
+
+  function enviar(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    iniciar(async () => {
+      const r = await cambiarTipoAsignacion({
+        prestamoId,
+        herramientaId: herramienta.id,
+        permanente: aPlanta,
+        devolverAntes: aPlanta ? null : devolver || null,
+      });
+      if (!r.ok) setError(r.error ?? 'No se pudo guardar.');
+      else setAbierto(false);
+    });
+  }
+
+  return (
+    <>
+      <Button size="sm" variant="secondary" onClick={() => setAbierto(true)}>
+        {accion}
+      </Button>
+      <Modal open={abierto} onClose={() => setAbierto(false)} title={`${accion}: ${herramienta.nombre}`}>
+        <form onSubmit={enviar} className="space-y-3">
+          {aPlanta ? (
+            <p className="text-sm text-neutral-700">
+              Deja de ser un préstamo: queda a cargo de {destino || 'quien la tiene'}, sin fecha de regreso y sin avisos.
+              Cuando vuelva a bodega, registra su regreso como siempre.
+            </p>
+          ) : (
+            <>
+              <p className="text-sm text-neutral-700">
+                Vuelve a contar como préstamo: si pones fecha, te avisa cuando se pase; sin fecha, a los 30 días pide
+                confirmar dónde está.
+              </p>
+              <label className="block text-sm">
+                <span className="font-medium text-neutral-700">Debe regresar (opcional)</span>
+                <input type="date" min={desde} value={devolver} onChange={(e) => setDevolver(e.target.value)} className={CAMPO} />
+              </label>
+            </>
+          )}
+          <ErrorForm error={error} />
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" disabled={pendiente}>
+              {pendiente ? 'Guardando…' : accion}
             </Button>
             <Button type="button" variant="secondary" onClick={() => setAbierto(false)} disabled={pendiente}>
               Cancelar

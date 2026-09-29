@@ -41,7 +41,11 @@ export function esEstadoHerramienta(x: unknown): x is EstadoHerramienta {
 /** Sin fecha de regreso, después de estos días se pide confirmar dónde está. */
 export const DIAS_SIN_FECHA_AVISO = 30;
 
-export type Semaforo = 'DEVUELTA' | 'VERDE' | 'AMARILLO' | 'ROJO';
+/**
+ * `ASIGNADA` = asignación permanente ("de planta", 0047): la camioneta del cabo,
+ * la escalera que trae una cuadrilla toda la obra. Neutro: no avisa nunca.
+ */
+export type Semaforo = 'DEVUELTA' | 'VERDE' | 'AMARILLO' | 'ROJO' | 'ASIGNADA';
 
 export interface EstadoPrestamo {
   semaforo: Semaforo;
@@ -54,7 +58,9 @@ export interface EstadoPrestamo {
 
 /**
  * Semáforo de un préstamo:
- *   · devuelta → DEVUELTA;
+ *   · devuelta → DEVUELTA (también la permanente que ya regresó);
+ *   · asignación permanente abierta → ASIGNADA, sin importar los días que
+ *     lleve fuera (no tiene fecha de regreso: nunca se vence ni pide revisar);
  *   · con fecha de regreso: ROJO si ya pasó, AMARILLO si vence hoy o mañana,
  *     VERDE si falta más;
  *   · sin fecha: AMARILLO si lleva más de 30 días fuera (nadie ha confirmado
@@ -62,14 +68,25 @@ export interface EstadoPrestamo {
  * Por día de calendario en México.
  */
 export function estadoPrestamo(
-  p: { desde: number; hasta: number | null; devolver_antes: number | null },
+  p: { desde: number; hasta: number | null; devolver_antes: number | null; permanente?: boolean },
   hoy: number,
+  /** A quién o a qué obra está asignada ("Casas Bienestar · Martín"), para el texto de la permanente. */
+  destino?: string | null,
 ): EstadoPrestamo {
   if (p.hasta !== null) {
     const diasFuera = Math.max(0, diasEntreMx(p.desde, p.hasta));
     return { semaforo: 'DEVUELTA', diasFuera, diasVencida: 0, texto: 'Ya regresó' };
   }
   const diasFuera = Math.max(0, diasEntreMx(p.desde, hoy));
+  if (p.permanente) {
+    const d = destino?.trim();
+    return {
+      semaforo: 'ASIGNADA',
+      diasFuera,
+      diasVencida: 0,
+      texto: d ? `Asignada de planta a ${d}` : 'Asignada de planta',
+    };
+  }
   if (p.devolver_antes !== null) {
     const faltan = diasEntreMx(hoy, p.devolver_antes);
     if (faltan < 0) {
@@ -97,15 +114,55 @@ export function estadoPrestamo(
   };
 }
 
-const PESO: Record<Semaforo, number> = { ROJO: 0, AMARILLO: 1, VERDE: 2, DEVUELTA: 3 };
+const PESO: Record<Semaforo, number> = { ROJO: 0, AMARILLO: 1, VERDE: 2, ASIGNADA: 3, DEVUELTA: 4 };
 
-/** Para ordenar: lo vencido primero. */
+/** Para ordenar: lo vencido primero; lo asignado de planta después de los préstamos. */
 export function pesoSemaforo(s: Semaforo): number {
   return PESO[s];
 }
 
-/** Mensaje de obra para los errores de la base (triggers de 0043). */
+/** "Obra · Persona" de un préstamo, o '' si no quedó destino (borrado real). */
+export function destinoPrestamo(p: { obra_nombre: string | null; colaborador_nombre: string | null }): string {
+  return [p.obra_nombre, p.colaborador_nombre].filter(Boolean).join(' · ');
+}
+
+/**
+ * Cuenta de la pantalla: préstamos abiertos (sin las permanentes), asignadas de
+ * planta y vencidas. Una permanente nunca es vencida.
+ */
+export function resumenPrestamos(estados: (EstadoPrestamo | null)[]): {
+  prestadas: number;
+  asignadas: number;
+  vencidas: number;
+} {
+  let prestadas = 0;
+  let asignadas = 0;
+  let vencidas = 0;
+  for (const e of estados) {
+    if (!e || e.semaforo === 'DEVUELTA') continue;
+    if (e.semaforo === 'ASIGNADA') asignadas++;
+    else prestadas++;
+    if (e.semaforo === 'ROJO') vencidas++;
+  }
+  return { prestadas, asignadas, vencidas };
+}
+
+/**
+ * ¿El error dice que la base todavía no tiene `herramienta_asignacion.permanente`
+ * (0047 sin aplicar)? La web entonces lee sin la columna y todo es préstamo.
+ */
+export function faltaColumnaPermanente(msg: string): boolean {
+  return /permanente/.test(msg) && /(does not exist|schema cache|no existe)/i.test(msg);
+}
+
+/** Mensaje de obra para los errores de la base (triggers de 0043 y CHECK de 0047). */
 export function mensajeErrorHerramienta(msg: string): string {
+  if (msg.includes('herramienta_permanente_sin_regreso')) {
+    return 'Una asignación permanente no lleva fecha de regreso.';
+  }
+  if (faltaColumnaPermanente(msg)) {
+    return 'Todavía no se puede asignar de planta: falta actualizar la base de datos. Por ahora regístrala como préstamo.';
+  }
   if (msg.includes('HERRAMIENTA_BAJA')) return 'Esta herramienta está dada de baja: no se puede prestar.';
   if (msg.includes('HERRAMIENTA_SIN_DESTINO')) return 'Di a qué obra va o quién se la lleva.';
   if (msg.includes('HERRAMIENTA_HISTORIAL')) return 'Un préstamo ya devuelto no se cambia.';

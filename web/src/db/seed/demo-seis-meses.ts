@@ -955,6 +955,15 @@ const ACLARACIONES: [number, string][] = [
 
 // ── Herramienta ──────────────────────────────────────────────────────────────
 
+/**
+ * Columnas que el demo escribe SOLO con guarda (`siExisteColumna`), porque su
+ * migración puede no estar aplicada donde se carga. Nunca van en un INSERT.
+ * La prueba "solo escribe columnas que existen en la foto" las acepta solo así.
+ */
+export const COLUMNAS_CON_GUARDA: readonly { tabla: string; columna: string; migracion: string }[] = [
+  { tabla: 'herramienta_asignacion', columna: 'permanente', migracion: '0047_herramienta_permanente.sql' },
+];
+
 const HERRAMIENTA: [clave: string, nombre: string, tipo: string, costo: number, estado?: string, serie?: string][] = [
   ['H-001', 'Revolvedora de 1 saco', 'MAQUINARIA', 28500, undefined, 'RV-21-0873'],
   ['H-002', 'Revolvedora de 1 saco', 'MAQUINARIA', 28500, undefined, 'RV-22-1140'],
@@ -984,8 +993,22 @@ const HERRAMIENTA: [clave: string, nombre: string, tipo: string, costo: number, 
   ['H-026', 'Soldadora inversora 200 A', 'ELECTRICA', 6800, 'BAJA'],
 ];
 
-/** Préstamos: [herramienta, obra|null, persona|null, desde, devolver_antes|null, hasta|null, estado_regreso|null, notas]. */
-const PRESTAMOS: [string, ClaveObra | null, string | null, string, string | null, string | null, string | null, string][] = [
+/**
+ * Préstamos: [herramienta, obra|null, persona|null, desde, devolver_antes|null, hasta|null, estado_regreso|null, notas,
+ * permanente?]. `permanente` = asignación de planta (0047): la camioneta del maestro y el equipo que la cuadrilla
+ * Ibarra trae toda la obra; sin fecha de regreso (la base lo exige) y sin alerta.
+ */
+const PRESTAMOS: [
+  string,
+  ClaveObra | null,
+  string | null,
+  string,
+  string | null,
+  string | null,
+  string | null,
+  string,
+  permanente?: true,
+][] = [
   ['H-001', 'A', 'enrique', '2026-04-06', null, null, null, ''],
   ['H-002', 'D', 'martin', '2026-03-30', null, '2026-07-24', 'BUENO', ''],
   ['H-002', 'C', 'martin', '2026-07-27', null, null, null, ''],
@@ -995,18 +1018,18 @@ const PRESTAMOS: [string, ClaveObra | null, string | null, string, string | null
   ['H-004', 'D', 'martin', '2026-04-06', '2026-04-24', '2026-04-24', 'REPARACION', 'Regresó con el pisón flojo; se mandó a taller.'],
   ['H-005', 'A', 'enrique', '2026-06-01', '2026-10-15', null, null, ''],
   ['H-006', 'C', 'julio', '2026-08-17', '2026-10-02', null, null, ''],
-  ['H-008', 'B', 'javier', '2026-04-20', null, null, null, ''],
+  ['H-008', 'B', 'javier', '2026-04-20', null, null, null, 'Se queda con la cuadrilla Ibarra toda la obra.', true],
   ['H-009', 'C', 'martin', '2026-06-15', null, '2026-08-19', 'BUENO', 'Se retiró el disco dañado después del accidente.'],
   ['H-012', 'A', 'enrique', '2026-04-06', '2026-05-08', '2026-05-08', 'BUENO', ''],
   ['H-012', 'C', 'martin', '2026-06-15', '2026-07-10', '2026-07-10', 'BUENO', ''],
   ['H-012', 'A', 'enrique', '2026-07-13', null, null, null, ''],
   ['H-015', 'A', null, '2026-07-06', '2026-11-30', null, null, 'Para losas y aplanados exteriores.'],
   ['H-016', 'A', null, '2026-06-15', '2026-10-30', null, null, ''],
-  ['H-017', 'B', 'javier', '2026-04-20', null, null, null, ''],
+  ['H-017', 'B', 'javier', '2026-04-20', null, null, null, 'Se queda con la cuadrilla Ibarra toda la obra.', true],
   ['H-021', 'C', 'martin', '2026-06-15', null, null, null, 'Mientras CFE conecta la acometida.'],
   ['H-022', 'A', 'enrique', '2026-05-27', '2026-05-29', '2026-05-29', 'BUENO', 'Para desaguar la excavación del lote 12.'],
   ['H-023', 'C', 'rogelio', '2026-08-03', null, null, null, ''],
-  ['H-025', null, 'martin', '2026-03-30', null, null, null, 'Camioneta asignada al maestro Martín.'],
+  ['H-025', null, 'martin', '2026-03-30', null, null, null, 'Camioneta asignada al maestro Martín.', true],
 ];
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -1116,6 +1139,22 @@ class Guion {
 
   private sql(s: string): void {
     this.L.push(s);
+  }
+
+  /**
+   * Corre `sentencia` solo si la columna existe (EXECUTE: plpgsql no la revisa
+   * si no existe). Para columnas de migraciones que pueden no estar aplicadas
+   * todavía donde se carga el demo; cada una va en COLUMNAS_CON_GUARDA.
+   */
+  private siExisteColumna(tabla: string, columna: string, sentencia: string): void {
+    if (!COLUMNAS_CON_GUARDA.some((c) => c.tabla === tabla && c.columna === columna)) {
+      throw new Error(`Columna con guarda no registrada: ${tabla}.${columna}`);
+    }
+    this.sql(
+      `if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = ${lit(tabla)} and column_name = ${lit(columna)}) then`,
+    );
+    this.sql(`  execute ${lit(sentencia)};`);
+    this.sql('end if;');
   }
 
   private comentario(s: string): void {
@@ -3746,7 +3785,7 @@ class Guion {
   // ── 19. Herramienta ──────────────────────────────────────────────────────
 
   private herramienta(): void {
-    this.comentario('Herramienta y equipo: inventario y préstamos (devueltos, activos y uno vencido)');
+    this.comentario('Herramienta y equipo: inventario, préstamos (devueltos, activos y uno vencido) y asignaciones de planta');
     const t = ms(INICIO_GUION, 12);
     this.insertar(
       'herramienta',
@@ -3782,6 +3821,17 @@ class Guion {
         created_at: ms(desde, 8),
         updated_at: ms(hasta ?? desde, hasta ? 17 : 8),
       })),
+    );
+    // Asignaciones de planta (0047). Van en un UPDATE aparte y con guarda: si la
+    // base todavía no tiene la columna (0047 sin aplicar), el demo carga igual y
+    // esas tres quedan como préstamos sin fecha. Ver COLUMNAS_CON_GUARDA.
+    const planta = PRESTAMOS.flatMap(([h, , , , , , , , permanente], i) =>
+      permanente ? [this.id(`prestamo:${h}:${i}`)] : [],
+    );
+    this.siExisteColumna(
+      'herramienta_asignacion',
+      'permanente',
+      `update public.herramienta_asignacion set permanente = true where id in (${planta.map(lit).join(', ')})`,
     );
     // La bailarina regresó dañada: queda en reparación (el trigger lo hace al
     // devolver con UPDATE; aquí el préstamo nace cerrado, así que se marca).

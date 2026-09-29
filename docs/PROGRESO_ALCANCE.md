@@ -153,7 +153,7 @@ en local (PGlite).
 | F7-14 | Sin **nota interna** en el reporte: `respuesta` la lee el cliente tal cual (la pantalla lo dice) | RLS filtra filas: una nota interna en la misma fila la vería el cliente. Si hace falta, irá en una tabla aparte |
 | F7-15 | "Reportar un problema" sale en el portal **solo si el contratista tiene prendido `postventa`** (RPC `postventa_disponible`); lo ya reportado y el periodo se ven siempre | El cliente no lee `empresa_config` (F0-5). No se ofrece un botón que nadie va a atender; lo reportado es historia suya |
 | F7-16 | Herramienta: **un préstamo abierto a la vez** (índice único); destino obra y/o responsable (exigido por el trigger al crear, no con CHECK, para que `on delete set null` no tumbe borrados); **al devolverla queda en el estado en que regresó** (trigger AFTER sin SECURITY DEFINER); un préstamo cerrado **no se reescribe**; no se presta lo dado de **baja**; número de inventario único por empresa | Es "dónde está cada cosa": dos préstamos abiertos serían dos respuestas |
-| F7-17 | **Semáforo de herramienta**: con fecha de regreso → rojo si ya pasó, amarillo si es hoy o mañana, verde si falta más; **sin fecha** → amarillo pasados **30 días** ("confirma dónde está") | Sin fecha no hay "vencida", pero la herramienta que lleva un mes fuera sin que nadie la vea es la que se pierde |
+| F7-17 | **Semáforo de herramienta**: con fecha de regreso → rojo si ya pasó, amarillo si es hoy o mañana, verde si falta más; **sin fecha** → amarillo pasados **30 días** ("confirma dónde está") | Sin fecha no hay "vencida", pero la herramienta que lleva un mes fuera sin que nadie la vea es la que se pierde. Lo asignado **de planta** no entra en este semáforo: ver HERR-3 (0047) |
 | F7-18 | Rutas: `seguridad` vive en la obra (pestaña) y en la ficha del colaborador (EPP), **sin enlace en la barra**; `herramienta` y `postventa` ("Garantías") ponen enlace **solo para admin, supervisor y contador** | Seguridad es por obra, como la bitácora (F4-14). La barra no le ofrece al colaborador pantallas vacías |
 | F7-19 | Aviso de privacidad: se quitó "estado de salud" del "no tratamos datos sensibles" y se explica la excepción; `VERSION_LEGAL` → 2026-09-27; nuevo pendiente `DATOS_SALUD.revisadoPorAbogado` (consentimiento del trabajador y plazo de conservación) | Con F7 el texto anterior quedaba falso. El responsable de los datos de los trabajadores es la empresa usuaria; cómo se pide su consentimiento lo tiene que confirmar un abogado |
 | F7-20 | **Sin PDF** de revisión diaria ni de incidentes todavía, y **la oficina no sube fotos** a un reporte de garantía (la base ya lo permite) | Alcance. RT3 queda pendiente en F7 |
@@ -303,6 +303,27 @@ doblemente codificados (texto como `Ã­`), no afecta al SQL; el supervisor sigu
 pudiendo borrar físicamente movimientos de caja (0020), también ligados: el
 espejo lo refleja en el pago (queda como decisión de oficina, no se tocó).
 
+### Herramienta: asignación permanente ("de planta", migración 0047)
+
+Visto con datos reales: una camioneta asignada de planta al cabo salía "Revisar ·
+Lleva 182 días fuera: confirma dónde está", y lo mismo las escaleras y
+esmeriladoras que una cuadrilla trae toda la obra. El semáforo de F7-17 no
+distinguía un préstamo de una asignación de planta. Decisión de Mario: agregar
+"asignación permanente". **0047 escrita y probada en PGlite, sin aplicar a ningún
+Supabase** (si otra rama usa 0047, se renumera al integrar).
+
+| # | Decisión | Por qué |
+|---|---|---|
+| HERR-1 | `herramienta_asignacion.permanente boolean not null default false` + CHECK `herramienta_permanente_sin_regreso` (**permanente ⇒ `devolver_antes` vacío**). Todo lo que ya existe queda como préstamo. Una permanente cuenta como "el préstamo abierto" (índice de 0043: una a la vez) y **se cierra igual** ("Registrar regreso": la herramienta queda en el estado en que regresó) | Aditiva: nada de hoy cambia. Una asignación de planta no tiene fecha de regreso; si la tuviera, sería un préstamo. Sigue siendo "dónde está cada cosa": una sola respuesta |
+| HERR-2 | Candado SEG-M2: `permanente` se **incluye** en las columnas de contenido que compara `herramienta_asignacion_reglas()` (y en la tupla "sin cambios" de la excepción de la FK `on delete set null`). 0047 reescribe la función con el cuerpo de 0043 + la columna | De un préstamo ya devuelto no se cambia si fue préstamo o de planta: es parte de lo que pasó. Probado: ni junto con `deleted_at`, ni como superusuario, y el borrado real de la obra sigue vaciando `obra_id`. Misma clase que SEG-B1: si se vuelve a correr 0043 **sola** después de 0047, la función regresa a la versión sin `permanente` (lo demás sigue cubierto); basta con volver a correr 0047 |
+| HERR-3 | **Semáforo `ASIGNADA`** (palabra "Asignada", tono neutro, sin alerta) para una permanente abierta, **sin importar los días**; texto "Asignada de planta a {obra · persona}". Al regresar es DEVUELTA como cualquiera. Al ordenar va después de los préstamos y antes de lo devuelto | Nunca se vence ni pide "confirma dónde está": está donde se asignó. F7-17 sigue igual para los préstamos (con y sin fecha) |
+| HERR-4 | **Convertir** préstamo ↔ de planta **mientras esté abierto** ("Dejar de planta" / "Volver préstamo"). Al dejarla de planta se quita la fecha de regreso; al volverla préstamo la fecha es opcional (no antes de la salida). Cerrado, no se toca (HERR-2) | Lo normal es que algo salga "prestado" y se quede; o que al cabo le quiten la camioneta. Cambiarlo no reescribe historia: el préstamo sigue abierto |
+| HERR-5 | **Quién**: RLS sin cambios. En la web, **prestar, asignar de planta y convertir** solo admin y supervisor (acción `soloOficina`); el residente registra regresos de su obra. La base sí deja convertir al residente de ESA obra (0044 ya le dejaba editar el préstamo abierto, p. ej. su fecha): documentado y probado | F6-5: prestar es decisión de oficina. De paso, el residente ya no ve el botón "Prestar" que la RLS le rechazaba (no tiene INSERT en `herramienta_asignacion`). Cerrar la conversión en la base pediría un trigger por rol para algo que ya podía hacer con la fecha |
+| HERR-6 | **La web se puede desplegar antes que 0047**: la lectura pide `permanente` y, si la base no la tiene, vuelve a leer sin ella (todo sale como préstamo, como hoy); un préstamo se guarda sin mandar la columna; "Asignar de planta" sin 0047 dice "falta actualizar la base de datos" | Mismo criterio que el margen de la empresa (SEG-B3): sin la migración la pantalla no se rompe |
+| HERR-7 | Pantalla: el alta pregunta **"¿Cómo sale?"** con dos opciones con su ayuda — "Préstamo (con fecha de regreso)" / "Asignación permanente (queda a cargo de alguien o de la obra)" — con radios nativos (≥ 44 px, `fieldset`/`legend`, ayuda ligada con `aria-describedby`); la fecha de regreso solo aparece en préstamo. Contadores: **Prestadas** (sin las de planta), **Asignadas de planta**, **Vencidas** (una de planta nunca), En reparación, Valor. Filtro **Mostrar**: todo / préstamos / de planta / en bodega. En el historial cada renglón dice "Préstamo" o "Asignación de planta" | Lo que pidió Mario: que se entienda la diferencia al elegir y que la camioneta del cabo deje de salir como pendiente |
+| HERR-8 | `esquema-prod.test.ts`: `herramienta_asignacion.permanente` entra a `DIFERENCIAS_CONOCIDAS` como **pendiente de aplicar**. La foto (`esquema-prod.json`) NO se editó | La foto es de producción real. Al aplicar 0047 y volver a tomar la foto, la prueba avisa que la diferencia ya no existe y se borra la entrada |
+| HERR-9 | Demo (`demo-seis-meses.ts`): **H-025** (camioneta del maestro Martín), **H-008** (esmeriladora) y **H-017** (escalera) de la cuadrilla Ibarra quedan de planta. Se marcan con un UPDATE **con guarda** (`siExisteColumna`: solo si la columna existe) y la columna va registrada en `COLUMNAS_CON_GUARDA`; la prueba de "solo columnas de la foto" la acepta solo así y nunca en un INSERT | El demo sigue cargando en una base sin 0047 (probado: queda todo como préstamo). Siguen existiendo préstamos sin fecha de más de 30 días para enseñar el amarillo. No se regeneró ni se cargó nada en producción |
+
 ---
 
 ## Convenciones para todos los agentes
@@ -332,6 +353,7 @@ espejo lo refleja en el pago (queda como decisión de oficina, no se tocó).
   | 0043 | F7 seguridad, postventa, herramienta |
   | 0044 | F6 (parte 2): residente sobre las tablas de 0043 |
   | 0045 | Endurecimiento tras la revisión de seguridad (policies ya en prod) |
+  | 0047 | Herramienta: asignación permanente ("de planta"), HERR-* (renumerable al integrar si choca) |
 
 - **Registro de módulos:** `web/src/lib/modulos.ts` es la **única** fuente. Cada fase
   cambia `disponible: true` en su módulo y registra su entrada de nav. No crees listas
@@ -364,6 +386,7 @@ espejo lo refleja en el pago (queda como decisión de oficina, no se tocó).
 | Endurecimiento (SEG) | ✅ | b0ee22b, 2f6db85, 76532f9, 57aa9ca, 596760b, 153c194 | Hallazgos de la revisión de seguridad (A1, M1–M3, B1–B9) corregidos en 0036–0044 (sin aplicar) y en la nueva **0045** (policies de 0014/0020). `endurecimiento.test.ts` (27 tests) afirma que cada hueco ya no existe; 0035→0045 aplicadas dos veces sin error; eliminar una empresa completa sigue funcionando. Web: margen de la empresa en `empresa_margen`, vista previa de estimación sin notas. **Sin aplicar a ningún Supabase**. Pendiente: pantalla del borrado ARCO de salud |
 | **Verificación final** | ✅ | — | Rama de integración completa (0035–0045): `vitest` 843/843 (incluye PGlite con las 45 migraciones, RLS por rol e idempotencia), `tsc`, `eslint src` limpio, `next build` OK, todas las rutas de PDF con Chromium registradas; móvil `flutter test` 317/317. **Nada aplicado a producción ni pusheado.** |
 | Menú por categorías (MENU) | ✅ | 9ee2759, 9e7d350 | Web: la barra de `/admin` se agrupa en Obras/Gente/Dinero/Operación con más de 7 enlaces (menús en escritorio, "Menú" en el celular); plana con 7 o menos. Pendiente: revisarlo con sesión en el navegador |
+| Herramienta de planta (HERR) | ✅ | 8ca362e, a07ae09, 0c4116e, 95de726 | 0047 (`permanente` + CHECK + candado SEG-M2 con la columna) probada en PGlite (`herramienta-permanente.test.ts`, 7 tests), **sin aplicar a ningún Supabase**. Web: prestar o asignar de planta, semáforo "Asignada", contadores y filtro, convertir mientras esté abierta; lectura con respaldo si falta 0047. Demo con 3 asignaciones de planta (con guarda). `vitest` 881/881, `tsc`, `eslint` de lo tocado y `next build` OK. Pendiente: aplicar 0047 en producción y retomar la foto del esquema (sale de `DIFERENCIAS_CONOCIDAS`), verificación visual en navegador |
 
 ## Pendiente para salir a producción
 
@@ -372,6 +395,7 @@ espejo lo refleja en el pago (queda como decisión de oficina, no se tocó).
 3. Probar el lector CFDI con un XML real de un PAC; que un contador valide claves SAT, notas del anticipo (tipo 07), formatos SIROC/ICSOE.
 4. Revisión legal: tratamiento de datos de salud (F7) y datos IMSS (F5); faltan los 4 datos legales de siempre.
 5. Móvil (D6): los módulos nuevos solo existen en la web; el móvil los lista en "Disponibles en la web".
+6. **0047 (herramienta de planta, HERR-*)**: aplicarla en producción (aditiva; la web ya desplegada funciona antes y después, HERR-6) y volver a tomar la foto del esquema; quitar su entrada de `DIFERENCIAS_CONOCIDAS`.
 
 ## Despliegue (2026-09-27)
 

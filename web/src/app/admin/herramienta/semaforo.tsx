@@ -6,6 +6,8 @@ const TONO: Record<Semaforo, 'green' | 'amber' | 'red' | 'neutral'> = {
   AMARILLO: 'amber',
   ROJO: 'red',
   DEVUELTA: 'neutral',
+  // De planta (0047): neutro a propósito, no es una alerta.
+  ASIGNADA: 'neutral',
 };
 
 const PALABRA: Record<Semaforo, string> = {
@@ -13,6 +15,7 @@ const PALABRA: Record<Semaforo, string> = {
   AMARILLO: 'Revisar',
   ROJO: 'Vencida',
   DEVUELTA: 'Devuelta',
+  ASIGNADA: 'Asignada',
 };
 
 /** Semáforo de un préstamo: el color siempre va con texto (accesibilidad). */
