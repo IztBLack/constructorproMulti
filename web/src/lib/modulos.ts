@@ -64,11 +64,28 @@ export const GRUPOS_MODULO: { clave: GrupoModulo; titulo: string }[] = [
   { clave: 'papeles', titulo: 'IMSS y papeles' },
 ];
 
+/**
+ * Categorías del menú de la barra (MENU-*). Cuando hay muchos enlaces, la barra
+ * los agrupa en estos menús, en este orden (`lib/nav-categorias.ts`). Son
+ * distintas de `GrupoModulo` a propósito: aquellos agrupan INTERRUPTORES en
+ * Ajustes (qué contratas); estas agrupan PANTALLAS del día (a dónde vas).
+ */
+export type CategoriaNav = 'obras' | 'gente' | 'dinero' | 'operacion';
+
+export const CATEGORIAS_NAV: readonly { clave: CategoriaNav; titulo: string }[] = [
+  { clave: 'obras', titulo: 'Obras' },
+  { clave: 'gente', titulo: 'Gente' },
+  { clave: 'dinero', titulo: 'Dinero' },
+  { clave: 'operacion', titulo: 'Operación' },
+];
+
 export interface NavModulo {
   href: string;
   label: string;
   /** Posición en la barra (menor = más a la izquierda). */
   orden: number;
+  /** Menú de la barra en el que cae cuando la barra va agrupada (MENU-1). */
+  categoria: CategoriaNav;
   /**
    * Solo estos roles ven el enlace. Sin lista, todos. Es PRESENTACIÓN: la
    * página vuelve a comprobar el permiso en el servidor (p. ej. la utilidad,
@@ -108,8 +125,8 @@ export const MODULOS: readonly Modulo[] = [
     dependeDe: [],
     rutas: ['/admin/obras', '/admin/clientes'],
     nav: [
-      { href: '/admin/obras', label: 'Obras', orden: 20 },
-      { href: '/admin/clientes', label: 'Clientes', orden: 40 },
+      { href: '/admin/obras', label: 'Obras', orden: 20, categoria: 'obras' },
+      { href: '/admin/clientes', label: 'Clientes', orden: 40, categoria: 'obras' },
     ],
     disponible: true,
     nucleo: true,
@@ -122,7 +139,7 @@ export const MODULOS: readonly Modulo[] = [
     grupo: 'dinero',
     dependeDe: [],
     rutas: ['/admin/cotizaciones', '/admin/catalogo'],
-    nav: [{ href: '/admin/cotizaciones', label: 'Cotizaciones', orden: 30 }],
+    nav: [{ href: '/admin/cotizaciones', label: 'Cotizaciones', orden: 30, categoria: 'obras' }],
     disponible: true,
   },
   {
@@ -155,8 +172,8 @@ export const MODULOS: readonly Modulo[] = [
       '/admin/obras/*/nomina',
     ],
     nav: [
-      { href: '/campo', label: 'Pase de lista', orden: 10 },
-      { href: '/admin/equipo', label: 'Equipo', orden: 50 },
+      { href: '/campo', label: 'Pase de lista', orden: 10, categoria: 'obras' },
+      { href: '/admin/equipo', label: 'Equipo', orden: 50, categoria: 'gente' },
     ],
     disponible: true,
   },
@@ -167,7 +184,7 @@ export const MODULOS: readonly Modulo[] = [
     grupo: 'gente',
     dependeDe: ['equipo'],
     rutas: ['/admin/cuadrillas'],
-    nav: [{ href: '/admin/cuadrillas', label: 'Cuadrillas', orden: 60 }],
+    nav: [{ href: '/admin/cuadrillas', label: 'Cuadrillas', orden: 60, categoria: 'gente' }],
     disponible: true,
   },
   {
@@ -177,7 +194,7 @@ export const MODULOS: readonly Modulo[] = [
     grupo: 'gente',
     dependeDe: ['equipo'],
     rutas: ['/admin/proyeccion'],
-    nav: [{ href: '/admin/proyeccion', label: 'Proyección', orden: 70 }],
+    nav: [{ href: '/admin/proyeccion', label: 'Proyección', orden: 70, categoria: 'gente' }],
     disponible: true,
   },
   {
@@ -221,7 +238,7 @@ export const MODULOS: readonly Modulo[] = [
     dependeDe: ['cotizaciones'],
     rutas: ['/admin/rentabilidad', '/admin/obras/*/utilidad'],
     // Decisión D1: la utilidad es del dueño y del contador, no del supervisor.
-    nav: [{ href: '/admin/rentabilidad', label: 'Utilidad', orden: 45, roles: ['admin', 'contador'] }],
+    nav: [{ href: '/admin/rentabilidad', label: 'Utilidad', orden: 45, categoria: 'dinero', roles: ['admin', 'contador'] }],
     disponible: true,
   },
   {
@@ -235,7 +252,7 @@ export const MODULOS: readonly Modulo[] = [
     // datos fiscales del emisor (Ajustes), del cliente (su ficha) y del portal
     // se muestran solo con el módulo prendido (ver PROGRESO, F1b).
     rutas: ['/admin/facturacion'],
-    nav: [{ href: '/admin/facturacion', label: 'Facturación', orden: 35 }],
+    nav: [{ href: '/admin/facturacion', label: 'Facturación', orden: 35, categoria: 'dinero' }],
     disponible: true,
   },
   {
@@ -259,7 +276,7 @@ export const MODULOS: readonly Modulo[] = [
     // La mesa de compras (requisiciones, órdenes, pagos a proveedores y los
     // catálogos de materiales y proveedores) y la pestaña "Material" de cada obra.
     rutas: ['/admin/compras', '/admin/obras/*/material'],
-    nav: [{ href: '/admin/compras', label: 'Compras', orden: 38 }],
+    nav: [{ href: '/admin/compras', label: 'Compras', orden: 38, categoria: 'dinero' }],
     disponible: true,
   },
   {
@@ -301,7 +318,7 @@ export const MODULOS: readonly Modulo[] = [
     dependeDe: [],
     rutas: ['/admin/herramienta'],
     // El colaborador no ve herramienta (0043): el enlace es para la oficina.
-    nav: [{ href: '/admin/herramienta', label: 'Herramienta', orden: 65, roles: ['admin', 'supervisor', 'contador', 'residente'] }],
+    nav: [{ href: '/admin/herramienta', label: 'Herramienta', orden: 65, categoria: 'operacion', roles: ['admin', 'supervisor', 'contador', 'residente'] }],
     disponible: true,
   },
   {
@@ -313,7 +330,7 @@ export const MODULOS: readonly Modulo[] = [
     // El botón "Convertir en contrato" vive en la nota (ruta de `notas`); lo
     // oculta la propia página si este módulo está apagado.
     rutas: ['/admin/subcontratos'],
-    nav: [{ href: '/admin/subcontratos', label: 'Subcontratos', orden: 75 }],
+    nav: [{ href: '/admin/subcontratos', label: 'Subcontratos', orden: 75, categoria: 'dinero' }],
     disponible: true,
   },
   {
@@ -325,7 +342,7 @@ export const MODULOS: readonly Modulo[] = [
     // En el portal, "Reportar un problema" sale solo con el módulo prendido
     // (RPC `postventa_disponible`, 0043); lo ya reportado se sigue viendo.
     rutas: ['/admin/postventa'],
-    nav: [{ href: '/admin/postventa', label: 'Garantías', orden: 42, roles: ['admin', 'supervisor', 'contador', 'residente'] }],
+    nav: [{ href: '/admin/postventa', label: 'Garantías', orden: 42, categoria: 'operacion', roles: ['admin', 'supervisor', 'contador', 'residente'] }],
     disponible: true,
   },
   {
@@ -338,7 +355,7 @@ export const MODULOS: readonly Modulo[] = [
     // La tarjeta SIROC del detalle de la obra la muestra la página de la obra
     // (núcleo) solo si este módulo está prendido y el rol es admin/contador.
     rutas: ['/admin/cumplimiento'],
-    nav: [{ href: '/admin/cumplimiento', label: 'IMSS y papeles', orden: 80 }],
+    nav: [{ href: '/admin/cumplimiento', label: 'IMSS y papeles', orden: 80, categoria: 'operacion' }],
     disponible: true,
   },
 ];
@@ -485,16 +502,23 @@ export function rutaVisible(ruta: string, activos: readonly ClaveModulo[]): bool
   return activos.includes(clave) && modulo(clave).disponible;
 }
 
+/** Un enlace de la barra ya filtrado. `categoria: null` = suelto (Inicio). */
+export interface EnlaceNav {
+  href: string;
+  label: string;
+  categoria: CategoriaNav | null;
+}
+
 /**
- * Enlaces de la barra para lo prendido, en su orden. Siempre abre con Inicio.
+ * Enlaces de la barra para lo prendido, en su orden. Siempre abre con Inicio,
+ * que no es de ningún módulo ni de ninguna categoría: va suelto siempre.
  * Con `rol`, se quitan los enlaces restringidos a otros roles; sin él (un
  * componente que no lo conoce), también se quitan: ante la duda, menos.
+ *
+ * Cómo se dibujan (plana o por menús) lo decide `lib/nav-categorias.ts`.
  */
-export function navDeModulos(
-  activos: readonly ClaveModulo[],
-  rol?: string,
-): { href: string; label: string }[] {
-  const enlaces: NavModulo[] = [{ href: '/admin', label: 'Inicio', orden: 0 }];
+export function navDeModulos(activos: readonly ClaveModulo[], rol?: string): EnlaceNav[] {
+  const enlaces: NavModulo[] = [];
   for (const m of MODULOS) {
     if (!m.disponible || !activos.includes(m.clave)) continue;
     for (const n of m.nav ?? []) {
@@ -504,7 +528,12 @@ export function navDeModulos(
       enlaces.push(n);
     }
   }
-  return enlaces.sort((a, b) => a.orden - b.orden).map(({ href, label }) => ({ href, label }));
+  return [
+    { href: '/admin', label: 'Inicio', categoria: null },
+    ...enlaces
+      .sort((a, b) => a.orden - b.orden)
+      .map(({ href, label, categoria }) => ({ href, label, categoria })),
+  ];
 }
 
 // ── Perfil del registro (plan §4.2) ─────────────────────────────────────────
