@@ -26,6 +26,9 @@ class SyncController {
   bool _corriendo = false;
 
   void start() {
+    // El aviso de relleno de una migración pasa a disco YA, con o sin sesión
+    // y con o sin red (ver `SyncService.persistirAvisosDeMigracion`).
+    unawaited(_service.persistirAvisosDeMigracion());
     _agendar(const Duration(seconds: 1)); // arranque
 
     _connSub = Connectivity().onConnectivityChanged.listen((estado) {

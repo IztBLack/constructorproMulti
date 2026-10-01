@@ -55,6 +55,12 @@ class AppDatabase extends _$AppDatabase {
   /// columnas desde el servidor antes de empujar nada. Es estático porque la
   /// migración corre al abrir la base, mucho antes de que exista un SyncService
   /// al que avisarle.
+  ///
+  /// Dos formatos:
+  /// - `"tabla.columna"`: columna NULLABLE; se rellena donde siga en NULL.
+  /// - `"tabla.columna@<ms>"`: columna NOT NULL con default, donde el NULL no
+  ///   existe y no sirve de señal. Se rellena donde la fila no se haya editado
+  ///   desde `<ms>` (el momento de la migración). Ver la v13 → v14.
   static final Set<String> columnasPorLlenar = <String>{};
 
   @override
@@ -399,10 +405,18 @@ class AppDatabase extends _$AppDatabase {
           // desglose del porcentaje en las deducciones.
           //
           // Las dos son NOT NULL con default, así que `addColumn` las llena en
-          // TODAS las filas de una vez y ninguna queda en NULL. Por eso NO
-          // entran en [columnasPorLlenar]: ese mecanismo solo sabe rellenar
-          // columnas que estén en NULL (`sqlRellenoColumna` filtra por
-          // `IS NULL`) y aquí no habría ni una que tocar.
+          // TODAS las filas de una vez y ninguna queda en NULL. Pero el default
+          // NO es lo que hay en el servidor: la v1.3.1 ya bajó estas notas y
+          // DESCARTÓ las dos columnas (no existían aquí), y el pull es
+          // incremental, así que no las vuelve a traer. Sin relleno, el PDF del
+          // móvil saldría distinto al de la web y, peor, editar la nota en el
+          // teléfono subiría el default y pisaría lo que el dueño eligió.
+          //
+          // Por eso entran en [columnasPorLlenar] con el sufijo `@<ms>`: el
+          // modo "fila intacta" de `SyncService.sqlRellenoColumnaIntacta`, que
+          // copia el valor del servidor solo a las filas que nadie editó desde
+          // este momento (`updated_at <= ms`). Una fila editada después de
+          // actualizar conserva lo que el usuario vio y eligió.
           //
           // Los defaults son los que hacen que migrar no cambie ningún
           // documento ya emitido salvo donde el dueño lo pidió: `mostrar_para`
@@ -414,14 +428,22 @@ class AppDatabase extends _$AppDatabase {
           // pasar por el `createTable` del paso v11 → v12, que crea las tablas
           // con el esquema de HOY —o sea, con estas dos columnas ya puestas— y
           // entonces el `ALTER TABLE` de aquí reventaría con "duplicate column".
+          //
+          // Solo se apunta lo que de verdad se AÑADIÓ aquí: si la tabla nació
+          // en el paso v11 → v12, todavía no tiene filas bajadas sin estas
+          // columnas y su primer pull (cursor vacío) las trae completas.
           if (from < 14) {
+            final ahora = DateTime.now().millisecondsSinceEpoch;
             if (!await _columnaExiste('nota_obra', 'mostrar_para')) {
               await m.addColumn(notaObra, notaObra.mostrarPara);
+              columnasPorLlenar.add('nota_obra.mostrar_para@$ahora');
             }
             if (!await _columnaExiste(
                 'nota_obra_renglon', 'mostrar_porcentaje')) {
               await m.addColumn(
                   notaObraRenglon, notaObraRenglon.mostrarPorcentaje);
+              columnasPorLlenar
+                  .add('nota_obra_renglon.mostrar_porcentaje@$ahora');
             }
           }
         },
