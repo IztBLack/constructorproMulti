@@ -189,7 +189,7 @@ export function NuevoSubcontratista({ colaboradores }: { colaboradores: { id: st
   const [abierto, setAbierto] = useState(false);
   if (!abierto) {
     return (
-      <Button type="button" variant="secondary" size="sm" onClick={() => setAbierto(true)}>
+      <Button type="button" variant="secondary" size="sm" data-guia="cumplimiento-subcontratista" onClick={() => setAbierto(true)}>
         Nuevo subcontratista
       </Button>
     );

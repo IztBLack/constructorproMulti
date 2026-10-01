@@ -138,7 +138,7 @@ export default async function ComprasPage() {
       />
 
       {/* Resumen en números */}
-      <dl className="grid gap-3 sm:grid-cols-4">
+      <dl data-guia="compras-resumen" className="grid gap-3 sm:grid-cols-4">
         <Numero etiqueta="Por aprobar" valor={String(porAprobar.length)} />
         <Numero etiqueta="Materiales por comprar" valor={String(renglonesPorComprar.length)} />
         <Numero etiqueta="Órdenes abiertas" valor={String(abiertas.length)} />

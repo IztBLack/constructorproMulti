@@ -46,7 +46,7 @@ export default function NuevoColaboradorForm({
 
   return (
     <>
-      <Button onClick={() => setOpen(true)}>+ Nuevo colaborador</Button>
+      <Button data-guia="equipo-nuevo" onClick={() => setOpen(true)}>+ Nuevo colaborador</Button>
 
       <Modal open={open} onClose={handleClose} title="Nuevo colaborador" size="md">
         <form ref={formRef} onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">

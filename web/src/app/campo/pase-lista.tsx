@@ -378,7 +378,7 @@ export default function PaseLista() {
   return (
     <div className="space-y-4">
       {/* Selector de día */}
-      <div className="flex items-center justify-between gap-2 rounded-xl border border-neutral-200 bg-white px-2 py-2">
+      <div data-guia="campo-dia" className="flex items-center justify-between gap-2 rounded-xl border border-neutral-200 bg-white px-2 py-2">
         <Button
           variant="ghost"
           size="sm"

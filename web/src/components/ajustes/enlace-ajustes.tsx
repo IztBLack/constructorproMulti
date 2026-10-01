@@ -15,6 +15,7 @@ export function EnlaceAjustes({ href }: { href: '/admin/ajustes' | '/cliente/aju
       href={href}
       title="Ajustes"
       aria-label="Ajustes"
+      data-guia="ajustes"
       className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-neutral-500 outline-none transition-colors hover:bg-neutral-100 hover:text-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
     >
       <svg

@@ -37,7 +37,7 @@ export default function NuevoClienteForm() {
 
   return (
     <>
-      <Button onClick={() => setOpen(true)}>+ Nuevo cliente</Button>
+      <Button data-guia="clientes-nuevo" onClick={() => setOpen(true)}>+ Nuevo cliente</Button>
 
       <Modal open={open} onClose={handleClose} title="Nuevo cliente" size="md">
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">

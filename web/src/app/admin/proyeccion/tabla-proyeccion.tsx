@@ -484,7 +484,7 @@ export function TablaProyeccion(props: Props) {
           Participantes · {estado.participantes.length}
         </Button>
 
-        <span className="ml-auto flex flex-wrap gap-2">
+        <span data-guia="proyeccion-rellenar" className="ml-auto flex flex-wrap gap-2">
           <Button variant="secondary" size="sm" onClick={() => rellenar('lunesASabado')}>
             Completa L–S
           </Button>

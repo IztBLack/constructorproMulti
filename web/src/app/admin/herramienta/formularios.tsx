@@ -63,7 +63,11 @@ export function FormHerramienta({ inicial, textoBoton }: { inicial: Herramienta 
 
   return (
     <>
-      <Button variant={inicial ? 'secondary' : 'primary'} onClick={() => setAbierto(true)}>
+      <Button
+        variant={inicial ? 'secondary' : 'primary'}
+        data-guia={inicial ? undefined : 'herramienta-nueva'}
+        onClick={() => setAbierto(true)}
+      >
         {textoBoton}
       </Button>
       <Modal open={abierto} onClose={() => setAbierto(false)} title={inicial ? 'Editar herramienta' : 'Nueva herramienta'}>

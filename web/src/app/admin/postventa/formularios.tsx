@@ -59,7 +59,7 @@ export function NuevoReporteOficina({ obras }: { obras: { id: string; nombre: st
 
   return (
     <>
-      <Button onClick={() => setAbierto(true)}>Registrar reporte</Button>
+      <Button data-guia="postventa-registrar" onClick={() => setAbierto(true)}>Registrar reporte</Button>
       <Modal open={abierto} onClose={() => setAbierto(false)} title="Registrar un reporte de garantía">
         <form onSubmit={enviar} className="space-y-3">
           <p className="text-sm text-neutral-600">

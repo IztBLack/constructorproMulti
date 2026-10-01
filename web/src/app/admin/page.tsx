@@ -33,6 +33,7 @@ import { rutaVisible, siguientePaso, sugerenciaModulo } from '@/lib/modulos';
 import { TarjetaSiguientePaso } from '@/components/modulos/tarjeta-siguiente-paso';
 import { TarjetaSugerenciaModulo } from '@/components/modulos/tarjeta-sugerencia-modulo';
 import { contarSalidasMaterial } from '@/lib/data/compras';
+import { AbrirGuia } from '@/components/guia/botones-guia';
 
 export const dynamic = 'force-dynamic';
 
@@ -213,7 +214,12 @@ export default async function AdminPage({
         eyebrow={nombreUsuario(user)}
         actions={
           <>
-            <LinkButton href="/admin/obras" variant={conCotizaciones ? 'secondary' : 'primary'} size="sm">
+            <LinkButton
+              href="/admin/obras"
+              variant={conCotizaciones ? 'secondary' : 'primary'}
+              size="sm"
+              data-guia="inicio-nueva-obra"
+            >
               + Nueva obra
             </LinkButton>
             {conCotizaciones && (
@@ -231,13 +237,17 @@ export default async function AdminPage({
       {/* Primeros pasos: solo si la empresa está vacía */}
       {mostrarPrimerosPasos && (
         <Card>
-          <div className="mb-4">
-            <h2 className="text-base font-semibold text-neutral-900">Bienvenido a {nombreEmpresa}</h2>
-            <p className="mt-1 text-sm text-neutral-500">
-              {primerosPasos.length === 1
-                ? 'Completa este paso para comenzar a gestionar tus obras.'
-                : `Completa estos ${primerosPasos.length === 2 ? 'dos' : 'tres'} pasos para comenzar a gestionar tus obras.`}
-            </p>
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-neutral-900">Bienvenido a {nombreEmpresa}</h2>
+              <p className="mt-1 text-sm text-neutral-500">
+                {primerosPasos.length === 1
+                  ? 'Completa este paso para comenzar a gestionar tus obras.'
+                  : `Completa estos ${primerosPasos.length === 2 ? 'dos' : 'tres'} pasos para comenzar a gestionar tus obras.`}
+              </p>
+            </div>
+            {/* La guía explica cada pantalla antes de capturar nada de verdad. */}
+            <AbrirGuia>¿Primera vez? Ver la guía</AbrirGuia>
           </div>
           <ol className="grid gap-3 sm:grid-cols-3">
             {primerosPasos.map((p) => (
@@ -255,7 +265,7 @@ export default async function AdminPage({
       )}
 
       {/* ── Fila de indicadores (KPIs + pipeline, compacto) ────────────────── */}
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4" data-guia="inicio-indicadores">
         <StatTile label="Obras" valor={obrasCnt} href="/admin/obras" error={!!obrasCount.error} />
         {conCotizaciones && (
           <StatTile

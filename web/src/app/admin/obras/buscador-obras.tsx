@@ -141,6 +141,7 @@ export default function BuscadorObras({
           type="search"
           placeholder="Buscar por nombre, cliente o ubicación…"
           aria-label="Buscar obras"
+          data-guia="obras-buscar"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="w-full max-w-md rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"

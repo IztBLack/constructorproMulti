@@ -36,7 +36,7 @@ export default function NuevoPuestoForm() {
 
   return (
     <>
-      <Button onClick={() => setOpen(true)}>Nuevo puesto</Button>
+      <Button data-guia="puestos-nuevo" onClick={() => setOpen(true)}>Nuevo puesto</Button>
 
       <Modal open={open} onClose={handleClose} title="Nuevo puesto" size="sm">
         <form ref={formRef} onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">

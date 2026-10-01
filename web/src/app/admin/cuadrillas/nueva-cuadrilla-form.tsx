@@ -39,7 +39,7 @@ export default function NuevaCuadrillaForm() {
 
   return (
     <>
-      <Button onClick={() => setOpen(true)}>+ Nueva cuadrilla</Button>
+      <Button data-guia="cuadrillas-nueva" onClick={() => setOpen(true)}>+ Nueva cuadrilla</Button>
 
       <Modal open={open} onClose={handleClose} title="Nueva cuadrilla" size="md">
         <form ref={formRef} onSubmit={onSubmit} className="grid gap-4">

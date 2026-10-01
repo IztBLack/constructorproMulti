@@ -69,7 +69,7 @@ export default async function RentabilidadPage({
       {filas.length === 0 ? (
         <EmptyState title="No hay obras para comparar" description="Da de alta una obra con su presupuesto para ver su utilidad." />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white">
+        <div data-guia="rentabilidad-tabla" className="overflow-x-auto rounded-xl border border-neutral-200 bg-white">
           <table className="w-full min-w-[720px] text-sm">
             <caption className="sr-only">Utilidad por obra, primero las que necesitan atención</caption>
             <thead className="bg-neutral-50 text-left text-xs uppercase tracking-wide text-neutral-600">

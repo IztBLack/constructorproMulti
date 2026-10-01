@@ -36,7 +36,7 @@ export default function NuevoConceptoForm() {
 
   return (
     <>
-      <Button onClick={() => setOpen(true)}>Nuevo concepto</Button>
+      <Button data-guia="catalogo-nuevo" onClick={() => setOpen(true)}>Nuevo concepto</Button>
 
       <Modal open={open} onClose={handleClose} title="Nuevo concepto" size="md">
         <form ref={formRef} onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">

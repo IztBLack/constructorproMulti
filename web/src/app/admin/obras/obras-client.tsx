@@ -32,7 +32,7 @@ export default function ObrasClient({ obras, error, modo }: ObrasClientProps) {
             <LinkButton href="/admin/obras/importar" variant="secondary">
               Importar de Excel
             </LinkButton>
-            <Button onClick={() => setNuevaObraAbierta(true)}>+ Nueva obra</Button>
+            <Button data-guia="obras-nueva" onClick={() => setNuevaObraAbierta(true)}>+ Nueva obra</Button>
           </div>
         }
       />

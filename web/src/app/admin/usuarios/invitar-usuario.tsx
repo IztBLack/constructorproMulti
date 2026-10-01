@@ -114,7 +114,7 @@ export function InvitarUsuario({ urlBase }: { urlBase: string }) {
 
   return (
     <>
-      <Button onClick={() => setAbierto(true)}>Invitar persona</Button>
+      <Button data-guia="usuarios-invitar" onClick={() => setAbierto(true)}>Invitar persona</Button>
 
       <Modal open={abierto} onClose={cerrar} title="Invitar a la empresa" size="sm">
         {invitadoEmail ? (
