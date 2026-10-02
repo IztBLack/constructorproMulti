@@ -135,17 +135,21 @@ export function CotizacionForm(props: Props) {
         </Field>
       </div>
 
-      <label data-guia="cotizacion-form-iva" className="flex items-center gap-2 text-sm text-neutral-700">
-        <input
-          type="checkbox"
-          name="iva_enabled"
-          defaultChecked={cotizacion?.iva_enabled ?? true}
-          disabled={pending}
-          className="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-900"
-        />
-        Aplicar IVA ({ivaPct}%)
+      {/* La ayuda va FUERA de la etiqueta: un botón dentro de un <label> es
+          HTML inválido y ensucia el nombre que el lector de pantalla da a la casilla. */}
+      <div data-guia="cotizacion-form-iva" className="flex items-center gap-2 text-sm text-neutral-700">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            name="iva_enabled"
+            defaultChecked={cotizacion?.iva_enabled ?? true}
+            disabled={pending}
+            className="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-900"
+          />
+          Aplicar IVA ({ivaPct}%)
+        </label>
         <Ayuda clave="cotizacion.iva" />
-      </label>
+      </div>
 
       <Field label="Notas" hint="Opcional">
         <textarea

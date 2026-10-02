@@ -17,7 +17,9 @@ export function PageHeader({ title, description, eyebrow, actions }: PageHeaderP
         <h1 className="text-2xl font-semibold text-neutral-900">{title}</h1>
         {description && <p className="text-sm text-neutral-500">{description}</p>}
       </div>
-      {actions && <div className="flex shrink-0 items-center gap-3">{actions}</div>}
+      {/* `flex-wrap`: en el celular, varias acciones (más su ícono de ayuda)
+          bajan de renglón en vez de salirse de la pantalla. */}
+      {actions && <div className="flex shrink-0 flex-wrap items-center gap-3">{actions}</div>}
     </header>
   );
 }

@@ -25,7 +25,11 @@ const INTERVALO_MS = 150;
 type Modo = 'buscando' | 'foco' | 'centro' | 'ejemplo' | 'navegar';
 
 function selectorDe(o: Objetivo): string {
-  return 'ancla' in o ? `[data-guia="${CSS.escape(o.ancla)}"]` : `a[href="${CSS.escape(o.enlace)}"]`;
+  if ('ancla' in o) return `[data-guia="${CSS.escape(o.ancla)}"]`;
+  // Solo enlaces de la BARRA: en Inicio, "+ Nueva obra" también apunta a
+  // /admin/obras y se señalaba ese botón con el texto "toca Obras en el menú".
+  const href = CSS.escape(o.enlace);
+  return `[data-guia="menu"] a[href="${href}"]`;
 }
 
 /** El primero VISIBLE: la barra existe dos veces (escritorio y celular). */
@@ -275,7 +279,13 @@ function PasoEnPantalla({
   const movil = window.innerWidth < 640;
   let posTarjeta: CSSProperties;
   if (movil) {
-    posTarjeta = { left: 12, right: 12, bottom: 12 };
+    // Si lo señalado está en la mitad de abajo, la tarjeta se va arriba para no
+    // taparlo. Abajo, se sube lo que ocupe el teclado del celular (Android no
+    // reacomoda la página al abrirlo; solo encoge el `visualViewport`).
+    const vv = window.visualViewport;
+    const teclado = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+    const objetivoAbajo = !!h && h.top + h.height / 2 > window.innerHeight / 2;
+    posTarjeta = objetivoAbajo ? { left: 12, right: 12, top: 12 } : { left: 12, right: 12, bottom: 12 + teclado };
   } else if (!h) {
     posTarjeta = { left: '50%', top: '50%', transform: 'translate(-50%, -50%)', width: 420 };
   } else {
@@ -287,7 +297,10 @@ function PasoEnPantalla({
       : { left, bottom: window.innerHeight - h.top + 12, width: ancho };
   }
 
-  const velo = 'fixed z-[70] bg-black/55';
+  // Negro FIJO y no `bg-black`: en tema oscuro la paleta reasigna el "negro" a
+  // un tono claro y el velo se veía gris en vez de oscurecer (mismo truco que
+  // el fondo de `components/ui/Modal.tsx`).
+  const velo = 'fixed z-[70] bg-[rgba(0,0,0,0.6)]';
 
   return createPortal(
     <div data-recorrido className="print:hidden">
@@ -396,6 +409,9 @@ function PasoEnPantalla({
             </p>
           )}
 
+          {/* Botones pegados al pie: en el celular la tarjeta tiene alto máximo y
+              con una vista de ejemplo larga quedaban fuera de la vista. */}
+          <div className="sticky bottom-0 -mx-4 -mb-4 bg-white px-4 pb-4">
           {confirmarSalida ? (
             <div className="mt-4 rounded-lg border border-neutral-200 p-3">
               <p className="text-sm text-neutral-800">¿Salir del recorrido? Los temas que ya terminaste se conservan.</p>
@@ -454,6 +470,7 @@ function PasoEnPantalla({
               </div>
             </div>
           )}
+          </div>
         </div>
       )}
     </div>,

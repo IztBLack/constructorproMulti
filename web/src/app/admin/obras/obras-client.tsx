@@ -29,7 +29,7 @@ export default function ObrasClient({ obras, error, modo }: ObrasClientProps) {
         title="Obras"
         description="Gestiona las obras activas e inactivas de tu empresa."
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <LinkButton href="/admin/obras/importar" variant="secondary" data-guia="obras-importar">
               Importar de Excel
             </LinkButton>

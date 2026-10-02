@@ -9,6 +9,7 @@ import {
   EmptyState,
   LinkButton,
   PageHeader,
+  RowLink,
   TableContainer,
   TBody,
   Td,
@@ -85,18 +86,21 @@ function StatTile({
   ayuda?: React.ReactNode;
 }) {
   const valorClass = tone === 'teal' ? 'text-teal-700' : 'text-neutral-900';
+  // El enlace va ESTIRADO por encima de la tesela (patrón `RowLink`) y no
+  // envolviéndola: así el ícono de ayuda queda como hermano, no como un botón
+  // dentro de un enlace (HTML inválido, y en el celular un toque que roza el
+  // ícono te sacaba de la pantalla).
   return (
-    <Link href={href} className="block">
-      <div className="h-full rounded-xl border border-neutral-200 bg-white px-4 py-3 transition hover:border-neutral-400">
-        <div className="flex items-center gap-1 text-xs font-medium text-neutral-500">
-          {label}
-          {ayuda}
-        </div>
-        <div className={`mt-1.5 text-2xl font-semibold tabular-nums ${valorClass}`}>
-          {error ? '—' : moneda ? formatCurrency(valor) : valor}
-        </div>
+    <div className="relative h-full rounded-xl border border-neutral-200 bg-white px-4 py-3 transition hover:border-neutral-400">
+      <RowLink href={href}>{`${label}: ver la lista`}</RowLink>
+      <div className="flex items-center gap-1 text-xs font-medium text-neutral-500">
+        {label}
+        {ayuda && <span className="relative z-10">{ayuda}</span>}
       </div>
-    </Link>
+      <div className={`mt-1.5 text-2xl font-semibold tabular-nums ${valorClass}`}>
+        {error ? '—' : moneda ? formatCurrency(valor) : valor}
+      </div>
+    </div>
   );
 }
 

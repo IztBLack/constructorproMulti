@@ -175,9 +175,11 @@ export default function VistaAsistencia({
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-sm font-medium text-neutral-700">
+        {/* `flex`: los títulos alternan con `md:block`; en un bloque normal el
+            ícono de ayuda caía a su propio renglón en pantallas medianas. */}
+        <h2 className="flex items-center gap-1 text-sm font-medium text-neutral-700">
           <span className={claseDia}>Pase de lista del día</span>
-          <span className={claseSemana}>Cuadrícula semanal</span>{' '}
+          <span className={claseSemana}>Cuadrícula semanal</span>
           <Ayuda clave="asistencia.pase-lista" />
         </h2>
 

@@ -52,14 +52,17 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               El nav NO vive aquí. Con 10 secciones, la fila pedía ~1424px y el
               contenedor tope mide 1152: a partir de `sm` los enlaces se comprimían
               y el bar "se estiraba". Marca y acciones caben de sobra solas. */}
-          <div className="mx-auto max-w-6xl flex items-center justify-between gap-4 px-4 py-3 sm:px-8">
+          {/* En el celular los espacios van más justos (los botones conservan
+              sus 44px de toque): con el "?" de la guía, el nombre de la empresa
+              se quedaba en ~50px a 360 de ancho. */}
+          <div className="mx-auto max-w-6xl flex items-center justify-between gap-2 px-4 py-3 sm:gap-4 sm:px-8">
             <Link
               href="/admin"
               className="min-w-0 truncate text-base font-semibold text-neutral-900"
             >
               {marca}
             </Link>
-            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <div className="flex shrink-0 items-center gap-0.5 sm:gap-3">
               {/* El nombre solo cuando hay espacio real: en tablet robaba el ancho
                   que necesitan los botones. */}
               <span className="hidden max-w-[16ch] truncate text-sm text-neutral-500 lg:inline">

@@ -69,10 +69,13 @@ export function Ayuda({ clave, className = '' }: { clave: ClaveAyuda; className?
         aria-expanded={abierto}
         aria-describedby={abierto ? id : undefined}
         onClick={(e) => {
-          // Dentro de un enlace o una fila clicable, el ícono no debe navegar.
+          // Dentro de una fila clicable, el ícono no debe navegar.
           e.preventDefault();
           e.stopPropagation();
           calcular();
+          // El toque también enfoca el botón; sin limpiar `encima`, el segundo
+          // toque no lo cerraba en Android.
+          setEncima(false);
           setFijo((f) => !f);
         }}
         onPointerEnter={(e) => {
@@ -83,12 +86,17 @@ export function Ayuda({ clave, className = '' }: { clave: ClaveAyuda; className?
         onPointerLeave={(e) => {
           if (e.pointerType === 'mouse') setEncima(false);
         }}
-        onFocus={() => {
+        onFocus={(e) => {
+          // Solo con teclado (`:focus-visible`): el foco que deja un toque no
+          // debe abrirlo por su cuenta.
+          if (!e.currentTarget.matches(':focus-visible')) return;
           calcular();
           setEncima(true);
         }}
         onBlur={() => setEncima(false)}
-        className={`inline-flex h-6 w-6 shrink-0 cursor-help items-center justify-center rounded-full align-middle text-neutral-500 outline-none transition-colors hover:text-neutral-800 focus-visible:ring-2 focus-visible:ring-neutral-900 print:hidden ${className}`}
+        // El `before:` agranda la zona de toque a ~44px sin cambiar cómo se ve:
+        // a 24px, en el celular era fácil fallarle al ícono.
+        className={`relative inline-flex h-6 w-6 shrink-0 cursor-help items-center justify-center rounded-full align-middle text-neutral-500 outline-none transition-colors before:absolute before:-inset-2.5 before:content-[''] hover:text-neutral-800 focus-visible:ring-2 focus-visible:ring-neutral-900 print:hidden ${className}`}
       >
         <svg
           aria-hidden="true"
@@ -111,13 +119,14 @@ export function Ayuda({ clave, className = '' }: { clave: ClaveAyuda; className?
           <div
             id={id}
             role="tooltip"
+            aria-live="polite"
             style={{
               top: pos.top,
               left: pos.left,
               width: pos.ancho,
               transform: pos.arriba ? 'translateY(-100%)' : undefined,
             }}
-            className="pointer-events-none fixed z-[80] rounded-lg border border-neutral-200 bg-white px-3 py-2 text-left text-sm font-normal normal-case tracking-normal text-neutral-700 shadow-lg"
+            className="pointer-events-none fixed z-[80] print:hidden rounded-lg border border-neutral-200 bg-white px-3 py-2 text-left text-sm font-normal normal-case tracking-normal text-neutral-700 shadow-lg"
           >
             <span className="mb-0.5 block font-semibold text-neutral-900">{titulo}</span>
             {texto}
