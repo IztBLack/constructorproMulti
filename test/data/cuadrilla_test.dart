@@ -135,20 +135,36 @@ void main() {
         colaboradorId: 'c1',
         fecha: 100,
         fraccion: 1.0,
-        cuadrillaId: 'q1');
+        cuadrillaId: const Value('q1'));
     final row = await (db.select(db.asistencias)
           ..where((t) => t.colaboradorId.equals('c1') & t.fecha.equals(100)))
         .getSingle();
     expect(row.fraccion, 1.0);
     expect(row.cuadrillaId, 'q1');
 
-    // Re-guardar sin cuadrilla la limpia (refleja el estado actual del worker).
+    // Re-guardar SIN decir cuadrilla la respeta: es lo que hacen el detalle de
+    // la obra y el pase de lista con el módulo apagado. Igual que la web, que
+    // omite `cuadrilla_id` para no borrarla. Apagar el módulo oculta, no borra.
     await asis.setFraccion(
         obraId: 'o1', colaboradorId: 'c1', fecha: 100, fraccion: 0.5);
     final row2 = await (db.select(db.asistencias)
           ..where((t) => t.colaboradorId.equals('c1') & t.fecha.equals(100)))
         .getSingle();
     expect(row2.fraccion, 0.5);
-    expect(row2.cuadrillaId, isNull);
+    expect(row2.cuadrillaId, 'q1',
+        reason: 'quien no sabe de cuadrillas no debe borrar la etiqueta');
+
+    // Decir explícitamente "sin cuadrilla" la limpia: el pase de lista con el
+    // módulo prendido sabe que el colaborador ya no está en ninguna.
+    await asis.setFraccion(
+        obraId: 'o1',
+        colaboradorId: 'c1',
+        fecha: 100,
+        fraccion: 0.5,
+        cuadrillaId: const Value(null));
+    final row3 = await (db.select(db.asistencias)
+          ..where((t) => t.colaboradorId.equals('c1') & t.fecha.equals(100)))
+        .getSingle();
+    expect(row3.cuadrillaId, isNull);
   });
 }

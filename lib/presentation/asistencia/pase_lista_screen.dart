@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -193,7 +194,7 @@ class _ObraPaseLista extends ConsumerWidget {
                 colaboradorId: c.id,
                 fecha: diaMillis,
                 fraccion: 1.0,
-                cuadrillaId: cid,
+                cuadrillaId: Value(cid),
               );
             }
             if (omitidos.isNotEmpty) {
@@ -251,7 +252,10 @@ class _ObraPaseLista extends ConsumerWidget {
             nombre: c.nombre,
             diaMillis: diaMillis,
             fraccionInicial: frac[c.id] ?? 0.0,
-            cuadrillaId: cid,
+            // Con el módulo apagado el grupo "sin cuadrilla" NO significa que
+            // no la tengan: solo no se enseña. Ausente = la etiqueta que ya
+            // tenga la fila se respeta (ver `setFraccion`).
+            cuadrilla: usaCuadrillas ? Value(cid) : const Value.absent(),
           );
         },
       ));
@@ -359,7 +363,7 @@ class _PaseListaRow extends ConsumerStatefulWidget {
     required this.nombre,
     required this.diaMillis,
     required this.fraccionInicial,
-    this.cuadrillaId,
+    this.cuadrilla = const Value.absent(),
   });
 
   final String obraId;
@@ -367,7 +371,7 @@ class _PaseListaRow extends ConsumerStatefulWidget {
   final String nombre;
   final int diaMillis;
   final double fraccionInicial;
-  final String? cuadrillaId;
+  final Value<String?> cuadrilla;
 
   @override
   ConsumerState<_PaseListaRow> createState() => _PaseListaRowState();
@@ -413,7 +417,7 @@ class _PaseListaRowState extends ConsumerState<_PaseListaRow> {
             colaboradorId: widget.colaboradorId,
             fecha: widget.diaMillis,
             fraccion: nueva,
-            cuadrillaId: widget.cuadrillaId,
+            cuadrillaId: widget.cuadrilla,
           );
       if (mounted) setState(() => _save = _SaveState.saved);
     } catch (_) {

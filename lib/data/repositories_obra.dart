@@ -229,15 +229,23 @@ class AsistenciaRepository {
   }
 
   /// Registra/actualiza la fracción de un colaborador en un día (índice único).
-  /// [cuadrillaId] es opcional y solo ETIQUETA la fila (agrupa el pase de lista
-  /// para reportes); no afecta el cálculo de nómina. Se sella con la cuadrilla
-  /// vigente del colaborador al momento de capturar.
+  /// [cuadrillaId] solo ETIQUETA la fila (agrupa el pase de lista para
+  /// reportes); no afecta el cálculo de nómina. Tres casos:
+  ///
+  /// - `Value('q1')`: se sella con la cuadrilla vigente al capturar.
+  /// - `Value(null)`: se limpia, porque quien captura SABE que el colaborador
+  ///   ya no tiene cuadrilla (el pase de lista con el módulo prendido).
+  /// - **ausente** (el default): la etiqueta que ya tenía la fila se RESPETA.
+  ///   Es lo que manda quien no sabe de cuadrillas —el detalle de la obra, el
+  ///   movimiento entre obras, el pase de lista con el módulo apagado—, y es
+  ///   la misma regla de la web (`cola-asistencia.ts` omite `cuadrilla_id`
+  ///   para no borrarla). Apagar el módulo OCULTA, nunca borra.
   Future<void> setFraccion({
     required String obraId,
     required String colaboradorId,
     required int fecha,
     required double fraccion,
-    String? cuadrillaId,
+    Value<String?> cuadrillaId = const Value.absent(),
   }) async {
     final existing = await (db.select(db.asistencias)
           ..where((t) =>
@@ -248,7 +256,7 @@ class AsistenciaRepository {
     if (existing != null) {
       await (db.update(db.asistencias)..where((t) => t.id.equals(existing.id)))
           .write(AsistenciasCompanion(
-              fraccion: Value(fraccion), cuadrillaId: Value(cuadrillaId)));
+              fraccion: Value(fraccion), cuadrillaId: cuadrillaId));
     } else {
       await db.into(db.asistencias).insert(AsistenciasCompanion.insert(
             id: _uuid.v4(),
@@ -256,7 +264,7 @@ class AsistenciaRepository {
             obraId: obraId,
             fecha: fecha,
             fraccion: fraccion,
-            cuadrillaId: Value(cuadrillaId),
+            cuadrillaId: cuadrillaId,
           ));
     }
   }

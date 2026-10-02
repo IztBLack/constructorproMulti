@@ -413,6 +413,7 @@ hasta que el admin la fije; el móvil (Flutter) sigue mostrando RECIBIDO con IVA
 | IVA cobrado (estado de cuenta) | ✅ | a706523, 736d36f, b9310d0, 2b5f7b6, 3d1d9a7 | Web: el IVA de lo cobrado va aparte en el detalle de obra, portal (detalle, lista, inicio, PDF), PDF del cliente desde oficina, PDF de caja interno, Excel, vista rápida, físico vs financiero y utilidad. **0048** (solo la función `iva_obras`) probada en PGlite (8 tests), **sin aplicar a ningún Supabase**. De paso, el PDF/Excel de caja interno ya suman los extras aprobados (el pendiente de F1). `vitest` 890/890, `tsc`, `eslint` de lo tocado y `next build` OK. Pendiente: aplicar 0048, revisión visual en navegador, IVA-12 |
 | **Verificación final** | ✅ | — | Rama de integración completa (0035–0045): `vitest` 843/843 (incluye PGlite con las 45 migraciones, RLS por rol e idempotencia), `tsc`, `eslint src` limpio, `next build` OK, todas las rutas de PDF con Chromium registradas; móvil `flutter test` 317/317. **Nada aplicado a producción ni pusheado.** |
 | Menú por categorías (MENU) | ✅ | 9ee2759, 9e7d350 | Web: la barra de `/admin` se agrupa en Obras/Gente/Dinero/Operación con más de 7 enlaces (menús en escritorio, "Menú" en el celular); plana con 7 o menos. Pendiente: revisarlo con sesión en el navegador |
+| APK 1.4.0 (paridad Fase 0) | ✅ | 4d9b3ad, 50a69d9, 14ea560 | Ver "APK 1.4.0" abajo. Revisión ECC del diff v1.3.1..main halló 2 fallas que podían borrar datos y se corrigieron antes de publicar. `flutter test` 323/323 |
 | Herramienta de planta (HERR) | ✅ | 8ca362e, a07ae09, 0c4116e, 95de726 | 0047 (`permanente` + CHECK + candado SEG-M2 con la columna) probada en PGlite (`herramienta-permanente.test.ts`, 7 tests), **sin aplicar a ningún Supabase**. Web: prestar o asignar de planta, semáforo "Asignada", contadores y filtro, convertir mientras esté abierta; lectura con respaldo si falta 0047. Demo con 3 asignaciones de planta (con guarda). `vitest` 881/881, `tsc`, `eslint` de lo tocado y `next build` OK. Pendiente: aplicar 0047 en producción y retomar la foto del esquema (sale de `DIFERENCIAS_CONOCIDAS`), verificación visual en navegador |
 
 ## Pendiente para salir a producción
@@ -423,6 +424,36 @@ hasta que el admin la fije; el móvil (Flutter) sigue mostrando RECIBIDO con IVA
 4. Revisión legal: tratamiento de datos de salud (F7) y datos IMSS (F5); faltan los 4 datos legales de siempre.
 5. Móvil (D6): los módulos nuevos solo existen en la web; el móvil los lista en "Disponibles en la web".
 6. **0047 (herramienta de planta, HERR-*)**: aplicarla en producción (aditiva; la web ya desplegada funciona antes y después, HERR-6) y volver a tomar la foto del esquema; quitar su entrada de `DIFERENCIAS_CONOCIDAS`.
+
+## APK 1.4.0 (2026-10-01) — Fase 0 de la paridad web → móvil
+
+Publica en el móvil lo que entró a `main` desde la v1.3.1: lectura y ocultado de
+módulos (F0 móvil), roles de F6 en el móvil y la búsqueda por nombre / % de
+deducciones de las notas. Antes de compilar, una revisión con los checklists de
+ECC (`flutter-dart-code-review`, `security-review`) del diff `v1.3.1..main`
+encontró dos fallas que podían destruir datos al actualizar; se corrigieron y el
+rediseño lo verificó el agente `ecc:flutter-reviewer` en dos rondas.
+
+| # | Decisión | Por qué |
+|---|---|---|
+| APK-1 | **1.4.0+19** (MINOR) | Semver: funciones nuevas compatibles hacia atrás. Android exige subir el versionCode (18 → 19) para actualizar encima conservando datos |
+| APK-2 | Las opciones de impresión de las notas (`mostrar_para`, `mostrar_porcentaje`) se **traen del servidor** al migrar v13 → v14: modo de relleno `"t.c@<ms>"` | La v1.3.1 ya había bajado esas notas descartando las columnas y el pull es incremental: sin esto el PDF del móvil difería del de la web y editar la nota pisaba lo que eligió el dueño |
+| APK-3 | En ese modo solo se rellenan filas `pending`/`error` intactas desde la migración; las `synced` se arreglan **reiniciando el cursor** (pull completo) | Escribir en una `synced` la marca pending y el push sube la fila ENTERA con texto y montos viejos, pisando ediciones de la web |
+| APK-4 | El aviso de relleno pasa a disco **al arrancar**, sin depender de sesión ni red | Si esperaba al primer sync con señal y Android mataba el proceso, se perdía: la siguiente apertura ya no migra |
+| APK-5 | `setFraccion(cuadrillaId:)` pasa a `Value<String?>`; **ausente = respeta** la cuadrilla de la fila | Con el módulo de cuadrillas apagado el pase de lista la borraba (y el detalle de obra la borraba desde 1.x). Es la regla de la web (`cola-asistencia.ts` omite `cuadrilla_id`) y la de F0: apagar oculta, nunca borra |
+
+**Menores que se quedan como están** (no son regresión o el riesgo es mínimo):
+el residente puede crear en el móvil cosas que la RLS le rechaza (quedan en
+`error`); el recordatorio de raya sigue sonando con el módulo equipo apagado y
+sin dónde quitarlo; el % de una deducción se imprime redondeado (2.5 → "3%", ya
+existía); tras el reinicio de cursor, una tabla de más de 1000 renglones baja en
+varios ciclos de 25 s y editar una fila aún no bajada en esa ventana subiría el
+default; una fila editada en el teléfono después de actualizar y antes del
+primer sync con red conserva lo que el usuario vio.
+
+**Riesgo abierto (decisión de Mario):** los APK se firman con
+`~/.android/debug.keystore` y **no hay respaldo**. Si ese archivo se pierde,
+ningún teléfono podrá actualizar sin desinstalar (y perder sus datos locales).
 
 ## Despliegue (2026-09-27)
 

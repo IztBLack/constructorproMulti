@@ -133,11 +133,55 @@ class SyncService {
   static String sqlRellenoColumna(String tabla, String col, String idCol) =>
       "UPDATE $tabla SET $col = ? WHERE $idCol = ? AND $col IS NULL";
 
+  /// La variante para columnas NOT NULL con default (entradas `"t.c@<ms>"`
+  /// de `AppDatabase.columnasPorLlenar`), donde no hay NULL que sirva de señal.
+  ///
+  /// Variables: valor, id, `<ms>` de la migración, valor otra vez.
+  /// - `sync_status IN ('pending', 'error')`: SOLO las filas que de todos
+  ///   modos se van a subir. Las `synced` no se tocan aquí: escribirles
+  ///   dispararía `mark_pending` y el push subiría la fila ENTERA, con su texto
+  ///   y montos de la última bajada, pisando lo que la web editó después. A
+  ///   esas las arregla el pull completo que [_llenarColumnaNueva] provoca al
+  ///   reiniciar el cursor de la tabla.
+  /// - `updated_at <= ?` reserva el relleno a las filas INTACTAS desde que se
+  ///   añadió la columna: el trigger `mark_pending` sube `updated_at` en cada
+  ///   edición, así que una fila que el usuario tocó después de actualizar se
+  ///   queda con lo que él vio y eligió.
+  /// - `IS NOT ?` evita escribir donde ya coincide.
+  static String sqlRellenoColumnaIntacta(
+          String tabla, String col, String idCol) =>
+      'UPDATE $tabla SET $col = ? '
+      "WHERE $idCol = ? AND sync_status IN ('pending', 'error') "
+      'AND updated_at <= ? AND $col IS NOT ?';
+
   /// True si el fallo de push es la regla de "1 jornada/día" del servidor
   /// (CHECK, SQLSTATE 23514). PostgREST entrega el cuerpo del error como un JSON
   /// dentro de `message`, con el `code` real adentro, así que se busca en ambos.
   static bool _esConflictoJornada(PostgrestException e) =>
       e.code == '23514' || e.message.contains('23514');
+
+  /// Pasa a disco los avisos de relleno que dejó la migración en
+  /// `AppDatabase.columnasPorLlenar`, que vive solo en memoria.
+  ///
+  /// Corre al arrancar (lo llama el [SyncController]) y al principio de cada
+  /// [syncAll], sin depender de sesión ni de red: si el aviso se quedara en
+  /// memoria hasta el primer sync con señal, y Android matara el proceso
+  /// antes, la siguiente apertura ya no migra y el aviso se perdería para
+  /// siempre. Abre la base si nadie lo ha hecho: Drift la abre perezosamente y
+  /// la migración —que es quien anota— corre justo al abrirla.
+  ///
+  /// No lanza: si falla, el aviso sigue en memoria y se reintenta en la
+  /// siguiente llamada.
+  Future<void> persistirAvisosDeMigracion() async {
+    try {
+      await db.customSelect('SELECT 1').get();
+      if (AppDatabase.columnasPorLlenar.isEmpty) return;
+      await metadata.marcarPorLlenar(AppDatabase.columnasPorLlenar);
+      AppDatabase.columnasPorLlenar.clear();
+    } catch (e) {
+      debugPrint('[SyncService] no se pudo guardar el aviso de relleno: $e');
+    }
+  }
 
   bool get tieneSesion => SupabaseConfig.currentUser != null;
 
@@ -154,6 +198,10 @@ class SyncService {
   /// correr dos syncs concurrentes sobre los mismos datos.
   Future<SyncOutcome> syncAll() async {
     if (_enCurso) return SyncOutcome.ok; // otro sync ya está en camino
+    // ANTES de las salidas por sesión o red: actualizar la app en la obra, sin
+    // señal, es justo el caso en que el aviso tiene que sobrevivir a que
+    // Android mate el proceso.
+    await persistirAvisosDeMigracion();
     if (!tieneSesion) return SyncOutcome.sinSesion;
     if (!await hayRed) return SyncOutcome.sinRed;
 
@@ -170,12 +218,9 @@ class SyncService {
       //    que explica qué se rompería sin esto). Va ANTES del push, que es lo
       //    único que importa: después ya sería tarde.
       //
-      //    El aviso se persiste ANTES de atenderlo: si el relleno falla a
-      //    medias, la marca sigue puesta y el próximo ciclo lo reintenta. El
-      //    mapa en memoria se vacía para no re-anotar lo ya atendido en otro
-      //    `syncAll` de esta misma sesión.
-      await metadata.marcarPorLlenar(AppDatabase.columnasPorLlenar);
-      AppDatabase.columnasPorLlenar.clear();
+      //    El aviso ya está en disco ([persistirAvisosDeMigracion], arriba):
+      //    si el relleno falla a medias, la marca sigue puesta y el próximo
+      //    ciclo lo reintenta.
       for (final pendiente in metadata.porLlenar) {
         await _llenarColumnaNueva(pendiente);
         await metadata.limpiarPorLlenar(pendiente);
@@ -307,7 +352,9 @@ class SyncService {
   /// fila entera: toca SOLO el dato que la migración no pudo saber, sin pisar
   /// nada de lo que el usuario escribió sin señal.
   ///
-  /// [pendiente] llega como `"tabla.columna"`.
+  /// [pendiente] llega como `"tabla.columna"` (rellena donde haya NULL) o
+  /// `"tabla.columna@<ms>"` (rellena las filas intactas desde `<ms>`; ver
+  /// [sqlRellenoColumnaIntacta] y `AppDatabase.columnasPorLlenar`).
   ///
   /// El `UPDATE` dispara `mark_pending` y deja `pending` a filas que estaban
   /// `synced`, así que el siguiente ciclo las vuelve a subir con el MISMO valor
@@ -315,7 +362,15 @@ class SyncService {
   /// una sola vez; apagar el trigger para ahorrárselo costaría dejar la tabla
   /// sin él si algo revienta en medio, que es mucho peor que el ruido.
   Future<void> _llenarColumnaNueva(String pendiente) async {
-    final partes = pendiente.split('.');
+    final (ref, hasta) = switch (pendiente.split('@')) {
+      [final r] => (r, null),
+      [final r, final ms] => (r, int.tryParse(ms)),
+      _ => (pendiente, null),
+    };
+    // Un `@` sin número válido no se adivina: rellenar sin la guarda de
+    // `updated_at` podría pisar lo que el usuario eligió en el teléfono.
+    if (pendiente.contains('@') && hasta == null) return;
+    final partes = ref.split('.');
     if (partes.length != 2) return;
     final (tabla, col) = (partes[0], partes[1]);
 
@@ -326,17 +381,51 @@ class SyncService {
     if (pk.length != 1) return;
     final idCol = pk.first;
 
-    final filas = await client.from(tabla).select('$idCol,$col');
+    // Modo "fila intacta": las filas `synced` se arreglan bajándolas COMPLETAS
+    // en el pull de este mismo ciclo (sin cambios locales, el LWW deja que el
+    // servidor gane). Reiniciar el cursor cuesta bajar la tabla una vez; a
+    // cambio, ninguna fila sin cambios locales se marca para subir.
+    if (hasta != null) await metadata.reset(tabla);
+
+    // Por páginas: PostgREST corta cada respuesta en 1000 filas, y una tabla
+    // de renglones pasa de ahí sin esfuerzo. Sin paginar, las filas de la
+    // página 2 en adelante se quedarían sin rellenar y sin aviso.
+    const pagina = 1000;
+    var desde = 0;
     var llenadas = 0;
-    for (final row in (filas as List).cast<Map<String, dynamic>>()) {
-      final valor = row[col];
-      if (valor == null) continue;
-      final n = await db.customUpdate(
-        sqlRellenoColumna(tabla, col, idCol),
-        variables: [Variable(valor), Variable(row[idCol])],
-        updates: {t},
-      );
-      llenadas += n;
+    while (true) {
+      final filas = await client
+          .from(tabla)
+          .select('$idCol,$col')
+          .order(idCol)
+          .range(desde, desde + pagina - 1);
+      final lista = (filas as List).cast<Map<String, dynamic>>();
+      for (final row in lista) {
+        final crudo = row[col];
+        if (crudo == null) continue;
+        // SQLite guarda los bool como 0/1; con `IS NOT ?` un `true` sin
+        // convertir nunca sería "igual" a 1 y se reescribiría todo.
+        final valor = crudo is bool ? (crudo ? 1 : 0) : crudo;
+        llenadas += await db.customUpdate(
+          hasta == null
+              ? sqlRellenoColumna(tabla, col, idCol)
+              : sqlRellenoColumnaIntacta(tabla, col, idCol),
+          variables: hasta == null
+              ? [Variable(valor), Variable(row[idCol])]
+              : [
+                  Variable(valor),
+                  Variable(row[idCol]),
+                  Variable(hasta),
+                  Variable(valor),
+                ],
+          updates: {t},
+        );
+      }
+      // `isEmpty` y avanzar lo RECIBIDO, no `pagina`: si el servidor topara
+      // las respuestas por debajo de 1000, una página corta no significaría
+      // que se acabó, y saltar 1000 dejaría un hueco sin rellenar.
+      if (lista.isEmpty) break;
+      desde += lista.length;
     }
     debugPrint('[SyncService] $pendiente: $llenadas fila(s) rellenadas del servidor');
   }
