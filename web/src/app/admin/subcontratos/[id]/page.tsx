@@ -1,3 +1,4 @@
+import { Ayuda } from '@/components/guia/ayuda';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Badge, BackLink, Card, LinkButton, PageHeader } from '@/components/ui';
@@ -18,12 +19,13 @@ import { BorrarContrato, Clausulas, DatosContrato, Pagos, Renglones } from './ed
 
 export const dynamic = 'force-dynamic';
 
-function Seccion({ id, titulo, children }: { id: string; titulo: string; children: React.ReactNode }) {
+function Seccion({ id, titulo, ayuda, children }: { id: string; titulo: string; ayuda?: React.ReactNode; children: React.ReactNode }) {
   return (
     <Card>
       <section aria-labelledby={id} className="space-y-3">
         <h2 id={id} className="text-base font-semibold text-neutral-900">
           {titulo}
+          {ayuda && <> {ayuda}</>}
         </h2>
         {children}
       </section>
@@ -160,7 +162,7 @@ export default async function SubcontratoPage({
         <Renglones c={c} puedeEditar={puedeEditar} />
       </Seccion>
 
-      <Seccion id="pagos" titulo="Pagos">
+      <Seccion id="pagos" titulo="Pagos" ayuda={<Ayuda clave="subcontrato.pagos" />}>
         <Pagos c={c} puedeEditar={puedeEditar} conCaja={activos.includes('caja')} hoy={msAFechaInput(hoyMxMs())} />
       </Seccion>
 

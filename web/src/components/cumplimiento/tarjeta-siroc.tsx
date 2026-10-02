@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, Field, Input, Select, Textarea } from '@/components/ui';
@@ -61,7 +62,7 @@ export function TarjetaSiroc({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
             <h2 id={`siroc-${obraId}`} className="text-sm font-medium text-neutral-700">
-              Registro de obra ante el IMSS (SIROC)
+              Registro de obra ante el IMSS (SIROC) <Ayuda clave="obra.siroc" />
             </h2>
             <p className="flex flex-wrap items-center gap-2 text-sm text-neutral-900">
               <Semaforo nivel={aviso.nivel} />

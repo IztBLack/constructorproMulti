@@ -73,7 +73,7 @@ export default async function MaterialObraPage({ params }: { params: Promise<{ i
     <div className="space-y-6">
       <ObraTabs obraId={id} />
 
-      <div>
+      <div data-guia="obra-seccion">
         <h1 className="text-xl font-semibold text-neutral-900">Material de {obra.nombre}</h1>
         <p className="mt-1 text-sm text-neutral-600">
           Pide lo que hace falta, revisa qué ya se compró y registra lo que llega. Cuando se paga, el gasto entra solo a la

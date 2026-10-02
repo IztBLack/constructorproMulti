@@ -1,3 +1,4 @@
+import { Ayuda } from '@/components/guia/ayuda';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
@@ -136,7 +137,9 @@ export default async function CotizacionDetallePage({
       />
 
       <section className="rounded-xl border border-neutral-200 bg-white p-5">
-        <h2 className="mb-3 text-sm font-medium text-neutral-500">Resumen</h2>
+        <h2 className="mb-3 text-sm font-medium text-neutral-500">
+          Resumen <Ayuda clave="cotizacion.resumen" />
+        </h2>
         <dl className="space-y-1 text-sm">
           <div className="flex justify-between">
             <dt className="text-neutral-600">Subtotal</dt>

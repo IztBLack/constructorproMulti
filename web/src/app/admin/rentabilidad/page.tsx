@@ -1,3 +1,4 @@
+import { Ayuda } from '@/components/guia/ayuda';
 import Link from 'next/link';
 import { EmptyState, PageHeader } from '@/components/ui';
 import { formatCurrency } from '@/lib/data/format';
@@ -77,9 +78,15 @@ export default async function RentabilidadPage({
                 <th scope="col" className="px-4 py-2 font-medium">Obra</th>
                 <th scope="col" className="px-4 py-2 text-right font-medium">Contratado</th>
                 <th scope="col" className="px-4 py-2 text-right font-medium">Gastado</th>
-                <th scope="col" className="px-4 py-2 text-right font-medium">Utilidad al terminar</th>
-                <th scope="col" className="px-4 py-2 text-right font-medium">Margen al terminar</th>
-                <th scope="col" className="px-4 py-2 font-medium">Cómo va</th>
+                <th scope="col" className="px-4 py-2 text-right font-medium">
+                  Utilidad al terminar <Ayuda clave="rentabilidad.utilidad" className="normal-case" />
+                </th>
+                <th scope="col" className="px-4 py-2 text-right font-medium">
+                  Margen al terminar <Ayuda clave="rentabilidad.margen" className="normal-case" />
+                </th>
+                <th scope="col" className="px-4 py-2 font-medium">
+                  Cómo va <Ayuda clave="rentabilidad.semaforo" className="normal-case" />
+                </th>
               </tr>
             </thead>
             <tbody>

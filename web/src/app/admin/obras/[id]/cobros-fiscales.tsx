@@ -1,3 +1,4 @@
+import { Ayuda } from '@/components/guia/ayuda';
 import { Card, CardTitle, EmptyState, TableContainer, TBody, Td, Th, THead, Tr } from '@/components/ui';
 import { EnlaceHoja, EstadoFiscalBadge } from '@/components/fiscal/estado-fiscal';
 import { formatCurrency, formatDate } from '@/lib/data/format';
@@ -14,7 +15,7 @@ export function CobrosFiscales({ cobros }: { cobros: Cobro[] }) {
     <Card>
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <CardTitle as="h2" className="text-base font-semibold text-neutral-800">
-          Cobros para facturar
+          Cobros para facturar <Ayuda clave="obra.cobros-facturar" />
         </CardTitle>
         <p className="text-sm text-neutral-600">
           {pendientes === 0 ? 'Nada pendiente' : `${pendientes} por facturar`}

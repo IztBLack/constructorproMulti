@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, Field, Input, Modal, PageHeader, Select } from '@/components/ui';
@@ -197,6 +198,7 @@ export function CotizacionHeader({
         actions={
           <>
             <Badge tone={ESTADO_TONE[estado]}>{ESTADO_LABEL[estado]}</Badge>
+            <Ayuda clave="cotizacion.estado" className="-ml-2" />
 
             {/* Acciones de estado (máquina de estados guiada) */}
             {estado === 'BORRADOR' && (

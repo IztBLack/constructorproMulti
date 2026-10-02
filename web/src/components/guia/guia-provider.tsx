@@ -3,77 +3,66 @@
 import { createContext, useCallback, useContext, useMemo, useSyncExternalStore, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import type { ClaveModulo } from '@/lib/modulos';
-import { MAZOS, VERSION_GUIA } from '@/lib/guia/contenido';
+import { TEMAS, VERSION_RECORRIDO } from '@/lib/guia/recorrido/temas';
 import {
-  avanceGuia,
-  buscarTarjeta,
-  claveProgreso,
+  ALCANCES,
+  anterior,
+  avanceDe,
+  leerCorrida,
   leerProgreso,
-  marcarAprendida,
-  mazosPara,
-  reiniciarProgreso,
-  type AvanceGuia,
-  type ProgresoGuia,
-} from '@/lib/guia/progreso';
-import type { Mazo, Tarjeta } from '@/lib/guia/tipos';
-import { GuiaModal } from './guia-modal';
-import { CoachGuia } from './coach-guia';
+  marcarTema,
+  minutosDe,
+  primerPendiente,
+  siguiente,
+  temasPara,
+  totalPasos,
+  type Avance,
+  type Corrida,
+  type ProgresoRecorrido,
+} from '@/lib/guia/recorrido/motor';
+import type { Alcance, Tema } from '@/lib/guia/recorrido/tipos';
+import { LanzadorRecorrido } from './recorrido/lanzador';
+import { CapaRecorrido } from './recorrido/capa-recorrido';
+import { InvitacionRecorrido } from './recorrido/invitacion';
 
-/** `?guia=bienvenida`: con eso el registro manda al panel para ofrecer la guía una vez. */
+/** `?guia=bienvenida`: con eso el registro manda al panel (cuenta nueva). */
 const PARAM_BIENVENIDA = 'bienvenida';
 
-/**
- * Un "Llévame ahí" sin llegar a su pantalla en este tiempo se da por perdido
- * (la navegación falló, el middleware redirigió…). Así no aparece el panel por
- * sorpresa la próxima vez que se visite esa pantalla.
- */
-const VIGENCIA_COACH_MS = 60_000;
-
-const IDS_VALIDOS: ReadonlySet<string> = new Set(MAZOS.flatMap((m) => m.tarjetas.map((t) => t.id)));
+const IDS_TEMAS: ReadonlySet<string> = new Set(TEMAS.map((t) => t.id));
 
 // ---------------------------------------------------------------------------
-// Almacén de la guía. Lo que importa vive FUERA de React (localStorage,
-// sessionStorage, la URL), así que se modela como store externo y se lee con
-// `useSyncExternalStore`, igual que `components/pwa/aviso-instalar.tsx`: nada de
-// copiarlo a estado en un efecto. En el servidor (y al hidratar) la guía está
-// cerrada y vacía; el navegador toma el control después.
+// Almacén. Lo que importa vive FUERA de React (localStorage, sessionStorage, la
+// URL): se modela como store externo y se lee con `useSyncExternalStore`, igual
+// que `components/pwa/aviso-instalar.tsx`. En el servidor todo está cerrado.
 //
-// NUNCA escribe en Supabase: la guía no deja rastro en la cuenta.
+// NUNCA escribe en Supabase. Mientras corre el recorrido, además, el candado
+// (`recorrido/candado.ts`) impide que la app escriba.
 // ---------------------------------------------------------------------------
-
-/** "Llévame ahí" en curso: qué tarjeta, desde qué pantalla y cuándo. */
-export interface CoachEnCurso {
-  id: string;
-  desde: string;
-  /** Marca de tiempo: identifica ESTE "Llévame ahí" (no solo la tarjeta). */
-  t: number;
-}
 
 interface EstadoGuia {
-  /** Lo guardado en localStorage, tal cual (se valida al leer). */
   progresoCrudo: string | null;
-  coach: CoachEnCurso | null;
-  abierta: boolean;
-  /** true = se abrió como bienvenida de cuenta nueva. */
-  bienvenida: boolean;
+  corrida: Corrida | null;
+  lanzador: boolean;
+  invitacion: boolean;
+  /** Alcance recién terminado: se muestra el cierre. */
+  terminado: Alcance | null;
 }
 
-const CERRADA: EstadoGuia = { progresoCrudo: null, coach: null, abierta: false, bienvenida: false };
+const CERRADO: EstadoGuia = { progresoCrudo: null, corrida: null, lanzador: false, invitacion: false, terminado: null };
 
 let userActual = '';
-let estado: EstadoGuia = CERRADA;
+let estado: EstadoGuia = CERRADO;
 let urlRevisadaPara = '';
 const suscriptores = new Set<() => void>();
 
-const claveCoach = (userId: string) => `cp.guia.coach.${userId}`;
+const claveProgreso = (u: string) => `cp.guia.recorrido.v${VERSION_RECORRIDO}.${u}`;
+const claveCorrida = (u: string) => `cp.guia.corrida.${u}`;
 
-// Almacenamiento del navegador: puede no existir o lanzar (navegación privada,
-// datos bloqueados). La guía funciona igual; solo no recuerda el avance.
 function leer(almacen: 'local' | 'sesion', clave: string): string | null {
   try {
     return (almacen === 'local' ? window.localStorage : window.sessionStorage).getItem(clave);
   } catch {
-    return null;
+    return null; // navegación privada o datos bloqueados: funciona igual, sin memoria
   }
 }
 
@@ -87,49 +76,39 @@ function escribir(almacen: 'local' | 'sesion', clave: string, valor: string | nu
   }
 }
 
-function leerCoach(userId: string): CoachEnCurso | null {
-  try {
-    const c = JSON.parse(leer('sesion', claveCoach(userId)) ?? 'null') as CoachEnCurso | null;
-    if (!c || typeof c.id !== 'string' || typeof c.desde !== 'string' || typeof c.t !== 'number') return null;
-    return Date.now() - c.t < VIGENCIA_COACH_MS ? c : null;
-  } catch {
-    return null;
-  }
-}
-
-/** Carga del navegador la primera vez (o si cambió el usuario en esta pestaña). */
 function cargar(userId: string) {
   if (userActual === userId) return;
   userActual = userId;
+  const corrida = leerCorrida(leer('sesion', claveCorrida(userId)));
   estado = {
+    ...CERRADO,
     progresoCrudo: leer('local', claveProgreso(userId)),
-    coach: leerCoach(userId),
-    abierta: false,
-    bienvenida: false,
+    // Tras recargar se retoma el tema desde su primer paso (su pantalla de inicio).
+    corrida: corrida ? { ...corrida, paso: 0 } : null,
   };
 }
 
 function actualizar(cambio: Partial<EstadoGuia>) {
   estado = { ...estado, ...cambio };
+  if ('corrida' in cambio) {
+    escribir('sesion', claveCorrida(userActual), cambio.corrida ? JSON.stringify(cambio.corrida) : null);
+  }
   for (const avisar of suscriptores) avisar();
 }
 
-/**
- * Cambia el avance partiendo de lo que hay GUARDADO ahora (no de lo que tenía
- * esta pestaña al pintar): con la app abierta en dos pestañas, una no le borra
- * a la otra lo que ya aprendió.
- */
-function cambiarProgreso(f: (p: ProgresoGuia) => ProgresoGuia) {
+/** Cambia el avance partiendo de lo GUARDADO ahora: dos pestañas no se pisan. */
+function cambiarProgreso(f: (p: ProgresoRecorrido) => ProgresoRecorrido) {
   const clave = claveProgreso(userActual);
-  const actual = leerProgreso(leer('local', clave) ?? estado.progresoCrudo, VERSION_GUIA, IDS_VALIDOS);
+  const actual = leerProgreso(leer('local', clave) ?? estado.progresoCrudo, IDS_TEMAS);
   const crudo = JSON.stringify(f(actual));
   escribir('local', clave, crudo);
   actualizar({ progresoCrudo: crudo });
 }
 
 /**
- * Cuenta recién creada: el registro manda a `/admin?guia=bienvenida`. Se
- * ofrece UNA vez y se limpia la URL para que recargar no la vuelva a abrir.
+ * Cuenta nueva: el registro manda a `/admin?guia=bienvenida`. Solo se muestra
+ * una INVITACIÓN discreta (nunca se abre nada encima del trabajo) y se limpia
+ * la URL para que recargar no la repita.
  */
 function revisarBienvenida(userId: string) {
   if (urlRevisadaPara === userId) return;
@@ -139,17 +118,14 @@ function revisarBienvenida(userId: string) {
   params.delete('guia');
   const q = params.toString();
   window.history.replaceState(window.history.state, '', `${window.location.pathname}${q ? `?${q}` : ''}`);
-  const p = leerProgreso(estado.progresoCrudo, VERSION_GUIA, IDS_VALIDOS);
-  if (!p.bienvenidaVista) actualizar({ abierta: true, bienvenida: true });
+  const p = leerProgreso(estado.progresoCrudo, IDS_TEMAS);
+  if (!p.invitacionCerrada && !estado.corrida) actualizar({ invitacion: true });
 }
 
 function suscribir(userId: string, avisar: () => void): () => void {
-  // Primero se carga lo guardado y DESPUÉS se revisa la URL: al revés, la
-  // primera lectura pisaría la bienvenida recién abierta.
-  cargar(userId);
+  cargar(userId); // primero lo guardado, DESPUÉS la URL
   suscriptores.add(avisar);
   revisarBienvenida(userId);
-  // Otra pestaña cambió el avance: se refleja aquí también.
   const alCambiarAlmacen = (e: StorageEvent) => {
     if (e.key === claveProgreso(userId)) actualizar({ progresoCrudo: e.newValue });
   };
@@ -160,11 +136,9 @@ function suscribir(userId: string, avisar: () => void): () => void {
   };
 }
 
-const snapshotServidor = () => CERRADA;
+const snapshotServidor = () => CERRADO;
 
-// ── Acciones (no dependen de React: identidad estable) ──────────────────────
-
-/** Al cerrar, si el foco se quedó sin dueño, vuelve al "?" de la barra. */
+/** Al cerrar algo, si el foco se quedó sin dueño, vuelve al "?" de la barra. */
 export function devolverFoco() {
   requestAnimationFrame(() => {
     if (document.activeElement && document.activeElement !== document.body) return;
@@ -174,47 +148,35 @@ export function devolverFoco() {
   });
 }
 
-function abrir() {
-  actualizar({ abierta: true, bienvenida: false });
-}
-
-function cerrar() {
-  // Cerrar la bienvenida ("Ahora no", Esc, la X) cuenta como vista.
-  cambiarProgreso((p) => (p.bienvenidaVista ? p : { ...p, bienvenidaVista: true }));
-  actualizar({ abierta: false, bienvenida: false });
-  devolverFoco();
-}
-
-function marcar(id: string) {
-  cambiarProgreso((p) => marcarAprendida(p, id));
-}
-
-function reiniciar() {
-  cambiarProgreso(reiniciarProgreso);
-}
-
-function terminarCoach() {
-  escribir('sesion', claveCoach(userActual), null);
-  actualizar({ coach: null });
-}
-
 // ---------------------------------------------------------------------------
 
+export interface ResumenAlcance {
+  clave: Alcance;
+  titulo: string;
+  descripcion: string;
+  temas: Tema[];
+  minutos: number;
+  avance: Avance;
+}
+
 interface GuiaContexto {
-  mazos: Mazo[];
-  progreso: ProgresoGuia;
-  avance: AvanceGuia;
-  abierta: boolean;
-  bienvenida: boolean;
-  abrir: () => void;
-  cerrar: () => void;
-  marcar: (id: string) => void;
-  reiniciar: () => void;
-  /** "Llévame ahí": cierra la guía, navega y deja los pasos sobre la pantalla real. */
-  llevar: (tarjeta: Tarjeta) => void;
-  /** El "Llévame ahí" en curso y su tarjeta (o null). */
-  coach: (CoachEnCurso & { tarjeta: Tarjeta }) | null;
-  terminarCoach: () => void;
+  alcances: ResumenAlcance[];
+  progreso: ProgresoRecorrido;
+  lanzador: boolean;
+  invitacion: boolean;
+  terminado: Alcance | null;
+  /** Recorrido en curso con su tema resuelto (o null). */
+  enCurso: { corrida: Corrida; temas: Tema[]; tema: Tema } | null;
+  abrirLanzador: () => void;
+  cerrarLanzador: () => void;
+  cerrarInvitacion: () => void;
+  iniciar: (alcance: Alcance) => void;
+  avanzar: () => void;
+  retroceder: () => void;
+  omitirTema: () => void;
+  salir: () => void;
+  cerrarCierre: () => void;
+  reiniciarAvance: () => void;
 }
 
 const Contexto = createContext<GuiaContexto | null>(null);
@@ -232,7 +194,7 @@ interface Props {
   children: ReactNode;
 }
 
-/** Estado de la Guía para todo el panel (tarjetas, avance y "Llévame ahí"). */
+/** Ayuda de la app: recorrido guiado (lanzador, capa e invitación). */
 export function GuiaProvider({ userId, activos, rol, children }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -243,56 +205,104 @@ export function GuiaProvider({ userId, activos, rol, children }: Props) {
   }, [userId]);
   const e = useSyncExternalStore(suscribirse, leerSnapshot, snapshotServidor);
 
-  const mazos = useMemo(() => mazosPara(MAZOS, activos, rol), [activos, rol]);
-  const progreso = useMemo(
-    () => leerProgreso(e.progresoCrudo, VERSION_GUIA, IDS_VALIDOS),
-    [e.progresoCrudo],
-  );
-  const avance = useMemo(() => avanceGuia(mazos, progreso), [mazos, progreso]);
-  const coach = useMemo(() => {
-    const tarjeta = e.coach ? buscarTarjeta(mazos, e.coach.id) : null;
-    return e.coach && tarjeta ? { ...e.coach, tarjeta } : null;
-  }, [e.coach, mazos]);
+  const progreso = useMemo(() => leerProgreso(e.progresoCrudo, IDS_TEMAS), [e.progresoCrudo]);
 
-  const llevar = useCallback(
-    (tarjeta: Tarjeta) => {
-      const destino = tarjeta.destino;
-      if (!destino) return;
-      // Ir a ver la pantalla de verdad cuenta como aprendida: es lo que se busca.
-      cambiarProgreso((p) => marcarAprendida({ ...p, bienvenidaVista: true }, tarjeta.id));
-      // El panel de pasos vive en el layout de /admin. Pantallas fuera de él
-      // (el pase de lista de /campo) solo se abren, sin panel.
-      const enCurso = destino.href.startsWith('/admin') ? { id: tarjeta.id, desde: pathname, t: Date.now() } : null;
-      escribir('sesion', claveCoach(userId), enCurso ? JSON.stringify(enCurso) : null);
-      actualizar({ abierta: false, bienvenida: false, coach: enCurso });
-      if (pathname !== destino.href) router.push(destino.href);
+  const alcances = useMemo<ResumenAlcance[]>(
+    () =>
+      ALCANCES.map((a) => {
+        const temas = temasPara(TEMAS, a.clave, activos, rol);
+        return { ...a, temas, minutos: minutosDe(totalPasos(temas)), avance: avanceDe(temas, progreso) };
+      }),
+    [activos, rol, progreso],
+  );
+
+  const enCurso = useMemo(() => {
+    const c = e.corrida;
+    if (!c) return null;
+    const temas = alcances.find((a) => a.clave === c.alcance)?.temas ?? [];
+    const tema = temas[c.tema];
+    if (!tema) return null;
+    return { corrida: { ...c, paso: Math.min(c.paso, tema.pasos.length - 1) }, temas, tema };
+  }, [e.corrida, alcances]);
+
+  const irA = useCallback(
+    (ruta: string) => {
+      if (pathname !== ruta) router.push(ruta);
     },
-    [pathname, router, userId],
+    [pathname, router],
   );
 
-  const valor = useMemo<GuiaContexto>(
-    () => ({
-      mazos,
+  const valor = useMemo<GuiaContexto>(() => {
+    const temasDe = (a: Alcance) => alcances.find((x) => x.clave === a)?.temas ?? [];
+    return {
+      alcances,
       progreso,
-      avance,
-      abierta: e.abierta,
-      bienvenida: e.bienvenida,
-      coach,
-      abrir,
-      cerrar,
-      marcar,
-      reiniciar,
-      llevar,
-      terminarCoach,
-    }),
-    [mazos, progreso, avance, e.abierta, e.bienvenida, coach, llevar],
-  );
+      lanzador: e.lanzador,
+      invitacion: e.invitacion,
+      terminado: e.terminado,
+      enCurso,
+      abrirLanzador: () => actualizar({ lanzador: true, invitacion: false }),
+      cerrarLanzador: () => {
+        actualizar({ lanzador: false });
+        devolverFoco();
+      },
+      cerrarInvitacion: () => {
+        cambiarProgreso((p) => ({ ...p, invitacionCerrada: true }));
+        actualizar({ invitacion: false });
+      },
+      iniciar: (alcance) => {
+        const temas = temasDe(alcance);
+        if (temas.length === 0) return;
+        const tema = primerPendiente(temas, progreso);
+        cambiarProgreso((p) => ({ ...p, invitacionCerrada: true }));
+        actualizar({ corrida: { alcance, tema, paso: 0 }, lanzador: false, invitacion: false, terminado: null });
+        irA(temas[tema].inicio);
+      },
+      avanzar: () => {
+        if (!enCurso) return;
+        const s = siguiente(enCurso.temas, enCurso.corrida);
+        if (s.tipo === 'paso') return actualizar({ corrida: s.corrida });
+        cambiarProgreso((p) => marcarTema(p, s.terminado));
+        if (s.tipo === 'tema') {
+          actualizar({ corrida: s.corrida });
+          irA(enCurso.temas[s.corrida.tema].inicio);
+        } else {
+          actualizar({ corrida: null, terminado: enCurso.corrida.alcance });
+        }
+      },
+      retroceder: () => {
+        const a = enCurso && anterior(enCurso.corrida);
+        if (a) actualizar({ corrida: a });
+      },
+      omitirTema: () => {
+        if (!enCurso) return;
+        const { corrida, temas } = enCurso;
+        if (corrida.tema + 1 >= temas.length) {
+          actualizar({ corrida: null });
+          return devolverFoco();
+        }
+        const sig = { ...corrida, tema: corrida.tema + 1, paso: 0 };
+        actualizar({ corrida: sig });
+        irA(temas[sig.tema].inicio);
+      },
+      salir: () => {
+        actualizar({ corrida: null });
+        devolverFoco();
+      },
+      cerrarCierre: () => {
+        actualizar({ terminado: null });
+        devolverFoco();
+      },
+      reiniciarAvance: () => cambiarProgreso((p) => ({ ...p, temasHechos: [] })),
+    };
+  }, [alcances, progreso, e.lanzador, e.invitacion, e.terminado, enCurso, irA]);
 
   return (
     <Contexto.Provider value={valor}>
       {children}
-      <GuiaModal />
-      <CoachGuia />
+      <LanzadorRecorrido />
+      <InvitacionRecorrido />
+      <CapaRecorrido />
     </Contexto.Provider>
   );
 }

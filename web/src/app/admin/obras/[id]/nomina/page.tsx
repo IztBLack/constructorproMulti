@@ -1,3 +1,4 @@
+import { Ayuda } from '@/components/guia/ayuda';
 import { notFound } from 'next/navigation';
 import { Badge, Card, CardTitle, DataTable, EmptyState, LinkButton, PageHeader, type DataColumn } from '@/components/ui';
 import { getObra } from '@/lib/data/obras';
@@ -137,7 +138,7 @@ export default async function NominaObraPage({
         description={`Consulta de nómina semanal en ${obra.nombre}. La asistencia se captura aquí, en la pestaña Asistencia; los destajos se capturan desde la app móvil.`}
       />
 
-      <Card>
+      <Card data-guia="nomina-semana">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <CardTitle as="h2">Semana</CardTitle>
           <div className="flex items-center gap-3">
@@ -177,8 +178,10 @@ export default async function NominaObraPage({
 
       {summary && (
         <>
-          <Card>
-            <CardTitle>Total de nómina de la semana</CardTitle>
+          <Card data-guia="nomina-total">
+            <CardTitle>
+              Total de nómina de la semana <Ayuda clave="nomina.total" />
+            </CardTitle>
             <p className="tabular-nums text-3xl font-semibold text-neutral-900">{formatCurrency(summary.totalNomina)}</p>
             <div className="mt-3 flex gap-6 text-sm text-neutral-500">
               <span className="tabular-nums">Por día: {formatCurrency(summary.totalDia)}</span>
@@ -186,8 +189,10 @@ export default async function NominaObraPage({
             </div>
           </Card>
 
-          <section className="space-y-3">
-            <h2 className="text-sm font-medium text-neutral-700">Detalle por colaborador</h2>
+          <section className="space-y-3" data-guia="nomina-detalle">
+            <h2 className="text-sm font-medium text-neutral-700">
+              Detalle por colaborador <Ayuda clave="nomina.detalle" />
+            </h2>
             {summary.items.length === 0 ? (
               <EmptyState
                 title="Sin colaboradores activos asignados a esta obra."

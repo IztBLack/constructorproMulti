@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, EmptyState, Modal, TableContainer, TBody, Td, Th, THead, Tr } from '@/components/ui';
@@ -76,7 +77,9 @@ export default function TablaConceptos({
             <Th>Descripción</Th>
             <Th>Categoría</Th>
             <Th>Unidad</Th>
-            <Th className="text-right">Precio unitario</Th>
+            <Th className="text-right">
+              Precio unitario <Ayuda clave="catalogo.precio" />
+            </Th>
             <Th className="text-right">Acciones</Th>
           </THead>
           <TBody>

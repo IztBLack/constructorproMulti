@@ -63,7 +63,7 @@ export default async function EstimacionesPage({ params }: { params: Promise<{ i
     <div className="space-y-6">
       <ObraTabs obraId={id} />
 
-      <div>
+      <div data-guia="obra-seccion">
         <h1 className="text-xl font-semibold text-neutral-900">Estimaciones de {obra.nombre}</h1>
         <p className="mt-1 max-w-2xl text-sm text-neutral-600">
           Cobra por avance: lo que se hizo en el periodo por el precio del presupuesto, menos lo que

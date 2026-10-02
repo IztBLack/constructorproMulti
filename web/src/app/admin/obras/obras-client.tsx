@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState } from 'react';
 import { Button, LinkButton, PageHeader } from '@/components/ui';
 import type { Obra } from '@/lib/data/types';
@@ -29,9 +30,10 @@ export default function ObrasClient({ obras, error, modo }: ObrasClientProps) {
         description="Gestiona las obras activas e inactivas de tu empresa."
         actions={
           <div className="flex items-center gap-3">
-            <LinkButton href="/admin/obras/importar" variant="secondary">
+            <LinkButton href="/admin/obras/importar" variant="secondary" data-guia="obras-importar">
               Importar de Excel
             </LinkButton>
+            <Ayuda clave="obras.importar" className="-ml-2" />
             <Button data-guia="obras-nueva" onClick={() => setNuevaObraAbierta(true)}>+ Nueva obra</Button>
           </div>
         }

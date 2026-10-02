@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui';
@@ -59,9 +60,12 @@ export function RegistrarNominaCaja({
           </Button>
         </div>
       ) : (
-        <Button variant="secondary" onClick={() => setConfirmando(true)}>
-          Registrar nómina en caja
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="secondary" onClick={() => setConfirmando(true)} data-guia="nomina-registrar-caja">
+            Registrar nómina en caja
+          </Button>
+          <Ayuda clave="nomina.registrar-caja" />
+        </div>
       )}
       {error && <p className="text-sm text-red-600">{error}</p>}
     </div>

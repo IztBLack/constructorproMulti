@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState } from 'react';
 import { Field, Input } from '@/components/ui';
 import type { PeriodoPago } from '@/lib/data/types';
@@ -37,7 +38,9 @@ export default function SueldoFields({
 
   return (
     <div className="grid gap-4 rounded-xl border border-neutral-100 bg-neutral-50/60 p-4 sm:col-span-2 sm:grid-cols-2">
-      <p className="text-sm font-medium text-neutral-700 sm:col-span-2">Sueldo</p>
+      <p className="text-sm font-medium text-neutral-700 sm:col-span-2">
+        Sueldo <Ayuda clave="equipo.sueldo" />
+      </p>
 
       <Field label="Esquema de pago">
         <select
@@ -75,6 +78,7 @@ export default function SueldoFields({
           step="0.01"
           min="0"
           name="salario_periodo"
+          data-guia="colaborador-form-sueldo"
           value={monto}
           onChange={(e) => setMonto(e.target.value)}
           placeholder="0.00"

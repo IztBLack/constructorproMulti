@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Field, Input } from '@/components/ui';
@@ -69,6 +70,7 @@ export function CotizacionForm(props: Props) {
           hint="Elige un cliente registrado en el portal, o deja «Cliente sin vincular» para capturar el nombre a mano"
         >
           <select
+            data-guia="cotizacion-form-cliente"
             name="cliente_id"
             value={clienteId}
             onChange={(e) => setClienteId(e.target.value)}
@@ -102,6 +104,7 @@ export function CotizacionForm(props: Props) {
 
         <Field label="Nombre del proyecto" hint="Opcional">
           <Input
+            data-guia="cotizacion-form-proyecto"
             name="nombre_proyecto"
             defaultValue={cotizacion?.nombre_proyecto ?? ''}
             disabled={pending}
@@ -132,7 +135,7 @@ export function CotizacionForm(props: Props) {
         </Field>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-neutral-700">
+      <label data-guia="cotizacion-form-iva" className="flex items-center gap-2 text-sm text-neutral-700">
         <input
           type="checkbox"
           name="iva_enabled"
@@ -141,6 +144,7 @@ export function CotizacionForm(props: Props) {
           className="h-4 w-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-900"
         />
         Aplicar IVA ({ivaPct}%)
+        <Ayuda clave="cotizacion.iva" />
       </label>
 
       <Field label="Notas" hint="Opcional">
@@ -158,7 +162,7 @@ export function CotizacionForm(props: Props) {
       )}
 
       <div className="flex items-center gap-3">
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending} data-guia="cotizacion-form-crear">
           {pending ? 'Guardando…' : props.mode === 'crear' ? 'Crear cotización' : 'Guardar cambios'}
         </Button>
         {props.mode === 'editar' && (

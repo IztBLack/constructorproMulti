@@ -41,7 +41,7 @@ export default function NuevoPuestoForm() {
       <Modal open={open} onClose={handleClose} title="Nuevo puesto" size="sm">
         <form ref={formRef} onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
           <Field label="Nombre *" className="sm:col-span-2">
-            <Input name="nombre" required autoFocus disabled={loading} />
+            <Input name="nombre" required autoFocus disabled={loading} data-guia="puesto-form-nombre" />
           </Field>
           <Field label="Salario por día (MXN)" className="sm:col-span-2">
             <Input
@@ -49,6 +49,7 @@ export default function NuevoPuestoForm() {
               step="0.01"
               min="0"
               name="salario_dia_default"
+              data-guia="puesto-form-salario"
               placeholder="0.00"
               disabled={loading}
             />
@@ -57,7 +58,7 @@ export default function NuevoPuestoForm() {
           {error && <p className="text-sm text-red-600 sm:col-span-2">{error}</p>}
 
           <div className="flex items-center gap-3 sm:col-span-2">
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} data-guia="puesto-form-guardar">
               {loading ? 'Guardando…' : 'Guardar puesto'}
             </Button>
             <Button type="button" variant="secondary" disabled={loading} onClick={handleClose}>

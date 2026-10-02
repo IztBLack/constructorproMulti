@@ -42,11 +42,11 @@ export default function NuevoClienteForm() {
       <Modal open={open} onClose={handleClose} title="Nuevo cliente" size="md">
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
           <Field label="Nombre *">
-            <Input name="nombre" required autoFocus disabled={pending} />
+            <Input name="nombre" required autoFocus disabled={pending} data-guia="cliente-form-nombre" />
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Correo" hint="Para su acceso al portal">
-              <Input name="email" type="email" disabled={pending} />
+              <Input name="email" type="email" disabled={pending} data-guia="cliente-form-correo" />
             </Field>
             <Field label="Teléfono">
               <Input name="telefono" type="tel" disabled={pending} />
@@ -56,7 +56,7 @@ export default function NuevoClienteForm() {
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           <div className="flex items-center gap-3">
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" disabled={pending} data-guia="cliente-form-guardar">
               {pending ? 'Guardando…' : 'Guardar cliente'}
             </Button>
             <Button type="button" variant="secondary" disabled={pending} onClick={handleClose}>

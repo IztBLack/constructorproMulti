@@ -1,3 +1,4 @@
+import { Ayuda } from '@/components/guia/ayuda';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Badge, Card, CardTitle, EmptyState, TableContainer, THead, Th, TBody, Tr, Td } from '@/components/ui';
@@ -71,9 +72,9 @@ export default async function ClienteDetallePage({
           empresa_config (la RLS no se lo permite al rol cliente) y quitarle el
           acceso a alguien es una decisión aparte, no efecto de un interruptor. */}
       {conPortal && (
-        <Card>
+        <Card data-guia="cliente-portal">
           <CardTitle as="h2" className="mb-3 text-sm font-semibold text-neutral-700">
-            Acceso al portal
+            Acceso al portal <Ayuda clave="cliente.portal" />
           </CardTitle>
           <CodigoAcceso clienteId={cliente.id} vinculado={cliente.user_id !== null} />
         </Card>

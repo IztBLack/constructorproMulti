@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, MultiSelectList } from '@/components/ui';
@@ -79,7 +80,7 @@ export default function GestionCuadrilla({
         {/* ── Miembros ── */}
         <section className="space-y-3 rounded-xl border border-neutral-100 p-4">
           <h2 className="text-sm font-medium text-neutral-700">
-            Miembros ({cuadrilla.miembros.length})
+            Miembros ({cuadrilla.miembros.length}) <Ayuda clave="cuadrilla.miembros" />
           </h2>
 
           <div className="space-y-2">
@@ -163,7 +164,7 @@ export default function GestionCuadrilla({
         {/* ── Obras ── */}
         <section className="space-y-3 rounded-xl border border-neutral-100 p-4">
           <h2 className="text-sm font-medium text-neutral-700">
-            Obras asignadas ({cuadrilla.obras.length})
+            Obras asignadas ({cuadrilla.obras.length}) <Ayuda clave="cuadrilla.obras" />
           </h2>
 
           <div className="space-y-2">

@@ -77,6 +77,7 @@ export function FormHerramienta({ inicial, textoBoton }: { inicial: Herramienta 
             <input
               required
               maxLength={120}
+              data-guia={inicial ? undefined : 'herramienta-form-nombre'}
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               placeholder="Revolvedora de 1 saco, rotomartillo…"
@@ -131,7 +132,7 @@ export function FormHerramienta({ inicial, textoBoton }: { inicial: Herramienta 
           </label>
           <ErrorForm error={error} />
           <div className="flex flex-wrap gap-2">
-            <Button type="submit" disabled={pendiente}>
+            <Button type="submit" disabled={pendiente} data-guia={inicial ? undefined : 'herramienta-form-guardar'}>
               {pendiente ? 'Guardando…' : 'Guardar'}
             </Button>
             <Button type="button" variant="secondary" onClick={() => setAbierto(false)} disabled={pendiente}>

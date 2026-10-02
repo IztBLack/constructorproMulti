@@ -64,7 +64,7 @@ export default async function BitacoraObraPage({
       <ObraTabs obraId={id} />
 
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        <div data-guia="obra-seccion">
           <h1 className="text-xl font-semibold text-neutral-900">Bitácora de {obra.nombre}</h1>
           <p className="mt-1 max-w-2xl text-sm text-neutral-600">
             Lo que pasa cada día en la obra, con fotos. Cada entrada se cierra 24 horas después de
@@ -99,7 +99,7 @@ export default async function BitacoraObraPage({
         >
           Ver periodo
         </button>
-        <LinkButton href={`/admin/obras/${id}/bitacora/pdf?${qs}`} variant="secondary" className="ml-auto">
+        <LinkButton href={`/admin/obras/${id}/bitacora/pdf?${qs}`} variant="secondary" className="ml-auto" data-guia="bitacora-pdf">
           PDF del periodo
         </LinkButton>
       </form>

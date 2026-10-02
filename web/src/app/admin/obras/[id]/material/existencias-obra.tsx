@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, CardHeader, CardTitle, Field, Input, Select } from '@/components/ui';
@@ -66,7 +67,9 @@ export function ExistenciasObra({
     <Card>
       <CardHeader>
         <div>
-          <CardTitle as="h2">Lo que hay en la obra</CardTitle>
+          <CardTitle as="h2">
+            Lo que hay en la obra <Ayuda clave="material.existencias" />
+          </CardTitle>
           <p className="mt-1 text-sm text-neutral-600">
             Recibido − lo que se usó − lo que se mandó a otra obra + lo que llegó de otra obra ± ajustes. Solo material
             del catálogo.

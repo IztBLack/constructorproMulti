@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { Badge, Card, CardTitle } from '@/components/ui';
 import { FormularioDatosFiscales } from '@/components/fiscal/formulario-datos-fiscales';
 import { guardarClienteFiscalAction } from '@/app/admin/facturacion/actions';
@@ -27,7 +28,7 @@ export function DatosFiscalesCliente({
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <CardTitle as="h2" className="text-sm font-semibold text-neutral-700">
-            Datos para factura
+            Datos para factura <Ayuda clave="cliente.datos-factura" />
           </CardTitle>
           <p className="mt-1 text-sm text-neutral-600">
             Tal cual vienen en la constancia de situación fiscal de tu cliente.

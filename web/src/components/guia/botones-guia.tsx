@@ -4,22 +4,17 @@ import type { ReactNode } from 'react';
 import { Button, type ButtonSize, type ButtonVariant } from '@/components/ui';
 import { useGuia } from './guia-provider';
 
-/**
- * El "?" de la barra superior: abre la guía desde cualquier pantalla. Lleva un
- * puntito ámbar mientras la guía no se ha terminado, para que se note sin
- * estorbar.
- */
+/** El "?" de la barra superior: abre el recorrido guiado desde cualquier pantalla. */
 export function BotonAyuda() {
-  const { abrir, avance } = useGuia();
-  const pendiente = avance.total > 0 && avance.hechas < avance.total;
+  const { abrirLanzador } = useGuia();
   return (
     <button
       type="button"
-      onClick={abrir}
+      onClick={abrirLanzador}
       data-guia="ayuda"
-      title="Guía: aprende a usar la app"
-      aria-label={`Abrir la guía${pendiente ? ` (llevas ${avance.hechas} de ${avance.total} tarjetas)` : ''}`}
-      className="relative inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-neutral-500 outline-none transition-colors hover:bg-neutral-100 hover:text-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
+      title="Recorrido guiado"
+      aria-label="Recorrido guiado: aprende a usar el panel"
+      className="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-neutral-500 outline-none transition-colors hover:bg-neutral-100 hover:text-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-900 focus-visible:ring-offset-2"
     >
       <svg
         aria-hidden="true"
@@ -35,16 +30,13 @@ export function BotonAyuda() {
         <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
         <path d="M12 17h.01" />
       </svg>
-      {pendiente && (
-        <span aria-hidden="true" className="absolute right-2 top-2 h-2 w-2 rounded-full bg-amber-500" />
-      )}
     </button>
   );
 }
 
-/** Botón para abrir la guía desde una pantalla (Inicio, Ajustes). */
+/** Botón para abrir el recorrido desde una pantalla (Inicio, Ajustes). */
 export function AbrirGuia({
-  children = 'Ver la guía',
+  children = 'Recorrido guiado',
   variant = 'secondary',
   size = 'sm',
 }: {
@@ -52,9 +44,9 @@ export function AbrirGuia({
   variant?: ButtonVariant;
   size?: ButtonSize;
 }) {
-  const { abrir } = useGuia();
+  const { abrirLanzador } = useGuia();
   return (
-    <Button type="button" variant={variant} size={size} onClick={abrir}>
+    <Button type="button" variant={variant} size={size} onClick={abrirLanzador}>
       {children}
     </Button>
   );

@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, CardHeader, CardTitle, Field, Input, Textarea } from '@/components/ui';
@@ -74,10 +75,12 @@ export function NuevaRequisicion({
   }
 
   return (
-    <Card>
+    <Card data-guia="material-pedir">
       <CardHeader>
         <div>
-          <CardTitle as="h2">Pedir material</CardTitle>
+          <CardTitle as="h2">
+            Pedir material <Ayuda clave="material.pedir" />
+          </CardTitle>
           <p className="mt-1 text-sm text-neutral-600">
             Lo aprueba el administrador y después se compra. Si el material no está en el catálogo, escríbelo igual.
           </p>

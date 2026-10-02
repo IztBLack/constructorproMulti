@@ -98,7 +98,7 @@ export default async function AsistenciaObraPage({
         description={`Pase de lista en ${obra.nombre}. En el teléfono se captura día por día; en pantalla grande, la semana completa.`}
       />
 
-      <Card>
+      <Card data-guia="asistencia-semana">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <CardTitle as="h2">Semana</CardTitle>
           <div className="flex items-center gap-3">

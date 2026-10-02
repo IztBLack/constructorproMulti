@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, Field, Input, Select } from '@/components/ui';
@@ -87,9 +88,11 @@ export function AvanceObra({
 
   return (
     <div className="space-y-6">
-      <Card padding="md">
+      <Card padding="md" data-guia="avance-resumen">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-base font-semibold text-neutral-900">Avance físico de la obra</h2>
+          <h2 className="text-base font-semibold text-neutral-900">
+            Avance físico de la obra <Ayuda clave="avance.fisico" />
+          </h2>
           <p className="text-2xl font-bold tabular-nums text-neutral-900">
             {pctObra === null ? '—' : `${pctObra.toLocaleString('es-MX')} %`}
           </p>

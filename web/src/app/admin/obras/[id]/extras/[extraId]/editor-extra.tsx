@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -214,7 +215,9 @@ export default function EditorExtra({
 
       <Card padding="none">
         <div className="px-5 pb-3 pt-4">
-          <CardTitle as="h2">Conceptos</CardTitle>
+          <CardTitle as="h2">
+            Conceptos <Ayuda clave="extra.conceptos" />
+          </CardTitle>
           <p className="text-sm text-neutral-600">Sin IVA, igual que el presupuesto de la obra.</p>
         </div>
         {puedeEditar ? (

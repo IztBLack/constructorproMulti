@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, Field, Input, Select } from '@/components/ui';
@@ -56,7 +57,7 @@ export function ContratoObraCard({
   const anticipoPct = contratado > 0 ? Math.round((c.anticipo / contratado) * 10_000) / 100 : 0;
 
   return (
-    <Card padding="md">
+    <Card padding="md" data-guia="estimaciones-contrato">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 className="text-base font-semibold text-neutral-900">Condiciones del contrato</h2>
@@ -71,9 +72,9 @@ export function ContratoObraCard({
 
       {!editando ? (
         <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-          <Dato etiqueta="Anticipo" valor={c.anticipo > 0 ? `${formatCurrency(c.anticipo)} (${pct(anticipoPct)})` : 'Sin anticipo'} />
-          <Dato etiqueta="Se amortiza en cada estimación" valor={pct(c.amortizacionPct)} />
-          <Dato etiqueta="Fondo de garantía" valor={pct(c.fondoGarantiaPct)} />
+          <Dato etiqueta="Anticipo" ayuda={<Ayuda clave="estimaciones.anticipo" className="-my-1" />} valor={c.anticipo > 0 ? `${formatCurrency(c.anticipo)} (${pct(anticipoPct)})` : 'Sin anticipo'} />
+          <Dato etiqueta="Se amortiza en cada estimación" ayuda={<Ayuda clave="estimaciones.amortizacion" className="-my-1" />} valor={pct(c.amortizacionPct)} />
+          <Dato etiqueta="Fondo de garantía" ayuda={<Ayuda clave="estimaciones.fondo-garantia" className="-my-1" />} valor={pct(c.fondoGarantiaPct)} />
           <Dato etiqueta="IVA" valor={c.ivaPct > 0 ? pct(c.ivaPct) : 'Sin IVA'} />
         </dl>
       ) : null}
@@ -216,10 +217,13 @@ export function ContratoObraCard({
   );
 }
 
-function Dato({ etiqueta, valor }: { etiqueta: string; valor: string }) {
+function Dato({ etiqueta, valor, ayuda }: { etiqueta: string; valor: string; ayuda?: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs text-neutral-600">{etiqueta}</dt>
+      <dt className="flex items-center gap-1 text-xs text-neutral-600">
+        {etiqueta}
+        {ayuda}
+      </dt>
       <dd className="font-medium tabular-nums text-neutral-900">{valor}</dd>
     </div>
   );

@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { Fragment, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, CardHeader, CardTitle, Field, Input, THead, Th, TBody, Tr, Td } from '@/components/ui';
@@ -156,11 +157,11 @@ export default function PresupuestoObra({ obraId, partidas }: Props) {
   const hayPartidas = partidas.length > 0 || agregando;
 
   return (
-    <Card padding="none">
+    <Card padding="none" data-guia="obra-presupuesto">
       <div className="px-5 pt-5 pb-4">
         <CardHeader className="mb-0">
           <CardTitle as="h2" className="text-base font-semibold text-neutral-800">
-            Presupuesto por partidas
+            Presupuesto por partidas <Ayuda clave="obra.presupuesto" />
           </CardTitle>
           {!agregando && !editandoId && (
             <Button type="button" variant="secondary" size="sm" onClick={startAgregar}>

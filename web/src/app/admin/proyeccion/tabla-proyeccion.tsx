@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Modal } from '@/components/ui';
@@ -483,6 +484,7 @@ export function TablaProyeccion(props: Props) {
         <Button variant="secondary" size="sm" onClick={() => setGestorAbierto(true)}>
           Participantes · {estado.participantes.length}
         </Button>
+        <Ayuda clave="proyeccion.participantes" />
 
         <span data-guia="proyeccion-rellenar" className="ml-auto flex flex-wrap gap-2">
           <Button variant="secondary" size="sm" onClick={() => rellenar('lunesASabado')}>
@@ -500,11 +502,12 @@ export function TablaProyeccion(props: Props) {
           <Button variant="secondary" size="sm" onClick={() => rellenar('limpiar')}>
             Limpiar
           </Button>
+          <Ayuda clave="proyeccion.rellenar" className="self-center" />
         </span>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button variant="secondary" size="sm" onClick={exportarPdf} disabled={generandoPdf}>
+        <Button variant="secondary" size="sm" onClick={exportarPdf} disabled={generandoPdf} data-guia="proyeccion-pdf">
           {generandoPdf ? 'Generando PDF…' : 'PDF de la proyección'}
         </Button>
         <Button variant="secondary" size="sm" onClick={irASemanaActual}>
@@ -536,7 +539,7 @@ export function TablaProyeccion(props: Props) {
       )}
 
       {/* La tabla */}
-      <div className="overflow-x-auto rounded-lg border border-neutral-200">
+      <div data-guia="proyeccion-tabla" className="overflow-x-auto rounded-lg border border-neutral-200">
         <table className="w-full min-w-[780px] border-collapse text-sm">
           <thead>
             <tr className="bg-neutral-50">
@@ -816,7 +819,7 @@ function TarjetaEscenario(props: {
   const [leyendaAbierta, setLeyendaAbierta] = useState(false);
 
   return (
-    <section className="rounded-xl border border-neutral-200 bg-white p-4 sm:p-5">
+    <section data-guia="proyeccion-escenario" className="rounded-xl border border-neutral-200 bg-white p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <span
           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
@@ -825,6 +828,7 @@ function TarjetaEscenario(props: {
         >
           {simularCompleta ? '🧪 HIPÓTESIS' : '📋 ESCENARIO'}
           <span className="font-normal">· no toca el pase de lista</span>
+          <Ayuda clave="proyeccion.escenario" className="-my-1" />
         </span>
 
         <div className="flex items-center gap-1">
@@ -851,7 +855,8 @@ function TarjetaEscenario(props: {
           {/* Con filtro, el total NO es el global: es el de esa obra, con los
               días prestados que llegaron y sin los que se fueron. Decirlo evita
               leer una cifra parcial como si fuera la de toda la empresa. */}
-          {props.obraNombre ? `Raya de ${props.obraNombre}` : 'Raya proyectada'}
+          {props.obraNombre ? `Raya de ${props.obraNombre}` : 'Raya proyectada'}{' '}
+          <Ayuda clave="proyeccion.raya" className="normal-case" />
         </span>
         <span className="text-3xl font-bold tabular-nums text-neutral-900">
           {formatCurrency(r.total)}

@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState, useTransition } from 'react';
 import { Badge, Button, Card, EmptyState } from '@/components/ui';
 import { createClient } from '@/lib/supabase/client';
@@ -435,10 +436,10 @@ export function Incidentes({
   }
 
   return (
-    <section aria-labelledby="incidentes-heading" className="space-y-3">
+    <section aria-labelledby="incidentes-heading" data-guia="seguridad-incidentes" className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="incidentes-heading" className="text-base font-semibold text-neutral-900">
-          Incidentes
+          Incidentes <Ayuda clave="seguridad.incidentes" />
         </h2>
         {escribe && !nuevo && <Button onClick={() => setNuevo(true)}>Registrar incidente</Button>}
       </div>

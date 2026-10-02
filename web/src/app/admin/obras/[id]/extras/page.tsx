@@ -1,3 +1,4 @@
+import { Ayuda } from '@/components/guia/ayuda';
 import { notFound } from 'next/navigation';
 import { getObra } from '@/lib/data/obras';
 import { listExtrasObra } from '@/lib/data/cambios';
@@ -40,8 +41,10 @@ export default async function ExtrasObraPage({ params }: { params: Promise<{ id:
     <div className="space-y-6">
       <ObraTabs obraId={id} />
 
-      <div>
-        <h1 className="text-xl font-semibold text-neutral-900">Extras de {obra.nombre}</h1>
+      <div data-guia="obra-seccion">
+        <h1 className="text-xl font-semibold text-neutral-900">
+          Extras de {obra.nombre} <Ayuda clave="extras.que-son" />
+        </h1>
         <p className="mt-1 text-sm text-neutral-600">
           Lo que el cliente pide de más. Se lo mandas, lo aprueba desde su portal (o con el PDF por
           WhatsApp) y lo aprobado se suma a lo que te debe.

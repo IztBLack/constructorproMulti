@@ -1,91 +1,97 @@
-# Guía para cuentas nuevas (tutorial por tarjetas)
+# Ayuda en la app: íconos de ayuda + recorrido guiado
 
-Fecha: 2026-10-01 · Estado: **en preview, pendiente de aprobación de Mario**
+Estado: **en preview, pendiente de aprobación de Mario** · última decisión: 2026-10-01
 
 ## Qué se pidió
 
-Un tutorial "tipo videojuego" para cuentas nuevas que muestre el menú, los
-ajustes y cada apartado paso a paso, con tres reglas:
+Un tutorial para cuentas nuevas con datos de ejemplo, que no deje nada en la
+cuenta real y que se pueda repetir. Después Mario precisó:
 
-1. Los datos que se ven son **de ejemplo**.
-2. Al terminar, **nada** de eso queda en la cuenta real.
-3. Se puede **repetir** cuando se quiera.
+- Que **no sea invasivo** y se pueda omitir.
+- Si se inicia, que guíe **paso por paso bloqueando lo demás** para mantener el foco.
+- Que se elija la **profundidad** (como Call of Duty pregunta tu experiencia y
+  ajusta el tutorial), cubriendo la mayoría de las funciones.
+- Además, **íconos de ayuda** junto a cada apartado con un tip breve.
+- **Tono profesional**: nada de "nivel 1", misiones, rangos ni sellos.
 
-## Decisión: tarjetas + "Llévame ahí", sin caja de arena
+## Decisiones (en orden)
 
-Se comparó (consejo de 4 voces, ECC `council`):
+1. **Primera versión: tarjetas (flashcards)**, decidida por un consejo de 4
+   voces. Mario la vio en el preview y no lo convenció: la quería guiada sobre
+   la pantalla real, con bloqueo y con profundidades. **Se retiró.**
+2. **Se compararon 4 opciones con una maqueta** (tarjetas, tooltips, recorrido
+   por niveles, ambos). Mario eligió **D: tooltips + recorrido**.
+3. **Investigación de tono** (NN/g, Shopify, Atlassian, Microsoft Learn, guías
+   de gamificación B2B): en software profesional funciona el **avance honesto**
+   (temas completados, minutos restantes); los puntos, rangos e insignias se
+   ignoran o se sienten condescendientes. La ayuda que el usuario pide (tooltip)
+   se recuerda mejor que la que interrumpe (tutorial que salta solo).
+4. Mario eligió nombrar las profundidades **por alcance** y quitar rangos y sellos:
 
-- **A. Tutorial interactivo con caja de arena**: el usuario "crea" una obra de
-  prueba con los formularios reales y un guardado simulado.
-- **B. Tarjetas (flashcards)** que explican cada módulo y guían cómo usarlo.
+| Alcance | Qué cubre |
+|---|---|
+| **Esencial** | El panel, obras, clientes, cotizaciones y tu gente |
+| **Operación diaria** | Lo esencial + caja, asistencia, raya, cuadrillas y tratos |
+| **Completo** | Todas las funciones activas: compras, estimaciones, papeles, ajustes… |
 
-Las tres voces externas (Escéptico, Pragmático, Crítico) eligieron B con
-refuerzos; el Arquitecto empezó en un híbrido y cambió. Razones:
-
-| | A. Caja de arena | B. Tarjetas + Llévame ahí |
-|---|---|---|
-| Datos de ejemplo | Sí, capturados | Sí, en maquetas marcadas EJEMPLO |
-| Limpieza | Hay que garantizarla | No hay nada que limpiar: nunca toca Supabase |
-| Costo | Alto: refactor de formularios para inyectar un guardado falso | Bajo: contenido + 6 componentes |
-| Mantenimiento | Dos caminos por cada formulario; se desfasa en silencio | Una prueba truena el build si una tarjeta apunta a algo que ya no existe |
-| 20 módulos | Misiones solo para unos cuantos | Una o dos tarjetas por módulo |
-| Celular | Formularios largos + resaltados encimados | Tarjetas cortas, panel abajo |
-| Transferencia | Practica en algo que "no es de verdad" | "Llévame ahí" abre la pantalla real y resalta por dónde empezar |
-| Móvil (Flutter) | Habría que reconstruir la caja | El contenido es datos planos: se porta tal cual |
-
-Disenso más fuerte (aceptado como riesgo): las tarjetas son pasivas y se
-pueden pasar sin leer. Mitigación: "Llévame ahí" con resaltado sobre la
-pantalla real, rango y sellos visibles, y la tarjeta solo cuenta al voltearla y
-marcarla.
-
-Además, en este proyecto escribir y luego borrar **no es opción**: hay
-registros de evidencia que los triggers no dejan borrar, el móvil sincroniza
-lo que se guarda, y muchas consultas dependen de RLS sin filtrar por empresa.
+Cada alcance muestra **"N temas · duración aproximada X min"**, calculada con
+los pasos reales (25 s por paso). Las unidades se llaman **temas** (no
+"módulos": esa palabra ya es de las funciones que se prenden y apagan).
 
 ## Cómo funciona
 
-- **Mazos = niveles**, uno por categoría del menú: Cómo funciona tu panel,
-  Obras, Gente, Dinero, Operación, Ajustes. Solo aparecen las tarjetas de los
-  módulos **prendidos** y que el **rol** puede abrir.
-- **Tarjeta**: frente (qué es + maqueta EJEMPLO) → se voltea → reverso (pasos,
-  consejo, «¡Entendido!», «Llévame ahí»).
-- **Juego**: rango por avance (Ayudante → Media cuchara → Oficial → Maestro de
-  obra → Residente de obra), un sello por nivel completo, puntos de avance.
-- **Llévame ahí**: cierra la guía, abre la pantalla real y deja un panel con
-  los pasos; resalta en ámbar el elemento `data-guia="…"` por donde se empieza.
-- **Entradas**: botón **?** en la barra (con puntito mientras no se termina),
-  «¿Primera vez? Ver la guía» en Inicio, y Ajustes → Preferencias → Guía (con
-  «Repetir desde el principio»).
-- **Cuenta nueva**: el registro (crear empresa o aceptar invitación de
-  personal) manda a `/admin?guia=bienvenida`, que abre la guía **una vez**.
+**Íconos de ayuda (ⓘ).** Junto a títulos, columnas y conceptos no obvios
+(saldo, IVA, destajo, estimación, REPSE…). Se abren al pasar el cursor, al
+enfocarlos o al tocarlos (celular); Esc o un toque fuera los cierran. Textos en
+`web/src/lib/guia/ayudas.ts`, componente `components/guia/ayuda.tsx`.
 
-## Dónde vive el progreso
+**Recorrido guiado.**
+- Se abre con el botón **?** de la barra, desde Inicio o en Ajustes →
+  Preferencias. A una cuenta nueva solo se le muestra un **aviso pequeño** en
+  una esquina ("¿Es tu primera vez?… Ver opciones / Ahora no"), una sola vez.
+- El lanzador muestra los tres alcances con duración y avance. Dos preguntas
+  **opcionales** recomiendan uno; la elección siempre es del usuario.
+- Durante el recorrido, una **capa oscura tapa todo** menos lo que toca usar;
+  la tarjeta dice "Recorrido operación diaria · Tema 3 de 8: Tu gente" con una
+  barra de avance del tema. Botones: Atrás, Siguiente / Terminar tema, Omitir
+  tema, Salir (Esc pregunta antes de salir).
+- Tipos de paso: **leer** (se señala, no se puede tocar), **tocar** (abrir un
+  formulario, una pestaña, el menú: avanza solo), **escribir** (en un campo
+  real, con "Escribir el ejemplo") y **bloqueado** (Guardar/Enviar: se explica
+  qué haría).
+- Si la cuenta no tiene datos para un paso (p. ej. aún no hay obras), se
+  muestra una **vista de ejemplo** marcada como tal.
 
-En `localStorage` (`cp.guia.v1.<userId>`), como el tema claro/oscuro: es del
-dispositivo, no de la cuenta. Cero escrituras a Supabase, cero migraciones.
-Contra: si cambia de computadora, empieza de nuevo. Si eso molesta, pasar a
-`user_metadata` es un cambio local a `guia-provider.tsx`.
+## Nada se guarda: el candado
 
-## Archivos
+Mientras el recorrido corre, `components/guia/recorrido/candado.ts` corta en
+el navegador: todo envío de formulario, toda Server Action (`next-action`) y
+toda escritura a Supabase (no-GET a `/rest/v1`, `/storage/v1`, `/functions/v1`).
+La sesión (`/auth/v1`) sigue viva. Al salir del recorrido, los formularios de
+ejemplo se cierran y se pierden.
 
-- `web/src/lib/guia/tipos.ts` — forma del contenido.
-- `web/src/lib/guia/contenido.ts` — los mazos y tarjetas (datos planos).
-- `web/src/lib/guia/progreso.ts` — lógica pura (filtrado, avance, rango).
-- `web/src/lib/guia/*.test.ts` — lógica + anti-desfase del contenido.
-- `web/src/components/guia/*` — provider, modal, maqueta, panel, botones.
-- `data-guia="…"` en las pantallas reales (solo atributos).
+**Límite conocido:** la cola sin conexión del pase de lista (IndexedDB) no pasa
+por `fetch`. Por eso el recorrido **solo explica** la asistencia; una prueba
+impide pasos de tocar o escribir en esas pantallas.
+
+## Dónde vive el avance
+
+En el navegador, por usuario: `localStorage` (temas terminados) y
+`sessionStorage` (recorrido en curso). Cero escrituras a Supabase y sin
+migraciones. Si cambia de dispositivo, empieza de nuevo.
+
+## Pruebas que protegen esto
+
+- `lib/guia/recorrido/motor.test.ts`: alcances, duración, avance, rutas.
+- `lib/guia/recorrido/temas.test.ts`: cada ruta y ancla existe; reglas de
+  seguridad (nada que guarde, asistencia solo lectura, vista de ejemplo dentro
+  de una obra); **sin lenguaje de juego**; duraciones con tope.
+- `lib/guia/ayudas.test.ts`: textos ≤260 caracteres, sin lenguaje de juego,
+  ninguna ayuda sin colocar.
+- `components/guia/recorrido/candado.test.ts`: qué se considera escritura.
 
 ## Fuera de alcance (por ahora)
 
-- App móvil (Flutter): el contenido ya es portable; falta la UI.
+- App móvil (Flutter): textos y temas son datos planos, portables.
 - Portal del cliente.
-- Métricas de uso de la guía.
-
-## Criterio de terminado
-
-1. Cuenta nueva → al crear la empresa se abre la bienvenida, una sola vez.
-2. Se recorren tarjetas, sube el rango, se gana un sello.
-3. «Llévame ahí» abre la pantalla real con el panel y el resaltado.
-4. La pestaña de red no muestra ninguna escritura a Supabase por la guía.
-5. Ajustes → «Repetir desde el principio» deja el avance en cero.
-6. `npx vitest run src/lib/guia` y `npm run build` en verde.
+- Métricas de uso.

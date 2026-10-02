@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, Card, Field, Input, Select } from '@/components/ui';
@@ -195,10 +196,10 @@ export function ProgramaObra({
         <>
           {/* ── Vista de barras (CSS, sin librería) ─────────────────────── */}
           {rango && (
-            <section aria-labelledby="barras-titulo" className="space-y-2">
+            <section aria-labelledby="barras-titulo" data-guia="programa-barras" className="space-y-2">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h2 id="barras-titulo" className="text-sm font-medium text-neutral-700">
-                  Vista de barras
+                  Vista de barras <Ayuda clave="programa.barras" />
                 </h2>
                 <p className="text-xs text-neutral-600">
                   {formatDate(rango.inicio)} – {formatDate(rango.fin - 1)}

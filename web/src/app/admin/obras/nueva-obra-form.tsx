@@ -57,22 +57,22 @@ export default function NuevaObraForm({ open: openProp, onOpenChange }: NuevaObr
       <Modal open={open} onClose={handleClose} title="Nueva obra" size="md">
         <form ref={formRef} onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
           <Field label="Nombre *" className="sm:col-span-2">
-            <Input name="nombre" required disabled={loading} autoFocus />
+            <Input name="nombre" required disabled={loading} autoFocus data-guia="obra-form-nombre" />
           </Field>
           <Field label="Cliente">
-            <Input name="cliente" disabled={loading} />
+            <Input name="cliente" disabled={loading} data-guia="obra-form-cliente" />
           </Field>
           <Field label="Ubicación">
             <Input name="ubicacion" disabled={loading} />
           </Field>
           <Field label="Fecha de inicio">
-            <Input type="date" name="fecha_inicio" disabled={loading} />
+            <Input type="date" name="fecha_inicio" disabled={loading} data-guia="obra-form-fecha" />
           </Field>
 
           {error && <p className="text-sm text-red-600 sm:col-span-2">{error}</p>}
 
           <div className="flex items-center gap-3 sm:col-span-2">
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} data-guia="obra-form-guardar">
               {loading ? 'Guardando…' : 'Guardar obra'}
             </Button>
             <Button type="button" variant="secondary" disabled={loading} onClick={handleClose}>

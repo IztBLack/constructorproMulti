@@ -44,11 +44,11 @@ export default function NuevaCuadrillaForm() {
       <Modal open={open} onClose={handleClose} title="Nueva cuadrilla" size="md">
         <form ref={formRef} onSubmit={onSubmit} className="grid gap-4">
           <Field label="Nombre *">
-            <Input name="nombre" required autoFocus placeholder="Ej. Fierreros" />
+            <Input name="nombre" required autoFocus placeholder="Ej. Fierreros" data-guia="cuadrilla-form-nombre" />
           </Field>
 
           <Field label="Especialidad">
-            <select name="especialidad" defaultValue="MIXTA" className={SELECT_CLASS}>
+            <select name="especialidad" defaultValue="MIXTA" className={SELECT_CLASS} data-guia="cuadrilla-form-especialidad">
               {ESPECIALIDADES.map((e) => (
                 <option key={e.value} value={e.value}>
                   {e.label}
@@ -65,7 +65,7 @@ export default function NuevaCuadrillaForm() {
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           <div className="flex items-center gap-3">
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} data-guia="cuadrilla-form-guardar">
               {loading ? 'Guardando…' : 'Guardar cuadrilla'}
             </Button>
             <Button type="button" variant="secondary" disabled={loading} onClick={handleClose}>

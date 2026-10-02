@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, Field, Modal, Select, TableContainer, THead, Th, TBody, Tr, Td } from '@/components/ui';
@@ -77,7 +78,9 @@ export function TablaUsuarios({
       <TableContainer>
         <THead>
           <Th>Persona</Th>
-          <Th>Rol</Th>
+          <Th>
+            Rol <Ayuda clave="usuarios.rol" />
+          </Th>
           <Th className="text-right">Acciones</Th>
         </THead>
           <TBody>

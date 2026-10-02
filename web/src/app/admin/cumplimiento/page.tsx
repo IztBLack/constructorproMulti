@@ -1,3 +1,4 @@
+import { Ayuda } from '@/components/guia/ayuda';
 import Link from 'next/link';
 import { Card, PageHeader } from '@/components/ui';
 import { listObras } from '@/lib/data/obras';
@@ -24,13 +25,29 @@ export const dynamic = 'force-dynamic';
 const GRAVEDAD: Record<NivelSemaforo, number> = { VENCIDO: 0, URGENTE: 1, PRONTO: 2, SIN_FECHA: 3, VIGENTE: 4 };
 const NOMBRE_DOC = new Map(TIPOS_DOCUMENTO_SUB.map((t) => [t.valor, t.texto]));
 
-function Seccion({ id, titulo, descripcion, children }: { id: string; titulo: string; descripcion?: string; children: React.ReactNode }) {
+function Seccion({
+  id,
+  titulo,
+  descripcion,
+  ayuda,
+  'data-guia': guia,
+  children,
+}: {
+  id: string;
+  titulo: string;
+  descripcion?: string;
+  ayuda?: React.ReactNode;
+  /** Ancla del recorrido guiado. */
+  'data-guia'?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <Card>
+    <Card data-guia={guia}>
       <section aria-labelledby={id} className="space-y-4">
         <div className="space-y-1">
           <h2 id={id} className="text-base font-semibold text-neutral-900">
             {titulo}
+            {ayuda && <> {ayuda}</>}
           </h2>
           {descripcion && <p className="text-sm text-neutral-600">{descripcion}</p>}
         </div>
@@ -91,7 +108,9 @@ export default async function CumplimientoPage() {
 
       <Seccion
         id="siroc"
+        data-guia="cumplimiento-siroc"
         titulo="Registro de obras (SIROC)"
+        ayuda={<Ayuda clave="cumplimiento.siroc" />}
         descripcion="Cada obra se registra ante el IMSS dentro de los 5 días hábiles siguientes a su inicio. Los datos se anotan en el detalle de cada obra."
       >
         {filasSiroc.length === 0 ? (
@@ -125,7 +144,9 @@ export default async function CumplimientoPage() {
 
       <Seccion
         id="repse"
+        data-guia="cumplimiento-repse"
         titulo="Tu registro REPSE"
+        ayuda={<Ayuda clave="cumplimiento.repse" />}
         descripcion="Solo si prestas servicios u obras especializadas a otras empresas. Dura 3 años y la renovación se pide en los 3 meses antes de que venza."
       >
         <p className="flex flex-wrap items-center gap-2 text-sm">
@@ -145,7 +166,9 @@ export default async function CumplimientoPage() {
 
       <Seccion
         id="entregas"
+        data-guia="cumplimiento-entregas"
         titulo="Entregas cada cuatro meses (ICSOE y SISUB)"
+        ayuda={<Ayuda clave="cumplimiento.entregas" />}
         descripcion="Si tienes REPSE, informas tus contratos al IMSS (ICSOE) y al Infonavit (SISUB) a más tardar el 17 de enero, mayo y septiembre. Si el 17 es inhábil, se recorre al siguiente día hábil."
       >
         <ul className="divide-y divide-neutral-100">
@@ -178,7 +201,9 @@ export default async function CumplimientoPage() {
 
       <Seccion
         id="subcontratistas"
+        data-guia="cumplimiento-subcontratistas"
         titulo="Expediente de subcontratistas"
+        ayuda={<Ayuda clave="cumplimiento.subcontratistas" />}
         descripcion="Si tu subcontratista no tiene REPSE vigente, quien le paga puede perder la deducción y quedar como responsable solidario. Guarda aquí sus papeles y su vencimiento."
       >
         <NuevoSubcontratista colaboradores={colaboradores.map((c) => ({ id: c.id, nombre: c.nombre }))} />
@@ -222,7 +247,9 @@ export default async function CumplimientoPage() {
 
       <Seccion
         id="contador"
+        data-guia="cumplimiento-contador"
         titulo="Para tu contador"
+        ayuda={<Ayuda clave="cumplimiento.contador" />}
         descripcion="La app no calcula cuotas del IMSS, ISR ni Infonavit. Te da la raya tal como la llevas y los datos de tu gente, para que tu contador haga el cálculo en su sistema."
       >
         <form method="get" action="/admin/cumplimiento/raya" className="flex flex-wrap items-end gap-3">

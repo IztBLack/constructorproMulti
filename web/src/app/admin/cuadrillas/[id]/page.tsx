@@ -1,3 +1,4 @@
+import { Ayuda } from '@/components/guia/ayuda';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Badge } from '@/components/ui';
@@ -57,6 +58,7 @@ export default async function CuadrillaDetallePage({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Ayuda clave="cuadrilla.destajo" />
           <DestajoCuadrillaForm
             cuadrillaId={cuadrilla.id}
             miembros={cuadrilla.miembros}

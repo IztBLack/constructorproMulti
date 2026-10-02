@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, EmptyState, Modal, TableContainer, TBody, Td, Th, THead, Tr } from '@/components/ui';
@@ -45,7 +46,9 @@ export default function TablaPuestos({ puestos }: { puestos: Puesto[] }) {
       <TableContainer>
         <THead>
           <Th>Nombre</Th>
-          <Th className="text-right">Salario/día</Th>
+          <Th className="text-right">
+            Salario/día <Ayuda clave="puestos.salario" />
+          </Th>
           <Th className="text-right">Acciones</Th>
         </THead>
         <TBody>

@@ -41,7 +41,7 @@ export default function NuevoConceptoForm() {
       <Modal open={open} onClose={handleClose} title="Nuevo concepto" size="md">
         <form ref={formRef} onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
           <Field label="Descripción *" className="sm:col-span-2">
-            <Input name="descripcion" required autoFocus disabled={loading} />
+            <Input name="descripcion" required autoFocus disabled={loading} data-guia="concepto-form-descripcion" />
           </Field>
           <Field label="Clave">
             <Input name="clave" placeholder="Ej. CON-001" disabled={loading} />
@@ -50,7 +50,7 @@ export default function NuevoConceptoForm() {
             <Input name="categoria" placeholder="Ej. Cimentación" disabled={loading} />
           </Field>
           <Field label="Unidad">
-            <Input name="unidad" placeholder="Ej. m2, pza, lote" disabled={loading} />
+            <Input name="unidad" placeholder="Ej. m2, pza, lote" disabled={loading} data-guia="concepto-form-unidad" />
           </Field>
           <Field label="Precio unitario (MXN)">
             <Input
@@ -58,6 +58,7 @@ export default function NuevoConceptoForm() {
               step="0.01"
               min="0"
               name="precio_unitario_default"
+              data-guia="concepto-form-precio"
               placeholder="0.00"
               disabled={loading}
             />
@@ -66,7 +67,7 @@ export default function NuevoConceptoForm() {
           {error && <p className="text-sm text-red-600 sm:col-span-2">{error}</p>}
 
           <div className="flex items-center gap-3 sm:col-span-2">
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} data-guia="concepto-form-guardar">
               {loading ? 'Guardando…' : 'Guardar concepto'}
             </Button>
             <Button type="button" variant="secondary" disabled={loading} onClick={handleClose}>

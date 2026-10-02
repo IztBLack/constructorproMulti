@@ -381,29 +381,3 @@ option {
   from { opacity: 0; transform: translateY(-10px) scale(.985); }
   to   { opacity: 1; transform: none; }
 }
-
-/* ── Guía: "por aquí empiezas" ───────────────────────────────────────────────
-   Lo pone `components/guia/coach-guia.tsx` sobre el botón o la sección real a
-   la que llevó "Llévame ahí". Contorno y no borde: no mueve el layout ni
-   cambia el tamaño del elemento. Late solo si el sistema no pidió menos
-   movimiento. */
-/* `--ambar-600` y no un tono más claro: contra el fondo blanco el contorno debe
-   llegar a 3:1 (WCAG 1.4.11). En oscuro el token ya se aclara solo. Late solo
-   el desplazamiento, nunca el color. */
-[data-guia-resaltado] {
-  outline: 3px solid var(--ambar-600);
-  outline-offset: 4px;
-  border-radius: 0.6rem;
-  scroll-margin: 6rem;
-}
-
-@keyframes guia-latido {
-  0%, 100% { outline-offset: 4px; }
-  50%      { outline-offset: 8px; }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  [data-guia-resaltado] {
-    animation: guia-latido 1.4s ease-in-out infinite;
-  }
-}

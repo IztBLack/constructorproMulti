@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState } from 'react';
 import { Button, Card } from '@/components/ui';
 import { FormularioEntrada } from './formulario-entrada';
@@ -22,6 +23,7 @@ export function NuevaEntrada({
     return (
       <Button
         type="button"
+        data-guia="bitacora-nueva"
         onClick={() => {
           setVez((v) => v + 1);
           setAbierto(true);
@@ -34,7 +36,9 @@ export function NuevaEntrada({
 
   return (
     <Card padding="md" className="w-full">
-      <h2 className="mb-4 text-base font-semibold text-neutral-900">Nueva entrada</h2>
+      <h2 className="mb-4 text-base font-semibold text-neutral-900">
+        Nueva entrada <Ayuda clave="bitacora.entrada" />
+      </h2>
       <FormularioEntrada
         key={vez}
         obraId={obraId}
