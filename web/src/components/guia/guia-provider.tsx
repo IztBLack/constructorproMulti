@@ -24,6 +24,7 @@ import type { Alcance, Tema } from '@/lib/guia/recorrido/tipos';
 import { LanzadorRecorrido } from './recorrido/lanzador';
 import { CapaRecorrido } from './recorrido/capa-recorrido';
 import { InvitacionRecorrido } from './recorrido/invitacion';
+import { cerrarDialogos, ponerCandado, quitarCandado } from './recorrido/candado';
 
 /** `?guia=bienvenida`: con eso el registro manda al panel (cuenta nueva). */
 const PARAM_BIENVENIDA = 'bienvenida';
@@ -124,6 +125,9 @@ function revisarBienvenida(userId: string) {
 
 function suscribir(userId: string, avisar: () => void): () => void {
   cargar(userId); // primero lo guardado, DESPUÉS la URL
+  // Recorrido retomado tras recargar: el candado va YA, no en un efecto, para
+  // que no quede una ventana en la que la app pueda escribir.
+  if (estado.corrida) ponerCandado();
   suscriptores.add(avisar);
   revisarBienvenida(userId);
   const alCambiarAlmacen = (e: StorageEvent) => {
@@ -137,6 +141,21 @@ function suscribir(userId: string, avisar: () => void): () => void {
 }
 
 const snapshotServidor = () => CERRADO;
+
+/**
+ * Pasos del tema actual que el usuario de verdad VIO (no los que se saltaron
+ * solos porque esa pantalla no aplica a su cuenta). Un tema que se saltó
+ * entero no cuenta como terminado.
+ */
+let vistosEnTema = 0;
+
+/** Termina el recorrido: primero cierra los formularios de ejemplo y luego quita el candado. */
+function terminarCorrida(cambio: Partial<EstadoGuia>) {
+  cerrarDialogos();
+  quitarCandado();
+  vistosEnTema = 0;
+  actualizar({ ...cambio, corrida: null });
+}
 
 /** Al cerrar algo, si el foco se quedó sin dueño, vuelve al "?" de la barra. */
 export function devolverFoco() {
@@ -171,7 +190,8 @@ interface GuiaContexto {
   cerrarLanzador: () => void;
   cerrarInvitacion: () => void;
   iniciar: (alcance: Alcance) => void;
-  avanzar: () => void;
+  /** `saltado`: el paso no aplicaba a esta cuenta y se pasó solo. */
+  avanzar: (opciones?: { saltado?: boolean }) => void;
   retroceder: () => void;
   omitirTema: () => void;
   salir: () => void;
@@ -253,21 +273,29 @@ export function GuiaProvider({ userId, activos, rol, children }: Props) {
       iniciar: (alcance) => {
         const temas = temasDe(alcance);
         if (temas.length === 0) return;
+        // El candado va ANTES de mostrar nada: desde el primer paso, la app no escribe.
+        ponerCandado();
+        vistosEnTema = 0;
         const tema = primerPendiente(temas, progreso);
         cambiarProgreso((p) => ({ ...p, invitacionCerrada: true }));
         actualizar({ corrida: { alcance, tema, paso: 0 }, lanzador: false, invitacion: false, terminado: null });
         irA(temas[tema].inicio);
       },
-      avanzar: () => {
+      avanzar: (opciones) => {
         if (!enCurso) return;
+        if (!opciones?.saltado) vistosEnTema += 1;
         const s = siguiente(enCurso.temas, enCurso.corrida);
         if (s.tipo === 'paso') return actualizar({ corrida: s.corrida });
-        cambiarProgreso((p) => marcarTema(p, s.terminado));
+        // Fin de tema: solo cuenta como terminado si se vio algo de él.
+        if (vistosEnTema > 0) cambiarProgreso((p) => marcarTema(p, s.terminado));
+        vistosEnTema = 0;
+        cerrarDialogos();
         if (s.tipo === 'tema') {
           actualizar({ corrida: s.corrida });
           irA(enCurso.temas[s.corrida.tema].inicio);
         } else {
-          actualizar({ corrida: null, terminado: enCurso.corrida.alcance });
+          irA(enCurso.tema.inicio);
+          terminarCorrida({ terminado: enCurso.corrida.alcance });
         }
       },
       retroceder: () => {
@@ -276,9 +304,12 @@ export function GuiaProvider({ userId, activos, rol, children }: Props) {
       },
       omitirTema: () => {
         if (!enCurso) return;
-        const { corrida, temas } = enCurso;
+        const { corrida, temas, tema } = enCurso;
+        vistosEnTema = 0;
+        cerrarDialogos();
         if (corrida.tema + 1 >= temas.length) {
-          actualizar({ corrida: null });
+          irA(tema.inicio);
+          terminarCorrida({});
           return devolverFoco();
         }
         const sig = { ...corrida, tema: corrida.tema + 1, paso: 0 };
@@ -286,7 +317,11 @@ export function GuiaProvider({ userId, activos, rol, children }: Props) {
         irA(temas[sig.tema].inicio);
       },
       salir: () => {
-        actualizar({ corrida: null });
+        // Volver a la pantalla de inicio del tema descarta también los
+        // formularios de página completa (p. ej. Nueva cotización) que tenían
+        // datos de ejemplo; los diálogos se cierran en `terminarCorrida`.
+        if (enCurso) irA(enCurso.tema.inicio);
+        terminarCorrida({});
         devolverFoco();
       },
       cerrarCierre: () => {

@@ -8,13 +8,18 @@ import { infoAlcance, rutaCoincide, type Corrida } from '@/lib/guia/recorrido/mo
 import type { Objetivo, PasoRecorrido, Tema } from '@/lib/guia/recorrido/tipos';
 import { useGuia } from '../guia-provider';
 import { MaquetaGuia } from '../maqueta-guia';
-import { EVENTO_BLOQUEO, ponerCandado, quitarCandado } from './candado';
+import { cerrarDialogos, EVENTO_BLOQUEO, ponerCandado, quitarCandado } from './candado';
 import { CierreRecorrido } from './cierre';
 
 /** Margen del hueco alrededor de lo señalado. */
 const HOLGURA = 6;
-/** Cuánto se espera a que aparezca lo señalado (la pantalla se pinta del servidor). */
-const ESPERA_MS = 3500;
+/**
+ * Dos esperas distintas: llegar a la pantalla (una navegación lenta en
+ * producción puede tardar) y, YA en ella, que aparezca lo señalado. Contarlas
+ * juntas hacía que una página lenta saltara pasos en cadena.
+ */
+const ESPERA_RUTA_MS = 12000;
+const ESPERA_OBJETIVO_MS = 3500;
 const INTERVALO_MS = 150;
 
 type Modo = 'buscando' | 'foco' | 'centro' | 'ejemplo' | 'navegar';
@@ -43,17 +48,12 @@ function escribirEnCampo(campo: HTMLInputElement | HTMLTextAreaElement, valor: s
   campo.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
-/** Cierra el diálogo de la app que esté abierto (el formulario de ejemplo): nada se guardó. */
-function cerrarDialogo() {
-  for (const d of document.querySelectorAll<HTMLElement>('[role="dialog"]')) {
-    if (d.getClientRects().length === 0 || d.closest('[data-recorrido]')) continue;
-    d.querySelector<HTMLButtonElement>('button[aria-label="Cerrar"]')?.click();
-  }
-}
-
 /**
  * El recorrido en pantalla. Solo existe mientras hay uno en curso (o su cierre).
- * Pone el candado al entrar y lo quita al salir.
+ *
+ * El candado lo pone el provider de forma síncrona al iniciar o retomar; aquí
+ * solo queda de respaldo, y al desmontar (por la vía que sea) se cierran los
+ * formularios de ejemplo ANTES de quitarlo.
  */
 export function CapaRecorrido() {
   const { enCurso, terminado } = useGuia();
@@ -62,7 +62,10 @@ export function CapaRecorrido() {
   useEffect(() => {
     if (!activo) return;
     ponerCandado();
-    return quitarCandado;
+    return () => {
+      cerrarDialogos();
+      quitarCandado();
+    };
   }, [activo]);
 
   if (terminado) return <CierreRecorrido alcance={terminado} />;
@@ -102,14 +105,30 @@ function PasoEnPantalla({
   const objetivoRef = useRef<HTMLElement | null>(null);
   const tarjetaRef = useRef<HTMLDivElement>(null);
   const tituloRef = useRef<HTMLHeadingElement>(null);
+  /** Mientras se busca no hay tarjeta: el foco se queda aquí, no en la app de atrás. */
+  const esperaRef = useRef<HTMLParagraphElement>(null);
   const selector = paso.objetivo ? selectorDe(paso.objetivo) : null;
   const huecoAbierto = modo === 'foco' && (paso.accion === 'tocar' || paso.accion === 'escribir');
   const ultimo = corrida.paso + 1 === tema.pasos.length;
 
+  // `avanzar` cambia de identidad cuando el panel se vuelve a pintar; leerlo por
+  // ref evita reiniciar las esperas a la mitad.
+  const avanzarRef = useRef(avanzar);
+  useEffect(() => {
+    avanzarRef.current = avanzar;
+  }, [avanzar]);
+
   const siguientePaso = useCallback(() => {
-    if (paso.cerrarDialogo) cerrarDialogo();
-    avanzar();
-  }, [paso.cerrarDialogo, avanzar]);
+    if (paso.cerrarDialogo) cerrarDialogos();
+    avanzarRef.current();
+  }, [paso.cerrarDialogo]);
+
+  // "Abrir la pantalla" (menú escondido): se avanza cuando la ruta YA cambió,
+  // no antes, para que el paso siguiente arranque en su pantalla.
+  const [navegando, setNavegando] = useState<string | null>(null);
+  useEffect(() => {
+    if (navegando !== null && pathname !== navegando) avanzarRef.current();
+  }, [navegando, pathname]);
 
   // Primer paso del tema y la pantalla no es la suya (p. ej. tras recargar): ir a su inicio.
   const irAlInicio = corrida.paso === 0 && !rutaCoincide(pathname, paso.ruta);
@@ -124,39 +143,51 @@ function PasoEnPantalla({
   // Resolver el paso: esperar la pantalla y lo señalado; si no aparece, vista
   // de ejemplo (si hay maqueta) o saltarlo (no aplica a esta cuenta).
   useEffect(() => {
-    let intentos = 0;
+    const inicio = Date.now();
+    let enRutaDesde: number | null = null;
+    const noAplica = () => {
+      if (paso.maqueta) setModo('ejemplo');
+      else avanzarRef.current({ saltado: true });
+    };
     const id = window.setInterval(() => {
-      intentos += 1;
       const enRuta = rutaCoincide(pathname, paso.ruta);
-      if (enRuta && !selector) {
+      if (!enRuta) {
+        // Aún navegando (o la cuenta no tiene esa pantalla, p. ej. sin obras).
+        if (Date.now() - inicio >= ESPERA_RUTA_MS) {
+          window.clearInterval(id);
+          noAplica();
+        }
+        return;
+      }
+      enRutaDesde ??= Date.now();
+      if (!selector) {
         window.clearInterval(id);
         setModo('centro');
         return;
       }
-      if (enRuta && selector) {
-        const el = visible(selector);
-        if (el) {
-          window.clearInterval(id);
-          objetivoRef.current = el;
-          el.scrollIntoView({ block: 'center', behavior: 'auto' });
-          setModo('foco');
-          return;
-        }
-        // Enlace del menú escondido (menú agrupado o celular): la tarjeta lleva.
-        if (paso.objetivo && 'enlace' in paso.objetivo) {
-          window.clearInterval(id);
-          setModo('navegar');
-          return;
-        }
-      }
-      if (intentos * INTERVALO_MS >= ESPERA_MS) {
+      const el = visible(selector);
+      if (el) {
         window.clearInterval(id);
-        if (paso.maqueta) setModo('ejemplo');
-        else avanzar();
+        objetivoRef.current = el;
+        // En el celular la tarjeta va abajo: lo señalado se sube al tercio de arriba.
+        el.scrollIntoView({ block: window.innerWidth < 640 ? 'start' : 'center', behavior: 'auto' });
+        if (window.innerWidth < 640) window.scrollBy(0, -96);
+        setModo('foco');
+        return;
+      }
+      // Enlace del menú escondido (menú agrupado o celular): la tarjeta lleva.
+      if (paso.objetivo && 'enlace' in paso.objetivo) {
+        window.clearInterval(id);
+        setModo('navegar');
+        return;
+      }
+      if (Date.now() - enRutaDesde >= ESPERA_OBJETIVO_MS) {
+        window.clearInterval(id);
+        noAplica();
       }
     }, INTERVALO_MS);
     return () => window.clearInterval(id);
-  }, [pathname, paso, selector, avanzar]);
+  }, [pathname, paso, selector]);
 
   // Seguir a lo señalado si la página se mueve (scroll, imágenes que cargan…).
   useEffect(() => {
@@ -181,11 +212,11 @@ function PasoEnPantalla({
   useEffect(() => {
     if (modo !== 'foco' || paso.accion !== 'tocar' || !selector) return;
     const alTocar = (e: MouseEvent) => {
-      if ((e.target as Element | null)?.closest(selector)) window.setTimeout(avanzar, 0);
+      if ((e.target as Element | null)?.closest(selector)) window.setTimeout(() => avanzarRef.current(), 0);
     };
     document.addEventListener('click', alTocar, true);
     return () => document.removeEventListener('click', alTocar, true);
-  }, [modo, paso.accion, selector, avanzar]);
+  }, [modo, paso.accion, selector]);
 
   // `escribir`: Siguiente se habilita cuando el campo tiene algo.
   useEffect(() => {
@@ -201,17 +232,18 @@ function PasoEnPantalla({
   // Teclado: Esc pregunta antes de salir (y no cierra el formulario de atrás);
   // el foco no puede irse a lo bloqueado.
   useEffect(() => {
+    // Esc pregunta si salir; un segundo Esc cancela la pregunta.
     const alTeclear = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
       e.preventDefault();
       e.stopImmediatePropagation();
-      setConfirmarSalida(true);
+      setConfirmarSalida((c) => !c);
     };
     const alEnfocar = (e: FocusEvent) => {
       const t = e.target as Node | null;
-      if (!t || tarjetaRef.current?.contains(t)) return;
+      if (!t || tarjetaRef.current?.contains(t) || esperaRef.current === t) return;
       if (huecoAbierto && objetivoRef.current?.contains(t)) return;
-      tituloRef.current?.focus();
+      (tituloRef.current ?? esperaRef.current)?.focus();
     };
     window.addEventListener('keydown', alTeclear, true);
     document.addEventListener('focusin', alEnfocar);
@@ -230,7 +262,7 @@ function PasoEnPantalla({
 
   // Paso listo: el foco al título de la tarjeta (lector de pantalla y teclado).
   useEffect(() => {
-    if (modo !== 'buscando') tituloRef.current?.focus();
+    (modo === 'buscando' ? esperaRef : tituloRef).current?.focus();
   }, [modo]);
 
   const alcance = infoAlcance(corrida.alcance);
@@ -281,8 +313,10 @@ function PasoEnPantalla({
 
       {modo === 'buscando' && (
         <p
+          ref={esperaRef}
+          tabIndex={-1}
           role="status"
-          className="fixed left-1/2 top-1/2 z-[72] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white px-4 py-2 text-sm text-neutral-700 shadow"
+          className="fixed left-1/2 top-1/2 z-[72] -translate-x-1/2 -translate-y-1/2 rounded-full bg-white px-4 py-2 text-sm text-neutral-700 shadow outline-none"
         >
           Abriendo la pantalla…
         </p>
@@ -393,9 +427,10 @@ function PasoEnPantalla({
                 {modo === 'navegar' && paso.objetivo && 'enlace' in paso.objetivo ? (
                   <Button
                     size="sm"
+                    disabled={navegando !== null}
                     onClick={() => {
+                      setNavegando(pathname);
                       router.push((paso.objetivo as { enlace: string }).enlace);
-                      avanzar();
                     }}
                   >
                     Abrir la pantalla

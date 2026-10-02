@@ -23,7 +23,14 @@ describe('candado del recorrido: qué cuenta como escritura', () => {
     expect(esEscritura(new Request(`${SB}/rest/v1/obras`, { method: 'POST' }))).toBe(true);
   });
 
-  it('la sesión no se toca: refrescar el token debe seguir funcionando', () => {
+  it('la sesión no se toca: refrescar el token y cerrar sesión siguen funcionando', () => {
     expect(esEscritura(`${SB}/auth/v1/token?grant_type=refresh_token`, { method: 'POST' })).toBe(false);
+    expect(esEscritura(`${SB}/auth/v1/logout`, { method: 'POST' })).toBe(false);
+  });
+
+  it('pero los datos de la cuenta y cualquier POST propio sí se cortan', () => {
+    expect(esEscritura(`${SB}/auth/v1/user`, { method: 'PUT' })).toBe(true);
+    expect(esEscritura(`${SB}/auth/v1/otp`, { method: 'POST' })).toBe(true);
+    expect(esEscritura('/admin/proyeccion/pdf', { method: 'POST' })).toBe(true);
   });
 });
