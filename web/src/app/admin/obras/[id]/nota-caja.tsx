@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState } from 'react';
 import { Card, CardTitle, Button } from '@/components/ui';
 import { guardarNotaCajaAction } from './nota-caja-actions';
@@ -52,7 +53,7 @@ export function NotaCaja({
   return (
     <Card>
       <CardTitle as="h2" className="mb-2 text-sm font-semibold text-neutral-700">
-        Nota de conciliación
+        Nota de conciliación <Ayuda clave="obra.nota-conciliacion" />
       </CardTitle>
 
       {puedeEditar ? (

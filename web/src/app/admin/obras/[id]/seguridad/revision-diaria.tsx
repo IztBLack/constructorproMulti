@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState, useTransition } from 'react';
 import { Badge, Button, Card } from '@/components/ui';
 import { formatDate } from '@/lib/data/format';
@@ -74,12 +75,12 @@ export function RevisionDiaria({
   }
 
   return (
-    <section aria-labelledby="revision-heading" className="space-y-4">
+    <section aria-labelledby="revision-heading" data-guia="seguridad-revision" className="space-y-4">
       <Card padding="md">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 id="revision-heading" className="text-base font-semibold text-neutral-900">
-              Revisión de hoy
+              Revisión de hoy <Ayuda clave="seguridad.revision" />
             </h2>
             <p className="text-sm text-neutral-600">
               Recorre la obra y marca cada punto. &quot;No aplica&quot; no cuenta en el porcentaje.

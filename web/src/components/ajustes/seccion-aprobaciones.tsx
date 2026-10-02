@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -37,7 +38,9 @@ export function SeccionAprobaciones({
       <Card>
         <CardHeader>
           <div>
-            <CardTitle as="h3">Esperan tu visto bueno</CardTitle>
+            <CardTitle as="h3">
+              Esperan tu visto bueno <Ayuda clave="ajustes.visto-bueno" />
+            </CardTitle>
             <p className="mt-1 text-sm text-neutral-600">
               {pendientes.length === 0
                 ? 'No hay nada pendiente.'

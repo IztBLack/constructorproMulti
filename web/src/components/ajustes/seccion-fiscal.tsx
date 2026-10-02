@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle } from '@/components/ui';
 import { FormularioDatosFiscales, type ValoresFiscales } from '@/components/fiscal/formulario-datos-fiscales';
@@ -15,7 +16,9 @@ export function SeccionFiscal({ valores }: { valores: ValoresFiscales | null }) 
     <Card>
       <CardHeader>
         <div>
-          <CardTitle as="h3">Tus datos fiscales</CardTitle>
+          <CardTitle as="h3">
+            Tus datos fiscales <Ayuda clave="ajustes.fiscal" />
+          </CardTitle>
           <p className="mt-1 text-sm text-neutral-600">
             Salen en cada hoja para facturar, en el mismo orden que te los pide el SAT. Cópialos de tu
             constancia de situación fiscal.

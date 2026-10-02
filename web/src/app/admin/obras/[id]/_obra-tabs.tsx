@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -27,19 +28,19 @@ function suscribirRed(alCambiar: () => void) {
 function tabsFor(obraId: string) {
   const base = `/admin/obras/${obraId}`;
   return [
-    { href: base, label: 'Detalle' },
-    { href: `${base}/asistencia`, label: 'Asistencia' },
-    { href: `${base}/nomina`, label: 'Nómina' },
-    { href: `${base}/notas`, label: 'Notas' },
-    { href: `${base}/extras`, label: 'Extras' },
-    { href: `${base}/avance`, label: 'Avance' },
-    { href: `${base}/estimaciones`, label: 'Estimaciones' },
-    { href: `${base}/material`, label: 'Material' },
-    { href: `${base}/utilidad`, label: 'Utilidad' },
-    { href: `${base}/bitacora`, label: 'Bitácora' },
-    { href: `${base}/programa`, label: 'Programa' },
-    { href: `${base}/seguridad`, label: 'Seguridad' },
-    { href: `${base}/importar`, label: 'Importar' },
+    { href: base, label: 'Detalle', 'data-guia': 'obra-tab-detalle' },
+    { href: `${base}/asistencia`, label: 'Asistencia', 'data-guia': 'obra-tab-asistencia' },
+    { href: `${base}/nomina`, label: 'Nómina', 'data-guia': 'obra-tab-nomina' },
+    { href: `${base}/notas`, label: 'Notas', 'data-guia': 'obra-tab-notas' },
+    { href: `${base}/extras`, label: 'Extras', 'data-guia': 'obra-tab-extras' },
+    { href: `${base}/avance`, label: 'Avance', 'data-guia': 'obra-tab-avance' },
+    { href: `${base}/estimaciones`, label: 'Estimaciones', 'data-guia': 'obra-tab-estimaciones' },
+    { href: `${base}/material`, label: 'Material', 'data-guia': 'obra-tab-material' },
+    { href: `${base}/utilidad`, label: 'Utilidad', 'data-guia': 'obra-tab-utilidad' },
+    { href: `${base}/bitacora`, label: 'Bitácora', 'data-guia': 'obra-tab-bitacora' },
+    { href: `${base}/programa`, label: 'Programa', 'data-guia': 'obra-tab-programa' },
+    { href: `${base}/seguridad`, label: 'Seguridad', 'data-guia': 'obra-tab-seguridad' },
+    { href: `${base}/importar`, label: 'Importar', 'data-guia': 'obra-tab-importar' },
   ];
 }
 
@@ -95,7 +96,7 @@ export default function ObraTabs({ obraId }: ObraTabsProps) {
         <span className="inline-flex items-center text-sm text-neutral-300">← Obras</span>
       )}
 
-      <nav aria-label="Navegación de obra" className="flex flex-wrap gap-1 border-b border-neutral-200">
+      <nav aria-label="Navegación de obra" data-guia="obra-pestanas" className="flex flex-wrap gap-1 border-b border-neutral-200">
         {tabs.map((tab) => {
           const active = isActive(pathname, tab.href, base);
 
@@ -121,6 +122,7 @@ export default function ObraTabs({ obraId }: ObraTabsProps) {
             <Link
               key={tab.href}
               href={tab.href}
+              data-guia={tab['data-guia']}
               aria-current={active ? 'page' : undefined}
               className={`${claseBase} cursor-pointer ${
                 active
@@ -132,6 +134,7 @@ export default function ObraTabs({ obraId }: ObraTabsProps) {
             </Link>
           );
         })}
+        <Ayuda clave="obra.pestanas" className="self-center" />
       </nav>
 
       {!enLinea && (

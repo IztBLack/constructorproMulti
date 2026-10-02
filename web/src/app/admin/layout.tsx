@@ -13,6 +13,8 @@ import { EnlaceAjustes } from '@/components/ajustes/enlace-ajustes';
 import { BotonDescargas } from '@/components/descargas/boton-descargas';
 import { ModulosProvider } from '@/components/modulos/modulos-context';
 import { getModulosEmpresa } from '@/lib/data/modulos';
+import { GuiaProvider } from '@/components/guia/guia-provider';
+import { BotonAyuda } from '@/components/guia/botones-guia';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,64 +39,72 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const incompletos = conEquipo ? await contarIncompletos() : null;
 
   return (
-    // `print:*` deja fuera de la impresión el chrome del admin (nav, encabezado,
-    // padding). Sin esto, cualquier página imprimible bajo /admin —en particular
-    // el PDF de cotización— sacaba también la barra de navegación y el usuario, e
-    // "imprimía toda la página" en vez del documento solo.
-    <div className="min-h-screen flex flex-col bg-neutral-50 print:min-h-0 print:bg-white">
-      <header className="border-b border-neutral-200 bg-white print:hidden">
-        {/* Fila 1: marca + acciones de cuenta.
-            El nav NO vive aquí. Con 10 secciones, la fila pedía ~1424px y el
-            contenedor tope mide 1152: a partir de `sm` los enlaces se comprimían
-            y el bar "se estiraba". Marca y acciones caben de sobra solas. */}
-        <div className="mx-auto max-w-6xl flex items-center justify-between gap-4 px-4 py-3 sm:px-8">
-          <Link
-            href="/admin"
-            className="min-w-0 truncate text-base font-semibold text-neutral-900"
-          >
-            {marca}
-          </Link>
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            {/* El nombre solo cuando hay espacio real: en tablet robaba el ancho
-                que necesitan los botones. */}
-            <span className="hidden max-w-[16ch] truncate text-sm text-neutral-500 lg:inline">
-              {nombre}
-            </span>
-            <BotonDescargas />
-            <EnlaceAjustes href="/admin/ajustes" />
-            <ToggleTema />
-            <form action="/auth/signout" method="post">
-              <button className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100 cursor-pointer">
-                Salir
-              </button>
-            </form>
+    // La Guía (tarjetas + "Llévame ahí") envuelve todo el panel: el "?" vive en
+    // el encabezado y las pantallas pueden abrirla. No escribe en Supabase.
+    <GuiaProvider userId={user.id} activos={activos} rol={rol}>
+      {/* `print:*` deja fuera de la impresión el chrome del admin (nav, encabezado,
+          padding). Sin esto, cualquier página imprimible bajo /admin —en particular
+          el PDF de cotización— sacaba también la barra de navegación y el usuario, e
+          "imprimía toda la página" en vez del documento solo. */}
+      <div className="min-h-screen flex flex-col bg-neutral-50 print:min-h-0 print:bg-white">
+        <header className="border-b border-neutral-200 bg-white print:hidden">
+          {/* Fila 1: marca + acciones de cuenta.
+              El nav NO vive aquí. Con 10 secciones, la fila pedía ~1424px y el
+              contenedor tope mide 1152: a partir de `sm` los enlaces se comprimían
+              y el bar "se estiraba". Marca y acciones caben de sobra solas. */}
+          {/* En el celular los espacios van más justos (los botones conservan
+              sus 44px de toque): con el "?" de la guía, el nombre de la empresa
+              se quedaba en ~50px a 360 de ancho. */}
+          <div className="mx-auto max-w-6xl flex items-center justify-between gap-2 px-4 py-3 sm:gap-4 sm:px-8">
+            <Link
+              href="/admin"
+              className="min-w-0 truncate text-base font-semibold text-neutral-900"
+            >
+              {marca}
+            </Link>
+            <div className="flex shrink-0 items-center gap-0.5 sm:gap-3">
+              {/* El nombre solo cuando hay espacio real: en tablet robaba el ancho
+                  que necesitan los botones. */}
+              <span className="hidden max-w-[16ch] truncate text-sm text-neutral-500 lg:inline">
+                {nombre}
+              </span>
+              <BotonAyuda />
+              <BotonDescargas />
+              <EnlaceAjustes href="/admin/ajustes" />
+              <ToggleTema />
+              <form action="/auth/signout" method="post">
+                <button className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100 cursor-pointer">
+                  Salir
+                </button>
+              </form>
+            </div>
           </div>
-        </div>
-        {/* Fila 2: navegación, siempre en su propio renglón. Con pocos enlaces
-            va plana; con muchos, por categorías (menús en escritorio, un botón
-            "Menú" en el celular). La forma la decide `NavLinks`. */}
-        <NavLinks modulos={activos} rol={rol} />
-      </header>
-
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-8 print:max-w-none print:p-0">
-        <div className="mb-6 empty:mb-0 print:hidden">
-          <AvisoInstalar />
-        </div>
-        {/* `print:hidden`: es un aviso de trabajo pendiente, no parte de ningún
-            documento que se imprima desde estas pantallas. */}
-        {incompletos && (
-          <div className="print:hidden">
-            <AvisoIncompletos datos={incompletos} />
+          {/* Fila 2: navegación, siempre en su propio renglón. Con pocos enlaces
+              va plana; con muchos, por categorías (menús en escritorio, un botón
+              "Menú" en el celular). La forma la decide `NavLinks`. */}
+          <NavLinks modulos={activos} rol={rol} />
+        </header>
+  
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-8 print:max-w-none print:p-0">
+          <div className="mb-6 empty:mb-0 print:hidden">
+            <AvisoInstalar />
           </div>
-        )}
-        <ModulosProvider activos={activos} rol={rol}>
-          {children}
-        </ModulosProvider>
-      </main>
-
-      {/* Vive en el layout para responder desde CUALQUIER pantalla de /admin.
-          No pinta nada hasta que se abre con Ctrl/⌘+K. */}
-      <PaletaComandos modulos={activos} rol={rol} />
-    </div>
+          {/* `print:hidden`: es un aviso de trabajo pendiente, no parte de ningún
+              documento que se imprima desde estas pantallas. */}
+          {incompletos && (
+            <div className="print:hidden">
+              <AvisoIncompletos datos={incompletos} />
+            </div>
+          )}
+          <ModulosProvider activos={activos} rol={rol}>
+            {children}
+          </ModulosProvider>
+        </main>
+  
+        {/* Vive en el layout para responder desde CUALQUIER pantalla de /admin.
+            No pinta nada hasta que se abre con Ctrl/⌘+K. */}
+        <PaletaComandos modulos={activos} rol={rol} />
+      </div>
+    </GuiaProvider>
   );
 }

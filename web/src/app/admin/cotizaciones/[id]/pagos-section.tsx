@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -360,7 +361,7 @@ export default function PagosSection({
         <div className="p-5">
           <CardHeader>
             <CardTitle as="h2" className="text-base font-medium text-neutral-900">
-              Pagos y abonos
+              Pagos y abonos <Ayuda clave="cotizacion.pagos" />
             </CardTitle>
             {!mostrandoForm && (
               <Button type="button" size="sm" onClick={() => setMostrandoForm(true)}>

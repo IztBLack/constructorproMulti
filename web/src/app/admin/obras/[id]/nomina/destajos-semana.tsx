@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Input } from '@/components/ui';
@@ -31,9 +32,9 @@ export function DestajosSemana({
   if (workers.length === 0) return null;
 
   return (
-    <section className="space-y-3">
+    <section className="space-y-3" data-guia="nomina-destajos">
       <h2 className="text-sm font-medium text-neutral-700">
-        Destajos por colaborador (esta semana)
+        Destajos por colaborador (esta semana) <Ayuda clave="nomina.destajos" />
       </h2>
       <div className="space-y-3">
         {workers.map((w) => (

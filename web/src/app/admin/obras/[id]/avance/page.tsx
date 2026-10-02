@@ -46,7 +46,7 @@ export default async function AvancePage({ params }: { params: Promise<{ id: str
     <div className="space-y-6">
       <ObraTabs obraId={id} />
 
-      <div>
+      <div data-guia="obra-seccion">
         <h1 className="text-xl font-semibold text-neutral-900">Avance de {obra.nombre}</h1>
         <p className="mt-1 max-w-2xl text-sm text-neutral-600">
           Anota lo que se hizo en cada partida del presupuesto. Con esto sale el avance de la obra y

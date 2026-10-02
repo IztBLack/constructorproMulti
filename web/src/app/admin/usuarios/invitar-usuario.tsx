@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Field, Input, Modal, Select } from '@/components/ui';
@@ -114,7 +115,8 @@ export function InvitarUsuario({ urlBase }: { urlBase: string }) {
 
   return (
     <>
-      <Button onClick={() => setAbierto(true)}>Invitar persona</Button>
+      <Button data-guia="usuarios-invitar" onClick={() => setAbierto(true)}>Invitar persona</Button>
+      <Ayuda clave="usuarios.invitar" className="-ml-2" />
 
       <Modal open={abierto} onClose={cerrar} title="Invitar a la empresa" size="sm">
         {invitadoEmail ? (
@@ -171,7 +173,7 @@ export function InvitarUsuario({ urlBase }: { urlBase: string }) {
         ) : (
           <form onSubmit={alEnviar} className="space-y-4">
             <Field label="Nombre de la persona" hint="Para reconocer la invitación en la lista.">
-              <Input name="nombre" required autoFocus maxLength={60} disabled={cargando} />
+              <Input name="nombre" required autoFocus maxLength={60} disabled={cargando} data-guia="invitar-form-nombre" />
             </Field>
 
             <Field
@@ -183,6 +185,7 @@ export function InvitarUsuario({ urlBase }: { urlBase: string }) {
               }
             >
               <Select
+                data-guia="invitar-form-rol"
                 name="rol"
                 value={rol}
                 onChange={(e) => setRol(e.target.value)}
@@ -215,7 +218,7 @@ export function InvitarUsuario({ urlBase }: { urlBase: string }) {
             <EstadoFormulario tono="error" mensaje={error} />
 
             <div className="flex items-center gap-3">
-              <Button type="submit" disabled={cargando}>
+              <Button type="submit" disabled={cargando} data-guia="invitar-form-generar">
                 {cargando
                   ? esSocio
                     ? 'Enviando…'

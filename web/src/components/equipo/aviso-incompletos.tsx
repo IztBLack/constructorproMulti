@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui';
@@ -47,7 +48,8 @@ export function AvisoIncompletos({ datos }: { datos: Incompletos }) {
           <p className="text-sm font-semibold">
             {datos.total === 1
               ? 'Tienes 1 colaborador con información incompleta'
-              : `Tienes ${datos.total} colaboradores con información incompleta`}
+              : `Tienes ${datos.total} colaboradores con información incompleta`}{' '}
+            <Ayuda clave="equipo.incompletos" />
           </p>
           <p className="mt-0.5 text-sm">{lista}</p>
           {/* Se dice la consecuencia, no solo el hecho: sin esto el aviso es

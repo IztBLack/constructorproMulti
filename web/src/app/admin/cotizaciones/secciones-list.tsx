@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, EmptyState, Input } from '@/components/ui';
@@ -95,9 +96,12 @@ export function SeccionesList({
           </Button>
         </form>
       ) : (
-        <Button variant="secondary" onClick={() => setAgregando(true)}>
-          + Agregar sección
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="secondary" onClick={() => setAgregando(true)}>
+            + Agregar sección
+          </Button>
+          <Ayuda clave="cotizacion.secciones" />
+        </div>
       )}
     </section>
   );

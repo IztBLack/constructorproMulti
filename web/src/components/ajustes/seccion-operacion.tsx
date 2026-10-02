@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState } from 'react';
 import Link from 'next/link';
 import { Button, Card, CardHeader, CardTitle, Field, Input } from '@/components/ui';
@@ -72,7 +73,9 @@ export function SeccionOperacion({
     <Card>
       <CardHeader>
         <div>
-          <CardTitle as="h3">IVA por defecto</CardTitle>
+          <CardTitle as="h3">
+            IVA por defecto <Ayuda clave="ajustes.iva-defecto" />
+          </CardTitle>
           <p className="mt-1 text-sm text-neutral-600">
             Tasa con la que nace cada cotización nueva.
           </p>

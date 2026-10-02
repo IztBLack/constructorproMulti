@@ -11,6 +11,7 @@ import { SeccionNombre } from '@/components/ajustes/seccion-nombre';
 import { SeccionCorreo } from '@/components/ajustes/seccion-correo';
 import { SeccionContrasena } from '@/components/ajustes/seccion-contrasena';
 import { SeccionPreferencias } from '@/components/ajustes/seccion-preferencias';
+import { SeccionGuia } from '@/components/guia/seccion-guia';
 import { SeccionOperacion } from '@/components/ajustes/seccion-operacion';
 import { SeccionPdf } from '@/components/ajustes/seccion-pdf';
 import { SeccionEmpresa } from '@/components/ajustes/seccion-empresa';
@@ -145,6 +146,7 @@ export default async function AjustesPage() {
             descripcion="No viajan con tu cuenta: si entras desde otra computadora o celular, cada uno mantiene las suyas."
           >
             <SeccionPreferencias />
+            <SeccionGuia />
           </GrupoAjustes>
 
           {verOperacion && (

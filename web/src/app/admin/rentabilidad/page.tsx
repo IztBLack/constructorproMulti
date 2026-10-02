@@ -1,3 +1,4 @@
+import { Ayuda } from '@/components/guia/ayuda';
 import Link from 'next/link';
 import { EmptyState, PageHeader } from '@/components/ui';
 import { formatCurrency } from '@/lib/data/format';
@@ -69,7 +70,7 @@ export default async function RentabilidadPage({
       {filas.length === 0 ? (
         <EmptyState title="No hay obras para comparar" description="Da de alta una obra con su presupuesto para ver su utilidad." />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white">
+        <div data-guia="rentabilidad-tabla" className="overflow-x-auto rounded-xl border border-neutral-200 bg-white">
           <table className="w-full min-w-[720px] text-sm">
             <caption className="sr-only">Utilidad por obra, primero las que necesitan atención</caption>
             <thead className="bg-neutral-50 text-left text-xs uppercase tracking-wide text-neutral-600">
@@ -77,9 +78,15 @@ export default async function RentabilidadPage({
                 <th scope="col" className="px-4 py-2 font-medium">Obra</th>
                 <th scope="col" className="px-4 py-2 text-right font-medium">Contratado</th>
                 <th scope="col" className="px-4 py-2 text-right font-medium">Gastado</th>
-                <th scope="col" className="px-4 py-2 text-right font-medium">Utilidad al terminar</th>
-                <th scope="col" className="px-4 py-2 text-right font-medium">Margen al terminar</th>
-                <th scope="col" className="px-4 py-2 font-medium">Cómo va</th>
+                <th scope="col" className="px-4 py-2 text-right font-medium">
+                  Utilidad al terminar <Ayuda clave="rentabilidad.utilidad" className="normal-case" />
+                </th>
+                <th scope="col" className="px-4 py-2 text-right font-medium">
+                  Margen al terminar <Ayuda clave="rentabilidad.margen" className="normal-case" />
+                </th>
+                <th scope="col" className="px-4 py-2 font-medium">
+                  Cómo va <Ayuda clave="rentabilidad.semaforo" className="normal-case" />
+                </th>
               </tr>
             </thead>
             <tbody>

@@ -1,3 +1,4 @@
+import { Ayuda } from '@/components/guia/ayuda';
 import Link from 'next/link';
 import { Badge, EmptyState, PageHeader } from '@/components/ui';
 import { getEmpresaUsuario } from '@/lib/data/empresa';
@@ -74,9 +75,10 @@ export default async function PostventaPage({
         actions={gestiona ? <NuevoReporteOficina obras={obras.data} /> : undefined}
       />
 
-      <nav aria-label="Secciones de garantías" className="flex gap-1 border-b border-neutral-200">
+      <nav aria-label="Secciones de garantías" data-guia="postventa-pestanas" className="flex gap-1 border-b border-neutral-200">
         {pestana('reportes', `Reportes (${abiertos.length} pendientes)`)}
         {pestana('obras', 'Garantía por obra')}
+        <Ayuda clave="garantias.pestanas" className="self-center" />
       </nav>
 
       {vista === 'reportes' && (

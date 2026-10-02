@@ -30,6 +30,7 @@ export function BotonDescargas({ className = '' }: { className?: string }) {
         onClick={() => setAbierto(true)}
         aria-label="Descargar la app móvil"
         title="Descargar la app móvil"
+        data-guia="descargas"
         className={
           'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ' +
           'text-neutral-500 outline-none transition-colors cursor-pointer ' +

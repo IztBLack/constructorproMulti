@@ -1,3 +1,4 @@
+import { Ayuda } from '@/components/guia/ayuda';
 import Link from 'next/link';
 import { Badge, EmptyState, PageHeader } from '@/components/ui';
 import { getEmpresaUsuario } from '@/lib/data/empresa';
@@ -107,7 +108,7 @@ export default async function HerramientaPage({
         </p>
       )}
 
-      <section aria-label="Resumen" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <section aria-label="Resumen" data-guia="herramienta-resumen" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {[
           ['Prestadas', String(resumen.prestadas)],
           ['Asignadas de planta', String(resumen.asignadas)],
@@ -116,7 +117,10 @@ export default async function HerramientaPage({
           ['Valor del inventario', formatCurrency(valor)],
         ].map(([t, v]) => (
           <div key={t} className="rounded-xl border border-neutral-200 bg-white px-4 py-3">
-            <p className="text-xs font-medium text-neutral-500">{t}</p>
+            <p className="flex items-center gap-1 text-xs font-medium text-neutral-500">
+              {t}
+              {t === 'Asignadas de planta' && <Ayuda clave="herramienta.planta" className="-my-1" />}
+            </p>
             <p className="mt-1 text-xl font-semibold tabular-nums text-neutral-900">{v}</p>
           </div>
         ))}

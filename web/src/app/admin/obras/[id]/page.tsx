@@ -1,3 +1,4 @@
+import { Ayuda } from '@/components/guia/ayuda';
 import { notFound } from 'next/navigation';
 import {
   getObra,
@@ -225,8 +226,10 @@ export default async function ObraDetallePage({
 
       {/* 3. Equipo de la obra. Es de `equipo`. */}
       {conEquipo && (
-        <section className="space-y-3">
-          <h2 className="text-sm font-medium text-neutral-700">Equipo de la obra</h2>
+        <section className="space-y-3" data-guia="obra-equipo">
+          <h2 className="text-sm font-medium text-neutral-700">
+            Equipo de la obra <Ayuda clave="obra.equipo" />
+          </h2>
 
           {equipoError && (
             <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -252,9 +255,11 @@ export default async function ObraDetallePage({
 
       {/* 4. Movimientos. Es de `caja`. */}
       {conCaja && (
-        <section className="space-y-3">
+        <section className="space-y-3" data-guia="obra-movimientos">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-sm font-medium text-neutral-700">Movimientos</h2>
+            <h2 className="text-sm font-medium text-neutral-700">
+              Movimientos <Ayuda clave="obra.movimientos" />
+            </h2>
             <RegistrarMovimiento obraId={id} sugerencias={sugerenciasDeMovimientos(movimientos)} />
           </div>
 

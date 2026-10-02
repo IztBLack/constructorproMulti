@@ -1,3 +1,4 @@
+import { Ayuda } from '@/components/guia/ayuda';
 import { formatCurrency } from '@/lib/data/format';
 
 /**
@@ -49,6 +50,7 @@ export function AvanceFisicoFinanciero({
     <section aria-labelledby="fisico-financiero" className="rounded-xl border border-neutral-200 bg-white p-4">
       <h2 id="fisico-financiero" className="text-base font-semibold text-neutral-900">
         {paraCliente ? 'Cómo va tu obra: hecho vs pagado' : 'Avance físico vs financiero'}
+        {!paraCliente && <> <Ayuda clave="obra.fisico-financiero" /></>}
       </h2>
       <div className="mt-3 space-y-3">
         <Barra

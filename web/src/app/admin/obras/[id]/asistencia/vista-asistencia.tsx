@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui';
 import type { Colaborador } from '@/lib/data/types';
@@ -163,7 +164,7 @@ export default function VistaAsistencia({
     modoManual === null ? 'hidden md:block' : modoManual === 'semana' ? '' : 'hidden';
 
   return (
-    <section className="space-y-3">
+    <section className="space-y-3" data-guia="asistencia-pase">
       {estado && <BarraOffline estado={estado} onReintentar={() => void flush()} />}
 
       {desdeRespaldo && (
@@ -174,9 +175,12 @@ export default function VistaAsistencia({
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-sm font-medium text-neutral-700">
+        {/* `flex`: los títulos alternan con `md:block`; en un bloque normal el
+            ícono de ayuda caía a su propio renglón en pantallas medianas. */}
+        <h2 className="flex items-center gap-1 text-sm font-medium text-neutral-700">
           <span className={claseDia}>Pase de lista del día</span>
           <span className={claseSemana}>Cuadrícula semanal</span>
+          <Ayuda clave="asistencia.pase-lista" />
         </h2>
 
         {/* En modo automático se ofrece el cambio hacia la vista contraria a la

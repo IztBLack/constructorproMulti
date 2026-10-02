@@ -15,7 +15,7 @@ export default function RegistrarMovimiento({
 
   return (
     <>
-      <Button onClick={() => setOpen(true)} type="button">
+      <Button onClick={() => setOpen(true)} type="button" data-guia="obra-registrar-movimiento">
         Registrar movimiento
       </Button>
 

@@ -57,7 +57,9 @@ export async function canjearInvitacion(formData: FormData): Promise<ActionResul
 
   // El destino depende del rol con el que entra: un cliente no pinta nada en el
   // panel de oficina, y el middleware lo devolvería de todas formas.
-  redirect(data.rol === 'cliente' ? '/cliente' : '/admin');
+  // El personal entra por primera vez: se le ofrece la guía una vez
+  // (`components/guia/guia-provider.tsx` lee `?guia=bienvenida`).
+  redirect(data.rol === 'cliente' ? '/cliente' : '/admin?guia=bienvenida');
 }
 
 /** Lo que manda el asistente "Estoy creando mi empresa". Todo menos el nombre es opcional. */
@@ -130,5 +132,6 @@ export async function crearEmpresa(datos: DatosEmpresaNueva): Promise<ActionResu
     return { ok: false, error: data?.error ?? error?.message ?? 'No se pudo crear la empresa.' };
   }
 
-  redirect('/admin');
+  // Cuenta nueva: el panel abre la guía de bienvenida una sola vez.
+  redirect('/admin?guia=bienvenida');
 }

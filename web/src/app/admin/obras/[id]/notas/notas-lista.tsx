@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -92,10 +93,11 @@ export default function NotasLista({
     <div className="space-y-4">
       {puedeEditar && (
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="secondary" onClick={() => setPegando(true)}>
+          <Ayuda clave="notas.pegar-mensaje" className="self-center" />
+          <Button type="button" variant="secondary" onClick={() => setPegando(true)} data-guia="notas-pegar">
             Pegar mensaje
           </Button>
-          <Button type="button" onClick={() => setAbierto(true)}>
+          <Button type="button" onClick={() => setAbierto(true)} data-guia="notas-nueva">
             + Nueva nota
           </Button>
         </div>
@@ -173,7 +175,7 @@ export default function NotasLista({
             <Button type="button" variant="ghost" onClick={cerrar} disabled={guardando}>
               Cancelar
             </Button>
-            <Button type="button" onClick={crear} disabled={guardando}>
+            <Button type="button" onClick={crear} disabled={guardando} data-guia="nota-form-crear">
               {guardando ? 'Creando…' : 'Crear y capturar'}
             </Button>
           </div>
@@ -192,6 +194,7 @@ export default function NotasLista({
 
           <Field label="Título" hint="Opcional. Ej. el lote o la etapa.">
             <Input
+              data-guia="nota-form-titulo"
               value={titulo}
               onChange={(e) => setTitulo(e.target.value)}
               placeholder="Ej. MZ 2 LT 1"

@@ -1,3 +1,4 @@
+import { Ayuda } from '@/components/guia/ayuda';
 import Link from 'next/link';
 import {
   Badge,
@@ -127,7 +128,7 @@ export default async function ComprasPage() {
         description="Lo que piden en obra, lo que se compra, lo que llega y lo que se les debe a los proveedores."
         actions={
           <>
-            <LinkButton href="/admin/compras/materiales" variant="secondary" size="sm">
+            <LinkButton href="/admin/compras/materiales" variant="secondary" size="sm" data-guia="compras-catalogos">
               Materiales
             </LinkButton>
             <LinkButton href="/admin/compras/proveedores" variant="secondary" size="sm">
@@ -138,7 +139,7 @@ export default async function ComprasPage() {
       />
 
       {/* Resumen en números */}
-      <dl className="grid gap-3 sm:grid-cols-4">
+      <dl data-guia="compras-resumen" className="grid gap-3 sm:grid-cols-4">
         <Numero etiqueta="Por aprobar" valor={String(porAprobar.length)} />
         <Numero etiqueta="Materiales por comprar" valor={String(renglonesPorComprar.length)} />
         <Numero etiqueta="Órdenes abiertas" valor={String(abiertas.length)} />
@@ -151,10 +152,12 @@ export default async function ComprasPage() {
         )}
       </dl>
 
-      <Card>
+      <Card data-guia="compras-requisiciones">
         <CardHeader>
           <div>
-            <CardTitle as="h2">Requisiciones por aprobar</CardTitle>
+            <CardTitle as="h2">
+              Requisiciones por aprobar <Ayuda clave="compras.requisiciones" />
+            </CardTitle>
             <p className="mt-1 text-sm text-neutral-600">
               Lo que piden desde la obra (pestaña Material de cada obra).
               {!esAdmin && ' Las aprueba el administrador.'}
@@ -168,10 +171,12 @@ export default async function ComprasPage() {
         )}
       </Card>
 
-      <Card>
+      <Card data-guia="compras-por-comprar">
         <CardHeader>
           <div>
-            <CardTitle as="h2">Aprobado, por comprar</CardTitle>
+            <CardTitle as="h2">
+              Aprobado, por comprar <Ayuda clave="compras.por-comprar" />
+            </CardTitle>
             <p className="mt-1 text-sm text-neutral-600">
               {renglonesPorComprar.length === 0
                 ? 'Todo lo aprobado ya está en una orden de compra.'
@@ -197,7 +202,7 @@ export default async function ComprasPage() {
 
       <section aria-labelledby="ordenes-abiertas" className="space-y-3">
         <h2 id="ordenes-abiertas" className="text-base font-semibold text-neutral-900">
-          Órdenes abiertas
+          Órdenes abiertas <Ayuda clave="compras.ordenes" />
         </h2>
         {abiertas.length === 0 ? (
           <EmptyState title="Sin órdenes abiertas" description="Las órdenes en borrador o por recibir aparecen aquí." />
@@ -209,7 +214,7 @@ export default async function ComprasPage() {
       {vePagos && (
         <section aria-labelledby="por-pagar" className="space-y-3">
           <h2 id="por-pagar" className="text-base font-semibold text-neutral-900">
-            Por pagar a proveedores
+            Por pagar a proveedores <Ayuda clave="compras.por-pagar" />
           </h2>
           {saldos.length === 0 ? (
             <p className="text-sm text-neutral-600">No se le debe nada a ningún proveedor.</p>

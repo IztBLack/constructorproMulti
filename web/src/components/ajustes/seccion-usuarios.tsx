@@ -1,3 +1,4 @@
+import { Ayuda } from '@/components/guia/ayuda';
 import { Card, CardHeader, CardTitle, LinkButton } from '@/components/ui';
 
 /**
@@ -22,7 +23,9 @@ export function SeccionUsuarios({
     <Card>
       <CardHeader>
         <div>
-          <CardTitle as="h3">Usuarios y roles</CardTitle>
+          <CardTitle as="h3">
+            Usuarios y roles <Ayuda clave="ajustes.usuarios" />
+          </CardTitle>
           <p className="mt-1 text-sm text-neutral-600">
             {total === 1
               ? 'Solo tú tienes acceso a esta empresa.'
@@ -34,7 +37,7 @@ export function SeccionUsuarios({
       </CardHeader>
 
       <div className="flex flex-wrap gap-2">
-        <LinkButton href="/admin/usuarios" variant="secondary">
+        <LinkButton href="/admin/usuarios" variant="secondary" data-guia="ajustes-administrar-usuarios">
           Administrar usuarios
         </LinkButton>
         <LinkButton href="/admin/actividad" variant="secondary">

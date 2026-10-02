@@ -60,7 +60,7 @@ export default async function SeguridadObraPage({ params }: { params: Promise<{ 
     <div className="space-y-6">
       <ObraTabs obraId={id} />
 
-      <div>
+      <div data-guia="obra-seccion">
         <h1 className="text-xl font-semibold text-neutral-900">Seguridad en {obra.nombre}</h1>
         <p className="mt-1 max-w-2xl text-sm text-neutral-600">
           Revisión de cada mañana, incidentes y avisos pendientes. Los puntos salen de la{' '}
@@ -72,7 +72,7 @@ export default async function SeguridadObraPage({ params }: { params: Promise<{ 
         </p>
       </div>
 
-      <section aria-label="Resumen" className="grid gap-3 sm:grid-cols-3">
+      <section aria-label="Resumen" data-guia="seguridad-resumen" className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-xl border border-neutral-200 bg-white px-4 py-3">
           <p className="text-xs font-medium text-neutral-500">Días sin accidente</p>
           <p className="mt-1 text-2xl font-semibold tabular-nums text-neutral-900">{sinAccidente.dias}</p>

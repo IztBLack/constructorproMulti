@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState } from 'react';
 import { Button, Card, CardHeader, CardTitle, Field, Input, Textarea } from '@/components/ui';
 import { EstadoFormulario } from './estado-formulario';
@@ -70,7 +71,9 @@ export function SeccionPdf({ configActual }: { configActual: PdfConfig }) {
     <Card>
       <CardHeader>
         <div>
-          <CardTitle as="h3">Documentos</CardTitle>
+          <CardTitle as="h3">
+            Documentos <Ayuda clave="ajustes.documentos" />
+          </CardTitle>
           <p className="mt-1 text-sm text-neutral-600">
             Cómo se ven tus cotizaciones y estados de cuenta impresos.
           </p>

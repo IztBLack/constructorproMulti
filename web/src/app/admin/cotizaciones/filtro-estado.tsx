@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { Cotizacion, EstadoCotizacion } from '@/lib/data/types';
@@ -83,7 +84,7 @@ export default function FiltroEstadoCotizaciones({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2" data-guia="cotizaciones-estados">
           <button
             type="button"
             aria-pressed={estado === 'TODOS'}
@@ -107,6 +108,7 @@ export default function FiltroEstadoCotizaciones({
               {ESTADO_LABEL[e]}
             </button>
           ))}
+          <Ayuda clave="cotizaciones.estado" />
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-neutral-500">Orden:</span>

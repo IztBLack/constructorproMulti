@@ -1,3 +1,4 @@
+import { Ayuda } from '@/components/guia/ayuda';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
@@ -8,6 +9,7 @@ import {
   EmptyState,
   LinkButton,
   PageHeader,
+  RowLink,
   TableContainer,
   TBody,
   Td,
@@ -33,6 +35,7 @@ import { rutaVisible, siguientePaso, sugerenciaModulo } from '@/lib/modulos';
 import { TarjetaSiguientePaso } from '@/components/modulos/tarjeta-siguiente-paso';
 import { TarjetaSugerenciaModulo } from '@/components/modulos/tarjeta-sugerencia-modulo';
 import { contarSalidasMaterial } from '@/lib/data/compras';
+import { AbrirGuia } from '@/components/guia/botones-guia';
 
 export const dynamic = 'force-dynamic';
 
@@ -71,6 +74,7 @@ function StatTile({
   tone = 'neutral',
   moneda = false,
   error,
+  ayuda,
 }: {
   label: string;
   valor: number;
@@ -78,17 +82,25 @@ function StatTile({
   tone?: 'neutral' | 'teal';
   moneda?: boolean;
   error?: boolean;
+  /** Ícono de ayuda junto a la etiqueta. */
+  ayuda?: React.ReactNode;
 }) {
   const valorClass = tone === 'teal' ? 'text-teal-700' : 'text-neutral-900';
+  // El enlace va ESTIRADO por encima de la tesela (patrón `RowLink`) y no
+  // envolviéndola: así el ícono de ayuda queda como hermano, no como un botón
+  // dentro de un enlace (HTML inválido, y en el celular un toque que roza el
+  // ícono te sacaba de la pantalla).
   return (
-    <Link href={href} className="block">
-      <div className="h-full rounded-xl border border-neutral-200 bg-white px-4 py-3 transition hover:border-neutral-400">
-        <div className="text-xs font-medium text-neutral-500">{label}</div>
-        <div className={`mt-1.5 text-2xl font-semibold tabular-nums ${valorClass}`}>
-          {error ? '—' : moneda ? formatCurrency(valor) : valor}
-        </div>
+    <div className="relative h-full rounded-xl border border-neutral-200 bg-white px-4 py-3 transition hover:border-neutral-400">
+      <RowLink href={href}>{`${label}: ver la lista`}</RowLink>
+      <div className="flex items-center gap-1 text-xs font-medium text-neutral-500">
+        {label}
+        {ayuda && <span className="relative z-10">{ayuda}</span>}
       </div>
-    </Link>
+      <div className={`mt-1.5 text-2xl font-semibold tabular-nums ${valorClass}`}>
+        {error ? '—' : moneda ? formatCurrency(valor) : valor}
+      </div>
+    </div>
   );
 }
 
@@ -213,7 +225,12 @@ export default async function AdminPage({
         eyebrow={nombreUsuario(user)}
         actions={
           <>
-            <LinkButton href="/admin/obras" variant={conCotizaciones ? 'secondary' : 'primary'} size="sm">
+            <LinkButton
+              href="/admin/obras"
+              variant={conCotizaciones ? 'secondary' : 'primary'}
+              size="sm"
+              data-guia="inicio-nueva-obra"
+            >
               + Nueva obra
             </LinkButton>
             {conCotizaciones && (
@@ -231,13 +248,17 @@ export default async function AdminPage({
       {/* Primeros pasos: solo si la empresa está vacía */}
       {mostrarPrimerosPasos && (
         <Card>
-          <div className="mb-4">
-            <h2 className="text-base font-semibold text-neutral-900">Bienvenido a {nombreEmpresa}</h2>
-            <p className="mt-1 text-sm text-neutral-500">
-              {primerosPasos.length === 1
-                ? 'Completa este paso para comenzar a gestionar tus obras.'
-                : `Completa estos ${primerosPasos.length === 2 ? 'dos' : 'tres'} pasos para comenzar a gestionar tus obras.`}
-            </p>
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-neutral-900">Bienvenido a {nombreEmpresa}</h2>
+              <p className="mt-1 text-sm text-neutral-500">
+                {primerosPasos.length === 1
+                  ? 'Completa este paso para comenzar a gestionar tus obras.'
+                  : `Completa estos ${primerosPasos.length === 2 ? 'dos' : 'tres'} pasos para comenzar a gestionar tus obras.`}
+              </p>
+            </div>
+            {/* La guía explica cada pantalla antes de capturar nada de verdad. */}
+            <AbrirGuia>¿Primera vez? Recorrido guiado</AbrirGuia>
           </div>
           <ol className="grid gap-3 sm:grid-cols-3">
             {primerosPasos.map((p) => (
@@ -255,8 +276,8 @@ export default async function AdminPage({
       )}
 
       {/* ── Fila de indicadores (KPIs + pipeline, compacto) ────────────────── */}
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatTile label="Obras" valor={obrasCnt} href="/admin/obras" error={!!obrasCount.error} />
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4" data-guia="inicio-indicadores">
+        <StatTile label="Obras" valor={obrasCnt} href="/admin/obras" error={!!obrasCount.error} ayuda={<Ayuda clave="inicio.indicadores" className="-my-1" />} />
         {conCotizaciones && (
           <StatTile
             label="Cotizaciones"
@@ -276,6 +297,7 @@ export default async function AdminPage({
         {conCotizaciones && (
           <StatTile
             label="Pipeline"
+            ayuda={<Ayuda clave="inicio.pipeline" className="-my-1" />}
             valor={pipelineResult.value}
             href="/admin/cotizaciones"
             tone="teal"
@@ -287,8 +309,10 @@ export default async function AdminPage({
 
       {/* ── Saldo por obra (operativo). Sale de la caja: sin caja no hay saldo. */}
       {conCaja && (
-        <section className="space-y-3">
-          <h2 className="text-sm font-medium text-neutral-700">Saldo por obra</h2>
+        <section className="space-y-3" data-guia="inicio-saldo">
+          <h2 className="text-sm font-medium text-neutral-700">
+            Saldo por obra <Ayuda clave="inicio.saldo-obra" />
+          </h2>
           {obrasConSaldoResult.error ? (
             <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
               No se pudo cargar el saldo por obra: {obrasConSaldoResult.error}
@@ -341,9 +365,11 @@ export default async function AdminPage({
 
       {/* ── Finanzas del periodo: selector + flujo/gasto. Es de la caja. ───── */}
       {conCaja && (
-        <section className="space-y-3">
+        <section className="space-y-3" data-guia="inicio-finanzas">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-sm font-medium text-neutral-700">Finanzas · {periodoLabel}</h2>
+            <h2 className="text-sm font-medium text-neutral-700">
+              Finanzas · {periodoLabel} <Ayuda clave="inicio.finanzas" />
+            </h2>
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-1 rounded-lg border border-neutral-200 p-0.5">
                 <Link
@@ -374,7 +400,9 @@ export default async function AdminPage({
   
           <div className="grid gap-3 lg:grid-cols-2">
             <Card>
-              <CardTitle as="h3">Flujo de caja</CardTitle>
+              <CardTitle as="h3">
+                Flujo de caja <Ayuda clave="inicio.flujo" />
+              </CardTitle>
               {movimientosPeriodoResult.error ? (
                 <p className="mt-2 text-sm text-red-600">No se pudo cargar: {movimientosPeriodoResult.error}</p>
               ) : (
@@ -398,7 +426,9 @@ export default async function AdminPage({
             </Card>
   
             <Card>
-              <CardTitle as="h3">Distribución del gasto</CardTitle>
+              <CardTitle as="h3">
+                Distribución del gasto <Ayuda clave="inicio.gasto" />
+              </CardTitle>
               {movimientosPeriodoResult.error ? (
                 <p className="mt-2 text-sm text-red-600">No se pudo cargar el gasto del periodo.</p>
               ) : gasto.total === 0 ? (

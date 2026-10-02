@@ -24,7 +24,7 @@ export function NuevoContrato({
 
   if (!abierto) {
     return (
-      <Button type="button" variant="secondary" onClick={() => setAbierto(true)}>
+      <Button type="button" variant="secondary" data-guia="subcontratos-nuevo" onClick={() => setAbierto(true)}>
         Nuevo contrato
       </Button>
     );

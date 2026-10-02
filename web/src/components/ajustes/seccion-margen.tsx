@@ -1,3 +1,4 @@
+import { Ayuda } from '@/components/guia/ayuda';
 import { Card, CardHeader, CardTitle } from '@/components/ui';
 import { FormMargen } from '@/components/rentabilidad/form-margen';
 
@@ -13,7 +14,9 @@ export function SeccionMargen({ margenActual }: { margenActual: number }) {
     <Card>
       <CardHeader>
         <div>
-          <CardTitle as="h3">Margen objetivo</CardTitle>
+          <CardTitle as="h3">
+            Margen objetivo <Ayuda clave="ajustes.margen" />
+          </CardTitle>
           <p className="mt-1 text-sm text-neutral-600">
             Contra este número se pinta el semáforo de la utilidad de cada obra.
           </p>

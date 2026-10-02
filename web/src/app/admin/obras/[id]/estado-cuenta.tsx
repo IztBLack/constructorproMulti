@@ -1,3 +1,4 @@
+import { Ayuda } from '@/components/guia/ayuda';
 import Link from 'next/link';
 import { Card, CardTitle, THead, Th, TBody, Tr, Td, LinkButton } from '@/components/ui';
 import { formatCurrency } from '@/lib/data/format';
@@ -66,12 +67,12 @@ export default function EstadoCuenta({
   return (
     <div className="space-y-4">
       {/* ── Encabezado financiero ─────────────────────────────────────────── */}
-      <Card>
+      <Card data-guia="obra-estado-cuenta">
         <div className="mb-4 flex items-center justify-between gap-4">
           <CardTitle as="h2" className="text-base font-semibold text-neutral-800">
-            Estado de cuenta
+            Estado de cuenta <Ayuda clave="obra.estado-cuenta" />
           </CardTitle>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2" data-guia="obra-caja-documentos">
             <LinkButton
               href={`/admin/obras/${obraId}/importar`}
               variant="secondary"
@@ -184,7 +185,7 @@ export default function EstadoCuenta({
         <Card padding="none">
           <div className="px-5 pt-4 pb-3">
             <CardTitle as="h3" className="text-sm font-semibold text-neutral-700">
-              Pagado por persona
+              Pagado por persona <Ayuda clave="obra.pagado-persona" />
             </CardTitle>
           </div>
           {porPersonaEntries.length === 0 ? (
@@ -223,7 +224,7 @@ export default function EstadoCuenta({
         <Card padding="none">
           <div className="px-5 pt-4 pb-3">
             <CardTitle as="h3" className="text-sm font-semibold text-neutral-700">
-              Recibido por tipo
+              Recibido por tipo <Ayuda clave="obra.recibido-tipo" />
             </CardTitle>
           </div>
           {porTipoEntries.length === 0 ? (

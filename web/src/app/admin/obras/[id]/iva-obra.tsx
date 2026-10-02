@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Field, Input } from '@/components/ui';
@@ -42,7 +43,8 @@ export function IvaObra({
       {!editando ? (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-neutral-700">
-            <span className="font-medium text-neutral-900">IVA con que cobras esta obra: {actual}</span>
+            <span className="font-medium text-neutral-900">IVA con que cobras esta obra: {actual}</span>{' '}
+            <Ayuda clave="obra.iva" />
             <span className="text-neutral-600"> · {DE_DONDE[origen]}</span>
           </p>
           {puedeCambiar && (

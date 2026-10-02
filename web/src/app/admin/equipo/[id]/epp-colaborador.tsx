@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useId, useState, useTransition } from 'react';
 import { Button, Card, EmptyState } from '@/components/ui';
 import { FirmaPad } from '@/components/seguridad/firma-pad';
@@ -122,7 +123,7 @@ export function EppColaborador({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 id="epp-heading" className="text-sm font-medium text-neutral-700">
-            Equipo de protección entregado
+            Equipo de protección entregado <Ayuda clave="equipo.epp" />
           </h2>
           <p className="text-xs text-neutral-500">
             Registro de entrega según la{' '}

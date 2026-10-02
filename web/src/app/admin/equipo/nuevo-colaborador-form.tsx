@@ -46,16 +46,17 @@ export default function NuevoColaboradorForm({
 
   return (
     <>
-      <Button onClick={() => setOpen(true)}>+ Nuevo colaborador</Button>
+      <Button data-guia="equipo-nuevo" onClick={() => setOpen(true)}>+ Nuevo colaborador</Button>
 
       <Modal open={open} onClose={handleClose} title="Nuevo colaborador" size="md">
         <form ref={formRef} onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
           <Field label="Nombre *" className="sm:col-span-2">
-            <Input name="nombre" required autoFocus />
+            <Input name="nombre" required autoFocus data-guia="colaborador-form-nombre" />
           </Field>
 
           <Field label="Puesto">
             <select
+              data-guia="colaborador-form-puesto"
               name="puesto_id"
               className="w-full cursor-pointer rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-900/10"
             >
@@ -79,6 +80,7 @@ export default function NuevoColaboradorForm({
 
           <Field label="Tipo de pago">
             <select
+              data-guia="colaborador-form-tipo-pago"
               name="tipo_pago"
               className="w-full cursor-pointer rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 outline-none transition focus:border-neutral-900 focus-visible:ring-2 focus-visible:ring-neutral-900/10"
             >
@@ -117,7 +119,7 @@ export default function NuevoColaboradorForm({
           {error && <p className="text-sm text-red-600 sm:col-span-2">{error}</p>}
 
           <div className="flex items-center gap-3 sm:col-span-2">
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} data-guia="colaborador-form-guardar">
               {loading ? 'Guardando…' : 'Guardar colaborador'}
             </Button>
             <Button type="button" variant="secondary" disabled={loading} onClick={handleClose}>

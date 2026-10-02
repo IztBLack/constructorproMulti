@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -76,7 +77,9 @@ export default function TablaCuadrillas({
           {arrastrable && <Th className="w-10" aria-label="Reordenar" />}
           <Th>Nombre</Th>
           <Th>Especialidad</Th>
-          <Th>Cabo</Th>
+          <Th>
+            Cabo <Ayuda clave="cuadrillas.cabo" />
+          </Th>
           <Th>Miembros</Th>
           <Th>Obras asignadas</Th>
           <Th>Estado</Th>

@@ -1,3 +1,4 @@
+import { Ayuda } from '@/components/guia/ayuda';
 import Link from 'next/link';
 import {
   Card,
@@ -104,11 +105,11 @@ export default async function FacturacionPage({
       )}
 
       {/* ── Paquete para el contador ─────────────────────────────────────── */}
-      <Card>
+      <Card data-guia="facturacion-paquete">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <CardTitle as="h2" className="text-base font-semibold text-neutral-900">
-              Paquete para el contador
+              Paquete para el contador <Ayuda clave="facturacion.paquete" />
             </CardTitle>
             <p className="mt-1 max-w-xl text-sm text-neutral-600">
               Un Excel con 6 hojas —por facturar, complementos de pago, facturado, gastos por obra,
@@ -145,10 +146,10 @@ export default async function FacturacionPage({
       </Card>
 
       {/* ── Por facturar ─────────────────────────────────────────────────── */}
-      <section className="space-y-3" aria-labelledby="por-facturar">
+      <section className="space-y-3" aria-labelledby="por-facturar" data-guia="facturacion-por-facturar">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 id="por-facturar" className="text-base font-semibold text-neutral-900">
-            Por facturar ({porFacturar.length})
+            Por facturar ({porFacturar.length}) <Ayuda clave="facturacion.por-facturar" />
           </h2>
           {porFacturar.length > 0 && (
             <p className="text-sm text-neutral-600">
@@ -168,9 +169,9 @@ export default async function FacturacionPage({
       </section>
 
       {/* ── Complementos ─────────────────────────────────────────────────── */}
-      <section className="space-y-3" aria-labelledby="complementos">
+      <section className="space-y-3" aria-labelledby="complementos" data-guia="facturacion-complementos">
         <h2 id="complementos" className="text-base font-semibold text-neutral-900">
-          Complementos de pago pendientes ({complementos.length})
+          Complementos de pago pendientes ({complementos.length}) <Ayuda clave="facturacion.complementos" />
         </h2>
         <p className="text-sm text-neutral-600">
           Abonos a facturas en parcialidades (PPD). Cada uno lleva su complemento de pago, a más tardar

@@ -29,6 +29,7 @@ export function ToggleTema({ className = '' }: { className?: string }) {
       // actual se anuncia aparte, ya montado (ver el <span> de abajo).
       aria-label="Cambiar entre tema claro y oscuro"
       title="Cambiar tema"
+      data-guia="tema"
       className={
         'relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ' +
         'text-neutral-500 transition-colors outline-none cursor-pointer ' +

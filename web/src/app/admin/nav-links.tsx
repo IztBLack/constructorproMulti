@@ -76,6 +76,7 @@ export function NavLinks({ modulos, rol }: NavLinksProps) {
     return (
       <nav
         aria-label="Secciones del panel"
+        data-guia="menu"
         className={`${CONTENEDOR} flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}
       >
         {enlaces.map((e) => (
@@ -184,6 +185,7 @@ function BarraAgrupada({
     <nav
       ref={navRef}
       aria-label="Secciones del panel"
+      data-guia="menu"
       className={CONTENEDOR}
       onKeyDown={alTeclear}
       // Un clic en cualquier enlace cierra, también si es la página en la que ya

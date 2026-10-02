@@ -48,7 +48,7 @@ export default async function NotasObraPage({
     <div className="space-y-6">
       <ObraTabs obraId={id} />
 
-      <div>
+      <div data-guia="obra-seccion">
         <h1 className="text-xl font-semibold text-neutral-900">Notas de {obra.nombre}</h1>
         <p className="mt-1 text-sm text-neutral-600">
           Cuentas de los tratos con socios de esta obra. Cada nota se puede mandar en PDF

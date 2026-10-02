@@ -40,7 +40,7 @@ export function EstimacionesLista({
 
   return (
     <div className="space-y-6">
-      <section aria-labelledby="acum-titulo" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <section aria-labelledby="acum-titulo" data-guia="estimaciones-acumulados" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <h2 id="acum-titulo" className="sr-only">
           Acumulados de la obra
         </h2>
@@ -55,6 +55,7 @@ export function EstimacionesLista({
           {!creando ? (
             <Button
               type="button"
+              data-guia="estimaciones-nueva"
               onClick={() => setCreando(true)}
               disabled={!hayPresupuesto || hayBorrador}
               title={

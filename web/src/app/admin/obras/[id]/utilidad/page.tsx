@@ -1,3 +1,4 @@
+import { Ayuda } from '@/components/guia/ayuda';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardTitle } from '@/components/ui';
@@ -49,7 +50,7 @@ export default async function UtilidadObraPage({ params }: { params: Promise<{ i
       <ObraTabs obraId={id} />
 
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+        <div data-guia="obra-seccion">
           <h1 className="text-xl font-semibold text-neutral-900">Utilidad de {obra.nombre}</h1>
           <p className="mt-1 text-sm text-neutral-600">
             Lo contratado contra lo que llevas gastado. Solo lo ven el administrador y el contador.
@@ -84,8 +85,10 @@ export default async function UtilidadObraPage({ params }: { params: Promise<{ i
         />
       </div>
 
-      <Card>
-        <CardTitle as="h2">Cómo va a terminar</CardTitle>
+      <Card data-guia="utilidad-terminar">
+        <CardTitle as="h2">
+          Cómo va a terminar <Ayuda clave="utilidad.terminar" />
+        </CardTitle>
         {r.costoProyectado === null ? (
           <p className="mt-2 text-sm text-neutral-700">
             Todavía no hay con qué proyectar: captura el avance por partida (pestaña Avance), el de la obra (Detalle → Editar) o
@@ -127,7 +130,9 @@ export default async function UtilidadObraPage({ params }: { params: Promise<{ i
 
       <Card padding="none">
         <div className="px-5 pb-3 pt-4">
-          <CardTitle as="h2">En qué se ha ido el dinero</CardTitle>
+          <CardTitle as="h2">
+            En qué se ha ido el dinero <Ayuda clave="utilidad.gasto" />
+          </CardTitle>
           <p className="text-sm text-neutral-600">
             Salidas de caja por categoría, más la raya y los pagos a socios que todavía no se ven en caja.
           </p>
@@ -184,7 +189,9 @@ export default async function UtilidadObraPage({ params }: { params: Promise<{ i
       </Card>
 
       <Card>
-        <CardTitle as="h2">Margen objetivo</CardTitle>
+        <CardTitle as="h2">
+          Margen objetivo <Ayuda clave="utilidad.margen" />
+        </CardTitle>
         <p className="mt-1 text-sm text-neutral-600">
           {margenObra === null
             ? `Esta obra usa el de la empresa: ${formatoMargen(margenEmpresa)}.`

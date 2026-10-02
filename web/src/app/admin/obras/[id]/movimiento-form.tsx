@@ -104,6 +104,7 @@ export default function MovimientoForm({
     <form ref={formRef} onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
       <Field label="Tipo *">
         <select
+          data-guia="mov-form-tipo"
           name="tipo"
           value={tipo}
           onChange={(e) => setTipo(e.target.value as TipoMovimiento)}
@@ -120,6 +121,7 @@ export default function MovimientoForm({
 
       <Field label="Concepto / Categoría *" hint="Elige una sugerida o escribe la tuya.">
         <input
+          data-guia="mov-form-concepto"
           name="concepto"
           list="conceptos-frecuentes"
           required
@@ -197,6 +199,7 @@ export default function MovimientoForm({
         <Input
           type="number"
           name="monto"
+          data-guia="mov-form-monto"
           step="0.01"
           min="0.01"
           required
@@ -212,7 +215,7 @@ export default function MovimientoForm({
       {error && <p className="text-sm text-red-600 sm:col-span-2">{error}</p>}
 
       <div className="flex items-center gap-3 sm:col-span-2">
-        <Button type="submit" disabled={loading}>
+        <Button type="submit" disabled={loading} data-guia="mov-form-guardar">
           {loading ? 'Guardando…' : mode === 'editar' ? 'Guardar cambios' : 'Registrar movimiento'}
         </Button>
         {onCancel && (

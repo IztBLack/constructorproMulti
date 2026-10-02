@@ -65,7 +65,7 @@ export default async function ProgramaObraPage({ params }: { params: Promise<{ i
     <div className="space-y-6">
       <ObraTabs obraId={id} />
 
-      <div>
+      <div data-guia="obra-seccion">
         <h1 className="text-xl font-semibold text-neutral-900">Programa de {obra.nombre}</h1>
         <p className="mt-1 max-w-2xl text-sm text-neutral-600">
           Cuándo empieza y cuándo termina cada partida. Lo que pasa de su fecha sin marcarse

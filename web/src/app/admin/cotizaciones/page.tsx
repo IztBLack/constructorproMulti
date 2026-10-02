@@ -20,7 +20,7 @@ export default async function CotizacionesPage() {
       <PageHeader
         title="Cotizaciones"
         description="Revisa el estado de tus cotizaciones por cliente y proyecto."
-        actions={<LinkButton href="/admin/cotizaciones/nueva">+ Nueva cotización</LinkButton>}
+        actions={<LinkButton href="/admin/cotizaciones/nueva" data-guia="cotizaciones-nueva">+ Nueva cotización</LinkButton>}
       />
 
       {error && (

@@ -1,4 +1,17 @@
+import { Ayuda } from '@/components/guia/ayuda';
 import type { ReactNode } from 'react';
+
+/**
+ * Por `id` de grupo: su ancla para el recorrido guiado (`data-guia`) y, en
+ * algunos, el ícono de ayuda junto al título.
+ */
+const GUIA_GRUPO: Partial<Record<string, { 'data-guia': string; ayuda?: ReactNode }>> = {
+  preferencias: { 'data-guia': 'ajustes-preferencias' },
+  operacion: { 'data-guia': 'ajustes-operacion' },
+  modulos: { 'data-guia': 'ajustes-modulos', ayuda: <Ayuda clave="ajustes.modulos" /> },
+  empresa: { 'data-guia': 'ajustes-empresa' },
+  usuarios: { 'data-guia': 'ajustes-usuarios' },
+};
 
 /**
  * Agrupa tarjetas de ajustes bajo un encabezado con nombre y explicación.
@@ -31,12 +44,13 @@ export function GrupoAjustes({
   return (
     // `scroll-mt` evita que el encabezado quede debajo de la barra fija al
     // llegar desde el índice.
-    <section id={id} aria-labelledby={`${id}-titulo`} className="scroll-mt-24">
+    <section id={id} aria-labelledby={`${id}-titulo`} data-guia={GUIA_GRUPO[id]?.['data-guia']} className="scroll-mt-24">
       <div className="mb-3">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <h2 id={`${id}-titulo`} className="text-lg font-semibold text-neutral-900">
             {titulo}
           </h2>
+          {GUIA_GRUPO[id]?.ayuda}
           {alcance && (
             <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium text-neutral-600">
               {alcance}

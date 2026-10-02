@@ -1,6 +1,8 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useState } from 'react';
+import Link from 'next/link';
 import type { Obra } from '@/lib/data/types';
 import type { OrdenModo } from '@/lib/data/orden-modos';
 import { formatDate } from '@/lib/data/format';
@@ -129,7 +131,24 @@ export default function BuscadorObras({
     ),
   };
 
-  const columnas = [...(puedeMover ? [asaCol, ...COLUMNAS] : COLUMNAS), accionesCol];
+  // El nombre de la PRIMERA fila es además un enlace propio con ancla para el
+  // recorrido guiado (`data-guia="obras-fila"`): la fila entera ya enlaza a la
+  // obra, pero ese enlace vive en la tabla genérica y no admite el atributo.
+  // Va con tabIndex -1 para no duplicar la parada de teclado de la fila.
+  const primeraId = listado[0]?.id;
+  const colNombre: DataColumn<Obra> = {
+    ...COLUMNAS[0],
+    cell: (o) =>
+      o.id === primeraId ? (
+        <Link href={`/admin/obras/${o.id}`} data-guia="obras-fila" tabIndex={-1} className="relative hover:underline">
+          {o.nombre}
+        </Link>
+      ) : (
+        o.nombre
+      ),
+  };
+  const base = [colNombre, ...COLUMNAS.slice(1)];
+  const columnas = [...(puedeMover ? [asaCol, ...base] : base), accionesCol];
 
   const sinResultados = filtradas.length === 0;
   const sinObras = obras.length === 0;
@@ -141,6 +160,7 @@ export default function BuscadorObras({
           type="search"
           placeholder="Buscar por nombre, cliente o ubicación…"
           aria-label="Buscar obras"
+          data-guia="obras-buscar"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="w-full max-w-md rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
@@ -148,6 +168,7 @@ export default function BuscadorObras({
         <div className="flex items-center gap-2">
           <span className="text-sm text-neutral-500">Orden:</span>
           <OrdenModoToggle listKey="obras" modo={modo} revalidate={RUTA} />
+          <Ayuda clave="obras.orden" />
         </div>
       </div>
       {personalizado && hayBusqueda && (

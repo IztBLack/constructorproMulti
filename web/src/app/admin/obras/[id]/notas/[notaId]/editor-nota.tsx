@@ -1,5 +1,6 @@
 'use client';
 
+import { Ayuda } from '@/components/guia/ayuda';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, CardTitle, Field, Input, Select, Textarea } from '@/components/ui';
@@ -252,7 +253,9 @@ export default function EditorNota({
 
       {/* ── Renglones ──────────────────────────────────────────────────── */}
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-neutral-700">Renglones</h2>
+        <h2 className="text-sm font-semibold text-neutral-700">
+          Renglones <Ayuda clave="nota.renglones" />
+        </h2>
         <RenglonesNota
           obraId={obraId}
           notaId={nota.id}

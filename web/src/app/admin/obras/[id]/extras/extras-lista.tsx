@@ -76,7 +76,11 @@ export default function ExtrasLista({
             </div>
           )}
         </dl>
-        {puedeEditar && <Button onClick={() => setAbierto(true)}>Nuevo extra</Button>}
+        {puedeEditar && (
+          <Button onClick={() => setAbierto(true)} data-guia="extras-nuevo">
+            Nuevo extra
+          </Button>
+        )}
       </div>
 
       {extras.length === 0 ? (
@@ -120,7 +124,7 @@ export default function ExtrasLista({
       <Modal open={abierto} onClose={() => setAbierto(false)} title="Nuevo extra">
         <form onSubmit={crear} className="space-y-4">
           <Field label="¿De qué es el extra? *" hint="Por ejemplo: Barda en la azotea, cambio de piso en la sala.">
-            <Input name="titulo" required maxLength={120} autoFocus />
+            <Input name="titulo" required maxLength={120} autoFocus data-guia="extra-form-titulo" />
           </Field>
           <Field label="¿Por qué se hace?" hint="Opcional. Lo pidió el cliente, cambio de plano, algo que salió en obra…">
             <Textarea name="motivo" rows={3} maxLength={1000} />
@@ -134,7 +138,7 @@ export default function ExtrasLista({
             </p>
           )}
           <div className="flex flex-wrap gap-3">
-            <Button type="submit" disabled={guardando}>
+            <Button type="submit" disabled={guardando} data-guia="extra-form-crear">
               {guardando ? 'Creando…' : 'Crear y agregar conceptos'}
             </Button>
             <Button type="button" variant="ghost" onClick={() => setAbierto(false)} disabled={guardando}>

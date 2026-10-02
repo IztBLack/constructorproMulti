@@ -63,7 +63,11 @@ export function FormHerramienta({ inicial, textoBoton }: { inicial: Herramienta 
 
   return (
     <>
-      <Button variant={inicial ? 'secondary' : 'primary'} onClick={() => setAbierto(true)}>
+      <Button
+        variant={inicial ? 'secondary' : 'primary'}
+        data-guia={inicial ? undefined : 'herramienta-nueva'}
+        onClick={() => setAbierto(true)}
+      >
         {textoBoton}
       </Button>
       <Modal open={abierto} onClose={() => setAbierto(false)} title={inicial ? 'Editar herramienta' : 'Nueva herramienta'}>
@@ -73,6 +77,7 @@ export function FormHerramienta({ inicial, textoBoton }: { inicial: Herramienta 
             <input
               required
               maxLength={120}
+              data-guia={inicial ? undefined : 'herramienta-form-nombre'}
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               placeholder="Revolvedora de 1 saco, rotomartillo…"
@@ -127,7 +132,7 @@ export function FormHerramienta({ inicial, textoBoton }: { inicial: Herramienta 
           </label>
           <ErrorForm error={error} />
           <div className="flex flex-wrap gap-2">
-            <Button type="submit" disabled={pendiente}>
+            <Button type="submit" disabled={pendiente} data-guia={inicial ? undefined : 'herramienta-form-guardar'}>
               {pendiente ? 'Guardando…' : 'Guardar'}
             </Button>
             <Button type="button" variant="secondary" onClick={() => setAbierto(false)} disabled={pendiente}>
