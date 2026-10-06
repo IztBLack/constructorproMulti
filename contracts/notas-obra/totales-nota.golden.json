@@ -1,0 +1,210 @@
+{
+  "contrato": "notas-obra/totales-nota",
+  "descripcion": "Subtotal, deducciones, total, pagado y saldo de una nota de obra. La misma nota se abre desde la oficina y desde el celular: dos saldos distintos para el mismo trato es un problema con un socio enfrente.",
+  "fuente": {
+    "dart": "lib/domain/logic/notas_obra_calculo.dart",
+    "ts": "web/src/lib/data/notas-obra-calculo.ts"
+  },
+  "notas": [
+    "subtotal = Σ CONCEPTO · deducciones = Σ DEDUCCION · pagado = Σ PAGO · los TEXTO no suman.",
+    "totalCalculado = subtotal − deducciones; total = totalOverride ?? totalCalculado.",
+    "El saldo se mide contra el total QUE MANDA, no contra el calculado.",
+    "totalFijado/saldoFijado son true solo cuando hay override Y no coincide con el cálculo.",
+    "Todo se redondea a centavos para que los flotantes no dejen colas binarias.",
+    "El caso guía es la nota REAL que originó la funcionalidad (Orlando Ramoz, Casas Bienestar MZ 2 LT 1)."
+  ],
+  "casos": [
+    {
+      "nombre": "nota-de-orlando-sin-intervencion",
+      "descripcion": "La nota de papel, tal cual: BASE DE TINACOS 123,000 + PRETIL 25,000 + RECORTE DE PUERTAS 8,400 = 156,400, menos la proyección pagada de 60,000. La aritmética da 96,400 de saldo.",
+      "entrada": {
+        "totalOverride": null,
+        "saldoOverride": null,
+        "renglones": [
+          { "tipo": "CONCEPTO", "monto": 123000, "montoBase": null, "porcentaje": null },
+          { "tipo": "CONCEPTO", "monto": 25000, "montoBase": null, "porcentaje": null },
+          { "tipo": "CONCEPTO", "monto": 8400, "montoBase": null, "porcentaje": null },
+          { "tipo": "PAGO", "monto": 60000, "montoBase": 62000, "porcentaje": 4 },
+          { "tipo": "TEXTO", "monto": null, "montoBase": null, "porcentaje": null }
+        ]
+      },
+      "esperado": {
+        "subtotal": 156400,
+        "deducciones": 0,
+        "totalCalculado": 156400,
+        "total": 156400,
+        "pagado": 60000,
+        "saldoCalculado": 96400,
+        "saldo": 96400,
+        "totalFijado": false,
+        "saldoFijado": false
+      }
+    },
+    {
+      "nombre": "nota-de-orlando-con-el-saldo-del-papel",
+      "descripcion": "La nota de papel cierra en 90,400, pero 156,400 − 60,000 son 96,400: en el original faltan 6,000 sin explicar. No se 'arregla' el dato ni se fuerza la fórmula — es el caso REAL de por qué el saldo se puede fijar a mano.",
+      "entrada": {
+        "totalOverride": null,
+        "saldoOverride": 90400,
+        "renglones": [
+          { "tipo": "CONCEPTO", "monto": 123000, "montoBase": null, "porcentaje": null },
+          { "tipo": "CONCEPTO", "monto": 25000, "montoBase": null, "porcentaje": null },
+          { "tipo": "CONCEPTO", "monto": 8400, "montoBase": null, "porcentaje": null },
+          { "tipo": "PAGO", "monto": 60000, "montoBase": 62000, "porcentaje": 4 },
+          { "tipo": "TEXTO", "monto": null, "montoBase": null, "porcentaje": null }
+        ]
+      },
+      "esperado": {
+        "subtotal": 156400,
+        "deducciones": 0,
+        "totalCalculado": 156400,
+        "total": 156400,
+        "pagado": 60000,
+        "saldoCalculado": 96400,
+        "saldo": 90400,
+        "totalFijado": false,
+        "saldoFijado": true
+      }
+    },
+    {
+      "nombre": "las-deducciones-restan-antes-del-total",
+      "descripcion": "Una retención capturada como renglón propio: se ve la cuenta completa (100,000 de trabajo, 4,000 retenidos) y el total queda en 96,000.",
+      "entrada": {
+        "totalOverride": null,
+        "saldoOverride": null,
+        "renglones": [
+          { "tipo": "CONCEPTO", "monto": 100000, "montoBase": null, "porcentaje": null },
+          { "tipo": "DEDUCCION", "monto": null, "montoBase": 100000, "porcentaje": 4 }
+        ]
+      },
+      "esperado": {
+        "subtotal": 100000,
+        "deducciones": 4000,
+        "totalCalculado": 96000,
+        "total": 96000,
+        "pagado": 0,
+        "saldoCalculado": 96000,
+        "saldo": 96000,
+        "totalFijado": false,
+        "saldoFijado": false
+      }
+    },
+    {
+      "nombre": "el-total-fijado-pisa-al-calculado-y-arrastra-el-saldo",
+      "descripcion": "La constructora asignó 160,000 aunque los renglones sumen 156,400. Lo que resta de pagar se mide contra el total que manda: 160,000 − 60,000 = 100,000.",
+      "entrada": {
+        "totalOverride": 160000,
+        "saldoOverride": null,
+        "renglones": [
+          { "tipo": "CONCEPTO", "monto": 123000, "montoBase": null, "porcentaje": null },
+          { "tipo": "CONCEPTO", "monto": 25000, "montoBase": null, "porcentaje": null },
+          { "tipo": "CONCEPTO", "monto": 8400, "montoBase": null, "porcentaje": null },
+          { "tipo": "PAGO", "monto": 60000, "montoBase": 62000, "porcentaje": 4 },
+          { "tipo": "TEXTO", "monto": null, "montoBase": null, "porcentaje": null }
+        ]
+      },
+      "esperado": {
+        "subtotal": 156400,
+        "deducciones": 0,
+        "totalCalculado": 156400,
+        "total": 160000,
+        "pagado": 60000,
+        "saldoCalculado": 100000,
+        "saldo": 100000,
+        "totalFijado": true,
+        "saldoFijado": false
+      }
+    },
+    {
+      "nombre": "el-saldo-fijado-no-toca-el-total",
+      "descripcion": "Fijar el saldo es decir 'esto es lo que falta', sin renegociar el trato. El total sigue siendo el de los renglones.",
+      "entrada": {
+        "totalOverride": null,
+        "saldoOverride": 90000,
+        "renglones": [
+          { "tipo": "CONCEPTO", "monto": 123000, "montoBase": null, "porcentaje": null },
+          { "tipo": "CONCEPTO", "monto": 25000, "montoBase": null, "porcentaje": null },
+          { "tipo": "CONCEPTO", "monto": 8400, "montoBase": null, "porcentaje": null },
+          { "tipo": "PAGO", "monto": 60000, "montoBase": 62000, "porcentaje": 4 },
+          { "tipo": "TEXTO", "monto": null, "montoBase": null, "porcentaje": null }
+        ]
+      },
+      "esperado": {
+        "subtotal": 156400,
+        "deducciones": 0,
+        "totalCalculado": 156400,
+        "total": 156400,
+        "pagado": 60000,
+        "saldoCalculado": 96400,
+        "saldo": 90000,
+        "totalFijado": false,
+        "saldoFijado": true
+      }
+    },
+    {
+      "nombre": "fijar-el-mismo-numero-no-se-marca-como-intervenido",
+      "descripcion": "Escribir a mano el número que ya daba el cálculo no es una intervención: la insignia de 'fijado' solo debe aparecer cuando el número se separa de la aritmética.",
+      "entrada": {
+        "totalOverride": 156400,
+        "saldoOverride": null,
+        "renglones": [
+          { "tipo": "CONCEPTO", "monto": 123000, "montoBase": null, "porcentaje": null },
+          { "tipo": "CONCEPTO", "monto": 25000, "montoBase": null, "porcentaje": null },
+          { "tipo": "CONCEPTO", "monto": 8400, "montoBase": null, "porcentaje": null },
+          { "tipo": "PAGO", "monto": 60000, "montoBase": 62000, "porcentaje": 4 },
+          { "tipo": "TEXTO", "monto": null, "montoBase": null, "porcentaje": null }
+        ]
+      },
+      "esperado": {
+        "subtotal": 156400,
+        "deducciones": 0,
+        "totalCalculado": 156400,
+        "total": 156400,
+        "pagado": 60000,
+        "saldoCalculado": 96400,
+        "saldo": 96400,
+        "totalFijado": false,
+        "saldoFijado": false
+      }
+    },
+    {
+      "nombre": "una-nota-vacia-da-ceros",
+      "descripcion": "La nota recién creada, antes de escribir el primer renglón. Ceros, no NaN: es lo primero que se ve al abrir la pantalla.",
+      "entrada": { "totalOverride": null, "saldoOverride": null, "renglones": [] },
+      "esperado": {
+        "subtotal": 0,
+        "deducciones": 0,
+        "totalCalculado": 0,
+        "total": 0,
+        "pagado": 0,
+        "saldoCalculado": 0,
+        "saldo": 0,
+        "totalFijado": false,
+        "saldoFijado": false
+      }
+    },
+    {
+      "nombre": "los-centavos-no-arrastran-cola-binaria",
+      "descripcion": "0.1 + 0.2 en coma flotante da 0.30000000000000004. Sin el redondeo a centavos, esa cola termina impresa en un PDF que alguien firma.",
+      "entrada": {
+        "totalOverride": null,
+        "saldoOverride": null,
+        "renglones": [
+          { "tipo": "CONCEPTO", "monto": 0.1, "montoBase": null, "porcentaje": null },
+          { "tipo": "CONCEPTO", "monto": 0.2, "montoBase": null, "porcentaje": null }
+        ]
+      },
+      "esperado": {
+        "subtotal": 0.3,
+        "deducciones": 0,
+        "totalCalculado": 0.3,
+        "total": 0.3,
+        "pagado": 0,
+        "saldoCalculado": 0.3,
+        "saldo": 0.3,
+        "totalFijado": false,
+        "saldoFijado": false
+      }
+    }
+  ]
+}

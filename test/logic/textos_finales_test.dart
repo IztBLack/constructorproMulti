@@ -2,174 +2,111 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:constructorpro/core/pdf/textos_finales.dart';
 
-/// Prueba de PARIDAD con `web/src/lib/pdf/textos-finales.test.ts`.
+import '../contracts/golden_loader.dart';
+
+/// Prueba de PARIDAD contra los vectores dorados de `contracts/pdf/`.
 ///
-/// El riesgo real no es que la función falle sola: es que alguien cambie la
-/// redacción en una plataforma y no en la otra, y el mismo documento salga con
-/// condiciones distintas según desde dónde se mandó. Por eso los textos
-/// esperados están escritos LITERALES aquí y allá, en vez de compararse contra
-/// la propia función.
+/// Los textos esperados viven LITERALES en los `.golden.json`, que lee también
+/// `web/src/lib/pdf/textos-finales.test.ts`. El riesgo real no es que la
+/// función falle sola: es que alguien cambie la redacción en una plataforma y
+/// no en la otra, y el mismo documento salga con condiciones distintas según
+/// desde dónde se mandó. Por eso el texto se compara contra el contrato y no
+/// contra la propia función.
 void main() {
-  const ctx = ContextoTextoFinal(
-    nombreEmpresa: 'ConstructorPro',
-    ivaEnabled: true,
-    ivaPct: 16,
-  );
+  TipoDocumento tipoDe(String s) => switch (s) {
+        'nota' => TipoDocumento.nota,
+        'estado_cuenta' => TipoDocumento.estadoCuenta,
+        _ => TipoDocumento.cotizacion,
+      };
 
-  group('textoIntegrado', () {
-    test('la cotización dice exactamente lo que dice la web', () {
-      expect(
-        textoIntegrado(TipoDocumento.cotizacion, ctx),
-        'Esta cotización tiene una vigencia de 30 días naturales a partir de la '
-        'fecha de emisión. Los precios están expresados en pesos mexicanos (MXN). '
-        'Los precios incluyen IVA (16%). Para consultas o aclaraciones '
-        'comuníquese con ConstructorPro.',
+  ContextoTextoFinal ctxDe(MapaGolden m) => ContextoTextoFinal(
+        nombreEmpresa: m.texto('nombreEmpresa'),
+        ivaEnabled: m.bandera('ivaEnabled'),
+        ivaPct: m.numero('ivaPct'),
+        destinatario: m.textoOpcional('destinatario'),
       );
-    });
 
-    test('sin IVA cambia solo la leyenda', () {
-      final sin = textoIntegrado(
-        TipoDocumento.cotizacion,
-        const ContextoTextoFinal(nombreEmpresa: 'ConstructorPro'),
-      );
-      expect(sin, contains('Los precios no incluyen IVA.'));
-      expect(sin, isNot(contains('incluyen IVA (16%)')));
-    });
+  Map<TipoDocumento, String> empresaDe(MapaGolden m) => {
+        for (final e in m.mapaDeTextos('empresa').entries) tipoDe(e.key): e.value,
+      };
 
-    test('el porcentaje entero se imprime sin decimales', () {
-      // 16.0 tiene que salir "16%", no "16.0%": así lo escribe la web.
-      expect(
-        textoIntegrado(
-          TipoDocumento.cotizacion,
-          const ContextoTextoFinal(
-            nombreEmpresa: 'ConstructorPro',
-            ivaEnabled: true,
-            ivaPct: 8,
+  group('contrato pdf/texto-integrado', () {
+    final contrato = cargarContrato('pdf/texto-integrado');
+
+    for (final caso in contrato.casos) {
+      test(caso.titulo, () {
+        caso.anotaElPorque();
+        expect(
+          textoIntegrado(
+            tipoDe(caso.entrada.texto('tipo')),
+            ctxDe(caso.entrada.mapa('ctx')),
           ),
-        ),
-        contains('IVA (8%)'),
-      );
-    });
-
-    test('la nota nombra a las dos partes del trato', () {
-      expect(
-        textoIntegrado(
-          TipoDocumento.nota,
-          const ContextoTextoFinal(
-            nombreEmpresa: 'ConstructorPro',
-            destinatario: 'ORLANDO RAMOZ',
-          ),
-        ),
-        'Relación de trabajos y pagos acordados entre ConstructorPro y '
-        'ORLANDO RAMOZ. Montos en pesos mexicanos (MXN). Cualquier diferencia '
-        'se aclara antes del siguiente pago.',
-      );
-    });
-
-    test('una nota sin destinatario no imprime un hueco vacío', () {
-      expect(
-        textoIntegrado(
-          TipoDocumento.nota,
-          const ContextoTextoFinal(nombreEmpresa: 'ConstructorPro', destinatario: '   '),
-        ),
-        contains('entre ConstructorPro y la parte indicada.'),
-      );
-    });
-
-    test('sin nombre de empresa cae a la marca', () {
-      expect(
-        textoIntegrado(
-          TipoDocumento.estadoCuenta,
-          const ContextoTextoFinal(nombreEmpresa: ''),
-        ),
-        contains('comuníquese con ConstructorPro.'),
-      );
-    });
+          caso.esperado.texto('texto'),
+        );
+      });
+    }
   });
 
-  group('resolverTextoFinal — quién gana', () {
-    test('sin nada escrito, el integrado', () {
-      expect(
-        resolverTextoFinal(tipo: TipoDocumento.cotizacion, ctx: ctx),
-        textoIntegrado(TipoDocumento.cotizacion, ctx),
-      );
-    });
+  group('contrato pdf/resolver-texto-final', () {
+    final contrato = cargarContrato('pdf/resolver-texto-final');
 
-    test('el de la empresa le gana al integrado', () {
-      expect(
-        resolverTextoFinal(
-          tipo: TipoDocumento.cotizacion,
-          textosEmpresa: const {TipoDocumento.cotizacion: 'Vigencia de 15 días.'},
-          ctx: ctx,
-        ),
-        'Vigencia de 15 días.',
-      );
-    });
+    for (final caso in contrato.casos) {
+      test(caso.titulo, () {
+        caso.anotaElPorque();
+        final tipo = tipoDe(caso.entrada.texto('tipo'));
+        final ctx = ctxDe(caso.entrada.mapa('ctx'));
+        final documento = caso.entrada.textoOpcional('documento');
+        final empresa = empresaDe(caso.entrada);
 
-    test('el del documento le gana a todos', () {
-      expect(
-        resolverTextoFinal(
-          tipo: TipoDocumento.cotizacion,
-          documento: 'Precios firmes hasta el 30 de septiembre.',
-          textosEmpresa: const {TipoDocumento.cotizacion: 'Vigencia de 15 días.'},
+        final resuelto = resolverTextoFinal(
+          tipo: tipo,
+          documento: documento,
+          textosEmpresa: empresa,
           ctx: ctx,
-        ),
-        'Precios firmes hasta el 30 de septiembre.',
-      );
-    });
+        );
 
-    test('un texto en blanco no cuenta: cae al siguiente nivel', () {
-      expect(
-        resolverTextoFinal(
-          tipo: TipoDocumento.cotizacion,
-          documento: '   \n  ',
-          textosEmpresa: const {TipoDocumento.cotizacion: 'De empresa.'},
-          ctx: ctx,
-        ),
-        'De empresa.',
-      );
-    });
+        // `esperado.texto == null` significa «el mismo que devuelve
+        // textoIntegrado»: el literal ya vive en pdf/texto-integrado y
+        // repetirlo aquí sería la copia que estos contratos vienen a quitar.
+        final esperado = caso.esperado.textoOpcional('texto');
+        expect(resuelto, esperado ?? textoIntegrado(tipo, ctx));
 
-    test('el texto general de OTRO tipo no se cuela', () {
-      expect(
-        resolverTextoFinal(
-          tipo: TipoDocumento.nota,
-          textosEmpresa: const {TipoDocumento.cotizacion: 'Vigencia de 15 días.'},
-          ctx: ctx,
-        ),
-        textoIntegrado(TipoDocumento.nota, ctx),
-      );
-    });
+        expect(
+          origenTextoFinal(tipo: tipo, documento: documento, textosEmpresa: empresa),
+          switch (caso.esperado.texto('origen')) {
+            'documento' => OrigenTexto.documento,
+            'empresa' => OrigenTexto.empresa,
+            _ => OrigenTexto.integrado,
+          },
+        );
+      });
+    }
+  });
+
+  /// Fuera del contrato: no es un texto concreto, es una garantía de forma.
+  group('resolverTextoFinal — garantías que no son un texto', () {
+    const ctx = ContextoTextoFinal(
+      nombreEmpresa: 'ConstructorPro',
+      ivaEnabled: true,
+      ivaPct: 16,
+    );
 
     test('nunca devuelve cadena vacía', () {
+      // Si alguien quiere un documento SIN párrafo final, la forma de decirlo
+      // no puede ser dejar un campo en blanco por descuido.
       expect(
         resolverTextoFinal(tipo: TipoDocumento.cotizacion, documento: '', ctx: ctx),
         isNotEmpty,
       );
     });
-  });
 
-  group('origenTextoFinal', () {
-    test('distingue los tres orígenes', () {
-      expect(origenTextoFinal(tipo: TipoDocumento.cotizacion), OrigenTexto.integrado);
-      expect(
-        origenTextoFinal(
-          tipo: TipoDocumento.cotizacion,
-          textosEmpresa: const {TipoDocumento.cotizacion: 'x'},
-        ),
-        OrigenTexto.empresa,
-      );
-      expect(
-        origenTextoFinal(tipo: TipoDocumento.cotizacion, documento: 'x'),
-        OrigenTexto.documento,
-      );
-    });
-
-    test('un documento en blanco no se marca como personalizado', () {
-      expect(
-        origenTextoFinal(tipo: TipoDocumento.cotizacion, documento: '  '),
-        OrigenTexto.integrado,
-      );
+    test('el tope de longitud es el mismo para los tres tipos', () {
+      for (final tipo in TipoDocumento.values) {
+        expect(
+          resolverTextoFinal(tipo: tipo, ctx: ctx).length,
+          lessThanOrEqualTo(largoMaximoTextoFinal),
+        );
+      }
     });
   });
 }

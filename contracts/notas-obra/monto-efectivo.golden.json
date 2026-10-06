@@ -1,0 +1,45 @@
+{
+  "contrato": "notas-obra/monto-efectivo",
+  "descripcion": "Con qué valor entra un renglón en los totales de la nota. Es el puente entre lo que se ve escrito y lo que se suma.",
+  "fuente": {
+    "dart": "lib/domain/logic/notas_obra_calculo.dart",
+    "ts": "web/src/lib/data/notas-obra-calculo.ts"
+  },
+  "notas": [
+    "Los TEXTO no suman: son apuntes ('LIQUIDADO: bases de tinacos, pretil y recorte de puertas').",
+    "El monto fijado a mano le gana al sugerido.",
+    "Sin monto ni bruto vale 0, nunca NaN: un NaN se propaga hasta el PDF sin avisar."
+  ],
+  "casos": [
+    {
+      "nombre": "un-texto-nunca-suma-aunque-traiga-monto",
+      "descripcion": "Un renglón puede cambiar de tipo a TEXTO conservando el monto que tenía. Si ese monto siguiera sumando, la nota cuadraría distinto a lo que se lee.",
+      "entrada": { "tipo": "TEXTO", "monto": 99999, "montoBase": null, "porcentaje": null },
+      "esperado": { "monto": 0 }
+    },
+    {
+      "nombre": "el-monto-fijado-le-gana-al-sugerido",
+      "descripcion": "La regla central de las notas: la app sugiere, el dueño decide. El trato fue 60,000 aunque 62,000 − 4% den 59,520.",
+      "entrada": { "tipo": "PAGO", "monto": 60000, "montoBase": 62000, "porcentaje": 4 },
+      "esperado": { "monto": 60000 }
+    },
+    {
+      "nombre": "sin-monto-fijado-cae-al-sugerido",
+      "descripcion": "Cuando nadie interviene, manda la aritmética: el mismo renglón sin monto propio vale 59,520.",
+      "entrada": { "tipo": "PAGO", "monto": null, "montoBase": 62000, "porcentaje": 4 },
+      "esperado": { "monto": 59520 }
+    },
+    {
+      "nombre": "sin-monto-ni-bruto-vale-cero",
+      "descripcion": "Un renglón recién agregado y todavía vacío. Tiene que valer 0 mientras se captura, no NaN.",
+      "entrada": { "tipo": "CONCEPTO", "monto": null, "montoBase": null, "porcentaje": null },
+      "esperado": { "monto": 0 }
+    },
+    {
+      "nombre": "una-deduccion-sin-monto-cae-a-la-parte-retenida",
+      "descripcion": "La deducción del caso normal: se captura el bruto y el porcentaje, y el renglón vale lo retenido.",
+      "entrada": { "tipo": "DEDUCCION", "monto": null, "montoBase": 100000, "porcentaje": 4 },
+      "esperado": { "monto": 4000 }
+    }
+  ]
+}

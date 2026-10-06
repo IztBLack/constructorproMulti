@@ -1,0 +1,72 @@
+{
+  "contrato": "nomina/dias-del-periodo",
+  "descripcion": "Cuántos días trabajados abarca un periodo de pago, según los días por semana que trabaja la empresa. Es el divisor con el que un sueldo mensual se vuelve salario diario.",
+  "fuente": {
+    "dart": "lib/domain/logic/salario_periodo.dart",
+    "ts": "web/src/lib/data/salario.ts"
+  },
+  "notas": [
+    "Base anualizada: 52 semanas → 12 meses (52/12) o 24 quincenas (52/24).",
+    "No son 30/15 días fijos: con 6 días/semana el mes son 26 días trabajados, no 30."
+  ],
+  "casos": [
+    {
+      "nombre": "semanal-con-5-dias",
+      "descripcion": "El periodo semanal son los días de la semana, tal cual: no hay anualización que hacer.",
+      "entrada": { "periodo": "SEMANAL", "diasSemana": 5 },
+      "esperado": { "dias": 5 }
+    },
+    {
+      "nombre": "semanal-con-6-dias",
+      "descripcion": "El caso de la empresa: se trabaja de lunes a sábado.",
+      "entrada": { "periodo": "SEMANAL", "diasSemana": 6 },
+      "esperado": { "dias": 6 }
+    },
+    {
+      "nombre": "semanal-con-7-dias",
+      "descripcion": "Obra corrida, sin descanso. También tiene que salir tal cual.",
+      "entrada": { "periodo": "SEMANAL", "diasSemana": 7 },
+      "esperado": { "dias": 7 }
+    },
+    {
+      "nombre": "quincenal-con-6-dias-da-13-exactos",
+      "descripcion": "6 × 52 / 24 = 13 clavados. Es uno de los dos números redondos de la tabla y el que la gente reconoce.",
+      "entrada": { "periodo": "QUINCENAL", "diasSemana": 6 },
+      "esperado": { "dias": 13 }
+    },
+    {
+      "nombre": "mensual-con-6-dias-da-26-exactos",
+      "descripcion": "6 × 52 / 12 = 26. Es el divisor que hace que un sueldo mensual dé el diario que la gente espera; con 30 saldría más bajo y nadie entendería por qué.",
+      "entrada": { "periodo": "MENSUAL", "diasSemana": 6 },
+      "esperado": { "dias": 26 }
+    },
+    {
+      "nombre": "quincenal-con-5-dias",
+      "descripcion": "Con 5 días/semana la base sigue siendo 52 semanas, aunque el resultado ya no sea redondo.",
+      "entrada": { "periodo": "QUINCENAL", "diasSemana": 5 },
+      "esperado": { "dias": 10.833 },
+      "tolerancia": 0.001
+    },
+    {
+      "nombre": "mensual-con-5-dias",
+      "descripcion": "Mismo motivo que el anterior, del lado mensual.",
+      "entrada": { "periodo": "MENSUAL", "diasSemana": 5 },
+      "esperado": { "dias": 21.667 },
+      "tolerancia": 0.001
+    },
+    {
+      "nombre": "quincenal-con-7-dias",
+      "descripcion": "El extremo de arriba: obra corrida cobrando por quincena.",
+      "entrada": { "periodo": "QUINCENAL", "diasSemana": 7 },
+      "esperado": { "dias": 15.167 },
+      "tolerancia": 0.001
+    },
+    {
+      "nombre": "mensual-con-7-dias",
+      "descripcion": "El extremo de arriba del lado mensual. Nótese que no da 30: da 30.33, porque el año tiene 52 semanas y no 52.14.",
+      "entrada": { "periodo": "MENSUAL", "diasSemana": 7 },
+      "esperado": { "dias": 30.333 },
+      "tolerancia": 0.001
+    }
+  ]
+}

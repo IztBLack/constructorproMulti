@@ -5,6 +5,7 @@
 import { createClient } from '@/lib/supabase/server';
 import type { Movimiento, Obra } from './types';
 import { medianocheMx } from './tz';
+import { traerTodo } from './paginado';
 
 export interface PeriodoMensual {
   /** 1-12 */
@@ -81,27 +82,47 @@ export async function listMovimientosEmpresaRango(
   finMs: number,
 ): Promise<{ data: Movimiento[]; error: string | null }> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('movimientos')
-    .select('*')
-    .gte('fecha', inicioMs)
-    .lt('fecha', finMs)
-    .is('deleted_at', null);
-
-  if (error) return { data: [], error: error.message };
-  return { data: (data ?? []) as Movimiento[], error: null };
+  // Paginado y no agregado en SQL a propósito: estas filas alimentan
+  // `distribucionGasto`, que clasifica por el TEXTO de la categoría con reglas
+  // que viven en TypeScript (y en Dart). Traer las filas de UN MES y clasificar
+  // aquí mantiene esa regla en un solo sitio; agregar por categoría en SQL
+  // obligaría a duplicar el criterio en un tercer lenguaje.
+  return traerTodo<Movimiento>((desde, hasta) =>
+    supabase
+      .from('movimientos')
+      .select('*')
+      .gte('fecha', inicioMs)
+      .lt('fecha', finMs)
+      .is('deleted_at', null)
+      .order('id')
+      .range(desde, hasta)
+      .returns<Movimiento[]>(),
+  );
 }
 
-/** Todos los movimientos de la empresa, sin filtro de fecha (para saldo histórico por obra). */
-export async function listMovimientosEmpresa(): Promise<{
-  data: Movimiento[];
-  error: string | null;
-}> {
+export interface FlujoObra {
+  obraId: string;
+  entradas: number;
+  salidas: number;
+}
+
+/// Entradas y salidas acumuladas por obra — UNA FILA POR OBRA.
+///
+/// Sustituye a la lectura de todos los movimientos de la historia de la empresa
+/// para sumarlos en memoria. El saldo no sale de aquí: lo calcula
+/// `resumenFlujo`, que es el puerto de `flujo_calculator.dart` y la única
+/// definición de "saldo = entradas − salidas" del lado web.
+export async function flujoPorObra(): Promise<{ data: FlujoObra[]; error: string | null }> {
   const supabase = await createClient();
-  const { data, error } = await supabase.from('movimientos').select('*').is('deleted_at', null);
+  const { data, error } = await supabase.rpc('flujo_por_obra');
 
   if (error) return { data: [], error: error.message };
-  return { data: (data ?? []) as Movimiento[], error: null };
+
+  const filas = (data ?? []) as { obra_id: string; entradas: number; salidas: number }[];
+  return {
+    data: filas.map((f) => ({ obraId: f.obra_id, entradas: f.entradas, salidas: f.salidas })),
+    error: null,
+  };
 }
 
 export interface DistribucionGasto {
@@ -137,59 +158,21 @@ export function distribucionGasto(movimientos: Movimiento[]): DistribucionGasto 
  *  (igual que `watchPipeline` en el móvil). */
 export async function calcularPipeline(): Promise<{ value: number; error: string | null }> {
   const supabase = await createClient();
+  const estados = ['BORRADOR', 'ENVIADA'];
 
-  const { data: cotizaciones, error: cotError } = await supabase
-    .from('cotizaciones')
-    .select('id, iva_enabled')
-    .in('estado', ['BORRADOR', 'ENVIADA'])
-    .is('deleted_at', null);
+  const { data, error } = await supabase.rpc('subtotal_por_cotizacion', { p_estados: estados });
 
-  if (cotError) return { value: 0, error: cotError.message };
-  const cots = (cotizaciones ?? []) as { id: string; iva_enabled: boolean }[];
-  if (cots.length === 0) return { value: 0, error: null };
+  if (error) return { value: 0, error: error.message };
 
-  const cotIds = cots.map((c) => c.id);
+  const filas = (data ?? []) as { iva_enabled: boolean; subtotal: number }[];
+  return { value: aplicarIvaPipeline(filas), error: null };
+}
 
-  const { data: secciones, error: secError } = await supabase
-    .from('secciones')
-    .select('id, cotizacion_id')
-    .in('cotizacion_id', cotIds)
-    .is('deleted_at', null);
-
-  if (secError) return { value: 0, error: secError.message };
-  const seccionesList = (secciones ?? []) as { id: string; cotizacion_id: string }[];
-  const seccionIds = seccionesList.map((s) => s.id);
-
-  let partidas: { seccion_id: string; cantidad: number; precio_unitario: number }[] = [];
-  if (seccionIds.length > 0) {
-    const { data: partidasData, error: partError } = await supabase
-      .from('partidas')
-      .select('seccion_id, cantidad, precio_unitario')
-      .in('seccion_id', seccionIds)
-      .is('deleted_at', null);
-
-    if (partError) return { value: 0, error: partError.message };
-    partidas = (partidasData ?? []) as typeof partidas;
-  }
-
-  const seccionToCotizacion = new Map(seccionesList.map((s) => [s.id, s.cotizacion_id]));
-  const subtotalPorCotizacion = new Map<string, number>();
-  for (const c of cots) subtotalPorCotizacion.set(c.id, 0);
-
-  for (const p of partidas) {
-    const cotId = seccionToCotizacion.get(p.seccion_id);
-    if (!cotId) continue;
-    const actual = subtotalPorCotizacion.get(cotId) ?? 0;
-    subtotalPorCotizacion.set(cotId, actual + p.cantidad * p.precio_unitario);
-  }
-
-  let total = 0;
-  for (const c of cots) {
-    const subtotal = subtotalPorCotizacion.get(c.id) ?? 0;
-    total += c.iva_enabled ? subtotal * 1.16 : subtotal;
-  }
-
-  return { value: total, error: null };
+/// La regla del pipeline, aislada para que sólo exista una vez: subtotal ×1.16
+/// si la cotización lleva IVA, sin restar descuento (igual que `watchPipeline`
+/// en el móvil). La base entrega el subtotal crudo; esta línea es el criterio.
+function aplicarIvaPipeline(filas: { iva_enabled: boolean; subtotal: number }[]): number {
+  return filas.reduce((total, f) => total + (f.iva_enabled ? f.subtotal * 1.16 : f.subtotal), 0);
 }
 
 export interface ObraConSaldo {
@@ -204,16 +187,13 @@ export async function contarEquipoActivoPorObra(): Promise<{
   error: string | null;
 }> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('obra_colaborador')
-    .select('obra_id')
-    .is('fecha_salida', null);
+  const { data, error } = await supabase.rpc('equipo_activo_por_obra');
 
   if (error) return { data: new Map(), error: error.message };
 
   const map = new Map<string, number>();
-  for (const row of (data ?? []) as { obra_id: string }[]) {
-    map.set(row.obra_id, (map.get(row.obra_id) ?? 0) + 1);
+  for (const row of (data ?? []) as { obra_id: string; activos: number }[]) {
+    map.set(row.obra_id, row.activos);
   }
   return { data: map, error: null };
 }
@@ -231,15 +211,20 @@ export async function listObrasConSaldo(): Promise<{ data: ObraConSaldo[]; error
   if (obrasError) return { data: [], error: obrasError.message };
   const obrasList = (obras ?? []) as Obra[];
 
-  const [{ data: movimientos, error: movError }, { data: equipoPorObra, error: equipoError }] =
-    await Promise.all([listMovimientosEmpresa(), contarEquipoActivoPorObra()]);
+  const [{ data: flujo, error: flujoError }, { data: equipoPorObra, error: equipoError }] =
+    await Promise.all([flujoPorObra(), contarEquipoActivoPorObra()]);
 
-  if (movError) return { data: [], error: movError };
+  if (flujoError) return { data: [], error: flujoError };
   if (equipoError) return { data: [], error: equipoError };
 
+  const flujoPorId = new Map(flujo.map((f) => [f.obraId, f]));
+
   const result: ObraConSaldo[] = obrasList.map((obra) => {
-    const movsObra = movimientos.filter((m) => m.obra_id === obra.id);
-    const { saldo } = resumenFlujo(movsObra);
+    const f = flujoPorId.get(obra.id);
+    // La resta vive aquí y no en SQL: "saldo = entradas − salidas" es la regla
+    // de `flujo_calculator.dart`, y sólo puede tener una definición por
+    // plataforma. La base agrega; el criterio se queda donde está probado.
+    const saldo = f ? f.entradas - f.salidas : 0;
     return { obra, saldo, equipoActivo: equipoPorObra.get(obra.id) ?? 0 };
   });
 

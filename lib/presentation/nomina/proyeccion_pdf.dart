@@ -12,7 +12,7 @@ import 'proyeccion_controller.dart';
 ///
 /// Pasa por el mismo diálogo previo que los demás reportes (empresa, color,
 /// logo), pero el documento IGNORA la marca de agua configurada y estampa
-/// «PROYECCIÓN» de todos modos: ver `PdfService._pageThemeProyeccion`.
+/// «PROYECCIÓN» de todos modos: ver `pageThemeProyeccion` en `pdf/kit/pagina.dart`.
 Future<void> exportarProyeccionPdf(
   BuildContext context,
   WidgetRef ref,

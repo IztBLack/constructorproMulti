@@ -1,0 +1,61 @@
+{
+  "contrato": "nomina/semana",
+  "descripcion": "La semana de nómina va de lunes 00:00:00.000 a domingo 23:59:59.999. Es el corte con el que se paga la raya: un día que cae del lado equivocado se paga en la semana equivocada.",
+  "fuente": {
+    "dart": "lib/domain/logic/nomina_calculator.dart",
+    "ts": "web/src/lib/data/nomina-calculo.ts"
+  },
+  "notas": [
+    "La entrada es una fecha del CALENDARIO DE MÉXICO (no un instante UTC).",
+    "Dart trabaja con DateTime local del dispositivo, que en obra es México.",
+    "La web tiene que convertir explícitamente (lib/data/tz.ts): sus servidores corren en UTC y vitest fija TZ=Europe/Madrid justo para que no se apoye en la zona del proceso.",
+    "El fin de semana es exactamente inicio + 7 días − 1 ms: sin huecos ni solapes entre semanas."
+  ],
+  "casos": [
+    {
+      "nombre": "un-miercoles-cae-en-su-lunes",
+      "descripcion": "El caso de todos los días: se abre la nómina a media semana y tiene que enseñar la semana en curso, no la que empieza hoy.",
+      "entrada": { "año": 2026, "mes": 6, "dia": 17, "hora": 14, "minuto": 30 },
+      "esperado": {
+        "lunes": { "año": 2026, "mes": 6, "dia": 15 },
+        "domingo": { "año": 2026, "mes": 6, "dia": 21 }
+      }
+    },
+    {
+      "nombre": "el-domingo-pertenece-al-lunes-anterior",
+      "descripcion": "El domingo cierra la semana, no abre la siguiente. Es el día en que se paga: si se fuera a la semana que entra, la raya saldría vacía.",
+      "entrada": { "año": 2026, "mes": 6, "dia": 21, "hora": 0, "minuto": 0 },
+      "esperado": {
+        "lunes": { "año": 2026, "mes": 6, "dia": 15 },
+        "domingo": { "año": 2026, "mes": 6, "dia": 21 }
+      }
+    },
+    {
+      "nombre": "el-lunes-a-primera-hora-ya-es-su-propia-semana",
+      "descripcion": "La frontera de abajo: pasar lista al llegar a la obra el lunes. Ese día abre la semana nueva, no cierra la anterior.",
+      "entrada": { "año": 2026, "mes": 6, "dia": 15, "hora": 0, "minuto": 0 },
+      "esperado": {
+        "lunes": { "año": 2026, "mes": 6, "dia": 15 },
+        "domingo": { "año": 2026, "mes": 6, "dia": 21 }
+      }
+    },
+    {
+      "nombre": "el-domingo-por-la-noche-sigue-en-su-semana",
+      "descripcion": "Domingo 23:00 en México ya es lunes 05:00 en UTC. Calculada en UTC, esa captura arrancaría la semana siguiente y el día se pagaría en la raya equivocada. Este caso es el que caza esa clase de bug en la web.",
+      "entrada": { "año": 2026, "mes": 6, "dia": 21, "hora": 23, "minuto": 0 },
+      "esperado": {
+        "lunes": { "año": 2026, "mes": 6, "dia": 15 },
+        "domingo": { "año": 2026, "mes": 6, "dia": 21 }
+      }
+    },
+    {
+      "nombre": "el-cambio-de-año-no-rompe-el-lunes",
+      "descripcion": "La semana que cruza de diciembre a enero. Si el cálculo se apoyara en el número de semana del año, aquí se partiría en dos.",
+      "entrada": { "año": 2026, "mes": 12, "dia": 31, "hora": 9, "minuto": 0 },
+      "esperado": {
+        "lunes": { "año": 2026, "mes": 12, "dia": 28 },
+        "domingo": { "año": 2027, "mes": 1, "dia": 3 }
+      }
+    }
+  ]
+}

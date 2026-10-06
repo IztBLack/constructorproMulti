@@ -1,19 +1,31 @@
 import { createClient } from '@/lib/supabase/server';
 import type { CatalogoConcepto } from './types';
+import { traerTodo } from './paginado';
 
+/// Catálogo completo, paginado.
+///
+/// El catálogo es la tabla que más cerca está del tope de PostgREST
+/// (`max_rows = 1000`): 763 filas en producción, y "cargar catálogo oficial"
+/// añade cientos de golpe. Sin paginar, al cruzar las 1 000 la pantalla
+/// empezaría a esconder conceptos sin ningún error visible. Ver `paginado.ts`.
 export async function listCatalogoConceptos(): Promise<{
   data: CatalogoConcepto[];
   error: string | null;
 }> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('catalogo_conceptos')
-    .select('*')
-    .is('deleted_at', null)
-    .order('descripcion');
-
-  if (error) return { data: [], error: error.message };
-  return { data: (data ?? []) as CatalogoConcepto[], error: null };
+  return traerTodo<CatalogoConcepto>((desde, hasta) =>
+    supabase
+      .from('catalogo_conceptos')
+      .select('*')
+      .is('deleted_at', null)
+      // El desempate por `id` NO es cosmético: sin un orden total, dos filas
+      // con la misma descripción pueden salir en distinto orden en dos
+      // páginas, y entonces una se repite y otra se pierde.
+      .order('descripcion')
+      .order('id')
+      .range(desde, hasta)
+      .returns<CatalogoConcepto[]>(),
+  );
 }
 
 /// Busca conceptos del catálogo por clave o descripción (para autocompletar

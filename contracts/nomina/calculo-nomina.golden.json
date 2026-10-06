@@ -1,0 +1,262 @@
+{
+  "contrato": "nomina/calculo-nomina",
+  "descripcion": "La raya de una semana: cuánto se le paga a cada quien y cuánto suma la nómina. Es el cálculo del que sale el dinero que se reparte en obra, así que el móvil y la oficina tienen que dar el mismo peso.",
+  "fuente": {
+    "dart": "lib/domain/logic/nomina_calculator.dart",
+    "ts": "web/src/lib/data/nomina-calculo.ts"
+  },
+  "notas": [
+    "salarioDia = salarioPersonalizado ?? puesto.salarioDiaDefault ?? 0",
+    "tipoPago DIA:     totalPagar = Σ(asistencias.fraccion) × salarioDia",
+    "tipoPago DESTAJO: totalPagar = Σ(destajos.monto)",
+    "totalNomina = totalDia + totalDestajo",
+    "Los items salen en el mismo orden que los colaboradores de la entrada."
+  ],
+  "casos": [
+    {
+      "nombre": "dia-fracciones-por-el-salario-del-puesto",
+      "descripcion": "El caso base: se pasa lista tres veces (dos días completos y medio) y se paga 2.5 × 550. Sin salario propio, manda el del puesto.",
+      "entrada": {
+        "puestos": [
+          { "id": "p1", "nombre": "Albañil", "salarioDiaDefault": 550 },
+          { "id": "p2", "nombre": "Maestro", "salarioDiaDefault": 800 }
+        ],
+        "colaboradores": [
+          { "id": "c1", "nombre": "Juan", "puestoId": "p1", "tipoPago": "DIA", "salarioPersonalizado": null }
+        ],
+        "asistencias": [
+          { "colaboradorId": "c1", "fraccion": 1 },
+          { "colaboradorId": "c1", "fraccion": 1 },
+          { "colaboradorId": "c1", "fraccion": 0.5 }
+        ],
+        "destajos": []
+      },
+      "esperado": {
+        "totalDia": 1375,
+        "totalDestajo": 0,
+        "totalNomina": 1375,
+        "items": [
+          {
+            "colaboradorId": "c1",
+            "puestoNombre": "Albañil",
+            "totalDias": 2.5,
+            "totalDestajos": 0,
+            "salarioBaseCalculado": 550,
+            "totalPagar": 1375
+          }
+        ]
+      }
+    },
+    {
+      "nombre": "el-salario-personalizado-le-gana-al-del-puesto",
+      "descripcion": "A alguien se le pactó un sueldo distinto al de su puesto. El override por colaborador manda; si no, un aumento individual se perdería al tocar el catálogo de puestos.",
+      "entrada": {
+        "puestos": [
+          { "id": "p1", "nombre": "Albañil", "salarioDiaDefault": 550 }
+        ],
+        "colaboradores": [
+          { "id": "c1", "nombre": "Juan", "puestoId": "p1", "tipoPago": "DIA", "salarioPersonalizado": 700 }
+        ],
+        "asistencias": [{ "colaboradorId": "c1", "fraccion": 1 }],
+        "destajos": []
+      },
+      "esperado": {
+        "totalDia": 700,
+        "totalDestajo": 0,
+        "totalNomina": 700,
+        "items": [
+          {
+            "colaboradorId": "c1",
+            "puestoNombre": "Albañil",
+            "totalDias": 1,
+            "totalDestajos": 0,
+            "salarioBaseCalculado": 700,
+            "totalPagar": 700
+          }
+        ]
+      }
+    },
+    {
+      "nombre": "puesto-inexistente-paga-cero-y-dice-sin-puesto",
+      "descripcion": "Si el puesto no existe (se borró, o la fila llegó a medias del servidor) la nómina no revienta: paga 0 y lo enseña como 'Sin Puesto' para que se vea en pantalla que falta capturarlo.",
+      "entrada": {
+        "puestos": [
+          { "id": "p1", "nombre": "Albañil", "salarioDiaDefault": 550 }
+        ],
+        "colaboradores": [
+          { "id": "c1", "nombre": "X", "puestoId": "zzz", "tipoPago": "DIA", "salarioPersonalizado": null }
+        ],
+        "asistencias": [{ "colaboradorId": "c1", "fraccion": 1 }],
+        "destajos": []
+      },
+      "esperado": {
+        "totalDia": 0,
+        "totalDestajo": 0,
+        "totalNomina": 0,
+        "items": [
+          {
+            "colaboradorId": "c1",
+            "puestoNombre": "Sin Puesto",
+            "totalDias": 1,
+            "totalDestajos": 0,
+            "salarioBaseCalculado": 0,
+            "totalPagar": 0
+          }
+        ]
+      }
+    },
+    {
+      "nombre": "las-asistencias-de-otra-persona-no-suman",
+      "descripcion": "El filtro por colaborador. Las listas llegan de la semana entera, no de una persona: sin filtrar, a cada quien se le pagaría la raya de todos.",
+      "entrada": {
+        "puestos": [
+          { "id": "p1", "nombre": "Albañil", "salarioDiaDefault": 550 }
+        ],
+        "colaboradores": [
+          { "id": "c1", "nombre": "Juan", "puestoId": "p1", "tipoPago": "DIA", "salarioPersonalizado": null }
+        ],
+        "asistencias": [
+          { "colaboradorId": "c1", "fraccion": 1 },
+          { "colaboradorId": "c2", "fraccion": 1 }
+        ],
+        "destajos": []
+      },
+      "esperado": {
+        "totalDia": 550,
+        "totalDestajo": 0,
+        "totalNomina": 550,
+        "items": [
+          {
+            "colaboradorId": "c1",
+            "puestoNombre": "Albañil",
+            "totalDias": 1,
+            "totalDestajos": 0,
+            "salarioBaseCalculado": 550,
+            "totalPagar": 550
+          }
+        ]
+      }
+    },
+    {
+      "nombre": "destajo-suma-los-montos",
+      "descripcion": "A quien cobra por trabajo terminado se le paga la suma de sus destajos, sin pasar por el salario diario.",
+      "entrada": {
+        "puestos": [
+          { "id": "p1", "nombre": "Albañil", "salarioDiaDefault": 550 }
+        ],
+        "colaboradores": [
+          { "id": "c2", "nombre": "Pedro", "puestoId": "p1", "tipoPago": "DESTAJO", "salarioPersonalizado": null }
+        ],
+        "asistencias": [],
+        "destajos": [
+          { "colaboradorId": "c2", "monto": 1200 },
+          { "colaboradorId": "c2", "monto": 800 }
+        ]
+      },
+      "esperado": {
+        "totalDia": 0,
+        "totalDestajo": 2000,
+        "totalNomina": 2000,
+        "items": [
+          {
+            "colaboradorId": "c2",
+            "puestoNombre": "Albañil",
+            "totalDias": 0,
+            "totalDestajos": 2000,
+            "salarioBaseCalculado": 550,
+            "totalPagar": 2000
+          }
+        ]
+      }
+    },
+    {
+      "nombre": "a-quien-cobra-a-destajo-no-se-le-pagan-las-asistencias",
+      "descripcion": "La regla que separa los dos tipos de pago. Alguien de destajo también aparece en el pase de lista (se necesita saber quién estuvo en obra); si además se le pagaran los días, cobraría dos veces.",
+      "entrada": {
+        "puestos": [
+          { "id": "p1", "nombre": "Albañil", "salarioDiaDefault": 550 }
+        ],
+        "colaboradores": [
+          { "id": "c2", "nombre": "Pedro", "puestoId": "p1", "tipoPago": "DESTAJO", "salarioPersonalizado": null }
+        ],
+        "asistencias": [
+          { "colaboradorId": "c2", "fraccion": 1 },
+          { "colaboradorId": "c2", "fraccion": 1 }
+        ],
+        "destajos": [{ "colaboradorId": "c2", "monto": 500 }]
+      },
+      "esperado": {
+        "totalDia": 0,
+        "totalDestajo": 500,
+        "totalNomina": 500,
+        "items": [
+          {
+            "colaboradorId": "c2",
+            "puestoNombre": "Albañil",
+            "totalDias": 0,
+            "totalDestajos": 500,
+            "salarioBaseCalculado": 550,
+            "totalPagar": 500
+          }
+        ]
+      }
+    },
+    {
+      "nombre": "mixto-el-total-es-la-suma-de-los-dos-tipos",
+      "descripcion": "Una cuadrilla real mezcla los dos tipos de pago. El total de la nómina es la suma de las dos columnas, que es lo que se saca de la caja.",
+      "entrada": {
+        "puestos": [
+          { "id": "p1", "nombre": "Albañil", "salarioDiaDefault": 550 },
+          { "id": "p2", "nombre": "Maestro", "salarioDiaDefault": 800 }
+        ],
+        "colaboradores": [
+          { "id": "c1", "nombre": "Juan", "puestoId": "p2", "tipoPago": "DIA", "salarioPersonalizado": null },
+          { "id": "c2", "nombre": "Pedro", "puestoId": "p1", "tipoPago": "DESTAJO", "salarioPersonalizado": null }
+        ],
+        "asistencias": [{ "colaboradorId": "c1", "fraccion": 1 }],
+        "destajos": [{ "colaboradorId": "c2", "monto": 500 }]
+      },
+      "esperado": {
+        "totalDia": 800,
+        "totalDestajo": 500,
+        "totalNomina": 1300,
+        "items": [
+          {
+            "colaboradorId": "c1",
+            "puestoNombre": "Maestro",
+            "totalDias": 1,
+            "totalDestajos": 0,
+            "salarioBaseCalculado": 800,
+            "totalPagar": 800
+          },
+          {
+            "colaboradorId": "c2",
+            "puestoNombre": "Albañil",
+            "totalDias": 0,
+            "totalDestajos": 500,
+            "salarioBaseCalculado": 550,
+            "totalPagar": 500
+          }
+        ]
+      }
+    },
+    {
+      "nombre": "sin-nadie-todo-en-cero",
+      "descripcion": "Una semana sin gente (obra parada, o la pantalla recién abierta) tiene que dar ceros y no reventar: es lo primero que ve alguien que estrena la app.",
+      "entrada": {
+        "puestos": [
+          { "id": "p1", "nombre": "Albañil", "salarioDiaDefault": 550 }
+        ],
+        "colaboradores": [],
+        "asistencias": [],
+        "destajos": []
+      },
+      "esperado": {
+        "totalDia": 0,
+        "totalDestajo": 0,
+        "totalNomina": 0,
+        "items": []
+      }
+    }
+  ]
+}

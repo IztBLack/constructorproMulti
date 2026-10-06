@@ -1,73 +1,50 @@
 import { createClient } from '@/lib/supabase/server';
-import type { Rol } from './types';
+import { getEmpresaActiva, getUsuario, type EmpresaUsuario } from '@/lib/sesion';
 
-export interface EmpresaUsuario {
-  empresaId: string;
-  rol: Rol;
-}
+export type { EmpresaUsuario };
 
-/// Devuelve la empresa y rol del usuario autenticado actual, leyendo
-/// `usuarios_empresa`. Lanza error si no hay usuario o no tiene empresa.
+/// Devuelve la empresa y rol del usuario autenticado actual.
+/// Lanza error si no hay usuario o no tiene empresa.
 /// Úsalo en Server Actions antes de escribir (empresa_id es obligatorio por RLS).
+///
+/// Es la envoltura ESTRICTA de `getEmpresaActiva()` (en `lib/sesion.ts`), que
+/// es la que hace el trabajo y está cacheada por petición con `cache()` de
+/// React. Esta capa sólo convierte "no hay" en una excepción, que es lo que
+/// esperan las 55 llamadas existentes.
+///
+/// Si lo que quieres es preguntar el rol sin que reviente, usa
+/// `getRolActual()` de `lib/sesion.ts` en vez de `.catch(() => '')`.
 export async function getEmpresaUsuario(): Promise<EmpresaUsuario> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await getUsuario();
   if (!user) {
     throw new Error('No hay sesión activa.');
   }
 
-  // El `order` no es cosmético. Con `limit(1)` a secas, si una persona
-  // pertenece a dos empresas (es personal de una y cliente de otra, algo
-  // perfectamente posible), Postgres devuelve una fila ARBITRARIA que puede
-  // cambiar entre peticiones: la pantalla mostraría un rol distinto según el
-  // momento. No es explotable —RLS rechaza igual lo que no corresponda al rol
-  // real— pero es la clase de indeterminismo del que salen los bugs de permisos
-  // en cuanto alguien añada una comprobación de rol en TypeScript.
-  // Se ordena por antigüedad: la primera empresa a la que se unió.
-  const { data, error } = await supabase
-    .from('usuarios_empresa')
-    .select('empresa_id, rol')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) {
-    throw new Error(`No se pudo obtener la empresa del usuario: ${error.message}`);
-  }
-
-  if (!data) {
+  const empresa = await getEmpresaActiva();
+  if (!empresa) {
     throw new Error('El usuario no tiene una empresa asignada.');
   }
 
-  return { empresaId: data.empresa_id as string, rol: data.rol as Rol };
+  return empresa;
 }
 
 /// Nombre de la empresa del usuario actual, para mostrar como marca en la UI
 /// (en vez de un literal "ConstructorPro"). No lanza: devuelve null si no hay
 /// sesión o empresa. Lectura acotada por RLS a las empresas del usuario.
+///
+/// La resolución de "qué empresa" ya no se repite aquí: sale de
+/// `getEmpresaActiva()`, así que esta función y `getEmpresaUsuario()` no pueden
+/// discrepar sobre cuál es la empresa del usuario —antes cada una hacía su
+/// propia consulta, y sólo una de las dos ordenaba por antigüedad.
 export async function getNombreEmpresa(): Promise<string | null> {
+  const empresa = await getEmpresaActiva();
+  if (!empresa) return null;
+
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: mem } = await supabase
-    .from('usuarios_empresa')
-    .select('empresa_id')
-    .eq('user_id', user.id)
-    .limit(1)
-    .maybeSingle();
-  if (!mem) return null;
-
   const { data: emp } = await supabase
     .from('empresas')
     .select('nombre')
-    .eq('id', mem.empresa_id as string)
+    .eq('id', empresa.empresaId)
     .maybeSingle();
 
   const nombre = (emp?.nombre as string | undefined)?.trim();

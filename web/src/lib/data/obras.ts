@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { getEmpresaUsuario } from './empresa';
 import type { Movimiento, Obra, TipoMovimiento } from './types';
+import { traerTodo } from './paginado';
 
 export async function listObras(): Promise<{ data: Obra[]; error: string | null }> {
   const supabase = await createClient();
@@ -61,19 +62,30 @@ export async function actualizarObra(
   return { error: null };
 }
 
+/// Caja completa de una obra, paginada.
+///
+/// Los movimientos de una obra crecen sin techo mientras la obra viva, y el
+/// tope `max_rows = 1000` de PostgREST truncaría la lista en silencio: la
+/// pestaña Caja mostraría los 1 000 más recientes y el saldo saldría mal sin
+/// que nada avisara. Ver `paginado.ts`.
 export async function listMovimientosByObra(
   obraId: string,
 ): Promise<{ data: Movimiento[]; error: string | null }> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('movimientos')
-    .select('*')
-    .eq('obra_id', obraId)
-    .is('deleted_at', null)
-    .order('fecha', { ascending: false });
-
-  if (error) return { data: [], error: error.message };
-  return { data: (data ?? []) as Movimiento[], error: null };
+  return traerTodo<Movimiento>((desde, hasta) =>
+    supabase
+      .from('movimientos')
+      .select('*')
+      .eq('obra_id', obraId)
+      .is('deleted_at', null)
+      // `id` desempata: sin orden total, dos movimientos de la misma fecha
+      // pueden cambiar de página entre consultas y uno se duplica mientras
+      // otro desaparece.
+      .order('fecha', { ascending: false })
+      .order('id')
+      .range(desde, hasta)
+      .returns<Movimiento[]>(),
+  );
 }
 
 // Categorías "de sistema" que no son conceptos que el usuario escriba a mano;

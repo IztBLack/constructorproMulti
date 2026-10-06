@@ -6,105 +6,97 @@ import {
   resolverTextoFinal,
   textoIntegrado,
   LARGO_MAXIMO,
+  type ContextoTextoFinal,
+  type OrigenTexto,
+  type TextosEmpresa,
+  type TipoDocumento,
 } from './textos-finales';
+import { cargarContrato } from '../contracts/golden';
 
-const ctx = { nombreEmpresa: 'ConstructorPro', ivaEnabled: true, ivaPct: 16 };
+/// Prueba de PARIDAD contra los vectores dorados de `contracts/pdf/`, que lee
+/// también `test/logic/textos_finales_test.dart`.
+///
+/// El riesgo real no es que la función falle sola: es que alguien cambie la
+/// redacción en una plataforma y no en la otra, y el mismo documento salga con
+/// condiciones distintas según desde dónde se mandó. Por eso los textos
+/// esperados están LITERALES en el contrato, en vez de compararse contra la
+/// propia función.
 
-describe('textoIntegrado', () => {
-  test('la cotización conserva palabra por palabra el texto que ya se imprimía', () => {
-    expect(textoIntegrado('cotizacion', ctx)).toBe(
-      'Esta cotización tiene una vigencia de 30 días naturales a partir de la fecha de emisión. ' +
-        'Los precios están expresados en pesos mexicanos (MXN). Los precios incluyen IVA (16%). ' +
-        'Para consultas o aclaraciones comuníquese con ConstructorPro.',
-    );
-  });
+/** El contexto del contrato: `null` es del dominio, `undefined` de JavaScript. */
+interface CtxGolden {
+  nombreEmpresa: string;
+  ivaEnabled: boolean;
+  ivaPct: number;
+  destinatario: string | null;
+}
 
-  test('sin IVA cambia la leyenda, no el resto', () => {
-    const con = textoIntegrado('cotizacion', ctx);
-    const sin = textoIntegrado('cotizacion', { ...ctx, ivaEnabled: false });
-    expect(sin).toContain('Los precios no incluyen IVA.');
-    expect(sin).not.toContain('incluyen IVA (16%)');
-    expect(sin.replace('Los precios no incluyen IVA.', '')).toBe(
-      con.replace('Los precios incluyen IVA (16%).', ''),
-    );
-  });
-
-  test('respeta la tasa de la cotización, no un 16 fijo', () => {
-    expect(textoIntegrado('cotizacion', { ...ctx, ivaPct: 8 })).toContain('IVA (8%)');
-  });
-
-  test('la nota nombra a las dos partes del trato', () => {
-    expect(textoIntegrado('nota', { nombreEmpresa: 'ConstructorPro', destinatario: 'ORLANDO RAMOZ' }))
-      .toContain('entre ConstructorPro y ORLANDO RAMOZ.');
-  });
-
-  test('una nota sin destinatario no imprime un hueco vacío', () => {
-    expect(textoIntegrado('nota', { nombreEmpresa: 'ConstructorPro', destinatario: '   ' }))
-      .toContain('entre ConstructorPro y la parte indicada.');
-  });
-
-  test('sin nombre de empresa cae a la marca, no a una cadena vacía', () => {
-    expect(textoIntegrado('estado_cuenta', { nombreEmpresa: '' })).toContain('con ConstructorPro.');
-  });
+const ctxDe = (c: CtxGolden): ContextoTextoFinal => ({
+  nombreEmpresa: c.nombreEmpresa,
+  ivaEnabled: c.ivaEnabled,
+  ivaPct: c.ivaPct,
+  destinatario: c.destinatario ?? undefined,
 });
 
-describe('resolverTextoFinal — quién gana', () => {
-  test('sin nada escrito, el integrado', () => {
-    expect(resolverTextoFinal({ tipo: 'cotizacion', ctx })).toBe(textoIntegrado('cotizacion', ctx));
-  });
+describe('contrato pdf/texto-integrado', () => {
+  const contrato = cargarContrato<
+    { tipo: TipoDocumento; ctx: CtxGolden },
+    { texto: string }
+  >('pdf/texto-integrado');
 
-  test('el de la empresa le gana al integrado', () => {
-    expect(
-      resolverTextoFinal({ tipo: 'cotizacion', empresa: { cotizacion: 'Vigencia de 15 días.' }, ctx }),
-    ).toBe('Vigencia de 15 días.');
-  });
+  for (const caso of contrato.casos) {
+    test(caso.titulo, () => {
+      expect(textoIntegrado(caso.entrada.tipo, ctxDe(caso.entrada.ctx)), caso.descripcion).toBe(
+        caso.esperado.texto,
+      );
+    });
+  }
+});
 
-  test('el del documento le gana a todos', () => {
-    expect(
-      resolverTextoFinal({
-        tipo: 'cotizacion',
-        documento: 'Precios firmes hasta el 30 de septiembre.',
-        empresa: { cotizacion: 'Vigencia de 15 días.' },
-        ctx,
-      }),
-    ).toBe('Precios firmes hasta el 30 de septiembre.');
-  });
+describe('contrato pdf/resolver-texto-final', () => {
+  const contrato = cargarContrato<
+    {
+      tipo: TipoDocumento;
+      documento: string | null;
+      empresa: TextosEmpresa | null;
+      ctx: CtxGolden;
+    },
+    { texto: string | null; origen: OrigenTexto }
+  >('pdf/resolver-texto-final');
 
-  test('el texto general de OTRO tipo no se cuela', () => {
-    expect(resolverTextoFinal({ tipo: 'nota', empresa: { cotizacion: 'Vigencia de 15 días.' }, ctx }))
-      .toBe(textoIntegrado('nota', ctx));
-  });
+  for (const caso of contrato.casos) {
+    test(caso.titulo, () => {
+      const { tipo, documento, empresa } = caso.entrada;
+      const ctx = ctxDe(caso.entrada.ctx);
 
-  test('un texto en blanco no cuenta como texto: cae al siguiente nivel', () => {
-    expect(
-      resolverTextoFinal({ tipo: 'cotizacion', documento: '   \n  ', empresa: { cotizacion: 'De empresa.' }, ctx }),
-    ).toBe('De empresa.');
-  });
+      // `esperado.texto === null` significa «el mismo que devuelve
+      // textoIntegrado»: el literal ya vive en pdf/texto-integrado y repetirlo
+      // aquí sería la copia que estos contratos vienen a quitar.
+      expect(resolverTextoFinal({ tipo, documento, empresa, ctx }), caso.descripcion).toBe(
+        caso.esperado.texto ?? textoIntegrado(tipo, ctx),
+      );
+
+      expect(origenTextoFinal({ tipo, documento, empresa }), caso.descripcion).toBe(
+        caso.esperado.origen,
+      );
+    });
+  }
+});
+
+/// Fuera del contrato: no es un texto concreto, es una garantía de forma.
+describe('resolverTextoFinal — garantías que no son un texto', () => {
+  const ctx: ContextoTextoFinal = { nombreEmpresa: 'ConstructorPro', ivaEnabled: true, ivaPct: 16 };
 
   test('nunca devuelve cadena vacía, aunque todo venga vacío', () => {
+    // Si alguien quiere un documento SIN párrafo final, la forma de decirlo no
+    // puede ser dejar un campo en blanco por descuido.
     const r = resolverTextoFinal({ tipo: 'cotizacion', documento: '', empresa: {}, ctx });
     expect(r.length).toBeGreaterThan(0);
   });
-
-  test('recorta los espacios de los extremos', () => {
-    expect(resolverTextoFinal({ tipo: 'nota', documento: '  Pagos al corte.  ', ctx })).toBe('Pagos al corte.');
-  });
 });
 
-describe('origenTextoFinal', () => {
-  test('distingue los tres orígenes', () => {
-    expect(origenTextoFinal({ tipo: 'cotizacion' })).toBe('integrado');
-    expect(origenTextoFinal({ tipo: 'cotizacion', empresa: { cotizacion: 'x' } })).toBe('empresa');
-    expect(origenTextoFinal({ tipo: 'cotizacion', documento: 'x', empresa: { cotizacion: 'y' } })).toBe(
-      'documento',
-    );
-  });
-
-  test('un documento en blanco no se marca como personalizado', () => {
-    expect(origenTextoFinal({ tipo: 'cotizacion', documento: '  ' })).toBe('integrado');
-  });
-});
-
+/// Fuera del contrato: `pdf_config.textos` es un jsonb y puede traer cualquier
+/// cosa. El móvil no lo lee crudo (recibe el mapa ya normalizado por su
+/// servicio), así que no hay paridad que fijar.
 describe('leerTextosEmpresa', () => {
   test('deja pasar solo los tipos conocidos', () => {
     expect(leerTextosEmpresa({ cotizacion: 'A', nota: 'B', inventado: 'C' })).toEqual({
@@ -125,6 +117,8 @@ describe('leerTextosEmpresa', () => {
 
 describe('recortar', () => {
   test('corta un pegado gigante en el tope', () => {
+    // El tope en sí es paridad y vive en comunes/constantes.golden.json; lo que
+    // se prueba aquí es que de verdad se aplique al recortar.
     expect(recortar('x'.repeat(LARGO_MAXIMO + 500))).toHaveLength(LARGO_MAXIMO);
   });
 

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
 import { getNombreEmpresa } from '@/lib/data/empresa';
+import { getUsuario } from '@/lib/sesion';
 import { nombreUsuario } from '@/lib/data/usuario';
 import { contarIncompletos } from '@/lib/data/equipo';
 import { AvisoIncompletos } from '@/components/equipo/aviso-incompletos';
@@ -11,14 +11,15 @@ import { AvisoInstalar } from '@/components/pwa/aviso-instalar';
 import { ToggleTema } from '@/components/tema/toggle-tema';
 import { EnlaceAjustes } from '@/components/ajustes/enlace-ajustes';
 import { BotonDescargas } from '@/components/descargas/boton-descargas';
+import { SelectorEmpresa } from '@/components/empresa/selector-empresa';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // `getUsuario()` está cacheada por petición: el layout, la página y cualquier
+  // componente de servidor que necesite saber quién eres comparten UNA llamada
+  // al servidor de Auth, en vez de hacer cada uno la suya.
+  const user = await getUsuario();
   if (!user) redirect('/login');
 
   const marca = (await getNombreEmpresa()) ?? 'ConstructorPro';
@@ -52,6 +53,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <span className="hidden max-w-[16ch] truncate text-sm text-neutral-500 lg:inline">
               {nombre}
             </span>
+            <SelectorEmpresa />
             <BotonDescargas />
             <EnlaceAjustes href="/admin/ajustes" />
             <ToggleTema />

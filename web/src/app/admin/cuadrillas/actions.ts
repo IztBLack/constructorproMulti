@@ -10,24 +10,12 @@ export interface ActionResult {
   error?: string;
 }
 
-const ESPECIALIDAD_VALS = [
-  'ALBANILERIA',
-  'ACERO',
-  'CIMBRA',
-  'INSTALACIONES',
-  'ACABADOS',
-  'MIXTA',
-];
-
-function normalizaEspecialidad(raw: string): string {
-  return ESPECIALIDAD_VALS.includes(raw) ? raw : 'MIXTA';
-}
+import { parseCuadrillaFormData } from './cuadrilla-form';
 
 export async function crearCuadrilla(formData: FormData): Promise<ActionResult> {
-  const nombre = String(formData.get('nombre') ?? '').trim();
-  const especialidad = normalizaEspecialidad(String(formData.get('especialidad') ?? 'MIXTA').trim());
-
-  if (!nombre) return { ok: false, error: 'El nombre de la cuadrilla es obligatorio.' };
+  const datos = parseCuadrillaFormData(formData);
+  if ('error' in datos) return { ok: false, error: datos.error };
+  const { nombre, especialidad } = datos;
 
   let empresaId: string;
   try {
@@ -55,8 +43,9 @@ export async function crearCuadrilla(formData: FormData): Promise<ActionResult> 
 }
 
 export async function editarCuadrilla(id: string, formData: FormData): Promise<ActionResult> {
-  const nombre = String(formData.get('nombre') ?? '').trim();
-  const especialidad = normalizaEspecialidad(String(formData.get('especialidad') ?? 'MIXTA').trim());
+  const datos = parseCuadrillaFormData(formData);
+  if ('error' in datos) return { ok: false, error: datos.error };
+  const { nombre, especialidad } = datos;
   if (!nombre) return { ok: false, error: 'El nombre de la cuadrilla es obligatorio.' };
 
   const supabase = await createClient();

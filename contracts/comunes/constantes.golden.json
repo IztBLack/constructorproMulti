@@ -1,0 +1,22 @@
+{
+  "contrato": "comunes/constantes",
+  "descripcion": "Constantes que las dos plataformas declaran por separado y que tienen que valer lo mismo. No son fórmulas, pero si se separan el efecto es el mismo: dos comportamientos distintos para el mismo dato.",
+  "fuente": {
+    "dart": "lib/core/pdf/textos_finales.dart, lib/domain/logic/notas_obra_calculo.dart",
+    "ts": "web/src/lib/pdf/textos-finales.ts, web/src/lib/data/notas-obra-calculo.ts"
+  },
+  "casos": [
+    {
+      "nombre": "largo-maximo-del-texto-final",
+      "descripcion": "Tope de caracteres del párrafo final. No es una regla de negocio: es que ese texto se imprime completo al pie de una hoja, y sin límite un pegado accidental de tres páginas rompe el documento en silencio. Si el móvil recortara en otro número, el mismo texto se vería distinto en cada PDF.",
+      "entrada": { "constante": "LARGO_MAXIMO_TEXTO_FINAL" },
+      "esperado": { "valor": 1200 }
+    },
+    {
+      "nombre": "paso-del-orden-de-los-renglones",
+      "descripcion": "Espaciado del campo `orden` de los renglones (100, 200, 300…), para insertar en medio sin renumerar la lista. Las dos plataformas escriben en la MISMA tabla de Supabase: con pasos distintos, un renglón agregado desde el celular caería en otro lugar al abrir la nota en la oficina.",
+      "entrada": { "constante": "PASO_ORDEN_RENGLON" },
+      "esperado": { "valor": 100 }
+    }
+  ]
+}

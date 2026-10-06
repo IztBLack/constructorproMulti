@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../db/app_database.dart';
+import 'pull_paginado.dart';
 import 'sync_metadata.dart';
 import 'supabase_config.dart';
 
@@ -34,11 +35,18 @@ enum SyncOutcome { ok, sinSesion, sinRed, sinEmpresa, error, parcial }
 /// métodos de repositorio reales. (Este contrato reemplaza un comentario viejo
 /// que afirmaba lo contrario, de antes de que existiera el trigger.)
 ///
-/// LÍMITES CONOCIDOS de v1 (documentados; refinar después):
-/// - Cursor solo por `server_updated_at` (no compuesto con id) → en el borde de
-///   una página con timestamps idénticos podría re-traer/saltar filas; con
-///   pocos datos no se nota.
-/// - Pull sin paginación (límite 1000/tabla/sync).
+/// PULL PAGINADO (desde la auditoría de escalabilidad de 2026-09):
+/// - **Pagina hasta agotar.** Antes traía como mucho 1 000 filas por tabla y por
+///   ciclo —el `max_rows` de PostgREST— y decía que había terminado: un
+///   dispositivo nuevo contra una empresa con historia necesitaba varios syncs
+///   para converger, sin que nada lo indicara.
+/// - **Cursor compuesto `(server_updated_at, ...pk)`.** El anterior sólo miraba
+///   el timestamp, así que dos filas selladas en el mismo milisegundo a caballo
+///   entre dos páginas hacían que la segunda no se trajera nunca.
+///   `SyncMetadata` ya guardaba el desempate; la consulta no lo usaba.
+/// - **Una transacción y un lote por página**, en vez de un SELECT y un INSERT
+///   por fila, con un solo aviso a los streams de Drift al final.
+/// Los detalles y el porqué de cada pieza están en `pull_paginado.dart`.
 class SyncService {
   SyncService({
     required this.db,
@@ -509,70 +517,174 @@ class SyncService {
   }
 
   // ---------------- PULL ----------------
+  /// Trae del servidor todo lo que cambió en [name] desde el último cursor.
+  ///
+  /// Pagina hasta agotar: un ciclo de sync deja la tabla al día, no "las
+  /// primeras 1 000 filas al día". Cada página se aplica dentro de UNA
+  /// transacción y con UN lote de sentencias, en vez de dos idas y vueltas a
+  /// SQLite por fila.
+  ///
+  /// El cursor se guarda al terminar cada página, no al final de todo: si la
+  /// red se cae en la página 7, las seis anteriores no se vuelven a pedir.
+  /// Cada página es, por sí sola, un avance que no se pierde.
+  ///
+  /// Ver `pull_paginado.dart` para el porqué de cada pieza.
   Future<void> _pullTabla(String name) async {
     final t = _info(name);
     final pk = _pk(t);
     final localCols = t.$columns.map((c) => c.name).toSet();
-    final cursorTs = metadata.cursorTs(name);
 
-    final serverRows = await client
-        .from(name)
-        .select()
-        .gt('server_updated_at', cursorTs)
-        .order('server_updated_at')
-        .limit(1000);
+    var cursor = _cursorGuardado(name, pk);
 
-    var maxTs = cursorTs;
-    String lastId = metadata.cursorId(name) ?? '';
+    for (var pagina = 0; ; pagina++) {
+      final filas = await _paginaDelServidor(name, cursor, pk);
+      if (filas.isEmpty) return;
 
-    for (final row in (serverRows as List).cast<Map<String, dynamic>>()) {
-      final sut = (row['server_updated_at'] as num?)?.toInt() ?? 0;
-      if (sut > maxTs) maxTs = sut;
+      await _aplicarPagina(name, t, pk, localCols, filas);
 
-      // LWW: conservar edición local no sincronizada más nueva.
-      final whereSql = pk.map((c) => '$c = ?').join(' AND ');
-      final pkArgs = pk.map((c) => row[c]).toList();
-      final locales = await db
-          .customSelect(
-            "SELECT sync_status, updated_at FROM $name WHERE $whereSql",
-            variables: pkArgs.map<Variable>((a) => Variable(a)).toList(),
-          )
-          .get();
-      if (locales.isNotEmpty) {
-        final lr = locales.first.data;
-        final pending = lr['sync_status'] == 'pending';
-        final localUpd = (lr['updated_at'] as int?) ?? 0;
-        // La web escribe a Supabase sin `updated_at` de cliente (solo el
-        // trigger sella `server_updated_at`). Si viene null, lo tratamos como
-        // "muy nuevo" (centinela = int máximo) para que gane el server salvo
-        // que el local pending tenga un timestamp genuino mayor a ese
-        // centinela, lo cual nunca ocurre: evita que un `updated_at` nulo del
-        // server haga perder silenciosamente cambios subidos desde la web.
-        final serverUserUpd =
-            (row['updated_at'] as num?)?.toInt() ?? 9223372036854775807;
-        if (pending && localUpd > serverUserUpd) {
-          continue; // gana el cambio local; se empujará en el próximo push
-        }
-      }
-
-      // Upsert local con sync_status='synced'.
-      final cols = row.keys.where(localCols.contains).toList();
-      final colList = [...cols, 'sync_status'].join(',');
-      final placeholders = List.filled(cols.length + 1, '?').join(',');
-      final vals = <Object?>[...cols.map((c) => row[c]), 'synced'];
-      // customUpdate (en vez de customStatement) para que Drift notifique
-      // la tabla y los streams .watch() se re-emitan tras el pull.
-      await db.customUpdate(
-        "INSERT OR REPLACE INTO $name ($colList) VALUES ($placeholders)",
-        variables: vals.map((v) => Variable(v)).toList(),
-        updates: {t},
+      // El cursor avanza a la ÚLTIMA fila de la página, que por el ORDER BY es
+      // la mayor en `(server_updated_at, ...pk)`. Avanzarlo al máximo del
+      // `server_updated_at` a secas —como se hacía antes— pierde la posición
+      // dentro de un empate y devuelve el problema del borde de página.
+      final ultima = filas.last;
+      cursor = CursorPull(
+        (ultima['server_updated_at'] as num?)?.toInt() ?? cursor.serverUpdatedAt,
+        {for (final c in pk) c: ultima[c]},
+      );
+      await metadata.setCursor(
+        name,
+        cursor.serverUpdatedAt,
+        // `SyncMetadata` guarda un solo `id`; con PK compuesta se guarda la
+        // clave completa serializada. Es opaco para quien lo lee: sólo tiene
+        // que volver a entrar tal cual en el filtro del cursor.
+        _serializarClave(cursor.clavePrimaria, pk),
       );
 
-      if (pk.length == 1) lastId = row[pk.first]?.toString() ?? lastId;
+      // Una página incompleta significa que el servidor no tenía más. Es la
+      // única condición de parada: no se cuenta cuántas van, porque el número
+      // de páginas depende de cuánto haya cambiado, no de un tope nuestro.
+      if (filas.length < tamanoPaginaPull) return;
+
+      // Salvaguarda contra un bucle infinito. No debería activarse nunca: si lo
+      // hace es que el cursor no avanza, y seguir pidiendo la misma página para
+      // siempre es peor que parar y que el próximo ciclo lo reintente.
+      if (pagina >= 999) {
+        debugPrint(
+            '[SyncService] ⚠️ pull de $name cortado en la página 1000: el '
+            'cursor no avanza. Cursor actual: $cursor');
+        return;
+      }
+    }
+  }
+
+  /// Reconstruye el cursor persistido. Sin cursor guardado, empieza del inicio.
+  CursorPull _cursorGuardado(String name, List<String> pk) {
+    final ts = metadata.cursorTs(name);
+    final clave = metadata.cursorId(name);
+    if (ts == 0 || clave == null || clave.isEmpty) {
+      return const CursorPull.inicio();
+    }
+    final partes = clave.split(separadorClave);
+    // Si el formato guardado no cuadra con la PK actual (por ejemplo, tras una
+    // migración que cambió la clave), se descarta el desempate y se conserva el
+    // timestamp: se re-traerán las filas de ese milisegundo, que es inofensivo
+    // porque el upsert es idempotente, y no se pierde ninguna.
+    if (partes.length != pk.length) return CursorPull(ts, const {});
+    return CursorPull(ts, {for (var i = 0; i < pk.length; i++) pk[i]: partes[i]});
+  }
+
+  static String _serializarClave(Map<String, Object?> clave, List<String> pk) =>
+      pk.map((c) => clave[c]?.toString() ?? '').join(separadorClave);
+
+  /// Una página de filas del servidor, posteriores al cursor.
+  Future<List<Map<String, dynamic>>> _paginaDelServidor(
+    String name,
+    CursorPull cursor,
+    List<String> pk,
+  ) async {
+    var consulta = client.from(name).select();
+
+    final filtro = filtroCursorPull(cursor, pk);
+    if (filtro != null) consulta = consulta.or(filtro);
+
+    // El ORDER BY tiene que ser el MISMO que la comparación del cursor, y total
+    // (con la PK dentro). Ordenar sólo por `server_updated_at` deja el orden de
+    // los empates a criterio de Postgres, y entonces el cursor apunta a una
+    // fila que la siguiente consulta puede colocar en otro sitio.
+    var ordenada = consulta.order('server_updated_at', ascending: true);
+    for (final c in pk) {
+      ordenada = ordenada.order(c, ascending: true);
     }
 
-    if (maxTs > cursorTs) {
-      await metadata.setCursor(name, maxTs, lastId);
-    }
+    final filas = await ordenada.limit(tamanoPaginaPull);
+    return (filas as List).cast<Map<String, dynamic>>();
+  }
+
+  /// Aplica una página: decide el LWW de todas las filas con UNA consulta y
+  /// escribe con UN lote, dentro de una transacción.
+  Future<void> _aplicarPagina(
+    String name,
+    TableInfo t,
+    List<String> pk,
+    Set<String> localCols,
+    List<Map<String, dynamic>> filas,
+  ) async {
+    await db.transaction(() async {
+      // ── 1. Estado local de toda la página, de una vez ──────────────────
+      final variables = <Variable>[];
+      for (final fila in filas) {
+        for (final c in pk) {
+          variables.add(Variable(fila[c]));
+        }
+      }
+      final locales = await db
+          .customSelect(
+            sqlEstadoLocalDePagina(name, pk, filas.length),
+            variables: variables,
+          )
+          .get();
+
+      final estadoPorClave = <String, ({String? status, int updatedAt})>{};
+      for (final f in locales) {
+        estadoPorClave[claveDeFila(f.data, pk)] = (
+          status: f.data['sync_status'] as String?,
+          updatedAt: (f.data['updated_at'] as int?) ?? 0,
+        );
+      }
+
+      // ── 2. Un lote con los upserts que sí proceden ─────────────────────
+      var escritas = 0;
+      await db.batch((lote) {
+        for (final fila in filas) {
+          final local = estadoPorClave[claveDeFila(fila, pk)];
+          if (local != null &&
+              ganaLoLocal(
+                syncStatusLocal: local.status,
+                updatedAtLocal: local.updatedAt,
+                updatedAtServidor: (fila['updated_at'] as num?)?.toInt(),
+              )) {
+            continue; // gana el cambio local; se empujará en el próximo push
+          }
+
+          final cols = fila.keys.where(localCols.contains).toList();
+          final colList = [...cols, 'sync_status'].join(',');
+          final huecos = List.filled(cols.length + 1, '?').join(',');
+          lote.customStatement(
+            'INSERT OR REPLACE INTO $name ($colList) VALUES ($huecos)',
+            [...cols.map((c) => fila[c]), 'synced'],
+          );
+          escritas++;
+        }
+      });
+
+      // ── 3. Un solo aviso a los streams ─────────────────────────────────
+      // `batch` con `customStatement` no sabe qué tabla tocó, así que Drift no
+      // re-emite los `.watch()` por su cuenta. Se avisa una vez por página en
+      // vez de una vez por fila: antes, un pull de mil filas repintaba la UI
+      // mil veces.
+      if (escritas > 0) {
+        db.notifyUpdates({TableUpdate.onTable(t, kind: UpdateKind.insert)});
+      }
+    });
   }
 }

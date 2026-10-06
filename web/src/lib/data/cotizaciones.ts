@@ -3,6 +3,7 @@ import { getEmpresaUsuario } from './empresa';
 import { buildSnapshot } from './cotizacion-diff';
 import { getEmpresaConfig } from './empresa-config';
 import { IVA_POR_DEFECTO } from './types';
+import { traerTodo } from './paginado';
 import type { Cotizacion, CotizacionConDetalle, EstadoCotizacion, Partida, Seccion } from './types';
 import { generarClave } from '@/lib/cotizacion/clave-generator';
 import { tituloCotizacion } from '@/lib/cotizacion/titulo';
@@ -803,15 +804,23 @@ export async function importarPartidasTexto(
  */
 export async function aportadoPorCotizacion(cotId: string): Promise<Record<string, number>> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('movimientos')
-    .select('monto, partida_id')
-    .eq('cotizacion_id', cotId)
-    .eq('tipo', 'SALIDA')
-    .not('partida_id', 'is', null)
-    .is('deleted_at', null);
+  // Paginado: el gasto ligado a partidas se acumula durante toda la obra, y un
+  // recorte silencioso en 1 000 filas haría que el "% aportado" de cada partida
+  // saliera bajo sin ningún error. Ver `paginado.ts`.
+  const { data, error } = await traerTodo<{ monto: number; partida_id: string }>((desde, hasta) =>
+    supabase
+      .from('movimientos')
+      .select('monto, partida_id')
+      .eq('cotizacion_id', cotId)
+      .eq('tipo', 'SALIDA')
+      .not('partida_id', 'is', null)
+      .is('deleted_at', null)
+      .order('id')
+      .range(desde, hasta)
+      .returns<{ monto: number; partida_id: string }[]>(),
+  );
 
-  if (error || !data) return {};
+  if (error) return {};
 
   const map: Record<string, number> = {};
   for (const m of data) {

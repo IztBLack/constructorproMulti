@@ -1,0 +1,92 @@
+{
+  "contrato": "pdf/texto-integrado",
+  "descripcion": "El párrafo final que llevan los documentos imprimibles mientras nadie escriba el suyo. Los textos están LITERALES a propósito: el riesgo no es que la función falle sola, es que alguien cambie la redacción en una plataforma y no en la otra, y el mismo documento salga con condiciones distintas según desde dónde se mandó.",
+  "fuente": {
+    "dart": "lib/core/pdf/textos_finales.dart",
+    "ts": "web/src/lib/pdf/textos-finales.ts"
+  },
+  "notas": [
+    "El tipo viaja con las cadenas de la web: 'cotizacion', 'nota', 'estado_cuenta'.",
+    "Sin nombre de empresa se cae a la marca 'ConstructorPro', nunca a un hueco vacío.",
+    "El porcentaje entero se imprime sin decimales: 16%, no 16.0%."
+  ],
+  "casos": [
+    {
+      "nombre": "cotizacion-con-iva",
+      "descripcion": "El texto que ya se imprimía a mano dentro del builder de HTML antes de que existiera este módulo. Es el que ve el cliente al pie de una cotización.",
+      "entrada": {
+        "tipo": "cotizacion",
+        "ctx": { "nombreEmpresa": "ConstructorPro", "ivaEnabled": true, "ivaPct": 16, "destinatario": null }
+      },
+      "esperado": {
+        "texto": "Esta cotización tiene una vigencia de 30 días naturales a partir de la fecha de emisión. Los precios están expresados en pesos mexicanos (MXN). Los precios incluyen IVA (16%). Para consultas o aclaraciones comuníquese con ConstructorPro."
+      }
+    },
+    {
+      "nombre": "cotizacion-sin-iva",
+      "descripcion": "Sin IVA cambia SOLO la leyenda del medio, no el resto de las condiciones. Es la diferencia entre un precio que el cliente entiende y una discusión al facturar.",
+      "entrada": {
+        "tipo": "cotizacion",
+        "ctx": { "nombreEmpresa": "ConstructorPro", "ivaEnabled": false, "ivaPct": 16, "destinatario": null }
+      },
+      "esperado": {
+        "texto": "Esta cotización tiene una vigencia de 30 días naturales a partir de la fecha de emisión. Los precios están expresados en pesos mexicanos (MXN). Los precios no incluyen IVA. Para consultas o aclaraciones comuníquese con ConstructorPro."
+      }
+    },
+    {
+      "nombre": "cotizacion-respeta-la-tasa-de-la-cotizacion",
+      "descripcion": "La tasa sale de la cotización, no de un 16 fijo en el código: hay obras cotizadas con tasa de frontera.",
+      "entrada": {
+        "tipo": "cotizacion",
+        "ctx": { "nombreEmpresa": "ConstructorPro", "ivaEnabled": true, "ivaPct": 8, "destinatario": null }
+      },
+      "esperado": {
+        "texto": "Esta cotización tiene una vigencia de 30 días naturales a partir de la fecha de emisión. Los precios están expresados en pesos mexicanos (MXN). Los precios incluyen IVA (8%). Para consultas o aclaraciones comuníquese con ConstructorPro."
+      }
+    },
+    {
+      "nombre": "cotizacion-con-tasa-con-decimales",
+      "descripcion": "El entero se imprime sin cola (16, no 16.0) pero una tasa con decimales sí los conserva. Las dos plataformas formatean el número por su cuenta y es justo donde se separarían sin darse cuenta.",
+      "entrada": {
+        "tipo": "cotizacion",
+        "ctx": { "nombreEmpresa": "ConstructorPro", "ivaEnabled": true, "ivaPct": 16.5, "destinatario": null }
+      },
+      "esperado": {
+        "texto": "Esta cotización tiene una vigencia de 30 días naturales a partir de la fecha de emisión. Los precios están expresados en pesos mexicanos (MXN). Los precios incluyen IVA (16.5%). Para consultas o aclaraciones comuníquese con ConstructorPro."
+      }
+    },
+    {
+      "nombre": "nota-nombra-a-las-dos-partes-del-trato",
+      "descripcion": "La nota de obra es un trato de palabra puesto por escrito: el párrafo tiene que decir entre quiénes es.",
+      "entrada": {
+        "tipo": "nota",
+        "ctx": { "nombreEmpresa": "ConstructorPro", "ivaEnabled": false, "ivaPct": 16, "destinatario": "ORLANDO RAMOZ" }
+      },
+      "esperado": {
+        "texto": "Relación de trabajos y pagos acordados entre ConstructorPro y ORLANDO RAMOZ. Montos en pesos mexicanos (MXN). Cualquier diferencia se aclara antes del siguiente pago."
+      }
+    },
+    {
+      "nombre": "nota-sin-destinatario-no-imprime-un-hueco",
+      "descripcion": "Un destinatario de puros espacios (se borró el campo y quedó el espacio) no puede imprimir 'entre ConstructorPro y .' en un documento que se entrega.",
+      "entrada": {
+        "tipo": "nota",
+        "ctx": { "nombreEmpresa": "ConstructorPro", "ivaEnabled": false, "ivaPct": 16, "destinatario": "   " }
+      },
+      "esperado": {
+        "texto": "Relación de trabajos y pagos acordados entre ConstructorPro y la parte indicada. Montos en pesos mexicanos (MXN). Cualquier diferencia se aclara antes del siguiente pago."
+      }
+    },
+    {
+      "nombre": "estado-de-cuenta-sin-nombre-de-empresa-cae-a-la-marca",
+      "descripcion": "El estado de cuenta lo ve el cliente en el portal. Si la empresa todavía no tiene nombre capturado, se firma con la marca antes que con un espacio en blanco.",
+      "entrada": {
+        "tipo": "estado_cuenta",
+        "ctx": { "nombreEmpresa": "", "ivaEnabled": false, "ivaPct": 16, "destinatario": null }
+      },
+      "esperado": {
+        "texto": "Documento informativo del avance de pagos de su obra. Los montos están expresados en pesos mexicanos (MXN). Para cualquier aclaración comuníquese con ConstructorPro."
+      }
+    }
+  ]
+}

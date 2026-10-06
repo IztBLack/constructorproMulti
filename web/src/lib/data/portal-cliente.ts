@@ -4,6 +4,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { IVA_POR_DEFECTO } from './types';
+import { traerTodo } from './paginado';
 
 // ─── Tipos propios del portal ─────────────────────────────────────────────────
 
@@ -402,17 +403,25 @@ export async function listPresupuestoObraCliente(
 export async function listEntradasObraCliente(obraId: string): Promise<EntradaPortal[]> {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from('movimientos')
-    .select('id, fecha, concepto, categoria, monto, metodo_pago, referencia')
-    .eq('obra_id', obraId)
-    .eq('tipo', 'ENTRADA')
-    .is('deleted_at', null)
-    .order('fecha', { ascending: false });
+  // Paginado: los pagos de una obra se acumulan durante toda la vida de la obra
+  // y el tope `max_rows = 1000` de PostgREST recortaría el estado de cuenta del
+  // cliente en silencio — mostrándole un "recibido" menor del real.
+  const { data, error } = await traerTodo<EntradaPortal>((desde, hasta) =>
+    supabase
+      .from('movimientos')
+      .select('id, fecha, concepto, categoria, monto, metodo_pago, referencia')
+      .eq('obra_id', obraId)
+      .eq('tipo', 'ENTRADA')
+      .is('deleted_at', null)
+      .order('fecha', { ascending: false })
+      .order('id')
+      .range(desde, hasta)
+      .returns<EntradaPortal[]>(),
+  );
 
-  if (error || !data) return [];
+  if (error) return [];
 
-  return data as EntradaPortal[];
+  return data;
 }
 
 /// Estado de cuenta de UNA obra: COSTO TOTAL (presupuesto) vs RECIBIDO (ENTRADAS).
@@ -440,23 +449,38 @@ export async function getEstadoCuentaCliente(): Promise<{
 }> {
   const supabase = await createClient();
 
-  const { data: presData } = await supabase
-    .from('obra_presupuesto')
-    .select('cantidad, precio_unitario')
-    .is('deleted_at', null);
+  // Las dos lecturas son GLOBALES (todas las obras del cliente) y crecen sin
+  // techo: son exactamente el caso que el tope `max_rows = 1000` de PostgREST
+  // rompe en silencio, y aquí el sintoma sería un saldo equivocado en la cara
+  // del cliente. Se paginan hasta que el agregado viva en Postgres.
+  const [presupuesto, entradas] = await Promise.all([
+    traerTodo<{ cantidad: number; precio_unitario: number }>((desde, hasta) =>
+      supabase
+        .from('obra_presupuesto')
+        .select('cantidad, precio_unitario')
+        .is('deleted_at', null)
+        .order('id')
+        .range(desde, hasta)
+        .returns<{ cantidad: number; precio_unitario: number }[]>(),
+    ),
+    traerTodo<{ monto: number }>((desde, hasta) =>
+      supabase
+        .from('movimientos')
+        .select('monto')
+        .eq('tipo', 'ENTRADA')
+        .is('deleted_at', null)
+        .order('id')
+        .range(desde, hasta)
+        .returns<{ monto: number }[]>(),
+    ),
+  ]);
 
-  const totalPresupuestado = (presData ?? []).reduce(
-    (acc, p) => acc + (p.cantidad as number) * (p.precio_unitario as number),
+  const totalPresupuestado = presupuesto.data.reduce(
+    (acc, p) => acc + p.cantidad * p.precio_unitario,
     0,
   );
 
-  const { data: entData } = await supabase
-    .from('movimientos')
-    .select('monto')
-    .eq('tipo', 'ENTRADA')
-    .is('deleted_at', null);
-
-  const totalPagado = (entData ?? []).reduce((acc, m) => acc + (m.monto as number), 0);
+  const totalPagado = entradas.data.reduce((acc, m) => acc + m.monto, 0);
 
   return {
     totalPresupuestado,

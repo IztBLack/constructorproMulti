@@ -1,0 +1,52 @@
+{
+  "contrato": "notas-obra/monto-sugerido",
+  "descripcion": "El monto que la app PROPONE para un renglón a partir del bruto y la retención. Es una sugerencia: el dueño puede fijar otro. Lo que no puede es que la sugerencia sea distinta en el celular y en la oficina.",
+  "fuente": {
+    "dart": "lib/domain/logic/notas_obra_calculo.dart",
+    "ts": "web/src/lib/data/notas-obra-calculo.ts"
+  },
+  "notas": [
+    "El monto de un renglón siempre es CUÁNTO MUEVE ESE RENGLÓN.",
+    "DEDUCCION → el renglón ES la retención, así que vale la parte retenida.",
+    "Los demás tipos → el renglón es lo que queda después de retener.",
+    "Sin montoBase no hay sugerencia (null): el monto se captura directo."
+  ],
+  "casos": [
+    {
+      "nombre": "sin-bruto-no-hay-sugerencia",
+      "descripcion": "La mayoría de los renglones se capturan con el monto directo, sin enseñar la cuenta. Ahí no hay nada que sugerir.",
+      "entrada": { "tipo": "PAGO", "montoBase": null, "porcentaje": 4 },
+      "esperado": { "monto": null }
+    },
+    {
+      "nombre": "sin-porcentaje-el-sugerido-es-el-bruto",
+      "descripcion": "Bruto sin retención: se paga completo. Un porcentaje ausente no es un 0% implícito ni un 100%.",
+      "entrada": { "tipo": "PAGO", "montoBase": 62000, "porcentaje": null },
+      "esperado": { "monto": 62000 }
+    },
+    {
+      "nombre": "un-pago-con-retencion-vale-lo-que-queda",
+      "descripcion": "El renglón real de la nota de Orlando: 62,000 menos 4% de retención son 59,520 depositados. El renglón vale lo que se recibe.",
+      "entrada": { "tipo": "PAGO", "montoBase": 62000, "porcentaje": 4 },
+      "esperado": { "monto": 59520 }
+    },
+    {
+      "nombre": "una-deduccion-vale-la-parte-retenida",
+      "descripcion": "La otra lectura del mismo porcentaje. 'Retención 4% sobre 100,000' descuenta 4,000, no 96,000: el renglón ES la retención.",
+      "entrada": { "tipo": "DEDUCCION", "montoBase": 100000, "porcentaje": 4 },
+      "esperado": { "monto": 4000 }
+    },
+    {
+      "nombre": "un-concepto-con-retencion-se-lee-como-el-pago",
+      "descripcion": "CONCEPTO cae en la rama 'los demás': lo que queda después de retener. Fija que DEDUCCION es la única excepción y no se le suman tipos por descuido.",
+      "entrada": { "tipo": "CONCEPTO", "montoBase": 100000, "porcentaje": 4 },
+      "esperado": { "monto": 96000 }
+    },
+    {
+      "nombre": "porcentaje-cero-deja-el-bruto-intacto",
+      "descripcion": "0% no es lo mismo que sin porcentaje, pero tiene que dar el mismo número. Si el 0 se tratara como ausente daría igual; si se tratara como basura, rompería.",
+      "entrada": { "tipo": "PAGO", "montoBase": 62000, "porcentaje": 0 },
+      "esperado": { "monto": 62000 }
+    }
+  ]
+}

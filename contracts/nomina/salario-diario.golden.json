@@ -1,0 +1,62 @@
+{
+  "contrato": "nomina/salario-diario",
+  "descripcion": "El salario diario derivado del sueldo del periodo. Es el número que después multiplica la nómina, y no se edita a mano: un error aquí no se ve en pantalla, se ve en el sobre.",
+  "fuente": {
+    "dart": "lib/domain/logic/salario_periodo.dart",
+    "ts": "web/src/lib/data/salario.ts"
+  },
+  "notas": [
+    "salarioDiario = redondeo a centavos de (montoPeriodo / diasDelPeriodo).",
+    "null (no 0) cuando no hay monto válido: 0 sería un salario real y pagaría cero; null deja que caiga al salario del puesto."
+  ],
+  "casos": [
+    {
+      "nombre": "semanal-entre-los-dias-de-la-semana",
+      "descripcion": "3300 a la semana trabajando 6 días son los 550 diarios del albañil del catálogo.",
+      "entrada": { "montoPeriodo": 3300, "periodo": "SEMANAL", "diasSemana": 6 },
+      "esperado": { "salarioDiario": 550 }
+    },
+    {
+      "nombre": "mensual-entre-26",
+      "descripcion": "El mismo sueldo dicho por mes: 14300 / 26 = 550. Los tres periodos tienen que llegar al mismo diario o la elección del periodo cambiaría lo que se paga.",
+      "entrada": { "montoPeriodo": 14300, "periodo": "MENSUAL", "diasSemana": 6 },
+      "esperado": { "salarioDiario": 550 }
+    },
+    {
+      "nombre": "quincenal-entre-13",
+      "descripcion": "El mismo sueldo dicho por quincena: 7150 / 13 = 550.",
+      "entrada": { "montoPeriodo": 7150, "periodo": "QUINCENAL", "diasSemana": 6 },
+      "esperado": { "salarioDiario": 550 }
+    },
+    {
+      "nombre": "redondea-a-centavos-no-a-pesos",
+      "descripcion": "10000 / 26 = 384.615384… → 384.62. Truncar a pesos le quitaría a la persona hasta un peso por día, unos 26 al mes.",
+      "entrada": { "montoPeriodo": 10000, "periodo": "MENSUAL", "diasSemana": 6 },
+      "esperado": { "salarioDiario": 384.62 }
+    },
+    {
+      "nombre": "sin-monto-devuelve-null",
+      "descripcion": "Un colaborador al que todavía no se le captura sueldo no tiene salario diario; tiene que caer al del puesto, no cobrar cero.",
+      "entrada": { "montoPeriodo": null, "periodo": "MENSUAL", "diasSemana": 6 },
+      "esperado": { "salarioDiario": null }
+    },
+    {
+      "nombre": "monto-cero-devuelve-null",
+      "descripcion": "Un 0 capturado por descuido (o un campo que se vació) no puede convertirse en un salario de cero pesos.",
+      "entrada": { "montoPeriodo": 0, "periodo": "MENSUAL", "diasSemana": 6 },
+      "esperado": { "salarioDiario": null }
+    },
+    {
+      "nombre": "monto-negativo-devuelve-null",
+      "descripcion": "Un negativo es basura de captura, no un descuento. Mejor sin salario propio que con uno que reste.",
+      "entrada": { "montoPeriodo": -100, "periodo": "MENSUAL", "diasSemana": 6 },
+      "esperado": { "salarioDiario": null }
+    },
+    {
+      "nombre": "cero-dias-por-semana-no-divide-entre-cero",
+      "descripcion": "Con 0 días/semana la división daría infinito y el infinito viajaría hasta el PDF. Se corta aquí.",
+      "entrada": { "montoPeriodo": 3300, "periodo": "SEMANAL", "diasSemana": 0 },
+      "esperado": { "salarioDiario": null }
+    }
+  ]
+}

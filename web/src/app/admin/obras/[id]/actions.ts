@@ -6,7 +6,6 @@ import {
   actualizarObra,
   crearMovimiento,
   eliminarMovimiento,
-  type MovimientoInput,
   type ObraInput,
 } from '@/lib/data/obras';
 import {
@@ -14,7 +13,6 @@ import {
   actualizarPartidaPresupuesto,
   eliminarPartidaPresupuesto,
 } from '@/lib/data/presupuesto-obra';
-import type { TipoMovimiento } from '@/lib/data/types';
 import { fechaInputAMs } from '@/lib/data/tz';
 
 export interface ActionResult {
@@ -64,53 +62,7 @@ export async function actualizarObraAction(
   return { ok: true };
 }
 
-const TIPOS_VALIDOS: TipoMovimiento[] = ['ENTRADA', 'SALIDA'];
-
-function parseMovimientoFormData(
-  formData: FormData,
-  obraId: string,
-): { input: MovimientoInput } | { error: string } {
-  const tipo = String(formData.get('tipo') ?? '').trim();
-  const fechaStr = String(formData.get('fecha') ?? '').trim();
-  const categoria = String(formData.get('categoria') ?? '').trim();
-  const concepto = String(formData.get('concepto') ?? '').trim();
-  const montoStr = String(formData.get('monto') ?? '').trim();
-  const metodoPago = String(formData.get('metodo_pago') ?? '').trim();
-  const referencia = String(formData.get('referencia') ?? '').trim();
-  const nombre = String(formData.get('nombre') ?? '').trim();
-
-  if (!TIPOS_VALIDOS.includes(tipo as TipoMovimiento)) {
-    return { error: 'El tipo de movimiento no es válido.' };
-  }
-
-  if (!concepto) {
-    return { error: 'El concepto es obligatorio.' };
-  }
-
-  const monto = Number(montoStr);
-  if (!Number.isFinite(monto) || monto <= 0) {
-    return { error: 'El monto debe ser un número mayor a cero.' };
-  }
-
-  const fecha = fechaStr ? fechaInputAMs(fechaStr) : Date.now();
-  if (!Number.isFinite(fecha)) {
-    return { error: 'La fecha no es válida.' };
-  }
-
-  return {
-    input: {
-      obraId,
-      fecha,
-      tipo: tipo as TipoMovimiento,
-      categoria,
-      concepto,
-      monto,
-      metodoPago,
-      referencia,
-      nombre,
-    },
-  };
-}
+import { parseMovimientoFormData } from './movimiento-validacion';
 
 export async function crearMovimientoAction(
   obraId: string,

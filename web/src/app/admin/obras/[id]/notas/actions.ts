@@ -2,6 +2,13 @@
 
 import { revalidatePath } from 'next/cache';
 import {
+  leerDeLista,
+  leerFecha,
+  leerNumeroOpcional,
+  type FuenteFormData,
+} from '@/lib/validacion/campos';
+import type { Resultado } from '@/lib/validacion/resultado';
+import {
   actualizarNotaObra,
   actualizarRenglon,
   crearNotaObra,
@@ -29,14 +36,15 @@ const TIPOS: TipoRenglon[] = ['CONCEPTO', 'DEDUCCION', 'PAGO', 'TEXTO'];
  * "usa el cálculo" y 0 significa "vale cero". Confundirlos dejaría toda nota
  * recién creada con el total clavado en cero.
  */
-function numeroOpcional(fd: FormData, campo: string): number | null {
-  const bruto = String(fd.get(campo) ?? '').trim();
-  if (bruto === '') return null;
-  const n = Number(bruto);
-  return Number.isFinite(n) ? n : null;
+function numeroOpcional(
+  fd: FuenteFormData,
+  campo: string,
+  etiqueta: string,
+): Resultado<number | null> {
+  return leerNumeroOpcional(fd, campo, { etiqueta });
 }
 
-function texto(fd: FormData, campo: string): string {
+function texto(fd: FuenteFormData, campo: string): string {
   return String(fd.get(campo) ?? '').trim();
 }
 
@@ -60,18 +68,26 @@ type DatosNota = Pick<
   'destinatario' | 'colaborador_id' | 'titulo' | 'fecha' | 'estado'
 >;
 
-function parseDatos(fd: FormData): DatosNota | { error: string } {
+function parseDatos(fd: FuenteFormData): DatosNota | { error: string } {
   const destinatario = texto(fd, 'destinatario');
   if (!destinatario) return { error: 'Escribe a nombre de quién va la nota.' };
 
-  const estadoBruto = texto(fd, 'estado');
-  const estado = (ESTADOS as string[]).includes(estadoBruto)
-    ? (estadoBruto as EstadoNota)
-    : 'ABIERTA';
+  // Un estado desconocido ya no cae a 'ABIERTA' en silencio: una nota liquidada
+  // que reapareciera como abierta por un valor mal escrito es una deuda que
+  // vuelve a existir sin que nadie lo decida.
+  const estado = leerDeLista(fd, 'estado', ESTADOS, {
+    etiqueta: 'El estado de la nota',
+    porDefecto: 'ABIERTA',
+  });
+  if (!estado.ok) return { error: estado.error };
 
-  const fechaStr = texto(fd, 'fecha');
-  const fecha = fechaStr ? fechaInputAMs(fechaStr) : Date.now();
-  if (!Number.isFinite(fecha)) return { error: 'La fecha no es válida.' };
+  // `fechaInputAMs` no valida: deja que `Date.UTC` normalice, así que un
+  // '2026-02-30' se guardaba como 2 de marzo sin protestar.
+  const fecha = leerFecha(fd, 'fecha', {
+    porDefecto: Date.now,
+    mensaje: 'La fecha no es válida.',
+  });
+  if (!fecha.ok) return { error: fecha.error };
 
   const colaboradorId = texto(fd, 'colaborador_id');
 
@@ -79,19 +95,33 @@ function parseDatos(fd: FormData): DatosNota | { error: string } {
     destinatario,
     colaborador_id: colaboradorId || null,
     titulo: texto(fd, 'titulo'),
-    fecha,
-    estado,
+    fecha: fecha.valor,
+    estado: estado.valor,
   };
 }
 
-function parseCuentas(fd: FormData): Pick<NotaInput, 'total_override' | 'saldo_override'> {
-  return {
-    total_override: numeroOpcional(fd, 'total_override'),
-    saldo_override: numeroOpcional(fd, 'saldo_override'),
-  };
+/// Los dos montos que el dueño puede FIJAR A MANO cuando la aritmética de la
+/// nota no coincide con lo que se acordó de palabra.
+///
+/// EL AGUJERO QUE ESTO CIERRA. Antes, un valor mal escrito se convertía en
+/// `null` — y `null` aquí no significa "cero", significa "usa el cálculo". O
+/// sea: escribir mal el total acordado no daba error, **borraba el total
+/// acordado** y la nota volvía en silencio al número calculado, que es
+/// justamente el que el dueño estaba corrigiendo. Vacío sigue significando
+/// "usa el cálculo"; escrito y mal ahora se avisa.
+function parseCuentas(
+  fd: FuenteFormData,
+): Pick<NotaInput, 'total_override' | 'saldo_override'> | { error: string } {
+  const total = numeroOpcional(fd, 'total_override', 'El total');
+  if (!total.ok) return { error: total.error };
+
+  const saldo = numeroOpcional(fd, 'saldo_override', 'El saldo');
+  if (!saldo.ok) return { error: saldo.error };
+
+  return { total_override: total.valor, saldo_override: saldo.valor };
 }
 
-function parsePie(fd: FormData): Pick<NotaInput, 'notas'> {
+function parsePie(fd: FuenteFormData): Pick<NotaInput, 'notas'> {
   return { notas: texto(fd, 'notas').slice(0, 2000) };
 }
 
@@ -106,7 +136,10 @@ function parseNota(fd: FormData): NotaInput | { error: string } {
   const datos = parseDatos(fd);
   if ('error' in datos) return datos;
 
-  return { ...datos, ...parseCuentas(fd), ...parsePie(fd) };
+  const cuentas = parseCuentas(fd);
+  if ('error' in cuentas) return cuentas;
+
+  return { ...datos, ...cuentas, ...parsePie(fd) };
 }
 
 export async function crearNotaAction(
@@ -181,12 +214,25 @@ function parseRenglon(fd: FormData): RenglonInput | { error: string } {
     };
   }
 
+  // Los tres montos del renglón: un valor mal escrito ya no se convierte en
+  // `null`. En una deducción por porcentaje, ese null hacía que el renglón
+  // dejara de restar y el saldo de la nota subiera sin que nadie lo hubiera
+  // tocado.
+  const monto = numeroOpcional(fd, 'monto', 'El monto');
+  if (!monto.ok) return { error: monto.error };
+
+  const montoBase = numeroOpcional(fd, 'monto_base', 'El monto base');
+  if (!montoBase.ok) return { error: montoBase.error };
+
+  const porcentaje = numeroOpcional(fd, 'porcentaje', 'El porcentaje');
+  if (!porcentaje.ok) return { error: porcentaje.error };
+
   return {
     tipo,
     etiqueta,
-    monto: numeroOpcional(fd, 'monto'),
-    monto_base: numeroOpcional(fd, 'monto_base'),
-    porcentaje: numeroOpcional(fd, 'porcentaje'),
+    monto: monto.valor,
+    monto_base: montoBase.valor,
+    porcentaje: porcentaje.valor,
     texto: texto(fd, 'texto'),
     fecha,
     orden: Number.isFinite(ordenBruto) ? ordenBruto : 0,

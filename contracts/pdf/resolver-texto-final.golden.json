@@ -1,0 +1,93 @@
+{
+  "contrato": "pdf/resolver-texto-final",
+  "descripcion": "Quién gana entre los tres niveles del párrafo final: el texto del DOCUMENTO, el de la EMPRESA (Ajustes → PDF) y el INTEGRADO. Gana el más específico que exista. Cada caso fija además el ORIGEN, que es lo que alimenta la insignia de la pantalla.",
+  "fuente": {
+    "dart": "lib/core/pdf/textos_finales.dart",
+    "ts": "web/src/lib/pdf/textos-finales.ts"
+  },
+  "notas": [
+    "esperado.texto = null significa «el mismo que devuelve textoIntegrado para ese tipo y contexto». No se repite aquí el literal: ya vive en pdf/texto-integrado.golden.json, y duplicarlo sería justo la clase de copia que estos contratos vienen a quitar.",
+    "Un texto en blanco (vacío o de puros espacios) NO cuenta como texto: cae al siguiente nivel.",
+    "Se recortan los espacios de los extremos del texto que gana.",
+    "Nunca se devuelve cadena vacía: si alguien quiere un documento SIN párrafo final, la forma de decirlo no puede ser dejar un campo en blanco por descuido."
+  ],
+  "casos": [
+    {
+      "nombre": "sin-nada-escrito-manda-el-integrado",
+      "descripcion": "El estado de fábrica: nadie ha escrito condiciones y el documento sale igual con el texto de siempre.",
+      "entrada": {
+        "tipo": "cotizacion",
+        "documento": null,
+        "empresa": null,
+        "ctx": { "nombreEmpresa": "ConstructorPro", "ivaEnabled": true, "ivaPct": 16, "destinatario": null }
+      },
+      "esperado": { "texto": null, "origen": "integrado" }
+    },
+    {
+      "nombre": "el-de-la-empresa-le-gana-al-integrado",
+      "descripcion": "Lo escrito una vez en Ajustes → PDF aplica a todas las cotizaciones, sin tener que repetirlo documento por documento.",
+      "entrada": {
+        "tipo": "cotizacion",
+        "documento": null,
+        "empresa": { "cotizacion": "Vigencia de 15 días." },
+        "ctx": { "nombreEmpresa": "ConstructorPro", "ivaEnabled": true, "ivaPct": 16, "destinatario": null }
+      },
+      "esperado": { "texto": "Vigencia de 15 días.", "origen": "empresa" }
+    },
+    {
+      "nombre": "el-del-documento-le-gana-a-todos",
+      "descripcion": "Una cotización con condiciones negociadas aparte. Lo específico manda sobre lo general.",
+      "entrada": {
+        "tipo": "cotizacion",
+        "documento": "Precios firmes hasta el 30 de septiembre.",
+        "empresa": { "cotizacion": "Vigencia de 15 días." },
+        "ctx": { "nombreEmpresa": "ConstructorPro", "ivaEnabled": true, "ivaPct": 16, "destinatario": null }
+      },
+      "esperado": { "texto": "Precios firmes hasta el 30 de septiembre.", "origen": "documento" }
+    },
+    {
+      "nombre": "un-texto-en-blanco-no-cuenta-y-cae-al-siguiente-nivel",
+      "descripcion": "Un campo que quedó con espacios y un salto de línea al borrarlo. Si contara como texto, el documento saldría con el pie vacío y nadie sabría por qué.",
+      "entrada": {
+        "tipo": "cotizacion",
+        "documento": "   \n  ",
+        "empresa": { "cotizacion": "De empresa." },
+        "ctx": { "nombreEmpresa": "ConstructorPro", "ivaEnabled": true, "ivaPct": 16, "destinatario": null }
+      },
+      "esperado": { "texto": "De empresa.", "origen": "empresa" }
+    },
+    {
+      "nombre": "el-texto-general-de-otro-tipo-no-se-cuela",
+      "descripcion": "Los textos de empresa están por tipo. Las condiciones de una cotización no pueden terminar impresas al pie de una nota de obra.",
+      "entrada": {
+        "tipo": "nota",
+        "documento": null,
+        "empresa": { "cotizacion": "Vigencia de 15 días." },
+        "ctx": { "nombreEmpresa": "ConstructorPro", "ivaEnabled": true, "ivaPct": 16, "destinatario": null }
+      },
+      "esperado": { "texto": null, "origen": "integrado" }
+    },
+    {
+      "nombre": "un-documento-en-blanco-no-se-marca-como-personalizado",
+      "descripcion": "La insignia dice de dónde salió el texto. Con el campo en blanco el texto es el integrado, así que la insignia tiene que decir 'integrado' y no 'propio de este documento'.",
+      "entrada": {
+        "tipo": "cotizacion",
+        "documento": "  ",
+        "empresa": null,
+        "ctx": { "nombreEmpresa": "ConstructorPro", "ivaEnabled": true, "ivaPct": 16, "destinatario": null }
+      },
+      "esperado": { "texto": null, "origen": "integrado" }
+    },
+    {
+      "nombre": "recorta-los-espacios-de-los-extremos",
+      "descripcion": "Se pega el texto desde otro lado y viene con espacios. Se imprime limpio, pero sigue contando como texto propio del documento.",
+      "entrada": {
+        "tipo": "nota",
+        "documento": "  Pagos al corte.  ",
+        "empresa": null,
+        "ctx": { "nombreEmpresa": "ConstructorPro", "ivaEnabled": false, "ivaPct": 16, "destinatario": "ORLANDO RAMOZ" }
+      },
+      "esperado": { "texto": "Pagos al corte.", "origen": "documento" }
+    }
+  ]
+}

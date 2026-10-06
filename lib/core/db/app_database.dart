@@ -66,6 +66,9 @@ class AppDatabase extends _$AppDatabase {
           // Seguridad: los triggers de sync hacen un UPDATE interno; con triggers
           // recursivos apagados (default de SQLite) no se re-disparan.
           await customStatement('PRAGMA recursive_triggers = OFF');
+          // Índices de consulta: no son parte del esquema generado, así que se
+          // instalan en cada arranque (idempotente). Ver el método.
+          await _instalarIndicesConsulta();
         },
         onCreate: (m) async {
           await m.createAll();
@@ -405,6 +408,77 @@ class AppDatabase extends _$AppDatabase {
   Future<bool> _columnaExiste(String tabla, String col) => customSelect(
         "SELECT 1 FROM pragma_table_info('$tabla') WHERE name='$col'",
       ).get().then((rows) => rows.isNotEmpty);
+
+  /// Índices de consulta de la base LOCAL, espejo de los que la migración
+  /// `supabase/migrations/0035_indices_consulta.sql` crea en el servidor.
+  ///
+  /// POR QUÉ HACÍAN FALTA. Hasta la auditoría de septiembre de 2026 la base
+  /// local no tenía NINGÚN índice más allá de las claves primarias. Las
+  /// consultas que la app hace constantemente —las asistencias de una obra en
+  /// una semana, los movimientos de caja de una obra, las partidas de una
+  /// sección— resolvían con un recorrido completo de la tabla. Con los datos de
+  /// hoy no se nota; el problema es que estas consultas viven dentro de
+  /// `.watch()`, así que se re-ejecutan en cada cambio y en cada repintado.
+  ///
+  /// POR QUÉ AQUÍ Y NO EN UNA MIGRACIÓN. Un paso de `onUpgrade` sólo corre al
+  /// SUBIR de versión de esquema, y estos índices no cambian el esquema: no
+  /// añaden ni quitan una sola columna. Un usuario que ya está en la v13 nunca
+  /// pasaría por ese paso y se quedaría sin ellos para siempre, salvo subiendo
+  /// la versión sin ningún cambio real que la justifique.
+  ///
+  /// `beforeOpen` corre en cada arranque y `CREATE INDEX IF NOT EXISTS` es una
+  /// consulta al catálogo cuando el índice ya está: microsegundos. Es el mismo
+  /// trato que reciben los triggers de sync, que tampoco viven en el esquema
+  /// generado y se instalan a mano.
+  ///
+  /// SON PARCIALES (`WHERE deleted_at IS NULL`) por la misma razón que en el
+  /// servidor: aquí no se borra físico nunca, los tombstones se acumulan, y
+  /// ninguna pantalla los consulta.
+  Future<void> _instalarIndicesConsulta() async {
+    // (nombre, tabla, cuerpo). El nombre lleva el prefijo `idx_` igual que en
+    // Postgres, para que buscar un índice por su nombre encuentre las dos
+    // mitades del sistema.
+    const indices = <List<String>>[
+      // Nómina y pase de lista: siempre (obra, rango de fechas).
+      ['idx_asistencias_obra_fecha', 'asistencias', 'obra_id, fecha'],
+      // Ficha de una persona y proyección: (colaborador, rango de fechas).
+      ['idx_asistencias_colab_fecha', 'asistencias', 'colaborador_id, fecha'],
+      ['idx_destajos_obra_fecha', 'destajos', 'obra_id, fecha'],
+      ['idx_destajos_colab_fecha', 'destajos', 'colaborador_id, fecha'],
+      // Caja de la obra y estado de cuenta.
+      ['idx_movimientos_obra_fecha', 'movimientos', 'obra_id, fecha'],
+      // Gasto ligado a partida ("aportado / %") y pagos unificados.
+      ['idx_movimientos_partida', 'movimientos', 'partida_id'],
+      ['idx_movimientos_cotizacion', 'movimientos', 'cotizacion_id'],
+      // Cotización → secciones → partidas, siempre ordenadas por `orden`.
+      ['idx_secciones_cotizacion', 'secciones', 'cotizacion_id, orden'],
+      ['idx_partidas_seccion', 'partidas', 'seccion_id, orden'],
+      ['idx_pagos_cotizacion', 'pagos', 'cotizacion_id, fecha'],
+      ['idx_archivos_cotizacion_cot', 'archivos_cotizacion', 'cotizacion_id'],
+      // Equipo de una obra, y obras de un colaborador (se recorre en ambos
+      // sentidos; la PK compuesta sólo sirve a uno de los dos).
+      ['idx_obra_colaborador_obra', 'obra_colaborador', 'obra_id'],
+      ['idx_obra_colaborador_colab', 'obra_colaborador', 'colaborador_id'],
+      ['idx_obra_presupuesto_obra', 'obra_presupuesto', 'obra_id, orden'],
+      ['idx_nota_renglon_nota', 'nota_obra_renglon', 'nota_id, orden'],
+    ];
+
+    // Igual que con los triggers: si la tabla todavía no existe (una base a
+    // medio migrar, o un test que arranca de un esquema viejo), se salta en vez
+    // de reventar el arranque de la app por un índice.
+    final existentes = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table'",
+    ).get().then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+
+    for (final idx in indices) {
+      final [nombre, tabla, columnas] = idx;
+      if (!existentes.contains(tabla)) continue;
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS $nombre ON $tabla ($columnas) '
+        'WHERE deleted_at IS NULL',
+      );
+    }
+  }
 
   /// Instala, por tabla, un trigger `AFTER UPDATE` que marca la fila como
   /// `pending` y refresca `updated_at` cuando la app edita datos. La condición

@@ -4,7 +4,6 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { getEmpresaUsuario } from '@/lib/data/empresa';
 import type { PeriodoPago, TipoPago } from '@/lib/data/types';
-import { esPeriodoPago, salarioDiarioDesdePeriodo } from '@/lib/data/salario';
 import { asignarColaboradorAObra } from '@/lib/data/asignar-obra';
 
 export interface ActionResult {
@@ -53,33 +52,7 @@ async function guardarSueldo(
   return error ? error.message : null;
 }
 
-function derivarSueldo(formData: FormData): {
-  periodoPago: PeriodoPago;
-  salarioPeriodo: number | null;
-  diasSemana: number;
-  salarioDiario: number | null;
-} {
-  const periodoRaw = String(formData.get('periodo_pago') ?? 'MENSUAL').trim();
-  const periodoPago: PeriodoPago = esPeriodoPago(periodoRaw) ? periodoRaw : 'MENSUAL';
-
-  const diasSemanaNum = Number(String(formData.get('dias_semana') ?? '6').trim());
-  const diasSemana = [5, 6, 7].includes(diasSemanaNum) ? diasSemanaNum : 6;
-
-  const montoStr = String(formData.get('salario_periodo') ?? '').trim();
-  const salarioPeriodo = montoStr ? Number(montoStr) : null;
-  const montoValido = salarioPeriodo != null && Number.isFinite(salarioPeriodo) && salarioPeriodo > 0;
-
-  return {
-    periodoPago,
-    salarioPeriodo: montoValido ? salarioPeriodo : null,
-    diasSemana,
-    salarioDiario: salarioDiarioDesdePeriodo(
-      montoValido ? salarioPeriodo : null,
-      periodoPago,
-      diasSemana,
-    ),
-  };
-}
+import { derivarSueldo } from './sueldo-form';
 
 export async function crearColaborador(formData: FormData): Promise<ActionResult> {
   const nombre = String(formData.get('nombre') ?? '').trim();
@@ -89,7 +62,9 @@ export async function crearColaborador(formData: FormData): Promise<ActionResult
   // Obra opcional elegida en el propio formulario: permite dar de alta y asignar
   // en un solo paso (vacío = "asignar después").
   const obraId = String(formData.get('obra_id') ?? '').trim();
-  const { periodoPago, salarioPeriodo, diasSemana, salarioDiario } = derivarSueldo(formData);
+  const sueldo = derivarSueldo(formData);
+  if (!sueldo.ok) return { ok: false, error: sueldo.error };
+  const { periodoPago, salarioPeriodo, diasSemana, salarioDiario } = sueldo.valor;
 
   if (!nombre) {
     return { ok: false, error: 'El nombre del colaborador es obligatorio.' };
@@ -188,7 +163,9 @@ export async function actualizarColaborador(id: string, formData: FormData): Pro
   const contactoNombre = String(formData.get('contacto_nombre') ?? '').trim();
   const contactoTelefono = String(formData.get('contacto_telefono') ?? '').trim();
   const contactoParentesco = String(formData.get('contacto_parentesco') ?? '').trim();
-  const { periodoPago, salarioPeriodo, diasSemana, salarioDiario } = derivarSueldo(formData);
+  const sueldo = derivarSueldo(formData);
+  if (!sueldo.ok) return { ok: false, error: sueldo.error };
+  const { periodoPago, salarioPeriodo, diasSemana, salarioDiario } = sueldo.valor;
 
   if (!nombre) {
     return { ok: false, error: 'El nombre del colaborador es obligatorio.' };
