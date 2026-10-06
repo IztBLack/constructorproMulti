@@ -1,0 +1,3919 @@
+{
+  "_nota": "Foto de producción (2026-09-28), solo metadatos: quién tiene EXECUTE (anon/authenticated) en cada función de public, policies de public y storage, triggers de public según information_schema.triggers (no lista los de TRUNCATE) y RLS por tabla. Ver web/src/db/esquema-prod.test.ts.",
+  "funciones": {
+    "_aprobacion_suficiente(p_empresa uuid, p_tipo text, p_objeto uuid, p_monto numeric)": {
+      "execute": [],
+      "definer": true
+    },
+    "_avance_estimado(p_obra uuid, p_presupuesto uuid, p_extra uuid, p_fecha bigint)": {
+      "execute": [],
+      "definer": true
+    },
+    "_avance_partida_guarda()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "_avance_partida_no_borrar()": {
+      "execute": [],
+      "definer": true
+    },
+    "_cliente_fiscal_confirmacion()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "_compras_obj_protegido(p_name text)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "_cotizacion_snapshot(p_cotizacion_id uuid)": {
+      "execute": [],
+      "definer": true
+    },
+    "_estimacion_folio()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "_estimacion_guarda()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": false
+    },
+    "_estimacion_renglon_guarda()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "_estimacion_snapshot(p_id uuid)": {
+      "execute": [],
+      "definer": true
+    },
+    "_estimaciones_nombre_usuario()": {
+      "execute": [],
+      "definer": true
+    },
+    "_estimado_previo(p_obra uuid, p_presupuesto uuid, p_extra uuid, p_excepto uuid)": {
+      "execute": [],
+      "definer": true
+    },
+    "_evidencia_no_se_borra()": {
+      "execute": [],
+      "definer": true
+    },
+    "_extra_total(p_id uuid)": {
+      "execute": [],
+      "definer": true
+    },
+    "_extras_obj_protegido(p_name text)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "_incidente_salud_borrado()": {
+      "execute": [],
+      "definer": true
+    },
+    "_material_movimiento_sellos()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "_movimiento_espejo_pago_proveedor()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "_movimiento_ligado_campo()": {
+      "execute": [],
+      "definer": true
+    },
+    "_nombre_usuario_actual()": {
+      "execute": [],
+      "definer": true
+    },
+    "_oc_recalcular_req()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "_oc_renglon_padres_validos(p_empresa uuid, p_oc uuid, p_req_renglon uuid, p_material uuid)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "_oc_renglon_recalcular_req()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "_orden_cambio_folio()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "_orden_cambio_guarda()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": false
+    },
+    "_orden_cambio_renglon_guarda()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "_orden_cambio_snapshot(p_id uuid)": {
+      "execute": [],
+      "definer": true
+    },
+    "_orden_compra_estado_calculado(p_oc uuid)": {
+      "execute": [],
+      "definer": true
+    },
+    "_orden_compra_folio()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "_orden_compra_guarda()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "_orden_compra_recalcular(p_oc uuid)": {
+      "execute": [],
+      "definer": true
+    },
+    "_orden_compra_renglon_guarda()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "_orden_compra_totales(p_oc uuid, p_iva_pct double precision)": {
+      "execute": [],
+      "definer": true
+    },
+    "_postventa_obj_protegido(p_name text)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "_recepcion_recalcular()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "_recepcion_renglon_guarda()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "_recepcion_renglon_recalcular()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "_recepcion_sellos()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "_registrar_canje_fallido(p_user uuid, p_now bigint)": {
+      "execute": [],
+      "definer": true
+    },
+    "_requisicion_estado_calculado(p_req uuid)": {
+      "execute": [],
+      "definer": true
+    },
+    "_requisicion_folio()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "_requisicion_guarda()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "_requisicion_renglon_guarda()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "_requisiciones_recalcular(p_ids uuid[])": {
+      "execute": [],
+      "definer": true
+    },
+    "_seguridad_obj_protegido(p_name text)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "activar_modulos(p_modulos text[])": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "actividad_inmutable()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": false
+    },
+    "actividad_sin_truncate()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": false
+    },
+    "anular_pago_proveedor(p_id uuid)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "asistencia_max_un_dia()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "auth_cliente_empresa_ids()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "auth_empresa_ids()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "auth_obra_asignada(p_empresa uuid, p_obra uuid, p_rol text)": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "auth_residente_obra(p_empresa uuid, p_obra uuid)": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "auth_tiene_obra(p_obra uuid)": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "auth_tiene_rol(p_empresa uuid, VARIADIC p_roles text[])": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "avance_obra_portal(p_obra_id uuid)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "bitacora_abierta(p_registrada bigint)": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": false
+    },
+    "bitacora_aclaracion_sellar()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "bitacora_ahora_ms()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": false
+    },
+    "bitacora_entrada_sellar()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "bitacora_foto_reglas()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "bitacora_nombre_autor()": {
+      "execute": [],
+      "definer": true
+    },
+    "cambiar_rol_usuario(p_user_id uuid, p_rol text)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "cancelar_orden_cambio(p_id uuid)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "cancelar_orden_compra(p_id uuid)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "canjear_codigo_vinculacion(p_code text)": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "canjear_invitacion_por_correo()": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "cliente_aprobar_cambios(p_cotizacion_id uuid)": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "cliente_responder_cotizacion(p_cotizacion_id uuid, p_aceptar boolean)": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "compras_ahora_ms()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": false
+    },
+    "compras_nombre_usuario()": {
+      "execute": [],
+      "definer": true
+    },
+    "compras_uuid(p text)": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": false
+    },
+    "confirmar_mis_datos_fiscales(p_cliente_id uuid, p_rfc text, p_razon_social text, p_regimen text, p_cp_fiscal text, p_uso_cfdi text, p_correo_factura text, p_constancia_path text)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "crear_empresa(p_nombre text, p_modulos text[], p_perfil jsonb)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "cumplimiento_ruta_ok(p_path text, p_empresa uuid)": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": false
+    },
+    "decidir_aprobacion(p_id uuid, p_aprobar boolean, p_motivo text)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "emitir_orden_compra(p_id uuid)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "enviar_estimacion(p_id uuid)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "enviar_orden_cambio(p_id uuid)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "epp_entrega_sellar()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "equipo_activo_por_obra()": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": false
+    },
+    "exigir_admin_en_empresa()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": false
+    },
+    "f7_ahora_ms()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": false
+    },
+    "f7_nombre_usuario()": {
+      "execute": [],
+      "definer": true
+    },
+    "fiscal_regimenes()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": false
+    },
+    "fiscal_rfc_valido(p text)": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": false
+    },
+    "fiscal_usos_cfdi()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": false
+    },
+    "flujo_por_obra()": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": false
+    },
+    "garantia_foto_reglas()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "garantia_reporte_sellar()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "guardar_claves_sat(p_tabla text, p_id uuid, p_clave text, p_unidad text)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "herramienta_asignacion_devuelta()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": false
+    },
+    "herramienta_asignacion_reglas()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": false
+    },
+    "incidente_sellar()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "invitar_socio(p_nombre text, p_email text)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "invitar_usuario(p_nombre text, p_rol text)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "ligar_factura_orden_compra(p_oc uuid, p_uuid text, p_rfc text, p_total double precision, p_iva double precision, p_fecha bigint, p_xml_path text, p_pdf_path text, p_resumen jsonb)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "listar_usuarios_empresa()": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "marcar_estimacion_cobrada(p_id uuid, p_movimiento_id uuid)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "mis_datos_fiscales()": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "modulos_catalogo()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": false
+    },
+    "modulos_dependencias()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": false
+    },
+    "modulos_resolver(p_modulos text[])": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": false
+    },
+    "movimiento_ligado(p_id uuid)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "pagar_orden_compra(p_id uuid, p_oc uuid, p_monto double precision, p_fecha bigint, p_metodo text, p_referencia text, p_notas text)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "postventa_disponible(p_obra_id uuid)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "registrar_actividad()": {
+      "execute": [],
+      "definer": true
+    },
+    "registrar_respuesta_estimacion(p_id uuid, p_autorizar boolean, p_quien text, p_motivo text)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "reportar_garantia(p_id uuid, p_obra_id uuid, p_descripcion text, p_ubicacion text)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "responder_estimacion(p_id uuid, p_autorizar boolean, p_motivo text)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "responder_orden_cambio(p_id uuid, p_aprobar boolean, p_motivo text)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "revocar_acceso_usuario(p_user_id uuid)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "seguridad_checklist_sellar()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "seguridad_puntos_validos(p jsonb)": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": false
+    },
+    "set_server_updated_at()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": false
+    },
+    "solicitar_aprobacion(p_tipo text, p_objeto uuid)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "storage_objetos_en_carpeta(p_bucket text, p_prefijo text)": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "subtotal_por_cotizacion(p_estados text[])": {
+      "execute": [
+        "authenticated"
+      ],
+      "definer": false
+    },
+    "usuario_obra_cerrar_al_salir()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "usuario_obra_reglas()": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": true
+    },
+    "uuid_o_null(p text)": {
+      "execute": [
+        "anon",
+        "authenticated"
+      ],
+      "definer": false
+    }
+  },
+  "policies": {
+    "public.actividad": {
+      "actividad_admin_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.aprobacion": {
+      "aprobacion_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.archivos_cotizacion": {
+      "archivos_cotizacion_contador_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "archivos_cotizacion_staff_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "public"
+        ]
+      },
+      "archivos_cotizacion_staff_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "archivos_cotizacion_staff_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "archivos_cotizacion_staff_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.asignacion_cuadrilla_obra": {
+      "asignacion_cuadrilla_obra_contador_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "asignacion_cuadrilla_obra_residente": {
+        "cmd": "ALL",
+        "roles": [
+          "public"
+        ]
+      },
+      "asignacion_cuadrilla_obra_staff_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "public"
+        ]
+      },
+      "asignacion_cuadrilla_obra_staff_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "asignacion_cuadrilla_obra_staff_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "asignacion_cuadrilla_obra_staff_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.asistencias": {
+      "asistencias_contador_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "asistencias_residente": {
+        "cmd": "ALL",
+        "roles": [
+          "public"
+        ]
+      },
+      "asistencias_staff": {
+        "cmd": "ALL",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.avance_partida": {
+      "avance_partida_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "avance_partida_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "avance_partida_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "avance_partida_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "avance_partida_residente_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "avance_partida_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.bitacora_aclaracion": {
+      "bitacora_aclaracion_cliente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "bitacora_aclaracion_colab_obra_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "bitacora_aclaracion_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "bitacora_aclaracion_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "bitacora_aclaracion_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "bitacora_aclaracion_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.bitacora_entrada": {
+      "bitacora_entrada_cliente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "bitacora_entrada_colab_obra_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "bitacora_entrada_colab_obra_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "bitacora_entrada_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "bitacora_entrada_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "bitacora_entrada_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "bitacora_entrada_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "bitacora_entrada_residente_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "bitacora_entrada_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.bitacora_foto": {
+      "bitacora_foto_cliente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "bitacora_foto_colab_obra_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "bitacora_foto_colab_obra_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "bitacora_foto_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "bitacora_foto_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "bitacora_foto_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "bitacora_foto_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "bitacora_foto_residente_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "bitacora_foto_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.catalogo_conceptos": {
+      "catalogo_conceptos_contador_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "catalogo_conceptos_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "catalogo_conceptos_staff_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "public"
+        ]
+      },
+      "catalogo_conceptos_staff_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "catalogo_conceptos_staff_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "catalogo_conceptos_staff_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.cliente_fiscal": {
+      "cliente_fiscal_oficina": {
+        "cmd": "ALL",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.clientes": {
+      "clientes_contador_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "clientes_self": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "clientes_staff": {
+        "cmd": "ALL",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.cobro_fiscal": {
+      "cobro_fiscal_oficina": {
+        "cmd": "ALL",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.codigos_vinculacion": {
+      "codigos_vinculacion_insert_gestion": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "codigos_vinculacion_select": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "codigos_vinculacion_update_gestion": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.colaborador_datos_imss": {
+      "colaborador_datos_imss_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "public"
+        ]
+      },
+      "colaborador_datos_imss_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "colaborador_datos_imss_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "colaborador_datos_imss_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.colaborador_sueldo": {
+      "colaborador_sueldo_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "colaborador_sueldo_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "colaborador_sueldo_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "colaborador_sueldo_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "colaborador_sueldo_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "authenticated"
+        ]
+      }
+    },
+    "public.colaboradores": {
+      "colaboradores_contador_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "colaboradores_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "colaboradores_staff_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "public"
+        ]
+      },
+      "colaboradores_staff_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "colaboradores_staff_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "colaboradores_staff_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.cotizaciones": {
+      "cotizaciones_cliente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "cotizaciones_contador_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "cotizaciones_staff_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "public"
+        ]
+      },
+      "cotizaciones_staff_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "cotizaciones_staff_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "cotizaciones_staff_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.cuadrilla_miembro": {
+      "cuadrilla_miembro_contador_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "cuadrilla_miembro_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "cuadrilla_miembro_staff_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "public"
+        ]
+      },
+      "cuadrilla_miembro_staff_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "cuadrilla_miembro_staff_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "cuadrilla_miembro_staff_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.cuadrillas": {
+      "cuadrillas_contador_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "cuadrillas_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "cuadrillas_staff_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "public"
+        ]
+      },
+      "cuadrillas_staff_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "cuadrillas_staff_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "cuadrillas_staff_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.destajos": {
+      "destajos_contador_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "destajos_residente": {
+        "cmd": "ALL",
+        "roles": [
+          "public"
+        ]
+      },
+      "destajos_staff": {
+        "cmd": "ALL",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.empresa_config": {
+      "empresa_config_contador_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "empresa_config_insert_admin": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "empresa_config_org_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "empresa_config_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "empresa_config_select_staff": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "empresa_config_update_admin": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.empresa_fiscal": {
+      "empresa_fiscal_oficina": {
+        "cmd": "ALL",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.empresa_margen": {
+      "empresa_margen_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "empresa_margen_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "empresa_margen_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.empresa_repse": {
+      "empresa_repse_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "empresa_repse_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "empresa_repse_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.empresas": {
+      "empresas_insert_auth": {
+        "cmd": "INSERT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "empresas_select": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "empresas_update_admin": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.epp_entrega": {
+      "epp_entrega_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "epp_entrega_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "epp_entrega_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "epp_entrega_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "epp_entrega_residente_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "epp_entrega_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.estimacion_renglon": {
+      "estimacion_renglon_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "estimacion_renglon_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "estimacion_renglon_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "estimacion_renglon_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.estimaciones": {
+      "estimaciones_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "estimaciones_read_cliente": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "estimaciones_read_oficina": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "estimaciones_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "estimaciones_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.garantia_foto": {
+      "garantia_foto_cliente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "garantia_foto_cliente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "garantia_foto_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "garantia_foto_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "garantia_foto_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "garantia_foto_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "garantia_foto_residente_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "garantia_foto_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.garantia_reporte": {
+      "garantia_reporte_cliente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "garantia_reporte_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "garantia_reporte_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "garantia_reporte_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "garantia_reporte_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "garantia_reporte_residente_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "garantia_reporte_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.herramienta": {
+      "herramienta_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "herramienta_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "herramienta_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "herramienta_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.herramienta_asignacion": {
+      "herramienta_asignacion_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "herramienta_asignacion_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "herramienta_asignacion_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "herramienta_asignacion_residente_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "herramienta_asignacion_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.incidente": {
+      "incidente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "incidente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "incidente_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "incidente_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "incidente_residente_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "incidente_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.incidente_salud": {
+      "incidente_salud_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "public"
+        ]
+      },
+      "incidente_salud_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "incidente_salud_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "incidente_salud_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.material_movimiento": {
+      "material_movimiento_almacen_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "material_movimiento_almacen_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "material_movimiento_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "material_movimiento_org_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "material_movimiento_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "material_movimiento_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "material_movimiento_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "material_movimiento_residente_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "material_movimiento_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.materiales": {
+      "materiales_compras_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "materiales_compras_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "materiales_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "materiales_org_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "materiales_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "materiales_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "materiales_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.movimientos": {
+      "movimientos_cliente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "movimientos_contador_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "public"
+        ]
+      },
+      "movimientos_contador_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "movimientos_contador_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "movimientos_contador_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "movimientos_residente_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "public"
+        ]
+      },
+      "movimientos_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "movimientos_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "movimientos_residente_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "movimientos_staff_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "public"
+        ]
+      },
+      "movimientos_staff_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "movimientos_staff_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "movimientos_staff_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.nota_obra": {
+      "nota_obra_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "nota_obra_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "nota_obra_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "nota_obra_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "nota_obra_residente_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "nota_obra_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.nota_obra_renglon": {
+      "nota_obra_renglon_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "nota_obra_renglon_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "nota_obra_renglon_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "nota_obra_renglon_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "nota_obra_renglon_residente_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "nota_obra_renglon_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.obligacion_periodica": {
+      "obligacion_periodica_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obligacion_periodica_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obligacion_periodica_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.obra_caja_nota": {
+      "obra_caja_nota_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_caja_nota_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_caja_nota_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_caja_nota_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_caja_nota_residente_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_caja_nota_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.obra_colaborador": {
+      "obra_colaborador_contador_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_colaborador_residente": {
+        "cmd": "ALL",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_colaborador_staff": {
+        "cmd": "ALL",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.obra_contrato": {
+      "obra_contrato_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_contrato_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_contrato_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_contrato_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.obra_garantia": {
+      "obra_garantia_cliente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_garantia_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_garantia_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_garantia_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_garantia_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.obra_margen_objetivo": {
+      "obra_margen_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_margen_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_margen_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.obra_presupuesto": {
+      "obra_presupuesto_cliente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_presupuesto_contador_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_presupuesto_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_presupuesto_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_presupuesto_residente_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_presupuesto_staff_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_presupuesto_staff_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_presupuesto_staff_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_presupuesto_staff_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.obra_retencion": {
+      "obra_retencion_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_retencion_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_retencion_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_retencion_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.obra_siroc": {
+      "obra_siroc_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_siroc_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obra_siroc_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.obras": {
+      "obras_cliente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obras_contador_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obras_org_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obras_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obras_residente_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "obras_staff_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "public"
+        ]
+      },
+      "obras_staff_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obras_staff_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "obras_staff_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.orden_cambio": {
+      "orden_cambio_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "orden_cambio_read_cliente": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "orden_cambio_read_oficina": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "orden_cambio_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "orden_cambio_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "orden_cambio_residente_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "orden_cambio_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.orden_cambio_renglon": {
+      "orden_cambio_renglon_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "orden_cambio_renglon_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "orden_cambio_renglon_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "orden_cambio_renglon_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "orden_cambio_renglon_residente_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "orden_cambio_renglon_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.orden_compra_renglon": {
+      "orden_compra_renglon_compras_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "orden_compra_renglon_compras_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "orden_compra_renglon_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "orden_compra_renglon_org_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "orden_compra_renglon_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "orden_compra_renglon_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "orden_compra_renglon_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.ordenes_compra": {
+      "ordenes_compra_compras_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "ordenes_compra_compras_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "ordenes_compra_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "ordenes_compra_org_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "ordenes_compra_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "ordenes_compra_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "ordenes_compra_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.pagos": {
+      "pagos_cliente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "pagos_contador_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "public"
+        ]
+      },
+      "pagos_contador_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "pagos_contador_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "pagos_contador_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "pagos_staff_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "public"
+        ]
+      },
+      "pagos_staff_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "pagos_staff_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "pagos_staff_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.pagos_proveedor": {
+      "pagos_proveedor_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.partidas": {
+      "partidas_cliente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "partidas_contador_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "partidas_staff_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "public"
+        ]
+      },
+      "partidas_staff_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "partidas_staff_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "partidas_staff_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.programa_partida": {
+      "programa_partida_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "programa_partida_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "programa_partida_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "programa_partida_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "programa_partida_residente_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "programa_partida_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.proveedores": {
+      "proveedores_compras_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "proveedores_compras_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "proveedores_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "proveedores_org_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "proveedores_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "proveedores_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "proveedores_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.proyeccion_guardada": {
+      "proyeccion_guardada_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "proyeccion_guardada_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "proyeccion_guardada_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.puestos": {
+      "puestos_contador_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "puestos_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "puestos_staff_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "public"
+        ]
+      },
+      "puestos_staff_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "puestos_staff_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "puestos_staff_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.recepcion_renglon": {
+      "recepcion_renglon_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "recepcion_renglon_org_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "recepcion_renglon_org_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "recepcion_renglon_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "recepcion_renglon_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "recepcion_renglon_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.recepciones": {
+      "recepciones_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "recepciones_org_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "recepciones_org_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "recepciones_org_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "recepciones_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "recepciones_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "recepciones_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "recepciones_residente_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "recepciones_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.regla_aprobacion": {
+      "regla_aprobacion_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "regla_aprobacion_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "regla_aprobacion_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.requisicion_renglon": {
+      "requisicion_renglon_compras_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "requisicion_renglon_compras_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "requisicion_renglon_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "requisicion_renglon_org_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "requisicion_renglon_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "requisicion_renglon_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "requisicion_renglon_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "requisicion_renglon_residente_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "requisicion_renglon_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.requisiciones": {
+      "requisiciones_compras_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "requisiciones_compras_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "requisiciones_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "requisiciones_org_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "requisiciones_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "requisiciones_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "requisiciones_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "requisiciones_residente_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "requisiciones_update_admin": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "requisiciones_update_supervisor": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.secciones": {
+      "secciones_cliente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "secciones_contador_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "secciones_staff_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "public"
+        ]
+      },
+      "secciones_staff_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "secciones_staff_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "secciones_staff_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.seguridad_checklist": {
+      "seguridad_checklist_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "seguridad_checklist_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "seguridad_checklist_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "seguridad_checklist_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "seguridad_checklist_residente_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      },
+      "seguridad_checklist_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.subcontratista": {
+      "subcontratista_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "subcontratista_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "subcontratista_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.subcontratista_documento": {
+      "subcontratista_documento_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "subcontratista_documento_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "subcontratista_documento_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.subcontrato": {
+      "subcontrato_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "subcontrato_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "subcontrato_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "subcontrato_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.subcontrato_pago": {
+      "subcontrato_pago_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "subcontrato_pago_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "subcontrato_pago_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "subcontrato_pago_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.subcontrato_renglon": {
+      "subcontrato_renglon_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "subcontrato_renglon_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "subcontrato_renglon_residente_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "subcontrato_renglon_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.usuario_obra": {
+      "usuario_obra_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "public"
+        ]
+      },
+      "usuario_obra_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "public"
+        ]
+      },
+      "usuario_obra_read": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      },
+      "usuario_obra_update": {
+        "cmd": "UPDATE",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "public.usuarios_empresa": {
+      "usuarios_empresa_self": {
+        "cmd": "SELECT",
+        "roles": [
+          "public"
+        ]
+      }
+    },
+    "storage.objects": {
+      "bitacora_obj_colab_obra_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "bitacora_obj_colab_obra_select": {
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "bitacora_obj_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "bitacora_obj_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "bitacora_obj_residente_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "bitacora_obj_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "bitacora_obj_residente_select": {
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "bitacora_obj_select": {
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "compras_obj_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "compras_obj_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "compras_obj_org_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "compras_obj_org_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "compras_obj_org_select": {
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "compras_obj_residente_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "compras_obj_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "compras_obj_residente_select": {
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "compras_obj_select": {
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "comprobante_oficina_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "comprobante_oficina_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "comprobante_oficina_select": {
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "comprobante_residente_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "comprobante_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "comprobante_residente_select": {
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "cotz_staff_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "cotz_staff_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "cotz_staff_select": {
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "cumplimiento_obj_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "cumplimiento_obj_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "cumplimiento_obj_select": {
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "extras_cliente_select": {
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "extras_gestion_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "extras_gestion_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "extras_oficina_select": {
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "extras_residente_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "extras_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "extras_residente_select": {
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "fiscal_cliente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "fiscal_cliente_select": {
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "fiscal_oficina_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "fiscal_oficina_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "fiscal_oficina_select": {
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "postventa_obj_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "postventa_obj_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "postventa_obj_residente_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "postventa_obj_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "postventa_obj_residente_select": {
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "postventa_obj_select": {
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "seguridad_obj_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "seguridad_obj_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "seguridad_obj_residente_delete": {
+        "cmd": "DELETE",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "seguridad_obj_residente_insert": {
+        "cmd": "INSERT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "seguridad_obj_residente_select": {
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ]
+      },
+      "seguridad_obj_select": {
+        "cmd": "SELECT",
+        "roles": [
+          "authenticated"
+        ]
+      }
+    }
+  },
+  "triggers": {
+    "actividad": [
+      "trg_actividad_inmutable"
+    ],
+    "aprobacion": [
+      "trg_actividad",
+      "trg_srv_upd"
+    ],
+    "archivos_cotizacion": [
+      "trg_srv_upd"
+    ],
+    "asignacion_cuadrilla_obra": [
+      "trg_srv_upd"
+    ],
+    "asistencias": [
+      "trg_asistencia_max_un_dia",
+      "trg_srv_upd"
+    ],
+    "avance_partida": [
+      "trg_avance_partida_evidencia",
+      "trg_avance_partida_guarda",
+      "trg_srv_upd"
+    ],
+    "bitacora_aclaracion": [
+      "trg_bitacora_aclaracion_evidencia",
+      "trg_bitacora_aclaracion_sellar",
+      "trg_srv_upd"
+    ],
+    "bitacora_entrada": [
+      "trg_bitacora_entrada_evidencia",
+      "trg_bitacora_entrada_sellar",
+      "trg_srv_upd"
+    ],
+    "bitacora_foto": [
+      "trg_bitacora_foto_reglas",
+      "trg_srv_upd"
+    ],
+    "catalogo_conceptos": [
+      "trg_srv_upd"
+    ],
+    "cliente_fiscal": [
+      "trg_cliente_fiscal_confirmacion",
+      "trg_srv_upd"
+    ],
+    "clientes": [
+      "trg_srv_upd"
+    ],
+    "cobro_fiscal": [
+      "trg_srv_upd"
+    ],
+    "colaborador_datos_imss": [
+      "trg_srv_upd"
+    ],
+    "colaborador_sueldo": [
+      "trg_srv_upd"
+    ],
+    "colaboradores": [
+      "trg_srv_upd"
+    ],
+    "cotizaciones": [
+      "trg_actividad",
+      "trg_srv_upd"
+    ],
+    "cuadrilla_miembro": [
+      "trg_srv_upd"
+    ],
+    "cuadrillas": [
+      "trg_srv_upd"
+    ],
+    "destajos": [
+      "trg_srv_upd"
+    ],
+    "empresa_config": [
+      "trg_actividad",
+      "trg_srv_upd"
+    ],
+    "empresa_fiscal": [
+      "trg_srv_upd"
+    ],
+    "empresa_margen": [
+      "trg_srv_upd"
+    ],
+    "empresa_repse": [
+      "trg_srv_upd"
+    ],
+    "epp_entrega": [
+      "trg_epp_entrega_evidencia",
+      "trg_epp_entrega_sellar",
+      "trg_srv_upd"
+    ],
+    "estimacion_renglon": [
+      "trg_estimacion_renglon_guarda",
+      "trg_srv_upd"
+    ],
+    "estimaciones": [
+      "trg_actividad",
+      "trg_estimacion_evidencia",
+      "trg_estimacion_folio",
+      "trg_estimacion_guarda",
+      "trg_srv_upd"
+    ],
+    "garantia_foto": [
+      "trg_garantia_foto_evidencia",
+      "trg_garantia_foto_reglas",
+      "trg_srv_upd"
+    ],
+    "garantia_reporte": [
+      "trg_garantia_reporte_evidencia",
+      "trg_garantia_reporte_sellar",
+      "trg_srv_upd"
+    ],
+    "herramienta": [
+      "trg_srv_upd"
+    ],
+    "herramienta_asignacion": [
+      "trg_herramienta_asignacion_devuelta",
+      "trg_herramienta_asignacion_reglas",
+      "trg_srv_upd"
+    ],
+    "incidente": [
+      "trg_incidente_evidencia",
+      "trg_incidente_sellar",
+      "trg_srv_upd"
+    ],
+    "incidente_salud": [
+      "trg_incidente_salud_borrado",
+      "trg_srv_upd"
+    ],
+    "material_movimiento": [
+      "trg_material_movimiento_sellos",
+      "trg_srv_upd"
+    ],
+    "materiales": [
+      "trg_srv_upd"
+    ],
+    "movimientos": [
+      "trg_actividad",
+      "trg_movimiento_espejo_pago_proveedor",
+      "trg_movimiento_ligado_campo",
+      "trg_srv_upd"
+    ],
+    "nota_obra": [
+      "trg_srv_upd"
+    ],
+    "nota_obra_renglon": [
+      "trg_srv_upd"
+    ],
+    "obligacion_periodica": [
+      "trg_srv_upd"
+    ],
+    "obra_caja_nota": [
+      "trg_srv_upd"
+    ],
+    "obra_colaborador": [
+      "trg_srv_upd"
+    ],
+    "obra_contrato": [
+      "trg_srv_upd"
+    ],
+    "obra_garantia": [
+      "trg_srv_upd"
+    ],
+    "obra_margen_objetivo": [
+      "trg_srv_upd"
+    ],
+    "obra_presupuesto": [
+      "trg_srv_upd"
+    ],
+    "obra_retencion": [
+      "trg_srv_upd"
+    ],
+    "obra_siroc": [
+      "trg_srv_upd"
+    ],
+    "obras": [
+      "trg_srv_upd"
+    ],
+    "orden_cambio": [
+      "trg_actividad",
+      "trg_orden_cambio_evidencia",
+      "trg_orden_cambio_folio",
+      "trg_orden_cambio_guarda",
+      "trg_srv_upd"
+    ],
+    "orden_cambio_renglon": [
+      "trg_orden_cambio_renglon_guarda",
+      "trg_srv_upd"
+    ],
+    "orden_compra_renglon": [
+      "trg_oc_renglon_recalcular_req",
+      "trg_orden_compra_renglon_guarda",
+      "trg_srv_upd"
+    ],
+    "ordenes_compra": [
+      "trg_actividad",
+      "trg_oc_recalcular_req",
+      "trg_orden_compra_evidencia",
+      "trg_orden_compra_folio",
+      "trg_orden_compra_guarda",
+      "trg_srv_upd"
+    ],
+    "pagos": [
+      "trg_actividad",
+      "trg_srv_upd"
+    ],
+    "pagos_proveedor": [
+      "trg_actividad",
+      "trg_srv_upd"
+    ],
+    "partidas": [
+      "trg_srv_upd"
+    ],
+    "programa_partida": [
+      "trg_srv_upd"
+    ],
+    "proveedores": [
+      "trg_srv_upd"
+    ],
+    "proyeccion_guardada": [
+      "trg_srv_upd"
+    ],
+    "puestos": [
+      "trg_srv_upd"
+    ],
+    "recepcion_renglon": [
+      "trg_recepcion_renglon_guarda",
+      "trg_recepcion_renglon_recalcular",
+      "trg_srv_upd"
+    ],
+    "recepciones": [
+      "trg_recepcion_evidencia",
+      "trg_recepcion_recalcular",
+      "trg_recepcion_sellos",
+      "trg_srv_upd"
+    ],
+    "regla_aprobacion": [
+      "trg_actividad",
+      "trg_srv_upd"
+    ],
+    "requisicion_renglon": [
+      "trg_requisicion_renglon_guarda",
+      "trg_srv_upd"
+    ],
+    "requisiciones": [
+      "trg_requisicion_folio",
+      "trg_requisicion_guarda",
+      "trg_srv_upd"
+    ],
+    "secciones": [
+      "trg_srv_upd"
+    ],
+    "seguridad_checklist": [
+      "trg_seguridad_checklist_sellar",
+      "trg_srv_upd"
+    ],
+    "subcontratista": [
+      "trg_srv_upd"
+    ],
+    "subcontratista_documento": [
+      "trg_srv_upd"
+    ],
+    "subcontrato": [
+      "trg_srv_upd"
+    ],
+    "subcontrato_pago": [
+      "trg_actividad",
+      "trg_srv_upd"
+    ],
+    "subcontrato_renglon": [
+      "trg_srv_upd"
+    ],
+    "usuario_obra": [
+      "trg_actividad",
+      "trg_srv_upd",
+      "trg_usuario_obra_reglas"
+    ],
+    "usuarios_empresa": [
+      "trg_actividad",
+      "trg_exigir_admin",
+      "trg_usuario_obra_cerrar"
+    ]
+  },
+  "rls": {
+    "actividad": true,
+    "aprobacion": true,
+    "archivos_cotizacion": true,
+    "asignacion_cuadrilla_obra": true,
+    "asistencias": true,
+    "avance_partida": true,
+    "bitacora_aclaracion": true,
+    "bitacora_entrada": true,
+    "bitacora_foto": true,
+    "catalogo_conceptos": true,
+    "cliente_fiscal": true,
+    "clientes": true,
+    "cobro_fiscal": true,
+    "codigos_vinculacion": true,
+    "colaborador_datos_imss": true,
+    "colaborador_sueldo": true,
+    "colaboradores": true,
+    "cotizaciones": true,
+    "cuadrilla_miembro": true,
+    "cuadrillas": true,
+    "destajos": true,
+    "empresa_config": true,
+    "empresa_fiscal": true,
+    "empresa_margen": true,
+    "empresa_repse": true,
+    "empresas": true,
+    "epp_entrega": true,
+    "estimacion_renglon": true,
+    "estimaciones": true,
+    "garantia_foto": true,
+    "garantia_reporte": true,
+    "herramienta": true,
+    "herramienta_asignacion": true,
+    "incidente": true,
+    "incidente_salud": true,
+    "intentos_canje": true,
+    "material_movimiento": true,
+    "materiales": true,
+    "movimientos": true,
+    "nota_obra": true,
+    "nota_obra_renglon": true,
+    "obligacion_periodica": true,
+    "obra_caja_nota": true,
+    "obra_colaborador": true,
+    "obra_contrato": true,
+    "obra_garantia": true,
+    "obra_margen_objetivo": true,
+    "obra_presupuesto": true,
+    "obra_retencion": true,
+    "obra_siroc": true,
+    "obras": true,
+    "orden_cambio": true,
+    "orden_cambio_renglon": true,
+    "orden_compra_renglon": true,
+    "ordenes_compra": true,
+    "pagos": true,
+    "pagos_proveedor": true,
+    "partidas": true,
+    "programa_partida": true,
+    "proveedores": true,
+    "proyeccion_guardada": true,
+    "puestos": true,
+    "recepcion_renglon": true,
+    "recepciones": true,
+    "regla_aprobacion": true,
+    "requisicion_renglon": true,
+    "requisiciones": true,
+    "secciones": true,
+    "seguridad_checklist": true,
+    "subcontratista": true,
+    "subcontratista_documento": true,
+    "subcontrato": true,
+    "subcontrato_pago": true,
+    "subcontrato_renglon": true,
+    "usuario_obra": true,
+    "usuarios_empresa": true
+  }
+}
