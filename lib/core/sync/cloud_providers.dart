@@ -4,6 +4,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/providers.dart';
 import '../settings/settings_provider.dart';
+import 'bitacora_avisos.dart';
+import 'bitacora_remoto.dart';
+import 'bitacora_sync.dart';
 import 'supabase_config.dart';
 import 'sync_controller.dart';
 import 'sync_metadata.dart';
@@ -86,9 +89,29 @@ final cuentaNombreProvider = Provider<String?>((ref) {
 final syncMetadataProvider = Provider<SyncMetadata>(
     (ref) => SyncMetadata(ref.watch(sharedPreferencesProvider)));
 
+/// Avisos de la bitácora que ya no se reintentan (docs/PLAN_BITACORA_MOVIL.md §2.3).
+final avisosBitacoraProvider = Provider<AvisosBitacora>(
+    (ref) => AvisosBitacora(ref.watch(sharedPreferencesProvider)));
+
+final bitacoraRemotoProvider = Provider<BitacoraRemoto>(
+    (ref) => SupabaseBitacoraRemoto(SupabaseConfig.client));
+
+/// Push propio de la bitácora ("insertar primero"); lo usa [syncServiceProvider]
+/// y la pantalla para publicar al cliente.
+final bitacoraSyncProvider = Provider<BitacoraSync>((ref) {
+  final fotos = ref.watch(fotosBitacoraStorageProvider);
+  return BitacoraSync(
+    db: ref.watch(databaseProvider),
+    remoto: ref.watch(bitacoraRemotoProvider),
+    avisos: ref.watch(avisosBitacoraProvider),
+    archivoLocal: fotos.archivo,
+  );
+});
+
 final syncServiceProvider = Provider<SyncService>((ref) => SyncService(
       db: ref.watch(databaseProvider),
       metadata: ref.watch(syncMetadataProvider),
+      bitacora: ref.watch(bitacoraSyncProvider),
       // Refleja "hay un sync corriendo" en un provider observable por la UI. Se
       // difiere con microtask para no mutar estado de Riverpod en medio de la
       // construcción de otro provider (lo prohíbe) cuando el sync arranca
@@ -151,6 +174,10 @@ Future<String?> resolverEmpresaYsellar(WidgetRef ref) async {
         '($empresaAnterior → $empresaId). Reseteando cursores de sync.',
       );
       await ref.read(syncMetadataProvider).resetAll();
+      // Los avisos de la bitácora hablan de filas de la otra empresa. Las
+      // FOTOS no se borran: una pendiente es evidencia que aún no sube, y la
+      // base local tampoco se vacía al cambiar de empresa.
+      await ref.read(avisosBitacoraProvider).borrarTodo();
     }
 
     await prefs.setString(_kEmpresaId, empresaId);
