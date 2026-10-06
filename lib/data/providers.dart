@@ -17,6 +17,8 @@ import 'repositories_obra.dart';
 import 'repositories_cuadrilla.dart';
 import 'repositories_cotizacion.dart';
 import 'repositories_nota_obra.dart';
+import 'repositories_bitacora.dart';
+import '../core/storage/fotos_bitacora_storage.dart';
 
 /// Pestañas del shell inferior, en su orden. Se guardan por NOMBRE y no por
 /// índice: con los módulos (F0) una pestaña puede desaparecer y los índices se
@@ -192,6 +194,16 @@ final obraCajaNotaRepositoryProvider = Provider<ObraCajaNotaRepository>(
 final notaObraRepositoryProvider = Provider<NotaObraRepository>(
     (ref) => NotaObraRepository(ref.watch(databaseProvider)));
 
+/// Dónde viven las fotos de la bitácora en el teléfono (carpeta de soporte de la
+/// app, que Android no vacía como la caché).
+final fotosBitacoraStorageProvider =
+    Provider<FotosBitacoraStorage>((ref) => FotosBitacoraStorage());
+
+/// Bitácora de obra (Supabase 0041 + 0042).
+final bitacoraRepositoryProvider = Provider<BitacoraRepository>((ref) =>
+    BitacoraRepository(ref.watch(databaseProvider),
+        ref.watch(fotosBitacoraStorageProvider)));
+
 // ---------------- Streams ----------------
 final obrasProvider = StreamProvider<List<Obra>>(
     (ref) => ref.watch(obraRepositoryProvider).watchAll());
@@ -244,6 +256,11 @@ final obraCajaNotaProvider =
 final notasDeObraProvider =
     StreamProvider.family<List<NotaConRenglones>, String>((ref, obraId) =>
         ref.watch(notaObraRepositoryProvider).watchDeObra(obraId));
+
+/// La línea de tiempo de la bitácora de una obra, con fotos y aclaraciones.
+final bitacoraDeObraProvider =
+    StreamProvider.family<List<EntradaConDetalle>, String>((ref, obraId) =>
+        ref.watch(bitacoraRepositoryProvider).watchDeObra(obraId));
 
 /// Una nota concreta, para la pantalla del editor.
 final notaObraProvider =
