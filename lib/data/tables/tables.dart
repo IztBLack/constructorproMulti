@@ -477,3 +477,83 @@ class ObraCajaNota extends Table with SyncCols {
   @override
   Set<Column> get primaryKey => {obraId};
 }
+
+// ── Bitácora de obra (Supabase 0041 + 0042) ─────────────────────────────────
+//
+// Espejo EXACTO de las columnas del servidor: el push manda la fila, y una
+// columna que solo existiera aquí rompería cada subida. El archivo de cada foto
+// no necesita columna: vive en el teléfono como `bitacora/<foto_id>.<ext>`
+// (ver docs/PLAN_BITACORA_MOVIL.md §2.1).
+//
+// `autor_id`, `autor_nombre` y `registrada_en` los SELLA el servidor al
+// insertar y los restaura en cada UPDATE: aquí valen vacío/0 hasta que baja el
+// eco. `registrada_en` = 0 significa "todavía no llega", y una entrada así
+// cuenta como abierta (el cierre de 24 h corre desde que llega al servidor).
+
+/// Una entrada del día. Espeja `bitacora_entrada`.
+@DataClassName('BitacoraEntradaRow')
+class BitacoraEntrada extends Table with SyncCols {
+  TextColumn get id => text()();
+  TextColumn get obraId => text()();
+
+  /// Medianoche del día al que se refiere (epoch ms), no el momento de captura.
+  IntColumn get fecha => integer()();
+
+  /// AVANCE | INCIDENCIA | INSTRUCCION | VISITA | CLIMA | OTRO.
+  TextColumn get tipo => text().withDefault(const Constant('AVANCE'))();
+  TextColumn get texto => text().withDefault(const Constant(''))();
+
+  /// '' (sin anotar) | SOLEADO | NUBLADO | LLUVIA | TORMENTA | CALOR | FRIO | VIENTO.
+  TextColumn get clima => text().withDefault(const Constant(''))();
+
+  /// Cuántos había. Con nombres, es su número; sin ellos, el conteo a mano.
+  IntColumn get personalPresente => integer().nullable()();
+
+  /// En el servidor es `text[]`; aquí se guarda como JSON (`'["Ana","Beto"]'`)
+  /// porque SQLite no tiene arreglos. El sync convierte en los dos sentidos.
+  TextColumn get personalNombres =>
+      text().withDefault(const Constant('[]'))();
+
+  /// Publicada en el portal del cliente. Nace en false, como en la web.
+  BoolColumn get visibleCliente =>
+      boolean().withDefault(const Constant(false))();
+
+  TextColumn get autorId => text().nullable()();
+  TextColumn get autorNombre => text().withDefault(const Constant(''))();
+  IntColumn get registradaEn => integer().withDefault(const Constant(0))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Foto de una entrada. Espeja `bitacora_foto` (máximo 10 vivas por entrada).
+///
+/// `path` es la ruta en el bucket `bitacora`:
+/// `<empresa>/<obra>/<entrada>/<foto_id>.<ext>`. Se fija al crear la fila
+/// (el servidor no deja cambiarla) y es UNIQUE allá.
+@DataClassName('BitacoraFotoRow')
+class BitacoraFoto extends Table with SyncCols, Orderable {
+  TextColumn get id => text()();
+  TextColumn get entradaId => text()();
+  TextColumn get path => text()();
+  TextColumn get mime => text().withDefault(const Constant('image/jpeg'))();
+  IntColumn get bytes => integer().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Aclaración posterior a una entrada. Espeja `bitacora_aclaracion`: es
+/// evidencia, así que no se edita ni se borra nunca (ni en el servidor).
+@DataClassName('BitacoraAclaracionRow')
+class BitacoraAclaracion extends Table with SyncCols {
+  TextColumn get id => text()();
+  TextColumn get entradaId => text()();
+  TextColumn get texto => text()();
+  TextColumn get autorId => text().nullable()();
+  TextColumn get autorNombre => text().withDefault(const Constant(''))();
+  IntColumn get registradaEn => integer().withDefault(const Constant(0))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

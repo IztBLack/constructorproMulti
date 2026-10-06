@@ -34,6 +34,9 @@ part 'app_database.g.dart';
   ObraCajaNota,
   NotaObra,
   NotaObraRenglon,
+  BitacoraEntrada,
+  BitacoraFoto,
+  BitacoraAclaracion,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -64,7 +67,7 @@ class AppDatabase extends _$AppDatabase {
   static final Set<String> columnasPorLlenar = <String>{};
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -445,6 +448,27 @@ class AppDatabase extends _$AppDatabase {
               columnasPorLlenar
                   .add('nota_obra_renglon.mostrar_porcentaje@$ahora');
             }
+          }
+
+          // v14 → v15: bitácora de obra (Supabase 0041 + 0042). Tres tablas
+          // NUEVAS, como las notas en la v11 → v12: no se toca ni una fila
+          // existente. Igual que entonces, `createTable` NO instala el trigger
+          // `mark_pending`: sin él, editar una entrada no la marcaría `pending`
+          // y la edición jamás subiría.
+          //
+          // Nada que rellenar: el pull baja estas tablas completas la primera
+          // vez (su cursor nace vacío), con todas sus columnas.
+          if (from < 15) {
+            if (!await _tablaExiste('bitacora_entrada')) {
+              await m.createTable(bitacoraEntrada);
+            }
+            if (!await _tablaExiste('bitacora_foto')) {
+              await m.createTable(bitacoraFoto);
+            }
+            if (!await _tablaExiste('bitacora_aclaracion')) {
+              await m.createTable(bitacoraAclaracion);
+            }
+            await _instalarTriggersSync();
           }
         },
       );

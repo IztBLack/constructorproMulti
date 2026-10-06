@@ -17034,6 +17034,2478 @@ class NotaObraRenglonCompanion extends UpdateCompanion<NotaObraRenglonRow> {
   }
 }
 
+class $BitacoraEntradaTable extends BitacoraEntrada
+    with TableInfo<$BitacoraEntradaTable, BitacoraEntradaRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BitacoraEntradaTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _empresaIdMeta = const VerificationMeta(
+    'empresaId',
+  );
+  @override
+  late final GeneratedColumn<String> empresaId = GeneratedColumn<String>(
+    'empresa_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _serverUpdatedAtMeta = const VerificationMeta(
+    'serverUpdatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> serverUpdatedAt = GeneratedColumn<int>(
+    'server_updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _obraIdMeta = const VerificationMeta('obraId');
+  @override
+  late final GeneratedColumn<String> obraId = GeneratedColumn<String>(
+    'obra_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fechaMeta = const VerificationMeta('fecha');
+  @override
+  late final GeneratedColumn<int> fecha = GeneratedColumn<int>(
+    'fecha',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tipoMeta = const VerificationMeta('tipo');
+  @override
+  late final GeneratedColumn<String> tipo = GeneratedColumn<String>(
+    'tipo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('AVANCE'),
+  );
+  static const VerificationMeta _textoMeta = const VerificationMeta('texto');
+  @override
+  late final GeneratedColumn<String> texto = GeneratedColumn<String>(
+    'texto',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _climaMeta = const VerificationMeta('clima');
+  @override
+  late final GeneratedColumn<String> clima = GeneratedColumn<String>(
+    'clima',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _personalPresenteMeta = const VerificationMeta(
+    'personalPresente',
+  );
+  @override
+  late final GeneratedColumn<int> personalPresente = GeneratedColumn<int>(
+    'personal_presente',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _personalNombresMeta = const VerificationMeta(
+    'personalNombres',
+  );
+  @override
+  late final GeneratedColumn<String> personalNombres = GeneratedColumn<String>(
+    'personal_nombres',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _visibleClienteMeta = const VerificationMeta(
+    'visibleCliente',
+  );
+  @override
+  late final GeneratedColumn<bool> visibleCliente = GeneratedColumn<bool>(
+    'visible_cliente',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("visible_cliente" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _autorIdMeta = const VerificationMeta(
+    'autorId',
+  );
+  @override
+  late final GeneratedColumn<String> autorId = GeneratedColumn<String>(
+    'autor_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _autorNombreMeta = const VerificationMeta(
+    'autorNombre',
+  );
+  @override
+  late final GeneratedColumn<String> autorNombre = GeneratedColumn<String>(
+    'autor_nombre',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _registradaEnMeta = const VerificationMeta(
+    'registradaEn',
+  );
+  @override
+  late final GeneratedColumn<int> registradaEn = GeneratedColumn<int>(
+    'registrada_en',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    id,
+    obraId,
+    fecha,
+    tipo,
+    texto,
+    clima,
+    personalPresente,
+    personalNombres,
+    visibleCliente,
+    autorId,
+    autorNombre,
+    registradaEn,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'bitacora_entrada';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BitacoraEntradaRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('empresa_id')) {
+      context.handle(
+        _empresaIdMeta,
+        empresaId.isAcceptableOrUnknown(data['empresa_id']!, _empresaIdMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('server_updated_at')) {
+      context.handle(
+        _serverUpdatedAtMeta,
+        serverUpdatedAt.isAcceptableOrUnknown(
+          data['server_updated_at']!,
+          _serverUpdatedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('obra_id')) {
+      context.handle(
+        _obraIdMeta,
+        obraId.isAcceptableOrUnknown(data['obra_id']!, _obraIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_obraIdMeta);
+    }
+    if (data.containsKey('fecha')) {
+      context.handle(
+        _fechaMeta,
+        fecha.isAcceptableOrUnknown(data['fecha']!, _fechaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaMeta);
+    }
+    if (data.containsKey('tipo')) {
+      context.handle(
+        _tipoMeta,
+        tipo.isAcceptableOrUnknown(data['tipo']!, _tipoMeta),
+      );
+    }
+    if (data.containsKey('texto')) {
+      context.handle(
+        _textoMeta,
+        texto.isAcceptableOrUnknown(data['texto']!, _textoMeta),
+      );
+    }
+    if (data.containsKey('clima')) {
+      context.handle(
+        _climaMeta,
+        clima.isAcceptableOrUnknown(data['clima']!, _climaMeta),
+      );
+    }
+    if (data.containsKey('personal_presente')) {
+      context.handle(
+        _personalPresenteMeta,
+        personalPresente.isAcceptableOrUnknown(
+          data['personal_presente']!,
+          _personalPresenteMeta,
+        ),
+      );
+    }
+    if (data.containsKey('personal_nombres')) {
+      context.handle(
+        _personalNombresMeta,
+        personalNombres.isAcceptableOrUnknown(
+          data['personal_nombres']!,
+          _personalNombresMeta,
+        ),
+      );
+    }
+    if (data.containsKey('visible_cliente')) {
+      context.handle(
+        _visibleClienteMeta,
+        visibleCliente.isAcceptableOrUnknown(
+          data['visible_cliente']!,
+          _visibleClienteMeta,
+        ),
+      );
+    }
+    if (data.containsKey('autor_id')) {
+      context.handle(
+        _autorIdMeta,
+        autorId.isAcceptableOrUnknown(data['autor_id']!, _autorIdMeta),
+      );
+    }
+    if (data.containsKey('autor_nombre')) {
+      context.handle(
+        _autorNombreMeta,
+        autorNombre.isAcceptableOrUnknown(
+          data['autor_nombre']!,
+          _autorNombreMeta,
+        ),
+      );
+    }
+    if (data.containsKey('registrada_en')) {
+      context.handle(
+        _registradaEnMeta,
+        registradaEn.isAcceptableOrUnknown(
+          data['registrada_en']!,
+          _registradaEnMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BitacoraEntradaRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BitacoraEntradaRow(
+      empresaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}empresa_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      serverUpdatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}server_updated_at'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      obraId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}obra_id'],
+      )!,
+      fecha: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}fecha'],
+      )!,
+      tipo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tipo'],
+      )!,
+      texto: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}texto'],
+      )!,
+      clima: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}clima'],
+      )!,
+      personalPresente: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}personal_presente'],
+      ),
+      personalNombres: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}personal_nombres'],
+      )!,
+      visibleCliente: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}visible_cliente'],
+      )!,
+      autorId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}autor_id'],
+      ),
+      autorNombre: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}autor_nombre'],
+      )!,
+      registradaEn: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}registrada_en'],
+      )!,
+    );
+  }
+
+  @override
+  $BitacoraEntradaTable createAlias(String alias) {
+    return $BitacoraEntradaTable(attachedDatabase, alias);
+  }
+}
+
+class BitacoraEntradaRow extends DataClass
+    implements Insertable<BitacoraEntradaRow> {
+  /// Llave multitenant + RLS. Vacío mientras no haya backend.
+  final String empresaId;
+
+  /// Alta (UTC ms). 0 en filas previas a la migración.
+  final int createdAt;
+
+  /// Última edición de cliente (UTC ms). Árbitro local de LWW + dirty flag.
+  final int updatedAt;
+
+  /// Lo pone Postgres; árbitro de LWW y cursor de pull. Null hasta sincronizar.
+  final int? serverUpdatedAt;
+
+  /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
+  final int? deletedAt;
+
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
+  final String syncStatus;
+  final String id;
+  final String obraId;
+
+  /// Medianoche del día al que se refiere (epoch ms), no el momento de captura.
+  final int fecha;
+
+  /// AVANCE | INCIDENCIA | INSTRUCCION | VISITA | CLIMA | OTRO.
+  final String tipo;
+  final String texto;
+
+  /// '' (sin anotar) | SOLEADO | NUBLADO | LLUVIA | TORMENTA | CALOR | FRIO | VIENTO.
+  final String clima;
+
+  /// Cuántos había. Con nombres, es su número; sin ellos, el conteo a mano.
+  final int? personalPresente;
+
+  /// En el servidor es `text[]`; aquí se guarda como JSON (`'["Ana","Beto"]'`)
+  /// porque SQLite no tiene arreglos. El sync convierte en los dos sentidos.
+  final String personalNombres;
+
+  /// Publicada en el portal del cliente. Nace en false, como en la web.
+  final bool visibleCliente;
+  final String? autorId;
+  final String autorNombre;
+  final int registradaEn;
+  const BitacoraEntradaRow({
+    required this.empresaId,
+    required this.createdAt,
+    required this.updatedAt,
+    this.serverUpdatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.id,
+    required this.obraId,
+    required this.fecha,
+    required this.tipo,
+    required this.texto,
+    required this.clima,
+    this.personalPresente,
+    required this.personalNombres,
+    required this.visibleCliente,
+    this.autorId,
+    required this.autorNombre,
+    required this.registradaEn,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['empresa_id'] = Variable<String>(empresaId);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || serverUpdatedAt != null) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    map['id'] = Variable<String>(id);
+    map['obra_id'] = Variable<String>(obraId);
+    map['fecha'] = Variable<int>(fecha);
+    map['tipo'] = Variable<String>(tipo);
+    map['texto'] = Variable<String>(texto);
+    map['clima'] = Variable<String>(clima);
+    if (!nullToAbsent || personalPresente != null) {
+      map['personal_presente'] = Variable<int>(personalPresente);
+    }
+    map['personal_nombres'] = Variable<String>(personalNombres);
+    map['visible_cliente'] = Variable<bool>(visibleCliente);
+    if (!nullToAbsent || autorId != null) {
+      map['autor_id'] = Variable<String>(autorId);
+    }
+    map['autor_nombre'] = Variable<String>(autorNombre);
+    map['registrada_en'] = Variable<int>(registradaEn);
+    return map;
+  }
+
+  BitacoraEntradaCompanion toCompanion(bool nullToAbsent) {
+    return BitacoraEntradaCompanion(
+      empresaId: Value(empresaId),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      serverUpdatedAt: serverUpdatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverUpdatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      id: Value(id),
+      obraId: Value(obraId),
+      fecha: Value(fecha),
+      tipo: Value(tipo),
+      texto: Value(texto),
+      clima: Value(clima),
+      personalPresente: personalPresente == null && nullToAbsent
+          ? const Value.absent()
+          : Value(personalPresente),
+      personalNombres: Value(personalNombres),
+      visibleCliente: Value(visibleCliente),
+      autorId: autorId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(autorId),
+      autorNombre: Value(autorNombre),
+      registradaEn: Value(registradaEn),
+    );
+  }
+
+  factory BitacoraEntradaRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BitacoraEntradaRow(
+      empresaId: serializer.fromJson<String>(json['empresaId']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      serverUpdatedAt: serializer.fromJson<int?>(json['serverUpdatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      id: serializer.fromJson<String>(json['id']),
+      obraId: serializer.fromJson<String>(json['obraId']),
+      fecha: serializer.fromJson<int>(json['fecha']),
+      tipo: serializer.fromJson<String>(json['tipo']),
+      texto: serializer.fromJson<String>(json['texto']),
+      clima: serializer.fromJson<String>(json['clima']),
+      personalPresente: serializer.fromJson<int?>(json['personalPresente']),
+      personalNombres: serializer.fromJson<String>(json['personalNombres']),
+      visibleCliente: serializer.fromJson<bool>(json['visibleCliente']),
+      autorId: serializer.fromJson<String?>(json['autorId']),
+      autorNombre: serializer.fromJson<String>(json['autorNombre']),
+      registradaEn: serializer.fromJson<int>(json['registradaEn']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'empresaId': serializer.toJson<String>(empresaId),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'serverUpdatedAt': serializer.toJson<int?>(serverUpdatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'id': serializer.toJson<String>(id),
+      'obraId': serializer.toJson<String>(obraId),
+      'fecha': serializer.toJson<int>(fecha),
+      'tipo': serializer.toJson<String>(tipo),
+      'texto': serializer.toJson<String>(texto),
+      'clima': serializer.toJson<String>(clima),
+      'personalPresente': serializer.toJson<int?>(personalPresente),
+      'personalNombres': serializer.toJson<String>(personalNombres),
+      'visibleCliente': serializer.toJson<bool>(visibleCliente),
+      'autorId': serializer.toJson<String?>(autorId),
+      'autorNombre': serializer.toJson<String>(autorNombre),
+      'registradaEn': serializer.toJson<int>(registradaEn),
+    };
+  }
+
+  BitacoraEntradaRow copyWith({
+    String? empresaId,
+    int? createdAt,
+    int? updatedAt,
+    Value<int?> serverUpdatedAt = const Value.absent(),
+    Value<int?> deletedAt = const Value.absent(),
+    String? syncStatus,
+    String? id,
+    String? obraId,
+    int? fecha,
+    String? tipo,
+    String? texto,
+    String? clima,
+    Value<int?> personalPresente = const Value.absent(),
+    String? personalNombres,
+    bool? visibleCliente,
+    Value<String?> autorId = const Value.absent(),
+    String? autorNombre,
+    int? registradaEn,
+  }) => BitacoraEntradaRow(
+    empresaId: empresaId ?? this.empresaId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    serverUpdatedAt: serverUpdatedAt.present
+        ? serverUpdatedAt.value
+        : this.serverUpdatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    id: id ?? this.id,
+    obraId: obraId ?? this.obraId,
+    fecha: fecha ?? this.fecha,
+    tipo: tipo ?? this.tipo,
+    texto: texto ?? this.texto,
+    clima: clima ?? this.clima,
+    personalPresente: personalPresente.present
+        ? personalPresente.value
+        : this.personalPresente,
+    personalNombres: personalNombres ?? this.personalNombres,
+    visibleCliente: visibleCliente ?? this.visibleCliente,
+    autorId: autorId.present ? autorId.value : this.autorId,
+    autorNombre: autorNombre ?? this.autorNombre,
+    registradaEn: registradaEn ?? this.registradaEn,
+  );
+  BitacoraEntradaRow copyWithCompanion(BitacoraEntradaCompanion data) {
+    return BitacoraEntradaRow(
+      empresaId: data.empresaId.present ? data.empresaId.value : this.empresaId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      serverUpdatedAt: data.serverUpdatedAt.present
+          ? data.serverUpdatedAt.value
+          : this.serverUpdatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      id: data.id.present ? data.id.value : this.id,
+      obraId: data.obraId.present ? data.obraId.value : this.obraId,
+      fecha: data.fecha.present ? data.fecha.value : this.fecha,
+      tipo: data.tipo.present ? data.tipo.value : this.tipo,
+      texto: data.texto.present ? data.texto.value : this.texto,
+      clima: data.clima.present ? data.clima.value : this.clima,
+      personalPresente: data.personalPresente.present
+          ? data.personalPresente.value
+          : this.personalPresente,
+      personalNombres: data.personalNombres.present
+          ? data.personalNombres.value
+          : this.personalNombres,
+      visibleCliente: data.visibleCliente.present
+          ? data.visibleCliente.value
+          : this.visibleCliente,
+      autorId: data.autorId.present ? data.autorId.value : this.autorId,
+      autorNombre: data.autorNombre.present
+          ? data.autorNombre.value
+          : this.autorNombre,
+      registradaEn: data.registradaEn.present
+          ? data.registradaEn.value
+          : this.registradaEn,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BitacoraEntradaRow(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('id: $id, ')
+          ..write('obraId: $obraId, ')
+          ..write('fecha: $fecha, ')
+          ..write('tipo: $tipo, ')
+          ..write('texto: $texto, ')
+          ..write('clima: $clima, ')
+          ..write('personalPresente: $personalPresente, ')
+          ..write('personalNombres: $personalNombres, ')
+          ..write('visibleCliente: $visibleCliente, ')
+          ..write('autorId: $autorId, ')
+          ..write('autorNombre: $autorNombre, ')
+          ..write('registradaEn: $registradaEn')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    id,
+    obraId,
+    fecha,
+    tipo,
+    texto,
+    clima,
+    personalPresente,
+    personalNombres,
+    visibleCliente,
+    autorId,
+    autorNombre,
+    registradaEn,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BitacoraEntradaRow &&
+          other.empresaId == this.empresaId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.serverUpdatedAt == this.serverUpdatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.id == this.id &&
+          other.obraId == this.obraId &&
+          other.fecha == this.fecha &&
+          other.tipo == this.tipo &&
+          other.texto == this.texto &&
+          other.clima == this.clima &&
+          other.personalPresente == this.personalPresente &&
+          other.personalNombres == this.personalNombres &&
+          other.visibleCliente == this.visibleCliente &&
+          other.autorId == this.autorId &&
+          other.autorNombre == this.autorNombre &&
+          other.registradaEn == this.registradaEn);
+}
+
+class BitacoraEntradaCompanion extends UpdateCompanion<BitacoraEntradaRow> {
+  final Value<String> empresaId;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int?> serverUpdatedAt;
+  final Value<int?> deletedAt;
+  final Value<String> syncStatus;
+  final Value<String> id;
+  final Value<String> obraId;
+  final Value<int> fecha;
+  final Value<String> tipo;
+  final Value<String> texto;
+  final Value<String> clima;
+  final Value<int?> personalPresente;
+  final Value<String> personalNombres;
+  final Value<bool> visibleCliente;
+  final Value<String?> autorId;
+  final Value<String> autorNombre;
+  final Value<int> registradaEn;
+  final Value<int> rowid;
+  const BitacoraEntradaCompanion({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.id = const Value.absent(),
+    this.obraId = const Value.absent(),
+    this.fecha = const Value.absent(),
+    this.tipo = const Value.absent(),
+    this.texto = const Value.absent(),
+    this.clima = const Value.absent(),
+    this.personalPresente = const Value.absent(),
+    this.personalNombres = const Value.absent(),
+    this.visibleCliente = const Value.absent(),
+    this.autorId = const Value.absent(),
+    this.autorNombre = const Value.absent(),
+    this.registradaEn = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BitacoraEntradaCompanion.insert({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String id,
+    required String obraId,
+    required int fecha,
+    this.tipo = const Value.absent(),
+    this.texto = const Value.absent(),
+    this.clima = const Value.absent(),
+    this.personalPresente = const Value.absent(),
+    this.personalNombres = const Value.absent(),
+    this.visibleCliente = const Value.absent(),
+    this.autorId = const Value.absent(),
+    this.autorNombre = const Value.absent(),
+    this.registradaEn = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       obraId = Value(obraId),
+       fecha = Value(fecha);
+  static Insertable<BitacoraEntradaRow> custom({
+    Expression<String>? empresaId,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? serverUpdatedAt,
+    Expression<int>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? id,
+    Expression<String>? obraId,
+    Expression<int>? fecha,
+    Expression<String>? tipo,
+    Expression<String>? texto,
+    Expression<String>? clima,
+    Expression<int>? personalPresente,
+    Expression<String>? personalNombres,
+    Expression<bool>? visibleCliente,
+    Expression<String>? autorId,
+    Expression<String>? autorNombre,
+    Expression<int>? registradaEn,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (empresaId != null) 'empresa_id': empresaId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (serverUpdatedAt != null) 'server_updated_at': serverUpdatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (id != null) 'id': id,
+      if (obraId != null) 'obra_id': obraId,
+      if (fecha != null) 'fecha': fecha,
+      if (tipo != null) 'tipo': tipo,
+      if (texto != null) 'texto': texto,
+      if (clima != null) 'clima': clima,
+      if (personalPresente != null) 'personal_presente': personalPresente,
+      if (personalNombres != null) 'personal_nombres': personalNombres,
+      if (visibleCliente != null) 'visible_cliente': visibleCliente,
+      if (autorId != null) 'autor_id': autorId,
+      if (autorNombre != null) 'autor_nombre': autorNombre,
+      if (registradaEn != null) 'registrada_en': registradaEn,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BitacoraEntradaCompanion copyWith({
+    Value<String>? empresaId,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int?>? serverUpdatedAt,
+    Value<int?>? deletedAt,
+    Value<String>? syncStatus,
+    Value<String>? id,
+    Value<String>? obraId,
+    Value<int>? fecha,
+    Value<String>? tipo,
+    Value<String>? texto,
+    Value<String>? clima,
+    Value<int?>? personalPresente,
+    Value<String>? personalNombres,
+    Value<bool>? visibleCliente,
+    Value<String?>? autorId,
+    Value<String>? autorNombre,
+    Value<int>? registradaEn,
+    Value<int>? rowid,
+  }) {
+    return BitacoraEntradaCompanion(
+      empresaId: empresaId ?? this.empresaId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      id: id ?? this.id,
+      obraId: obraId ?? this.obraId,
+      fecha: fecha ?? this.fecha,
+      tipo: tipo ?? this.tipo,
+      texto: texto ?? this.texto,
+      clima: clima ?? this.clima,
+      personalPresente: personalPresente ?? this.personalPresente,
+      personalNombres: personalNombres ?? this.personalNombres,
+      visibleCliente: visibleCliente ?? this.visibleCliente,
+      autorId: autorId ?? this.autorId,
+      autorNombre: autorNombre ?? this.autorNombre,
+      registradaEn: registradaEn ?? this.registradaEn,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (empresaId.present) {
+      map['empresa_id'] = Variable<String>(empresaId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (serverUpdatedAt.present) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (obraId.present) {
+      map['obra_id'] = Variable<String>(obraId.value);
+    }
+    if (fecha.present) {
+      map['fecha'] = Variable<int>(fecha.value);
+    }
+    if (tipo.present) {
+      map['tipo'] = Variable<String>(tipo.value);
+    }
+    if (texto.present) {
+      map['texto'] = Variable<String>(texto.value);
+    }
+    if (clima.present) {
+      map['clima'] = Variable<String>(clima.value);
+    }
+    if (personalPresente.present) {
+      map['personal_presente'] = Variable<int>(personalPresente.value);
+    }
+    if (personalNombres.present) {
+      map['personal_nombres'] = Variable<String>(personalNombres.value);
+    }
+    if (visibleCliente.present) {
+      map['visible_cliente'] = Variable<bool>(visibleCliente.value);
+    }
+    if (autorId.present) {
+      map['autor_id'] = Variable<String>(autorId.value);
+    }
+    if (autorNombre.present) {
+      map['autor_nombre'] = Variable<String>(autorNombre.value);
+    }
+    if (registradaEn.present) {
+      map['registrada_en'] = Variable<int>(registradaEn.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BitacoraEntradaCompanion(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('id: $id, ')
+          ..write('obraId: $obraId, ')
+          ..write('fecha: $fecha, ')
+          ..write('tipo: $tipo, ')
+          ..write('texto: $texto, ')
+          ..write('clima: $clima, ')
+          ..write('personalPresente: $personalPresente, ')
+          ..write('personalNombres: $personalNombres, ')
+          ..write('visibleCliente: $visibleCliente, ')
+          ..write('autorId: $autorId, ')
+          ..write('autorNombre: $autorNombre, ')
+          ..write('registradaEn: $registradaEn, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BitacoraFotoTable extends BitacoraFoto
+    with TableInfo<$BitacoraFotoTable, BitacoraFotoRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BitacoraFotoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _empresaIdMeta = const VerificationMeta(
+    'empresaId',
+  );
+  @override
+  late final GeneratedColumn<String> empresaId = GeneratedColumn<String>(
+    'empresa_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _serverUpdatedAtMeta = const VerificationMeta(
+    'serverUpdatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> serverUpdatedAt = GeneratedColumn<int>(
+    'server_updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _ordenMeta = const VerificationMeta('orden');
+  @override
+  late final GeneratedColumn<int> orden = GeneratedColumn<int>(
+    'orden',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entradaIdMeta = const VerificationMeta(
+    'entradaId',
+  );
+  @override
+  late final GeneratedColumn<String> entradaId = GeneratedColumn<String>(
+    'entrada_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pathMeta = const VerificationMeta('path');
+  @override
+  late final GeneratedColumn<String> path = GeneratedColumn<String>(
+    'path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _mimeMeta = const VerificationMeta('mime');
+  @override
+  late final GeneratedColumn<String> mime = GeneratedColumn<String>(
+    'mime',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('image/jpeg'),
+  );
+  static const VerificationMeta _bytesMeta = const VerificationMeta('bytes');
+  @override
+  late final GeneratedColumn<int> bytes = GeneratedColumn<int>(
+    'bytes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    orden,
+    id,
+    entradaId,
+    path,
+    mime,
+    bytes,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'bitacora_foto';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BitacoraFotoRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('empresa_id')) {
+      context.handle(
+        _empresaIdMeta,
+        empresaId.isAcceptableOrUnknown(data['empresa_id']!, _empresaIdMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('server_updated_at')) {
+      context.handle(
+        _serverUpdatedAtMeta,
+        serverUpdatedAt.isAcceptableOrUnknown(
+          data['server_updated_at']!,
+          _serverUpdatedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('orden')) {
+      context.handle(
+        _ordenMeta,
+        orden.isAcceptableOrUnknown(data['orden']!, _ordenMeta),
+      );
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('entrada_id')) {
+      context.handle(
+        _entradaIdMeta,
+        entradaId.isAcceptableOrUnknown(data['entrada_id']!, _entradaIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entradaIdMeta);
+    }
+    if (data.containsKey('path')) {
+      context.handle(
+        _pathMeta,
+        path.isAcceptableOrUnknown(data['path']!, _pathMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pathMeta);
+    }
+    if (data.containsKey('mime')) {
+      context.handle(
+        _mimeMeta,
+        mime.isAcceptableOrUnknown(data['mime']!, _mimeMeta),
+      );
+    }
+    if (data.containsKey('bytes')) {
+      context.handle(
+        _bytesMeta,
+        bytes.isAcceptableOrUnknown(data['bytes']!, _bytesMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BitacoraFotoRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BitacoraFotoRow(
+      empresaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}empresa_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      serverUpdatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}server_updated_at'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      orden: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}orden'],
+      )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      entradaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entrada_id'],
+      )!,
+      path: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}path'],
+      )!,
+      mime: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mime'],
+      )!,
+      bytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}bytes'],
+      ),
+    );
+  }
+
+  @override
+  $BitacoraFotoTable createAlias(String alias) {
+    return $BitacoraFotoTable(attachedDatabase, alias);
+  }
+}
+
+class BitacoraFotoRow extends DataClass implements Insertable<BitacoraFotoRow> {
+  /// Llave multitenant + RLS. Vacío mientras no haya backend.
+  final String empresaId;
+
+  /// Alta (UTC ms). 0 en filas previas a la migración.
+  final int createdAt;
+
+  /// Última edición de cliente (UTC ms). Árbitro local de LWW + dirty flag.
+  final int updatedAt;
+
+  /// Lo pone Postgres; árbitro de LWW y cursor de pull. Null hasta sincronizar.
+  final int? serverUpdatedAt;
+
+  /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
+  final int? deletedAt;
+
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
+  final String syncStatus;
+  final int orden;
+  final String id;
+  final String entradaId;
+  final String path;
+  final String mime;
+  final int? bytes;
+  const BitacoraFotoRow({
+    required this.empresaId,
+    required this.createdAt,
+    required this.updatedAt,
+    this.serverUpdatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.orden,
+    required this.id,
+    required this.entradaId,
+    required this.path,
+    required this.mime,
+    this.bytes,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['empresa_id'] = Variable<String>(empresaId);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || serverUpdatedAt != null) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    map['orden'] = Variable<int>(orden);
+    map['id'] = Variable<String>(id);
+    map['entrada_id'] = Variable<String>(entradaId);
+    map['path'] = Variable<String>(path);
+    map['mime'] = Variable<String>(mime);
+    if (!nullToAbsent || bytes != null) {
+      map['bytes'] = Variable<int>(bytes);
+    }
+    return map;
+  }
+
+  BitacoraFotoCompanion toCompanion(bool nullToAbsent) {
+    return BitacoraFotoCompanion(
+      empresaId: Value(empresaId),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      serverUpdatedAt: serverUpdatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverUpdatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      orden: Value(orden),
+      id: Value(id),
+      entradaId: Value(entradaId),
+      path: Value(path),
+      mime: Value(mime),
+      bytes: bytes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(bytes),
+    );
+  }
+
+  factory BitacoraFotoRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BitacoraFotoRow(
+      empresaId: serializer.fromJson<String>(json['empresaId']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      serverUpdatedAt: serializer.fromJson<int?>(json['serverUpdatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      orden: serializer.fromJson<int>(json['orden']),
+      id: serializer.fromJson<String>(json['id']),
+      entradaId: serializer.fromJson<String>(json['entradaId']),
+      path: serializer.fromJson<String>(json['path']),
+      mime: serializer.fromJson<String>(json['mime']),
+      bytes: serializer.fromJson<int?>(json['bytes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'empresaId': serializer.toJson<String>(empresaId),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'serverUpdatedAt': serializer.toJson<int?>(serverUpdatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'orden': serializer.toJson<int>(orden),
+      'id': serializer.toJson<String>(id),
+      'entradaId': serializer.toJson<String>(entradaId),
+      'path': serializer.toJson<String>(path),
+      'mime': serializer.toJson<String>(mime),
+      'bytes': serializer.toJson<int?>(bytes),
+    };
+  }
+
+  BitacoraFotoRow copyWith({
+    String? empresaId,
+    int? createdAt,
+    int? updatedAt,
+    Value<int?> serverUpdatedAt = const Value.absent(),
+    Value<int?> deletedAt = const Value.absent(),
+    String? syncStatus,
+    int? orden,
+    String? id,
+    String? entradaId,
+    String? path,
+    String? mime,
+    Value<int?> bytes = const Value.absent(),
+  }) => BitacoraFotoRow(
+    empresaId: empresaId ?? this.empresaId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    serverUpdatedAt: serverUpdatedAt.present
+        ? serverUpdatedAt.value
+        : this.serverUpdatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    orden: orden ?? this.orden,
+    id: id ?? this.id,
+    entradaId: entradaId ?? this.entradaId,
+    path: path ?? this.path,
+    mime: mime ?? this.mime,
+    bytes: bytes.present ? bytes.value : this.bytes,
+  );
+  BitacoraFotoRow copyWithCompanion(BitacoraFotoCompanion data) {
+    return BitacoraFotoRow(
+      empresaId: data.empresaId.present ? data.empresaId.value : this.empresaId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      serverUpdatedAt: data.serverUpdatedAt.present
+          ? data.serverUpdatedAt.value
+          : this.serverUpdatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      orden: data.orden.present ? data.orden.value : this.orden,
+      id: data.id.present ? data.id.value : this.id,
+      entradaId: data.entradaId.present ? data.entradaId.value : this.entradaId,
+      path: data.path.present ? data.path.value : this.path,
+      mime: data.mime.present ? data.mime.value : this.mime,
+      bytes: data.bytes.present ? data.bytes.value : this.bytes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BitacoraFotoRow(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
+          ..write('id: $id, ')
+          ..write('entradaId: $entradaId, ')
+          ..write('path: $path, ')
+          ..write('mime: $mime, ')
+          ..write('bytes: $bytes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    orden,
+    id,
+    entradaId,
+    path,
+    mime,
+    bytes,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BitacoraFotoRow &&
+          other.empresaId == this.empresaId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.serverUpdatedAt == this.serverUpdatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.orden == this.orden &&
+          other.id == this.id &&
+          other.entradaId == this.entradaId &&
+          other.path == this.path &&
+          other.mime == this.mime &&
+          other.bytes == this.bytes);
+}
+
+class BitacoraFotoCompanion extends UpdateCompanion<BitacoraFotoRow> {
+  final Value<String> empresaId;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int?> serverUpdatedAt;
+  final Value<int?> deletedAt;
+  final Value<String> syncStatus;
+  final Value<int> orden;
+  final Value<String> id;
+  final Value<String> entradaId;
+  final Value<String> path;
+  final Value<String> mime;
+  final Value<int?> bytes;
+  final Value<int> rowid;
+  const BitacoraFotoCompanion({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
+    this.id = const Value.absent(),
+    this.entradaId = const Value.absent(),
+    this.path = const Value.absent(),
+    this.mime = const Value.absent(),
+    this.bytes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BitacoraFotoCompanion.insert({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
+    required String id,
+    required String entradaId,
+    required String path,
+    this.mime = const Value.absent(),
+    this.bytes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       entradaId = Value(entradaId),
+       path = Value(path);
+  static Insertable<BitacoraFotoRow> custom({
+    Expression<String>? empresaId,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? serverUpdatedAt,
+    Expression<int>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<int>? orden,
+    Expression<String>? id,
+    Expression<String>? entradaId,
+    Expression<String>? path,
+    Expression<String>? mime,
+    Expression<int>? bytes,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (empresaId != null) 'empresa_id': empresaId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (serverUpdatedAt != null) 'server_updated_at': serverUpdatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (orden != null) 'orden': orden,
+      if (id != null) 'id': id,
+      if (entradaId != null) 'entrada_id': entradaId,
+      if (path != null) 'path': path,
+      if (mime != null) 'mime': mime,
+      if (bytes != null) 'bytes': bytes,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BitacoraFotoCompanion copyWith({
+    Value<String>? empresaId,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int?>? serverUpdatedAt,
+    Value<int?>? deletedAt,
+    Value<String>? syncStatus,
+    Value<int>? orden,
+    Value<String>? id,
+    Value<String>? entradaId,
+    Value<String>? path,
+    Value<String>? mime,
+    Value<int?>? bytes,
+    Value<int>? rowid,
+  }) {
+    return BitacoraFotoCompanion(
+      empresaId: empresaId ?? this.empresaId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      orden: orden ?? this.orden,
+      id: id ?? this.id,
+      entradaId: entradaId ?? this.entradaId,
+      path: path ?? this.path,
+      mime: mime ?? this.mime,
+      bytes: bytes ?? this.bytes,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (empresaId.present) {
+      map['empresa_id'] = Variable<String>(empresaId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (serverUpdatedAt.present) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (orden.present) {
+      map['orden'] = Variable<int>(orden.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (entradaId.present) {
+      map['entrada_id'] = Variable<String>(entradaId.value);
+    }
+    if (path.present) {
+      map['path'] = Variable<String>(path.value);
+    }
+    if (mime.present) {
+      map['mime'] = Variable<String>(mime.value);
+    }
+    if (bytes.present) {
+      map['bytes'] = Variable<int>(bytes.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BitacoraFotoCompanion(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
+          ..write('id: $id, ')
+          ..write('entradaId: $entradaId, ')
+          ..write('path: $path, ')
+          ..write('mime: $mime, ')
+          ..write('bytes: $bytes, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BitacoraAclaracionTable extends BitacoraAclaracion
+    with TableInfo<$BitacoraAclaracionTable, BitacoraAclaracionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BitacoraAclaracionTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _empresaIdMeta = const VerificationMeta(
+    'empresaId',
+  );
+  @override
+  late final GeneratedColumn<String> empresaId = GeneratedColumn<String>(
+    'empresa_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _serverUpdatedAtMeta = const VerificationMeta(
+    'serverUpdatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> serverUpdatedAt = GeneratedColumn<int>(
+    'server_updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entradaIdMeta = const VerificationMeta(
+    'entradaId',
+  );
+  @override
+  late final GeneratedColumn<String> entradaId = GeneratedColumn<String>(
+    'entrada_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _textoMeta = const VerificationMeta('texto');
+  @override
+  late final GeneratedColumn<String> texto = GeneratedColumn<String>(
+    'texto',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _autorIdMeta = const VerificationMeta(
+    'autorId',
+  );
+  @override
+  late final GeneratedColumn<String> autorId = GeneratedColumn<String>(
+    'autor_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _autorNombreMeta = const VerificationMeta(
+    'autorNombre',
+  );
+  @override
+  late final GeneratedColumn<String> autorNombre = GeneratedColumn<String>(
+    'autor_nombre',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _registradaEnMeta = const VerificationMeta(
+    'registradaEn',
+  );
+  @override
+  late final GeneratedColumn<int> registradaEn = GeneratedColumn<int>(
+    'registrada_en',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    id,
+    entradaId,
+    texto,
+    autorId,
+    autorNombre,
+    registradaEn,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'bitacora_aclaracion';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BitacoraAclaracionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('empresa_id')) {
+      context.handle(
+        _empresaIdMeta,
+        empresaId.isAcceptableOrUnknown(data['empresa_id']!, _empresaIdMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('server_updated_at')) {
+      context.handle(
+        _serverUpdatedAtMeta,
+        serverUpdatedAt.isAcceptableOrUnknown(
+          data['server_updated_at']!,
+          _serverUpdatedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('entrada_id')) {
+      context.handle(
+        _entradaIdMeta,
+        entradaId.isAcceptableOrUnknown(data['entrada_id']!, _entradaIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entradaIdMeta);
+    }
+    if (data.containsKey('texto')) {
+      context.handle(
+        _textoMeta,
+        texto.isAcceptableOrUnknown(data['texto']!, _textoMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_textoMeta);
+    }
+    if (data.containsKey('autor_id')) {
+      context.handle(
+        _autorIdMeta,
+        autorId.isAcceptableOrUnknown(data['autor_id']!, _autorIdMeta),
+      );
+    }
+    if (data.containsKey('autor_nombre')) {
+      context.handle(
+        _autorNombreMeta,
+        autorNombre.isAcceptableOrUnknown(
+          data['autor_nombre']!,
+          _autorNombreMeta,
+        ),
+      );
+    }
+    if (data.containsKey('registrada_en')) {
+      context.handle(
+        _registradaEnMeta,
+        registradaEn.isAcceptableOrUnknown(
+          data['registrada_en']!,
+          _registradaEnMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BitacoraAclaracionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BitacoraAclaracionRow(
+      empresaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}empresa_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      serverUpdatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}server_updated_at'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      entradaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entrada_id'],
+      )!,
+      texto: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}texto'],
+      )!,
+      autorId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}autor_id'],
+      ),
+      autorNombre: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}autor_nombre'],
+      )!,
+      registradaEn: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}registrada_en'],
+      )!,
+    );
+  }
+
+  @override
+  $BitacoraAclaracionTable createAlias(String alias) {
+    return $BitacoraAclaracionTable(attachedDatabase, alias);
+  }
+}
+
+class BitacoraAclaracionRow extends DataClass
+    implements Insertable<BitacoraAclaracionRow> {
+  /// Llave multitenant + RLS. Vacío mientras no haya backend.
+  final String empresaId;
+
+  /// Alta (UTC ms). 0 en filas previas a la migración.
+  final int createdAt;
+
+  /// Última edición de cliente (UTC ms). Árbitro local de LWW + dirty flag.
+  final int updatedAt;
+
+  /// Lo pone Postgres; árbitro de LWW y cursor de pull. Null hasta sincronizar.
+  final int? serverUpdatedAt;
+
+  /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
+  final int? deletedAt;
+
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
+  final String syncStatus;
+  final String id;
+  final String entradaId;
+  final String texto;
+  final String? autorId;
+  final String autorNombre;
+  final int registradaEn;
+  const BitacoraAclaracionRow({
+    required this.empresaId,
+    required this.createdAt,
+    required this.updatedAt,
+    this.serverUpdatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.id,
+    required this.entradaId,
+    required this.texto,
+    this.autorId,
+    required this.autorNombre,
+    required this.registradaEn,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['empresa_id'] = Variable<String>(empresaId);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || serverUpdatedAt != null) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    map['id'] = Variable<String>(id);
+    map['entrada_id'] = Variable<String>(entradaId);
+    map['texto'] = Variable<String>(texto);
+    if (!nullToAbsent || autorId != null) {
+      map['autor_id'] = Variable<String>(autorId);
+    }
+    map['autor_nombre'] = Variable<String>(autorNombre);
+    map['registrada_en'] = Variable<int>(registradaEn);
+    return map;
+  }
+
+  BitacoraAclaracionCompanion toCompanion(bool nullToAbsent) {
+    return BitacoraAclaracionCompanion(
+      empresaId: Value(empresaId),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      serverUpdatedAt: serverUpdatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverUpdatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      id: Value(id),
+      entradaId: Value(entradaId),
+      texto: Value(texto),
+      autorId: autorId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(autorId),
+      autorNombre: Value(autorNombre),
+      registradaEn: Value(registradaEn),
+    );
+  }
+
+  factory BitacoraAclaracionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BitacoraAclaracionRow(
+      empresaId: serializer.fromJson<String>(json['empresaId']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      serverUpdatedAt: serializer.fromJson<int?>(json['serverUpdatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      id: serializer.fromJson<String>(json['id']),
+      entradaId: serializer.fromJson<String>(json['entradaId']),
+      texto: serializer.fromJson<String>(json['texto']),
+      autorId: serializer.fromJson<String?>(json['autorId']),
+      autorNombre: serializer.fromJson<String>(json['autorNombre']),
+      registradaEn: serializer.fromJson<int>(json['registradaEn']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'empresaId': serializer.toJson<String>(empresaId),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'serverUpdatedAt': serializer.toJson<int?>(serverUpdatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'id': serializer.toJson<String>(id),
+      'entradaId': serializer.toJson<String>(entradaId),
+      'texto': serializer.toJson<String>(texto),
+      'autorId': serializer.toJson<String?>(autorId),
+      'autorNombre': serializer.toJson<String>(autorNombre),
+      'registradaEn': serializer.toJson<int>(registradaEn),
+    };
+  }
+
+  BitacoraAclaracionRow copyWith({
+    String? empresaId,
+    int? createdAt,
+    int? updatedAt,
+    Value<int?> serverUpdatedAt = const Value.absent(),
+    Value<int?> deletedAt = const Value.absent(),
+    String? syncStatus,
+    String? id,
+    String? entradaId,
+    String? texto,
+    Value<String?> autorId = const Value.absent(),
+    String? autorNombre,
+    int? registradaEn,
+  }) => BitacoraAclaracionRow(
+    empresaId: empresaId ?? this.empresaId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    serverUpdatedAt: serverUpdatedAt.present
+        ? serverUpdatedAt.value
+        : this.serverUpdatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    id: id ?? this.id,
+    entradaId: entradaId ?? this.entradaId,
+    texto: texto ?? this.texto,
+    autorId: autorId.present ? autorId.value : this.autorId,
+    autorNombre: autorNombre ?? this.autorNombre,
+    registradaEn: registradaEn ?? this.registradaEn,
+  );
+  BitacoraAclaracionRow copyWithCompanion(BitacoraAclaracionCompanion data) {
+    return BitacoraAclaracionRow(
+      empresaId: data.empresaId.present ? data.empresaId.value : this.empresaId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      serverUpdatedAt: data.serverUpdatedAt.present
+          ? data.serverUpdatedAt.value
+          : this.serverUpdatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      id: data.id.present ? data.id.value : this.id,
+      entradaId: data.entradaId.present ? data.entradaId.value : this.entradaId,
+      texto: data.texto.present ? data.texto.value : this.texto,
+      autorId: data.autorId.present ? data.autorId.value : this.autorId,
+      autorNombre: data.autorNombre.present
+          ? data.autorNombre.value
+          : this.autorNombre,
+      registradaEn: data.registradaEn.present
+          ? data.registradaEn.value
+          : this.registradaEn,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BitacoraAclaracionRow(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('id: $id, ')
+          ..write('entradaId: $entradaId, ')
+          ..write('texto: $texto, ')
+          ..write('autorId: $autorId, ')
+          ..write('autorNombre: $autorNombre, ')
+          ..write('registradaEn: $registradaEn')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    id,
+    entradaId,
+    texto,
+    autorId,
+    autorNombre,
+    registradaEn,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BitacoraAclaracionRow &&
+          other.empresaId == this.empresaId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.serverUpdatedAt == this.serverUpdatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.id == this.id &&
+          other.entradaId == this.entradaId &&
+          other.texto == this.texto &&
+          other.autorId == this.autorId &&
+          other.autorNombre == this.autorNombre &&
+          other.registradaEn == this.registradaEn);
+}
+
+class BitacoraAclaracionCompanion
+    extends UpdateCompanion<BitacoraAclaracionRow> {
+  final Value<String> empresaId;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int?> serverUpdatedAt;
+  final Value<int?> deletedAt;
+  final Value<String> syncStatus;
+  final Value<String> id;
+  final Value<String> entradaId;
+  final Value<String> texto;
+  final Value<String?> autorId;
+  final Value<String> autorNombre;
+  final Value<int> registradaEn;
+  final Value<int> rowid;
+  const BitacoraAclaracionCompanion({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.id = const Value.absent(),
+    this.entradaId = const Value.absent(),
+    this.texto = const Value.absent(),
+    this.autorId = const Value.absent(),
+    this.autorNombre = const Value.absent(),
+    this.registradaEn = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BitacoraAclaracionCompanion.insert({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    required String id,
+    required String entradaId,
+    required String texto,
+    this.autorId = const Value.absent(),
+    this.autorNombre = const Value.absent(),
+    this.registradaEn = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       entradaId = Value(entradaId),
+       texto = Value(texto);
+  static Insertable<BitacoraAclaracionRow> custom({
+    Expression<String>? empresaId,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? serverUpdatedAt,
+    Expression<int>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<String>? id,
+    Expression<String>? entradaId,
+    Expression<String>? texto,
+    Expression<String>? autorId,
+    Expression<String>? autorNombre,
+    Expression<int>? registradaEn,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (empresaId != null) 'empresa_id': empresaId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (serverUpdatedAt != null) 'server_updated_at': serverUpdatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (id != null) 'id': id,
+      if (entradaId != null) 'entrada_id': entradaId,
+      if (texto != null) 'texto': texto,
+      if (autorId != null) 'autor_id': autorId,
+      if (autorNombre != null) 'autor_nombre': autorNombre,
+      if (registradaEn != null) 'registrada_en': registradaEn,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BitacoraAclaracionCompanion copyWith({
+    Value<String>? empresaId,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int?>? serverUpdatedAt,
+    Value<int?>? deletedAt,
+    Value<String>? syncStatus,
+    Value<String>? id,
+    Value<String>? entradaId,
+    Value<String>? texto,
+    Value<String?>? autorId,
+    Value<String>? autorNombre,
+    Value<int>? registradaEn,
+    Value<int>? rowid,
+  }) {
+    return BitacoraAclaracionCompanion(
+      empresaId: empresaId ?? this.empresaId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      id: id ?? this.id,
+      entradaId: entradaId ?? this.entradaId,
+      texto: texto ?? this.texto,
+      autorId: autorId ?? this.autorId,
+      autorNombre: autorNombre ?? this.autorNombre,
+      registradaEn: registradaEn ?? this.registradaEn,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (empresaId.present) {
+      map['empresa_id'] = Variable<String>(empresaId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (serverUpdatedAt.present) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (entradaId.present) {
+      map['entrada_id'] = Variable<String>(entradaId.value);
+    }
+    if (texto.present) {
+      map['texto'] = Variable<String>(texto.value);
+    }
+    if (autorId.present) {
+      map['autor_id'] = Variable<String>(autorId.value);
+    }
+    if (autorNombre.present) {
+      map['autor_nombre'] = Variable<String>(autorNombre.value);
+    }
+    if (registradaEn.present) {
+      map['registrada_en'] = Variable<int>(registradaEn.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BitacoraAclaracionCompanion(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('id: $id, ')
+          ..write('entradaId: $entradaId, ')
+          ..write('texto: $texto, ')
+          ..write('autorId: $autorId, ')
+          ..write('autorNombre: $autorNombre, ')
+          ..write('registradaEn: $registradaEn, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -17070,6 +19542,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $NotaObraRenglonTable notaObraRenglon = $NotaObraRenglonTable(
     this,
   );
+  late final $BitacoraEntradaTable bitacoraEntrada = $BitacoraEntradaTable(
+    this,
+  );
+  late final $BitacoraFotoTable bitacoraFoto = $BitacoraFotoTable(this);
+  late final $BitacoraAclaracionTable bitacoraAclaracion =
+      $BitacoraAclaracionTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -17096,6 +19574,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     obraCajaNota,
     notaObra,
     notaObraRenglon,
+    bitacoraEntrada,
+    bitacoraFoto,
+    bitacoraAclaracion,
   ];
 }
 
@@ -24990,6 +27471,1168 @@ typedef $$NotaObraRenglonTableProcessedTableManager =
       NotaObraRenglonRow,
       PrefetchHooks Function()
     >;
+typedef $$BitacoraEntradaTableCreateCompanionBuilder =
+    BitacoraEntradaCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      required String id,
+      required String obraId,
+      required int fecha,
+      Value<String> tipo,
+      Value<String> texto,
+      Value<String> clima,
+      Value<int?> personalPresente,
+      Value<String> personalNombres,
+      Value<bool> visibleCliente,
+      Value<String?> autorId,
+      Value<String> autorNombre,
+      Value<int> registradaEn,
+      Value<int> rowid,
+    });
+typedef $$BitacoraEntradaTableUpdateCompanionBuilder =
+    BitacoraEntradaCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      Value<String> id,
+      Value<String> obraId,
+      Value<int> fecha,
+      Value<String> tipo,
+      Value<String> texto,
+      Value<String> clima,
+      Value<int?> personalPresente,
+      Value<String> personalNombres,
+      Value<bool> visibleCliente,
+      Value<String?> autorId,
+      Value<String> autorNombre,
+      Value<int> registradaEn,
+      Value<int> rowid,
+    });
+
+class $$BitacoraEntradaTableFilterComposer
+    extends Composer<_$AppDatabase, $BitacoraEntradaTable> {
+  $$BitacoraEntradaTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get obraId => $composableBuilder(
+    column: $table.obraId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get fecha => $composableBuilder(
+    column: $table.fecha,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get texto => $composableBuilder(
+    column: $table.texto,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get clima => $composableBuilder(
+    column: $table.clima,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get personalPresente => $composableBuilder(
+    column: $table.personalPresente,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get personalNombres => $composableBuilder(
+    column: $table.personalNombres,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get visibleCliente => $composableBuilder(
+    column: $table.visibleCliente,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get autorId => $composableBuilder(
+    column: $table.autorId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get autorNombre => $composableBuilder(
+    column: $table.autorNombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get registradaEn => $composableBuilder(
+    column: $table.registradaEn,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$BitacoraEntradaTableOrderingComposer
+    extends Composer<_$AppDatabase, $BitacoraEntradaTable> {
+  $$BitacoraEntradaTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get obraId => $composableBuilder(
+    column: $table.obraId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get fecha => $composableBuilder(
+    column: $table.fecha,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get texto => $composableBuilder(
+    column: $table.texto,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get clima => $composableBuilder(
+    column: $table.clima,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get personalPresente => $composableBuilder(
+    column: $table.personalPresente,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get personalNombres => $composableBuilder(
+    column: $table.personalNombres,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get visibleCliente => $composableBuilder(
+    column: $table.visibleCliente,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get autorId => $composableBuilder(
+    column: $table.autorId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get autorNombre => $composableBuilder(
+    column: $table.autorNombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get registradaEn => $composableBuilder(
+    column: $table.registradaEn,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$BitacoraEntradaTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BitacoraEntradaTable> {
+  $$BitacoraEntradaTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get empresaId =>
+      $composableBuilder(column: $table.empresaId, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get obraId =>
+      $composableBuilder(column: $table.obraId, builder: (column) => column);
+
+  GeneratedColumn<int> get fecha =>
+      $composableBuilder(column: $table.fecha, builder: (column) => column);
+
+  GeneratedColumn<String> get tipo =>
+      $composableBuilder(column: $table.tipo, builder: (column) => column);
+
+  GeneratedColumn<String> get texto =>
+      $composableBuilder(column: $table.texto, builder: (column) => column);
+
+  GeneratedColumn<String> get clima =>
+      $composableBuilder(column: $table.clima, builder: (column) => column);
+
+  GeneratedColumn<int> get personalPresente => $composableBuilder(
+    column: $table.personalPresente,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get personalNombres => $composableBuilder(
+    column: $table.personalNombres,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get visibleCliente => $composableBuilder(
+    column: $table.visibleCliente,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get autorId =>
+      $composableBuilder(column: $table.autorId, builder: (column) => column);
+
+  GeneratedColumn<String> get autorNombre => $composableBuilder(
+    column: $table.autorNombre,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get registradaEn => $composableBuilder(
+    column: $table.registradaEn,
+    builder: (column) => column,
+  );
+}
+
+class $$BitacoraEntradaTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BitacoraEntradaTable,
+          BitacoraEntradaRow,
+          $$BitacoraEntradaTableFilterComposer,
+          $$BitacoraEntradaTableOrderingComposer,
+          $$BitacoraEntradaTableAnnotationComposer,
+          $$BitacoraEntradaTableCreateCompanionBuilder,
+          $$BitacoraEntradaTableUpdateCompanionBuilder,
+          (
+            BitacoraEntradaRow,
+            BaseReferences<
+              _$AppDatabase,
+              $BitacoraEntradaTable,
+              BitacoraEntradaRow
+            >,
+          ),
+          BitacoraEntradaRow,
+          PrefetchHooks Function()
+        > {
+  $$BitacoraEntradaTableTableManager(
+    _$AppDatabase db,
+    $BitacoraEntradaTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BitacoraEntradaTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BitacoraEntradaTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BitacoraEntradaTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String> obraId = const Value.absent(),
+                Value<int> fecha = const Value.absent(),
+                Value<String> tipo = const Value.absent(),
+                Value<String> texto = const Value.absent(),
+                Value<String> clima = const Value.absent(),
+                Value<int?> personalPresente = const Value.absent(),
+                Value<String> personalNombres = const Value.absent(),
+                Value<bool> visibleCliente = const Value.absent(),
+                Value<String?> autorId = const Value.absent(),
+                Value<String> autorNombre = const Value.absent(),
+                Value<int> registradaEn = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BitacoraEntradaCompanion(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                id: id,
+                obraId: obraId,
+                fecha: fecha,
+                tipo: tipo,
+                texto: texto,
+                clima: clima,
+                personalPresente: personalPresente,
+                personalNombres: personalNombres,
+                visibleCliente: visibleCliente,
+                autorId: autorId,
+                autorNombre: autorNombre,
+                registradaEn: registradaEn,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                required String id,
+                required String obraId,
+                required int fecha,
+                Value<String> tipo = const Value.absent(),
+                Value<String> texto = const Value.absent(),
+                Value<String> clima = const Value.absent(),
+                Value<int?> personalPresente = const Value.absent(),
+                Value<String> personalNombres = const Value.absent(),
+                Value<bool> visibleCliente = const Value.absent(),
+                Value<String?> autorId = const Value.absent(),
+                Value<String> autorNombre = const Value.absent(),
+                Value<int> registradaEn = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BitacoraEntradaCompanion.insert(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                id: id,
+                obraId: obraId,
+                fecha: fecha,
+                tipo: tipo,
+                texto: texto,
+                clima: clima,
+                personalPresente: personalPresente,
+                personalNombres: personalNombres,
+                visibleCliente: visibleCliente,
+                autorId: autorId,
+                autorNombre: autorNombre,
+                registradaEn: registradaEn,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$BitacoraEntradaTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BitacoraEntradaTable,
+      BitacoraEntradaRow,
+      $$BitacoraEntradaTableFilterComposer,
+      $$BitacoraEntradaTableOrderingComposer,
+      $$BitacoraEntradaTableAnnotationComposer,
+      $$BitacoraEntradaTableCreateCompanionBuilder,
+      $$BitacoraEntradaTableUpdateCompanionBuilder,
+      (
+        BitacoraEntradaRow,
+        BaseReferences<
+          _$AppDatabase,
+          $BitacoraEntradaTable,
+          BitacoraEntradaRow
+        >,
+      ),
+      BitacoraEntradaRow,
+      PrefetchHooks Function()
+    >;
+typedef $$BitacoraFotoTableCreateCompanionBuilder =
+    BitacoraFotoCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      Value<int> orden,
+      required String id,
+      required String entradaId,
+      required String path,
+      Value<String> mime,
+      Value<int?> bytes,
+      Value<int> rowid,
+    });
+typedef $$BitacoraFotoTableUpdateCompanionBuilder =
+    BitacoraFotoCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      Value<int> orden,
+      Value<String> id,
+      Value<String> entradaId,
+      Value<String> path,
+      Value<String> mime,
+      Value<int?> bytes,
+      Value<int> rowid,
+    });
+
+class $$BitacoraFotoTableFilterComposer
+    extends Composer<_$AppDatabase, $BitacoraFotoTable> {
+  $$BitacoraFotoTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entradaId => $composableBuilder(
+    column: $table.entradaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get path => $composableBuilder(
+    column: $table.path,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mime => $composableBuilder(
+    column: $table.mime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$BitacoraFotoTableOrderingComposer
+    extends Composer<_$AppDatabase, $BitacoraFotoTable> {
+  $$BitacoraFotoTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entradaId => $composableBuilder(
+    column: $table.entradaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get path => $composableBuilder(
+    column: $table.path,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mime => $composableBuilder(
+    column: $table.mime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get bytes => $composableBuilder(
+    column: $table.bytes,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$BitacoraFotoTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BitacoraFotoTable> {
+  $$BitacoraFotoTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get empresaId =>
+      $composableBuilder(column: $table.empresaId, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get orden =>
+      $composableBuilder(column: $table.orden, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get entradaId =>
+      $composableBuilder(column: $table.entradaId, builder: (column) => column);
+
+  GeneratedColumn<String> get path =>
+      $composableBuilder(column: $table.path, builder: (column) => column);
+
+  GeneratedColumn<String> get mime =>
+      $composableBuilder(column: $table.mime, builder: (column) => column);
+
+  GeneratedColumn<int> get bytes =>
+      $composableBuilder(column: $table.bytes, builder: (column) => column);
+}
+
+class $$BitacoraFotoTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BitacoraFotoTable,
+          BitacoraFotoRow,
+          $$BitacoraFotoTableFilterComposer,
+          $$BitacoraFotoTableOrderingComposer,
+          $$BitacoraFotoTableAnnotationComposer,
+          $$BitacoraFotoTableCreateCompanionBuilder,
+          $$BitacoraFotoTableUpdateCompanionBuilder,
+          (
+            BitacoraFotoRow,
+            BaseReferences<_$AppDatabase, $BitacoraFotoTable, BitacoraFotoRow>,
+          ),
+          BitacoraFotoRow,
+          PrefetchHooks Function()
+        > {
+  $$BitacoraFotoTableTableManager(_$AppDatabase db, $BitacoraFotoTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BitacoraFotoTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BitacoraFotoTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BitacoraFotoTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String> entradaId = const Value.absent(),
+                Value<String> path = const Value.absent(),
+                Value<String> mime = const Value.absent(),
+                Value<int?> bytes = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BitacoraFotoCompanion(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                orden: orden,
+                id: id,
+                entradaId: entradaId,
+                path: path,
+                mime: mime,
+                bytes: bytes,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
+                required String id,
+                required String entradaId,
+                required String path,
+                Value<String> mime = const Value.absent(),
+                Value<int?> bytes = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BitacoraFotoCompanion.insert(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                orden: orden,
+                id: id,
+                entradaId: entradaId,
+                path: path,
+                mime: mime,
+                bytes: bytes,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$BitacoraFotoTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BitacoraFotoTable,
+      BitacoraFotoRow,
+      $$BitacoraFotoTableFilterComposer,
+      $$BitacoraFotoTableOrderingComposer,
+      $$BitacoraFotoTableAnnotationComposer,
+      $$BitacoraFotoTableCreateCompanionBuilder,
+      $$BitacoraFotoTableUpdateCompanionBuilder,
+      (
+        BitacoraFotoRow,
+        BaseReferences<_$AppDatabase, $BitacoraFotoTable, BitacoraFotoRow>,
+      ),
+      BitacoraFotoRow,
+      PrefetchHooks Function()
+    >;
+typedef $$BitacoraAclaracionTableCreateCompanionBuilder =
+    BitacoraAclaracionCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      required String id,
+      required String entradaId,
+      required String texto,
+      Value<String?> autorId,
+      Value<String> autorNombre,
+      Value<int> registradaEn,
+      Value<int> rowid,
+    });
+typedef $$BitacoraAclaracionTableUpdateCompanionBuilder =
+    BitacoraAclaracionCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      Value<String> id,
+      Value<String> entradaId,
+      Value<String> texto,
+      Value<String?> autorId,
+      Value<String> autorNombre,
+      Value<int> registradaEn,
+      Value<int> rowid,
+    });
+
+class $$BitacoraAclaracionTableFilterComposer
+    extends Composer<_$AppDatabase, $BitacoraAclaracionTable> {
+  $$BitacoraAclaracionTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entradaId => $composableBuilder(
+    column: $table.entradaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get texto => $composableBuilder(
+    column: $table.texto,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get autorId => $composableBuilder(
+    column: $table.autorId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get autorNombre => $composableBuilder(
+    column: $table.autorNombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get registradaEn => $composableBuilder(
+    column: $table.registradaEn,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$BitacoraAclaracionTableOrderingComposer
+    extends Composer<_$AppDatabase, $BitacoraAclaracionTable> {
+  $$BitacoraAclaracionTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entradaId => $composableBuilder(
+    column: $table.entradaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get texto => $composableBuilder(
+    column: $table.texto,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get autorId => $composableBuilder(
+    column: $table.autorId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get autorNombre => $composableBuilder(
+    column: $table.autorNombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get registradaEn => $composableBuilder(
+    column: $table.registradaEn,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$BitacoraAclaracionTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BitacoraAclaracionTable> {
+  $$BitacoraAclaracionTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get empresaId =>
+      $composableBuilder(column: $table.empresaId, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get entradaId =>
+      $composableBuilder(column: $table.entradaId, builder: (column) => column);
+
+  GeneratedColumn<String> get texto =>
+      $composableBuilder(column: $table.texto, builder: (column) => column);
+
+  GeneratedColumn<String> get autorId =>
+      $composableBuilder(column: $table.autorId, builder: (column) => column);
+
+  GeneratedColumn<String> get autorNombre => $composableBuilder(
+    column: $table.autorNombre,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get registradaEn => $composableBuilder(
+    column: $table.registradaEn,
+    builder: (column) => column,
+  );
+}
+
+class $$BitacoraAclaracionTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BitacoraAclaracionTable,
+          BitacoraAclaracionRow,
+          $$BitacoraAclaracionTableFilterComposer,
+          $$BitacoraAclaracionTableOrderingComposer,
+          $$BitacoraAclaracionTableAnnotationComposer,
+          $$BitacoraAclaracionTableCreateCompanionBuilder,
+          $$BitacoraAclaracionTableUpdateCompanionBuilder,
+          (
+            BitacoraAclaracionRow,
+            BaseReferences<
+              _$AppDatabase,
+              $BitacoraAclaracionTable,
+              BitacoraAclaracionRow
+            >,
+          ),
+          BitacoraAclaracionRow,
+          PrefetchHooks Function()
+        > {
+  $$BitacoraAclaracionTableTableManager(
+    _$AppDatabase db,
+    $BitacoraAclaracionTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BitacoraAclaracionTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BitacoraAclaracionTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BitacoraAclaracionTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String> entradaId = const Value.absent(),
+                Value<String> texto = const Value.absent(),
+                Value<String?> autorId = const Value.absent(),
+                Value<String> autorNombre = const Value.absent(),
+                Value<int> registradaEn = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BitacoraAclaracionCompanion(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                id: id,
+                entradaId: entradaId,
+                texto: texto,
+                autorId: autorId,
+                autorNombre: autorNombre,
+                registradaEn: registradaEn,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                required String id,
+                required String entradaId,
+                required String texto,
+                Value<String?> autorId = const Value.absent(),
+                Value<String> autorNombre = const Value.absent(),
+                Value<int> registradaEn = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BitacoraAclaracionCompanion.insert(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                id: id,
+                entradaId: entradaId,
+                texto: texto,
+                autorId: autorId,
+                autorNombre: autorNombre,
+                registradaEn: registradaEn,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$BitacoraAclaracionTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BitacoraAclaracionTable,
+      BitacoraAclaracionRow,
+      $$BitacoraAclaracionTableFilterComposer,
+      $$BitacoraAclaracionTableOrderingComposer,
+      $$BitacoraAclaracionTableAnnotationComposer,
+      $$BitacoraAclaracionTableCreateCompanionBuilder,
+      $$BitacoraAclaracionTableUpdateCompanionBuilder,
+      (
+        BitacoraAclaracionRow,
+        BaseReferences<
+          _$AppDatabase,
+          $BitacoraAclaracionTable,
+          BitacoraAclaracionRow
+        >,
+      ),
+      BitacoraAclaracionRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -25039,4 +28682,10 @@ class $AppDatabaseManager {
       $$NotaObraTableTableManager(_db, _db.notaObra);
   $$NotaObraRenglonTableTableManager get notaObraRenglon =>
       $$NotaObraRenglonTableTableManager(_db, _db.notaObraRenglon);
+  $$BitacoraEntradaTableTableManager get bitacoraEntrada =>
+      $$BitacoraEntradaTableTableManager(_db, _db.bitacoraEntrada);
+  $$BitacoraFotoTableTableManager get bitacoraFoto =>
+      $$BitacoraFotoTableTableManager(_db, _db.bitacoraFoto);
+  $$BitacoraAclaracionTableTableManager get bitacoraAclaracion =>
+      $$BitacoraAclaracionTableTableManager(_db, _db.bitacoraAclaracion);
 }

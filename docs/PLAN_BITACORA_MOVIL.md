@@ -34,22 +34,35 @@ El push genérico hace `upsert` de la fila completa. Aquí choca con la base:
 2. Los triggers `BEFORE INSERT` (máximo 10 fotos, entrada cerrada) se disparan aunque el upsert acabe en conflicto: reintentar una foto ya subida podría fallar.
 3. El archivo de una foto solo se puede subir si su entrada YA existe en el servidor y sigue abierta.
 
-Por eso estas tres tablas usan un push propio, **"insertar primero"**:
-- Fila que el servidor nunca confirmó (`server_updated_at` nulo) → **INSERT** sin las columnas selladas. Si falla, se pregunta si ya existe (un reintento tras un corte); si existe, cuenta como subida.
-- Fila ya confirmada → **UPDATE** solo de lo editable (entrada: fecha, tipo, texto, clima, personal, visible_cliente, deleted_at, updated_at; foto: orden, deleted_at).
-- Orden: entradas → (archivo → fila) de cada foto → aclaraciones. Una foto espera a que su entrada esté confirmada.
-- Archivo ya existente en Storage (409) = ya subido.
+Por eso estas tres tablas usan un push propio, **"insertar primero"** (revisado con `ecc:architect`):
+- Fila que el servidor nunca confirmó (`server_updated_at` nulo) → **INSERT** sin las columnas selladas, pidiendo de vuelta `server_updated_at` y los sellos. **Si falla, primero se lee la fila por id** (un INSERT que sí entró pero cuya respuesta no llegó): si existe, se toma su `server_updated_at` y se sigue por la rama UPDATE en la misma vuelta; solo si no existe se clasifica el error.
+- Fila ya confirmada → **UPDATE condicional** `… where id = ? and server_updated_at = <el que conozco>` solo de lo editable (entrada: fecha, tipo, texto, clima, personal, deleted_at; foto: orden, deleted_at), pidiendo `server_updated_at` de vuelta. **0 filas NO es éxito**: la RLS bloquea en silencio. Se relee la fila: si no se ve → sin permiso; si cambió → alguien más la editó (conflicto).
+- **Publicar al cliente no viaja en la edición.** Es una operación aparte, en línea, que solo manda `visible_cliente` (como `cambiarVisibilidadEntrada` de la web). Así una edición hecha sin señal nunca vuelve a publicar algo que la oficina retiró.
+- Orden: entradas → (archivo → fila) de cada foto → aclaraciones. Fotos y aclaraciones esperan a que su entrada esté confirmada.
+- La ruta de la foto se arma con la empresa **del momento de subirla** (la de captura podía estar vacía).
+- Archivo ya existente en Storage (`statusCode` "409" / `Duplicate`) = ya subido. Si la fila de la foto falla sin remedio, el archivo se borra de Storage (como la web).
+- **Pull:** en estas tablas el LWW protege toda fila que no esté `synced` (pending, error, skipped), y `personal_nombres` se convierte de lista a JSON.
 
 ### 2.3 Rechazos que no se arreglan reintentando
-`BITACORA_CERRADA`, `BITACORA_MAX_FOTOS`, falta de permiso (RLS 42501) o la regla de evidencia **no** se dejan en `error` (se reintentarían cada 25 s para siempre con el indicador en rojo):
-- **Edición rechazada** (la entrada cerró antes de que subiera): se guarda un aviso con el texto que se quiso subir, la fila vuelve a la versión del servidor y la pantalla ofrece **"Agregar como aclaración"** o **"Descartar"**.
-- **Alta rechazada** (p. ej. la obra no es del colaborador) o **foto que ya no cupo** (entrada cerrada o 10 fotos): la fila queda `skipped` (terminal, no cuenta como error) con su motivo a la vista; la foto sigue en el teléfono y se puede compartir.
+`BITACORA_CERRADA`, `BITACORA_MAX_FOTOS`, falta de permiso (RLS 42501, 403 de Storage o UPDATE de 0 filas), conflicto con una edición de la oficina, o la regla de evidencia **no** se dejan en `error` (se reintentarían cada 25 s para siempre con el indicador en rojo). Los avisos viven en el teléfono (preferencias), no en columnas: una columna local en las tablas espejo se borraría con cada pull.
+- **Edición rechazada** (cerró, sin permiso o la cambió la oficina): se guarda un aviso con el texto que se quiso subir, la fila se reescribe con la versión del servidor (leída ahí mismo) y la pantalla ofrece **"Agregar como aclaración"** o **"Descartar"**.
+- **Alta rechazada** (p. ej. la obra no es del colaborador) o **foto que ya no cupo** (entrada cerrada o 10 fotos): la fila queda `skipped` (terminal, no cuenta como error) con su motivo a la vista; si es una entrada, sus fotos y aclaraciones también. La foto sigue en el teléfono y se puede compartir.
+- **Borrados locales:** lo que nunca llegó al servidor se borra solo en el teléfono (fila y archivo), en cascada desde la entrada, después de confirmar que el servidor no lo tiene.
 
 ### 2.4 Cierre a las 24 h
 Abierta = todavía no llega al servidor (`registrada_en` = 0) **o** `registrada_en` + 24 h > ahora. El servidor es quien manda; el reloj del teléfono solo sirve para pintar "se cierra en…".
 
 ### 2.5 Fecha del día
-Medianoche del día **en el teléfono**, igual que el pase de lista del móvil (`Semana.inicioDia`). La web usa la medianoche de México; en un teléfono en México son el mismo número.
+Medianoche **de la Ciudad de México**, la misma regla que la web (`web/src/lib/data/tz.ts`): en un teléfono en Quintana Roo la medianoche local caería en el día anterior de la web y del PDF. El personal sugerido sí busca el pase de lista con la medianoche del teléfono, que es como el móvil guarda las asistencias.
+
+### 2.6 Roles (igual que la web y la RLS)
+- **Escribir:** admin, supervisor, residente, colaborador (el servidor decide si la obra es suya).
+- **Editar/borrar** (abierta): admin cualquiera; supervisor y residente las suyas; el colaborador solo antes de que suba (no tiene UPDATE). "Suya" = creada en este teléfono y sin confirmar, o `autor_id` igual al usuario; nunca "autor vacío".
+- **Aclarar:** admin, supervisor, residente. **Publicar:** admin o autor (no colaborador), con señal.
+- **Contador** solo lee; **compras/almacén** no la ven.
+
+### 2.7 Fotos en el teléfono
+`image_picker` con `maxWidth/maxHeight` 1600 e `imageQuality` 80 (recomprime a JPEG; con transparencia sale PNG). La foto se copia de inmediato a `getApplicationSupportDirectory()/bitacora/<foto_id>.<ext>` (la caché donde la deja `image_picker` la puede borrar Android) y se borra al cambiar de cuenta. `retrieveLostData()` recupera la foto si Android destruyó la pantalla al abrir la cámara.
 
 ## 3. Incrementos
 1. **Datos:** tablas, migración v14 → v15 (+ trigger `mark_pending`), código generado, `drift_schema_v15.json`, `schema_v15.dart`, test `migration_desde_v14_test.dart`, `resetAll`.
