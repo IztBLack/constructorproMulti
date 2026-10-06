@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../db/app_database.dart';
+import 'bitacora_sync.dart';
 import 'sync_metadata.dart';
 import 'supabase_config.dart';
 
@@ -45,11 +46,16 @@ class SyncService {
     required this.metadata,
     SupabaseClient? client,
     this.onActividad,
+    this.bitacora,
   }) : client = client ?? SupabaseConfig.client;
 
   final AppDatabase db;
   final SyncMetadata metadata;
   final SupabaseClient client;
+
+  /// Push propio de la bitácora. Null en pruebas que no la ejercen: sus filas
+  /// se quedan pendientes, pero el pull sí corre.
+  final BitacoraSync? bitacora;
 
   /// Notifica cuándo hay un sync corriendo (`true`) y cuándo termina (`false`).
   ///
@@ -107,6 +113,12 @@ class SyncService {
     'movimientos',
     'catalogo_conceptos',
     'archivos_cotizacion',
+    // Bitácora (0041): la entrada antes que sus fotos y aclaraciones. Están
+    // aquí para el PULL y los conteos del indicador; su PUSH no es el genérico
+    // (upsert de fila completa) sino el de [BitacoraSync], ver ahí por qué.
+    'bitacora_entrada',
+    'bitacora_foto',
+    'bitacora_aclaracion',
   ];
 
   /// SQL de los candidatos a subir de una tabla: filas con cambios locales sin
@@ -235,7 +247,15 @@ class SyncService {
       //    lo registramos sin abortar el PULL, que debe correr siempre.
       try {
         for (final t in pushOrder) {
+          if (BitacoraSync.tablas.contains(t)) continue;
           erroresPush += await _pushTabla(t, empresaId);
+        }
+        // Después de obras: una entrada de bitácora cuelga de su obra.
+        final b = bitacora;
+        if (b != null) {
+          final fallos = await b.push(empresaId);
+          if (fallos > 0) ultimoErrorPush = b.ultimoError;
+          erroresPush += fallos;
         }
       } catch (e, st) {
         erroresPush++;
@@ -629,6 +649,13 @@ class SyncService {
           .get();
       if (locales.isNotEmpty) {
         final lr = locales.first.data;
+        // Bitácora: se protege TODA fila que no esté `synced`. Sus `error` y
+        // `skipped` guardan trabajo de la persona (una entrada que aún no sube,
+        // un alta rechazada con su aviso) que este reemplazo borraría.
+        if (BitacoraSync.tablas.contains(name) &&
+            lr['sync_status'] != 'synced') {
+          continue;
+        }
         final pending = lr['sync_status'] == 'pending';
         final localUpd = (lr['updated_at'] as int?) ?? 0;
         // La web escribe a Supabase sin `updated_at` de cliente (solo el
@@ -648,7 +675,13 @@ class SyncService {
       final cols = row.keys.where(localCols.contains).toList();
       final colList = [...cols, 'sync_status'].join(',');
       final placeholders = List.filled(cols.length + 1, '?').join(',');
-      final vals = <Object?>[...cols.map((c) => row[c]), 'synced'];
+      // `valorLocal` convierte lo que SQLite no sabe guardar (el `text[]` de
+      // la bitácora llega como lista y aquí va como JSON; ligar una lista
+      // reventaría el pull de esa tabla y de todas las que siguen).
+      final vals = <Object?>[
+        ...cols.map((c) => BitacoraSync.valorLocal(name, c, row[c])),
+        'synced',
+      ];
       // customUpdate (en vez de customStatement) para que Drift notifique
       // la tabla y los streams .watch() se re-emitan tras el pull.
       await db.customUpdate(

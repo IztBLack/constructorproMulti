@@ -362,6 +362,16 @@ enum RechazoBitacora {
 
   /// Se intentó borrar evidencia (`EVIDENCIA_INMUTABLE`).
   evidencia,
+
+  /// Alguien más (normalmente la oficina) la cambió antes de que subiera la
+  /// edición de este teléfono. No lo dice el servidor con un error: lo detecta
+  /// el sync cuando el UPDATE condicional por `server_updated_at` no toca nada
+  /// y la fila del servidor trae otro sello.
+  cambiada,
+
+  /// La foto ya no está en el teléfono (se borraron los datos de la app, o el
+  /// archivo se perdió antes de subir). Reintentar no la va a hacer aparecer.
+  archivoPerdido,
 }
 
 /// Distingue un rechazo definitivo de un fallo pasajero.
@@ -398,4 +408,9 @@ String explicarRechazo(RechazoBitacora r) => switch (r) {
   RechazoBitacora.evidencia =>
     'Esto ya es evidencia y no se borra. Si algo quedó mal, agrega una '
         'aclaración.',
+  RechazoBitacora.cambiada =>
+    'Alguien más cambió esta entrada antes de que subiera tu cambio. Se '
+        'quedó la versión de la oficina; tu texto está guardado aquí.',
+  RechazoBitacora.archivoPerdido =>
+    'La foto ya no está en el teléfono y no se pudo subir.',
 };
