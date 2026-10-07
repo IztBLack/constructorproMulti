@@ -49,6 +49,15 @@ La **bitácora** es la pantalla mejor hecha del móvil: insignias de estado, men
 ## Cómo encaja con el cambio de cuenta
 `docs/PLAN_CAMBIO_DE_CUENTA.md` resuelve U2 y la parte de U1 que vio el RedMagic. Conviene hacerlos **juntos**: los diálogos de cerrar sesión y cambiar de cuenta se escriben una vez, con el lenguaje nuevo.
 
+## Estado (2026-10-07)
+**Fase A HECHA** en la rama `claude/auditoria-ux-movil-73d586` (versión 1.5.1+21, sin publicar): cambio de cuenta (ver `PLAN_CAMBIO_DE_CUENTA.md`), U1, U2, U3, U4, U5, U10, U12. Suite: 670 pruebas en verde; `flutter analyze` sin nuevos avisos. Falta la prueba en el RedMagic y la tableta antes de publicar.
+
+Decisiones tomadas al implementar (revisables):
+- U10: `textFaint` claro pasa de `#a3a3a3` a `#8f8f8f` (3.2:1) para pasar 3:1; se desvía de la web, como ya pasaba con `rojo700`. Afecta placeholders y texto deshabilitado.
+- U4: el botón dice "Todos completo" (no cabe "Marcar a todos completo" junto a la cuadrilla); el texto completo va en la etiqueta accesible. Sin diálogo, con Deshacer de 8 s; Deshacer deja en "Falta" a quien no tenía registro.
+- U3: "Subido" aparece solo en las filas tocadas en esa visita (treinta "Subido" serían ruido).
+- U12: "Omitir" → "Dejar solo en este teléfono" (eso es lo que hace: `skipped`, la fila local sigue viva).
+
 ## Orden propuesto
 - **Fase A — "que no asuste y que no pierda nada" (≈1 semana, 1.5.1):** cambio de cuenta (3 capas) + U1 + U2 + U3 + U4 + U5 + U12 + U10.
 - **Fase B — "que hable como la web" (≈1 semana, 1.6.0):** U7, U15, U16, U11, U13, U14, ayuda paso 1 (U8) y reescribir el documento de diseño.
