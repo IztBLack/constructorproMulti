@@ -6,9 +6,11 @@
 
 1. **"Cerrar sesión" borra la empresa guardada** (`cloud_sync_screen.dart` → `_cerrarSesion` hace `prefs.remove('empresa_id')`) y no vacía la base local.
 2. Al entrar la cuenta nueva, `resolverEmpresaYsellar` (`cloud_providers.dart`) solo detecta un cambio de empresa si conoce la anterior… que ya se borró en el paso 1. **La detección nunca se dispara.**
-3. `sellarEmpresaId` adopta para la empresa nueva solo las filas con empresa vacía (`''`); las de la otra empresa se quedan con la suya.
-4. El push **sobrescribe `empresa_id` con la empresa actual** en cada fila: las filas viejas se intentan subir como si fueran de la empresa nueva, el servidor encuentra que ya existen en la otra y las rechaza. Se reintentan cada 25 s para siempre, con el indicador en rojo.
+3. `sellarEmpresaId` (`app_database.dart`) adopta para la empresa nueva **todas** las filas cuya empresa no es la actual (`WHERE empresa_id IS NULL OR empresa_id != ?`), no solo las vacías: las de la otra empresa **quedan etiquetadas como de la cuenta nueva** y marcadas `pending`. Era a propósito (re-subir tras un reset de la BD en la nube), pero es lo que mezcla. Además solo cubre 16 tablas; notas, caja, sueldos y bitácora quedan fuera.
+4. El push **sobrescribe `empresa_id` con la empresa actual** en cada fila (también en las tablas que el sellado no cubre): las filas viejas se intentan subir como si fueran de la empresa nueva, el servidor encuentra que ya existen en la otra y las rechaza (`42501 … USING expression`). Se reintentan cada 25 s para siempre, con el indicador en rojo.
 5. Además, `MaintenanceRepository.restablecerTodo()` quedó viejo: no borra cuadrillas, notas, caja, presupuesto ni bitácora.
+
+> **Corrección (2026-10-07, al verificar contra el código):** la primera versión de este plan decía que el sellado solo adoptaba filas vacías. No es así, y eso cambia dos cosas: (i) en un teléfono **ya mezclado** las filas ajenas ya llevan la empresa nueva, así que ni la detección por "filas con otra empresa" ni el push defensivo las encuentran; el rescate sale del **rechazo del servidor**; (ii) el sellado tiene que cambiar a "solo filas sin empresa".
 
 Hay, además, un riesgo de privacidad: el teléfono de una cuenta conserva datos de la anterior (textos, nombres, fotos de la bitácora).
 
@@ -16,7 +18,9 @@ Hay, además, un riesgo de privacidad: el teléfono de una cuenta conserva datos
 
 ### Capa 1 — El teléfono sabe de quién son sus datos
 - Nueva preferencia **`datos_locales_empresa`**: la empresa dueña de lo que hay en la base local. A diferencia de `empresa_id`, **no se borra al cerrar sesión**.
-- Al entrar, si la empresa nueva **es distinta** de `datos_locales_empresa`, o si la base tiene filas con una empresa que no es `''` ni la nueva, eso es un **cambio de cuenta**.
+- Al entrar, si la empresa nueva **es distinta** de `datos_locales_empresa`, o si la base tiene filas con una empresa que no es `''` ni la nueva, eso es un **cambio de cuenta**. La revisión corre **antes** de sellar.
+- `sellarEmpresaId` pasa a adoptar **solo filas sin empresa** (`NULL` o `''`) y recorre la misma lista de tablas que el push, no una lista propia.
+- Teléfonos de antes de la 1.5.1 sin `datos_locales_empresa`: se toma de `empresa_id` si existe; si no (cerraron sesión), de las empresas que aparezcan en la base.
 
 ### Capa 2 — Antes de cambiar, revisar lo pendiente y empezar limpio
 - **Contar lo que no ha subido** de la cuenta anterior en TODAS las tablas sincronizadas (`pending`, `error`, `conflict`), más las fotos de bitácora sin subir.
@@ -27,9 +31,9 @@ Hay, además, un riesgo de privacidad: el teléfono de una cuenta conserva datos
 
 ### Capa 3 — El sync nunca sube filas de otra empresa (red de seguridad)
 - En el push genérico y en el de la bitácora: una fila cuya `empresa_id` no es `''` ni la actual **no se sube**; pasa a `skipped` con un aviso. Deja de sobrescribirse la empresa.
-- Esto arregla de inmediato a los teléfonos que **ya** están mezclados, como el RedMagic: los 72 errores dejan de reintentarse en cuanto actualicen a la 1.5.1.
+- **Rechazo "fila de otra cuenta":** un `42501` de RLS al subir una fila (el servidor dice que esa fila existe y no es de esta empresa) pasa a `skipped` (terminal) en vez de `error`. Esto es lo que arregla a los teléfonos **ya** mezclados, como el RedMagic: sus filas ajenas ya tienen la empresa nueva, así que solo el servidor puede decir que no son suyas. Los 72 errores dejan de reintentarse en cuanto actualicen a la 1.5.1.
 
-## 3. Decisiones que son de Mario
+## 3. Decisiones que son de Mario — DECIDIDAS 2026-10-07: D1 = (a), D2 = (a)
 
 **D1. Si al cambiar de cuenta quedan cambios sin subir de la anterior:**
 - **(a) Avisar y dejar elegir** — *recomendado.* Mensaje del tipo: "Hay 12 cambios de *Casas Bienestar* que no han subido. Para no perderlos, entra con esa cuenta y sincroniza. ¿O los descartas?" Con [Volver a esa cuenta] / [Descartar y continuar].
@@ -37,7 +41,7 @@ Hay, además, un riesgo de privacidad: el teléfono de una cuenta conserva datos
 - (c) Descartar sin preguntar. Lo más simple y lo peligroso.
 
 **D2. ¿Qué hacer en un teléfono que ya está mezclado (como el RedMagic)?**
-- (a) La capa 3 aparta las filas ajenas y la app ofrece **"Limpiar datos de otra cuenta"** en Nube y sincronización — *recomendado.*
+- (a) La capa 3 aparta las filas ajenas y la app ofrece **"Rehacer la copia de este teléfono desde la nube"** en Nube y sincronización (vacía lo local y baja todo; antes avisa si hay cambios propios sin subir) — *recomendado.* Ya no se puede "limpiar solo lo ajeno": tras el sellado viejo, lo ajeno no se distingue en local.
 - (b) Solo apartarlas en silencio.
 
 ## 4. Incrementos
