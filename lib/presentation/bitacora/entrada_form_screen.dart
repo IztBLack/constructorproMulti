@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/format/format.dart';
+import '../../core/settings/settings_provider.dart' show sharedPreferencesProvider;
 import '../../core/sync/cloud_providers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
@@ -183,11 +184,19 @@ class _EntradaFormScreenState extends ConsumerState<EntradaFormScreen> {
 
   /// Android puede destruir la pantalla mientras la cámara está abierta (poca
   /// memoria): la foto no regresa al `pickImage` y hay que pedirla aparte.
+  ///
+  /// `retrieveLostData` es de TODA la app: la foto perdida pudo ser el logo,
+  /// una cotización o un comprobante. Solo se adjunta si la cámara se abrió
+  /// desde aquí ([_marcaCamara]); si no, se consume y se descarta — mejor
+  /// perderla que meter una foto ajena en la evidencia de la obra.
   Future<void> _recuperarFotoPerdida() async {
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
+    final prefs = ref.read(sharedPreferencesProvider);
+    final eraDeAqui = prefs.getString(_marcaCamara) == 'nueva';
     try {
+      await prefs.remove(_marcaCamara);
       final r = await ImagePicker().retrieveLostData();
-      if (r.isEmpty || !mounted) return;
+      if (r.isEmpty || !mounted || !eraDeAqui) return;
       final archivos = r.files ?? [if (r.file != null) r.file!];
       if (archivos.isEmpty) return;
       setState(() {
@@ -210,16 +219,25 @@ class _EntradaFormScreenState extends ConsumerState<EntradaFormScreen> {
     _fotos.addAll(nuevas.take(cupo));
   }
 
+  /// Marca que la cámara se abrió desde este formulario (ver
+  /// [_recuperarFotoPerdida]).
+  static const _marcaCamara = 'bitacora_camara_abierta';
+
   Future<void> _elegirFotos(ImageSource origen) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final camara = origen == ImageSource.camera;
     try {
+      if (camara) await prefs.setString(_marcaCamara, 'nueva');
       final elegidas = await elegirFotosBitacora(origen,
           restantes: fotosRestantes(_fotos.length));
+      if (camara) await prefs.remove(_marcaCamara);
       if (!mounted || elegidas.isEmpty) return;
       setState(() {
         _agregarFotos(elegidas);
         _modificado = true;
       });
     } catch (_) {
+      if (camara) await prefs.remove(_marcaCamara);
       if (!mounted) return;
       showAppSnack(
         context,
@@ -285,6 +303,10 @@ class _EntradaFormScreenState extends ConsumerState<EntradaFormScreen> {
     final fecha = medianocheMexicoMs(_dia);
 
     setState(() => _guardando = true);
+    // Tras guardar, la pantalla sigue montada ~300 ms mientras se va: si
+    // `_guardando` volviera a false, un segundo toque crearía OTRA entrada
+    // igual y el segundo pop sacaría también la bitácora.
+    var listo = false;
     try {
       if (_editando) {
         await repo.editarEntrada(
@@ -296,6 +318,7 @@ class _EntradaFormScreenState extends ConsumerState<EntradaFormScreen> {
           nombres: _nombres,
           personalPresente: conteo,
         );
+        listo = true;
         if (!mounted) return;
         showAppSnack(context, 'Cambios guardados.', tone: SnackTone.success);
         Navigator.of(context).pop();
@@ -313,6 +336,7 @@ class _EntradaFormScreenState extends ConsumerState<EntradaFormScreen> {
         personalPresente: conteo,
       );
       // La entrada ya quedó: una foto que falla no la deshace (como la web).
+      listo = true;
       var guardadas = 0;
       for (final foto in _fotos) {
         try {
@@ -349,7 +373,7 @@ class _EntradaFormScreenState extends ConsumerState<EntradaFormScreen> {
         setState(() => _error = 'No se pudo guardar. Intenta de nuevo.');
       }
     } finally {
-      if (mounted) setState(() => _guardando = false);
+      if (mounted && !listo) setState(() => _guardando = false);
     }
   }
 

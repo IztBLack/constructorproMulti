@@ -528,6 +528,9 @@ class _TarjetaEntrada extends ConsumerWidget {
     if (elegidas.isEmpty) return;
 
     var guardadas = 0;
+    // El primer motivo concreto (foto vacía o de más de 10 MB); si no hay,
+    // lo que falló fue el máximo de fotos.
+    String? motivo;
     for (final f in elegidas) {
       try {
         await repo.agregarFoto(
@@ -537,6 +540,8 @@ class _TarjetaEntrada extends ConsumerWidget {
           origen: f.path,
         );
         guardadas++;
+      } on ArgumentError catch (e) {
+        motivo ??= '${e.message}';
       } catch (_) {
         // Se cuenta abajo y se avisa.
       }
@@ -551,8 +556,8 @@ class _TarjetaEntrada extends ConsumerWidget {
     } else {
       showAppSnack(
         context,
-        'Se agregaron $guardadas de ${elegidas.length} fotos. Una entrada '
-        'lleva máximo $maxFotosPorEntrada.',
+        'Se agregaron $guardadas de ${elegidas.length} fotos. '
+        '${motivo ?? 'Una entrada lleva máximo $maxFotosPorEntrada.'}',
         tone: SnackTone.warning,
       );
     }
@@ -753,12 +758,17 @@ class _DialogoAclaracionState extends State<_DialogoAclaracion> {
     super.dispose();
   }
 
+  /// Un doble toque haría dos `pop`: el segundo sacaría la bitácora.
+  bool _cerrado = false;
+
   void _guardar() {
+    if (_cerrado) return;
     final error = validarAclaracion(_texto.text);
     if (error != null) {
       setState(() => _error = error);
       return;
     }
+    _cerrado = true;
     Navigator.pop(context, _texto.text.trim());
   }
 
@@ -860,7 +870,12 @@ class _TarjetaAvisoState extends ConsumerState<_TarjetaAviso> {
     await ref.read(avisosBitacoraProvider).quitar(widget.aviso.id);
   }
 
+  /// Evita que un doble toque cree la aclaración dos veces.
+  bool _enviando = false;
+
   Future<void> _agregarComoAclaracion() async {
+    if (_enviando) return;
+    _enviando = true;
     final repo = ref.read(bitacoraRepositoryProvider);
     final avisos = ref.read(avisosBitacoraProvider);
     final empresaId = ref.read(empresaIdProvider) ?? '';
@@ -876,8 +891,15 @@ class _TarjetaAvisoState extends ConsumerState<_TarjetaAviso> {
             tone: SnackTone.success);
       }
     } on ArgumentError catch (err) {
+      _enviando = false;
       if (mounted) {
         showAppSnack(context, '${err.message}', tone: SnackTone.danger);
+      }
+    } catch (_) {
+      _enviando = false;
+      if (mounted) {
+        showAppSnack(context, 'No se pudo agregar. Intenta de nuevo.',
+            tone: SnackTone.danger);
       }
     }
   }

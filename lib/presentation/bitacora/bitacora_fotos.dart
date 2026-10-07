@@ -253,6 +253,10 @@ class _MiniaturaFotoBitacoraState extends ConsumerState<MiniaturaFotoBitacora> {
       label: '${widget.etiqueta}$estado$sinArchivo',
       button: true,
       onLongPressHint: widget.onQuitar == null ? null : 'Quitar la foto',
+      // `excludeSemantics` borra las acciones del InkWell de abajo: sin
+      // repetirlas aquí, TalkBack no podría abrir ni quitar la foto.
+      onTap: _buscando ? null : (archivo != null ? widget.onAbrir : _cargar),
+      onLongPress: widget.onQuitar,
       excludeSemantics: true,
       child: Material(
         color: c.surfaceMuted,
