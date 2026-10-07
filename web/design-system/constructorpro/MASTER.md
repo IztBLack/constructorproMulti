@@ -1,3 +1,5 @@
+> **⚠ OBSOLETO (2026-10-07).** Este archivo se generó para otra app (paleta pizarra/verde, Lexend, landing) y NO describe ConstructorPro. Los colores reales están en `web/src/app/globals.css` (web) y `lib/core/theme/app_colors.dart` (móvil); la guía de diseño vigente es `docs/DISENO_MOVIL.md`. No lo uses como referencia.
+
 # Design System Master File
 
 > **LOGIC:** When building a specific page, first check `design-system/pages/[page-name].md`.
