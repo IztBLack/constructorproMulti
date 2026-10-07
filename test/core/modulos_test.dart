@@ -76,7 +76,8 @@ void main() {
       expect(catalogoModulos.length, ClaveModulo.values.length);
     });
 
-    test('el móvil implementa exactamente lo que ya existía, sin el portal', () {
+    test('el móvil implementa lo que ya existía más la bitácora, sin el portal',
+        () {
       final implementados = {
         for (final m in catalogoModulos)
           if (m.implementadoEnMovil) m.clave,
@@ -89,6 +90,8 @@ void main() {
         ClaveModulo.caja,
         ClaveModulo.proyeccion,
         ClaveModulo.notas,
+        // Fase 1 de la paridad (docs/PLAN_BITACORA_MOVIL.md).
+        ClaveModulo.bitacora,
       });
       expect(moduloDe(ClaveModulo.portal).aplicaEnMovil, isFalse);
     });
@@ -146,13 +149,28 @@ void main() {
       expect(m.usa(ClaveModulo.caja), isFalse);
     });
 
-    test('por defecto se ve todo lo que el móvil tiene', () {
-      for (final m in catalogoModulos.where((m) => m.implementadoEnMovil)) {
+    test('por defecto se ve todo lo del paquete de siempre que el móvil tiene',
+        () {
+      for (final m in catalogoModulos.where(
+          (m) => m.implementadoEnMovil && paquetePorDefecto.contains(m.clave))) {
         expect(ModulosActivos.porDefecto.usa(m.clave), isTrue,
             reason: m.clave.name);
       }
+      // La bitácora NO viene en el paquete por defecto (tampoco en la web): la
+      // prende el dueño en Ajustes → Módulos.
+      expect(ModulosActivos.porDefecto.usa(ClaveModulo.bitacora), isFalse);
       // Y no se anuncia nada "en la web": el portal no aplica.
       expect(ModulosActivos.porDefecto.soloEnLaWeb, isEmpty);
+    });
+
+    test('con la bitácora prendida se usa y ya no se anuncia "en la web"', () {
+      final m = ModulosActivos(
+        normalizarModulos(['bitacora', 'programa']),
+        FuenteModulos.servidor,
+      );
+      expect(m.usa(ClaveModulo.bitacora), isTrue);
+      expect(m.soloEnLaWeb.map((x) => x.clave).toList(),
+          [ClaveModulo.programa]);
     });
 
     test('soloEnLaWeb: prendidos, sin pantalla en el móvil, en orden', () {

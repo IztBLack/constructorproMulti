@@ -35,6 +35,8 @@ import '../common/confirm_dialog.dart';
 import '../common/money_text.dart';
 import '../common/section_header.dart';
 import '../common/texto_final_card.dart';
+import '../bitacora/bitacora_screen.dart';
+import '../../domain/bitacora/bitacora_reglas.dart' show puedeVerBitacora;
 import '../notas/notas_obra_screen.dart';
 import '../pdf_pre_dialog.dart';
 import 'importar_movimientos_screen.dart';
@@ -53,6 +55,13 @@ List<PestanaObra> pestanasObraVisibles(ModulosActivos m) => [
       ],
       if (m.usa(ClaveModulo.caja)) PestanaObra.caja,
     ];
+
+/// ¿Se ofrece la bitácora en el menú de la obra? Con su módulo prendido y a
+/// quien la puede ver (compras y almacén no: la RLS no les abre esas tablas).
+/// Mientras el rol carga llega null = acceso de dueño, como el resto de los
+/// gates de rol: el servidor filtra lo que no toca.
+bool bitacoraEnMenuDeObra(ModulosActivos m, String? rol) =>
+    m.usa(ClaveModulo.bitacora) && puedeVerBitacora(rol);
 
 class ObraDetailScreen extends ConsumerStatefulWidget {
   final Obra obra;
@@ -125,8 +134,19 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     _sincronizarPestanas(pestanasObraVisibles(modulos));
     final tab = _tab;
     final verSueldos = ref.watch(puedeVerSueldosProvider);
+    final rol = ref.watch(rolUsuarioProvider).asData?.value;
     // Cada entrada se va con su módulo (F0).
     final menu = <PopupMenuEntry<String>>[
+      // Primero: es lo que se abre a diario en la obra.
+      if (bitacoraEnMenuDeObra(modulos, rol))
+        const PopupMenuItem(
+          value: 'bitacora',
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.menu_book_outlined),
+            title: Text('Bitácora'),
+          ),
+        ),
       if (modulos.usa(ClaveModulo.caja))
         const PopupMenuItem(
           value: 'importar',
@@ -185,6 +205,12 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                 if (v == 'proyeccion') {
                   Navigator.of(context).push(MaterialPageRoute(
                       builder: (_) => ProyeccionScreen(obraId: widget.obra.id)));
+                }
+                if (v == 'bitacora') {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => BitacoraScreen(
+                          obraId: widget.obra.id,
+                          obraNombre: widget.obra.nombre)));
                 }
                 if (v == 'notas') {
                   Navigator.of(context).push(MaterialPageRoute(

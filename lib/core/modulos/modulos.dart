@@ -176,6 +176,9 @@ const List<Modulo> catalogoModulos = [
     nombre: 'Bitácora con fotos',
     descripcion:
         'Lo que pasa cada día en la obra, con fotos y fecha, para tener evidencia.',
+    // Fase 1 de la paridad (docs/PLAN_BITACORA_MOVIL.md). No entra al paquete
+    // por defecto: igual que en la web, la prende el dueño en Ajustes → Módulos.
+    implementadoEnMovil: true,
   ),
   Modulo(
     clave: ClaveModulo.programa,
