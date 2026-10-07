@@ -12,6 +12,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// cuenta nueva no había con qué compararla. [dueno] vive en otra llave y **no
 /// se borra al cerrar sesión**: solo cambia cuando la base se vacía para otra
 /// empresa o cuando una empresa adopta los datos.
+///
+/// El dueño es empresa **y usuario**: dentro de una misma empresa, lo que el
+/// servidor deja ver depende del rol (un admin baja sueldos que `compras` no
+/// puede ver; un residente solo ve sus obras). Si después del admin entra otro
+/// usuario, la base que bajó el admin no es suya aunque la empresa coincida.
 class CuentaLocal {
   CuentaLocal(this._prefs);
 
@@ -20,6 +25,7 @@ class CuentaLocal {
   static const kDueno = 'datos_locales_empresa';
   static const kDuenoNombre = 'datos_locales_empresa_nombre';
   static const kDuenoCorreo = 'datos_locales_correo';
+  static const kDuenoUsuario = 'datos_locales_usuario';
 
   /// `empresa_id` vigente de la sesión (la llave que ya usa la app). Se lee
   /// aquí solo para migrar los teléfonos de antes de la 1.5.1.
@@ -40,9 +46,16 @@ class CuentaLocal {
   /// la persona necesita para "volver a esa cuenta".
   String? get duenoCorreo => _prefs.getString(kDuenoCorreo);
 
+  /// Id (auth) del usuario que bajó los datos. Null en teléfonos de antes de
+  /// que se guardara: el primer usuario que sincronice lo adopta.
+  String? get duenoUsuario => _prefs.getString(kDuenoUsuario);
+
   Future<void> fijarDueno(String empresaId,
-      {String? nombre, String? correo}) async {
+      {String? usuario, String? nombre, String? correo}) async {
     await _prefs.setString(kDueno, empresaId);
+    if (usuario != null && usuario.isNotEmpty) {
+      await _prefs.setString(kDuenoUsuario, usuario);
+    }
     if (nombre != null && nombre.isNotEmpty) {
       await _prefs.setString(kDuenoNombre, nombre);
     }
@@ -56,21 +69,32 @@ class CuentaLocal {
     await _prefs.remove(kDueno);
     await _prefs.remove(kDuenoNombre);
     await _prefs.remove(kDuenoCorreo);
+    await _prefs.remove(kDuenoUsuario);
   }
 
-  /// ¿Puede el sync subir los datos locales a [empresaServidor]?
+  /// ¿Puede el sync subir los datos locales a [empresaServidor] con la sesión
+  /// de [usuario]?
   ///
-  /// Solo si la base es de esa empresa. Un teléfono de antes de la 1.5.1 no
+  /// Solo si la base es de esa empresa y de ese usuario (un dueño sin usuario
+  /// guardado lo adopta). Un teléfono de antes de la 1.5.1 no
   /// tiene [dueno]; si su `empresa_id` de sesión coincide, los datos son de
   /// esa empresa (así funcionaba todo hasta ahora) y se fija el dueño en ese
   /// momento. En cualquier otro caso hay un cambio de cuenta sin resolver y el
   /// sync espera a que la persona decida en la pantalla de Nube: subir antes
   /// mandaría filas de una empresa a otra.
-  Future<bool> permiteSincronizar(String empresaServidor) async {
+  Future<bool> permiteSincronizar(String empresaServidor, String? usuario) async {
     final d = dueno;
-    if (d != null) return d == empresaServidor;
+    if (d != null) {
+      if (d != empresaServidor) return false;
+      final u = duenoUsuario;
+      if (u == null) {
+        await fijarDueno(d, usuario: usuario);
+        return true;
+      }
+      return usuario == null || u == usuario;
+    }
     if (_prefs.getString(kEmpresaSesion) == empresaServidor) {
-      await fijarDueno(empresaServidor);
+      await fijarDueno(empresaServidor, usuario: usuario);
       return true;
     }
     return false;
@@ -91,10 +115,16 @@ enum TipoEntrada {
 /// Decide si entrar con [empresaNueva] es un cambio de cuenta.
 ///
 /// - [dueno]: `datos_locales_empresa` (null si no se sabe).
+/// - [duenoUsuario] / [usuarioNuevo]: quién bajó los datos y quién entra. Si
+///   la empresa coincide pero el usuario no, también es cambio de cuenta.
 /// - [empresaSesion]: `empresa_id` de prefs, solo para teléfonos sin dueño.
 /// - [empresasEnBase]: empresas distintas que aparecen en las filas locales
-///   (sin `''`). Es la red para el teléfono que no sabe de quién son sus datos
-///   porque cerró sesión antes de la 1.5.1.
+///   (sin `''`). Solo se usa cuando NO se sabe de quién es la base (ni dueño ni
+///   empresa de sesión): el teléfono que cerró sesión antes de la 1.5.1.
+///   Con dueño conocido no se mira: un teléfono ya mezclado conserva filas
+///   ajenas apartadas (`ajena`) para siempre, y tomarlas por un cambio de
+///   cuenta haría preguntar —o vaciar— cada vez que se abre la pantalla de
+///   nube. Esas filas las resuelve "Rehacer la copia" (decisión D2).
 ///
 /// Las filas con empresa `''` (capturadas sin cuenta) NO cuentan como de otra
 /// empresa: quien usó la app sin cuenta y entra por primera vez adopta sus
@@ -103,12 +133,20 @@ TipoEntrada clasificarEntrada({
   required String empresaNueva,
   String? dueno,
   String? empresaSesion,
+  String? duenoUsuario,
+  String? usuarioNuevo,
   Set<String> empresasEnBase = const {},
 }) {
   final conocido = dueno ?? empresaSesion;
   if (conocido != null && conocido.isNotEmpty && conocido != empresaNueva) {
     return TipoEntrada.cambioDeCuenta;
   }
+  if (duenoUsuario != null &&
+      usuarioNuevo != null &&
+      duenoUsuario != usuarioNuevo) {
+    return TipoEntrada.cambioDeCuenta;
+  }
+  if (conocido != null && conocido.isNotEmpty) return TipoEntrada.mismaCuenta;
   final ajenas = empresasEnBase.where((e) => e.isNotEmpty && e != empresaNueva);
   return ajenas.isEmpty ? TipoEntrada.mismaCuenta : TipoEntrada.cambioDeCuenta;
 }

@@ -32,7 +32,7 @@ class CloudSyncScreen extends ConsumerStatefulWidget {
 enum _PantallaEstado { login, vinculacion, conectado }
 
 /// Respuesta del diálogo de "Cerrar sesión".
-enum _AlCerrar { cancelar, sincronizar, cerrar }
+enum _AlCerrar { cancelar, sincronizar, cerrar, cerrarYBorrar }
 
 class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
   final _email = TextEditingController();
@@ -41,6 +41,12 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
 
   bool _loading = false;
   String? _error;
+
+  /// El contenedor de providers de la APP, no el `ref` de esta pantalla: las
+  /// acciones de cuenta esperan red y diálogos, y si la persona sale de la
+  /// pantalla a la mitad, un `ref` muerto lanzaría en pleno vaciado.
+  late final ProviderContainer _app =
+      ProviderScope.containerOf(context, listen: false);
 
   /// Indicación (no error) para el login, p. ej. con qué cuenta volver a
   /// entrar para no perder cambios sin subir.
@@ -80,7 +86,7 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
       // red (nunca responde) no es un error, así que sin timeout la pantalla
       // giraría para siempre. El timeout convierte el cuelgue en algo manejable.
       final empresaId = await resolverEmpresaYsellar(
-        ref,
+        _app,
         confirmarCambio: _confirmarCambioDeCuenta,
         timeout: const Duration(seconds: 12),
       );
@@ -146,7 +152,7 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
         email: _email.text.trim(),
         password: _password.text,
       );
-      final empresaId = await resolverEmpresaYsellar(ref,
+      final empresaId = await resolverEmpresaYsellar(_app,
           confirmarCambio: _confirmarCambioDeCuenta);
       if (!mounted) return;
       if (empresaId == null) {
@@ -185,7 +191,7 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
 
       if (resp.session != null) {
         // Sesión activa inmediatamente (confirmación de email desactivada en proyecto).
-        final empresaId = await resolverEmpresaYsellar(ref,
+        final empresaId = await resolverEmpresaYsellar(_app,
             confirmarCambio: _confirmarCambioDeCuenta);
         if (!mounted) return;
         if (empresaId == null) {
@@ -254,12 +260,12 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
         // 1-2. Mismo camino que el login: revisa si el teléfono tiene datos de
         //      otra cuenta ANTES de sellar, persiste la empresa y sella las
         //      filas capturadas sin cuenta.
-        await adoptarEmpresa(ref, empresaId,
+        await adoptarEmpresa(_app, empresaId,
             confirmarCambio: _confirmarCambioDeCuenta);
 
         // 3. Sube los datos offline. El guard en SyncService evita concurrencia.
         final syncOutcome =
-            await ref.read(syncServiceProvider).syncAll();
+            await _app.read(syncServiceProvider).syncAll();
 
         if (!mounted) return;
 
@@ -304,7 +310,7 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
   // Acción: Cerrar sesión (avisa si hay cambios sin subir)
   // ---------------------------------------------------------------------------
   Future<void> _cerrarSesion() async {
-    final sinSubir = await ref.read(databaseProvider).contarSinSubir();
+    final sinSubir = await _app.read(databaseProvider).contarSinSubir();
     if (!mounted) return;
     final c = context.colores;
     final decision = await showDialog<_AlCerrar>(
@@ -318,7 +324,9 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
                 'Si alguien entra con otra cuenta en este teléfono, tendrá que '
                 'decidir si los descarta.'
             : 'Todo lo de este teléfono ya está en la nube. Para volver a '
-                'sincronizar tendrás que iniciar sesión otra vez.'),
+                'sincronizar tendrás que iniciar sesión otra vez.\n\n'
+                'Si el teléfono lo va a usar otra persona, borra también los '
+                'datos: sin sesión, la app los sigue mostrando.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(_AlCerrar.cancelar),
@@ -328,6 +336,12 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(_AlCerrar.sincronizar),
               child: const Text('Sincronizar primero'),
+            ),
+          if (sinSubir == 0)
+            TextButton(
+              style: TextButton.styleFrom(foregroundColor: c.danger),
+              onPressed: () => Navigator.of(ctx).pop(_AlCerrar.cerrarYBorrar),
+              child: const Text('Cerrar y borrar datos'),
             ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: c.danger),
@@ -342,8 +356,13 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
       case _AlCerrar.sincronizar:
         await _sincronizar();
       case _AlCerrar.cerrar:
+      case _AlCerrar.cerrarYBorrar:
         setState(() => _loading = true);
         final cerrada = await _salirDeLaSesion();
+        if (cerrada && decision == _AlCerrar.cerrarYBorrar) {
+          // Ya no hay sesión: el teléfono queda como recién instalado.
+          await vaciarCopiaLocal(_app);
+        }
         if (!mounted) return;
         setState(() => _loading = false);
         if (!cerrada) {
@@ -377,13 +396,13 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
       debugPrint('[CloudSyncScreen] signOut: $e');
       if (SupabaseConfig.currentUser != null) return false;
     }
-    final prefs = ref.read(sharedPreferencesProvider);
+    final prefs = _app.read(sharedPreferencesProvider);
     await prefs.remove('empresa_id');
     // También el nombre en caché: si no, la siguiente cuenta que entre en este
     // dispositivo vería el nombre de la empresa anterior mientras el suyo carga.
     await prefs.remove('empresa_nombre');
-    await ref.read(syncMetadataProvider).resetAll();
-    ref.invalidate(empresaIdProvider);
+    await _app.read(syncMetadataProvider).resetAll();
+    _app.invalidate(empresaIdProvider);
     return true;
   }
 
@@ -417,8 +436,8 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Hay cambios sin subir de otra cuenta'),
         content: Text(
-          'Este teléfono tiene ${info.sinSubir} cambio(s) $de que todavía no '
-          'llegan a la nube.\n\n'
+          'Este teléfono tiene ${info.sinSubir} cambio(s) que todavía no '
+          'llegan a la nube ($de, o capturados sin cuenta).\n\n'
           'Para no perderlos, $entra y sincroniza. Si los descartas, se '
           'borran de este teléfono y no se pueden recuperar.',
         ),
@@ -441,7 +460,7 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
   /// La persona eligió no descartar: se cierra la sesión nueva sin tocar la
   /// base y se deja el login listo para la cuenta dueña de los datos.
   Future<void> _volverACuentaAnterior() async {
-    final correo = ref.read(cuentaLocalProvider).duenoCorreo;
+    final correo = _app.read(cuentaLocalProvider).duenoCorreo;
     await _salirDeLaSesion();
     if (!mounted) return;
     if (correo != null) _email.text = correo;
@@ -456,7 +475,7 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
   // ---------------------------------------------------------------------------
   Future<void> _rehacerCopia() async {
     // Sin señal, vaciar dejaría el teléfono sin datos hasta que vuelva la red.
-    if (!await ref.read(syncServiceProvider).hayRed) {
+    if (!await _app.read(syncServiceProvider).hayRed) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Necesitas señal para rehacer la copia. Tus datos siguen '
@@ -464,7 +483,7 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
       ));
       return;
     }
-    final sinSubir = await ref.read(databaseProvider).contarSinSubir();
+    final sinSubir = await _app.read(databaseProvider).contarSinSubir();
     if (!mounted) return;
     final c = context.colores;
     final ok = await showDialog<bool>(
@@ -499,11 +518,13 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _loading = true);
     try {
-      await vaciarCopiaLocal(ref);
-      final empresaId = ref.read(sharedPreferencesProvider).getString('empresa_id');
-      // La base quedó vacía y sin dueño: esta empresa la adopta de nuevo.
-      if (empresaId != null) await adoptarEmpresa(ref, empresaId);
-      final sync = ref.read(syncServiceProvider);
+      // Misma empresa: la configuración local de los PDF no está en la nube y
+      // se conserva.
+      await vaciarCopiaLocal(_app, otraEmpresa: false);
+      final empresaId = _app.read(sharedPreferencesProvider).getString('empresa_id');
+      // La base quedó vacía y sin dueño: esta cuenta la adopta de nuevo.
+      if (empresaId != null) await adoptarEmpresa(_app, empresaId);
+      final sync = _app.read(syncServiceProvider);
       final outcome = await sync.syncAll();
       if (!mounted) return;
       messenger.showSnackBar(SnackBar(
@@ -527,7 +548,7 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
   Future<void> _sincronizar() async {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _loading = true);
-    final syncService = ref.read(syncServiceProvider);
+    final syncService = _app.read(syncServiceProvider);
     final outcome = await syncService.syncAll();
     if (!mounted) return;
     setState(() => _loading = false);
@@ -576,10 +597,10 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _loading = true);
 
-    final metadata = ref.read(syncMetadataProvider);
+    final metadata = _app.read(syncMetadataProvider);
     await metadata.resetAll();
 
-    final syncService = ref.read(syncServiceProvider);
+    final syncService = _app.read(syncServiceProvider);
     final outcome = await syncService.syncAll();
 
     if (!mounted) return;
@@ -605,7 +626,7 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
   Widget _avisoErrores(int errores) {
     final c = context.colores;
     final texto = Theme.of(context).textTheme;
-    final sync = ref.read(syncServiceProvider);
+    final sync = _app.read(syncServiceProvider);
     final rechazo = sync.ultimoRechazo;
     final causa = rechazo?.causa;
     final seReintenta = rechazo?.seReintenta ?? true;
@@ -716,9 +737,10 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Este teléfono tiene $filas registro(s) de otra cuenta que '
-                  'se usó antes en él. No se suben a esta cuenta y ya no se '
-                  'reintentan, pero siguen viéndose aquí.',
+                  'Este teléfono tiene $filas registro(s) que la nube no acepta '
+                  'para esta cuenta: son de otra cuenta que se usó antes aquí, '
+                  'o de algo a lo que ya no tienes acceso. Ya no se reintentan, '
+                  'pero siguen viéndose en el teléfono.',
                   style: texto.bodyMedium,
                 ),
               ),
@@ -839,9 +861,14 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
       };
     }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Nube y sincronización')),
-      body: body,
+    // Mientras se cierra sesión, se cambia de cuenta o se rehace la copia, no
+    // se sale de la pantalla: la operación seguiría, pero sin quien la cuente.
+    return PopScope(
+      canPop: !_loading,
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Nube y sincronización')),
+        body: body,
+      ),
     );
   }
 
@@ -1019,9 +1046,8 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
     // Se reconstruye al terminar cada sync (también los automáticos) para que
     // la última subida y el aviso de otra cuenta estén al día.
     ref.watch(syncEnCursoProvider);
-    final metadata = ref.read(syncMetadataProvider);
-    final ultimaSubida = metadata.ultimaSubidaCompleta;
-    final filasAjenas = metadata.filasAjenas;
+    final ultimaSubida = ref.read(syncMetadataProvider).ultimaSubidaCompleta;
+    final filasAjenas = ref.watch(filasApartadasProvider).asData?.value ?? 0;
     final rechazo = ref.read(syncServiceProvider).ultimoRechazo;
     final reintentarNoBasta =
         estado.errores > 0 && rechazo != null && !rechazo.seReintenta;

@@ -77,23 +77,6 @@ class SyncMetadata {
     }
   }
 
-  // ── Filas de otra cuenta apartadas por el sync ──
-  //
-  // El sync aparta (`skipped`) las filas que son de otra empresa. Localmente
-  // ya no se distinguen de las demás `skipped` (ids viejos), así que se lleva
-  // la cuenta aquí: es lo que hace que la pantalla de nube ofrezca rehacer la
-  // copia del teléfono (decisión D2 de `docs/PLAN_CAMBIO_DE_CUENTA.md`).
-
-  static const _kFilasAjenas = 'sync_filas_ajenas';
-
-  int get filasAjenas => _prefs.getInt(_kFilasAjenas) ?? 0;
-
-  Future<void> sumarFilasAjenas(int n) =>
-      _prefs.setInt(_kFilasAjenas, filasAjenas + n);
-
-  /// La base se vació: ya no queda nada ajeno.
-  Future<void> limpiarFilasAjenas() => _prefs.remove(_kFilasAjenas);
-
   // ── Última subida completa ──
   //
   // "Última subida completa: hoy 14:32" le dice a quien está en la obra hasta

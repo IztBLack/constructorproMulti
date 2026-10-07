@@ -77,14 +77,33 @@ void main() {
   });
 
   group('contarSinSubir', () {
-    test('cuenta pending, error y conflict; no synced ni skipped', () async {
+    test('cuenta pending, error, conflict y ajena; no synced ni skipped',
+        () async {
       await obra('p', estado: 'pending');
       await obra('e', estado: 'error');
       await obra('c', estado: 'conflict');
+      // Apartada: puede ser trabajo propio de alguien que perdió el acceso.
+      await obra('a', estado: 'ajena');
       await obra('s', estado: 'synced');
-      await obra('k', estado: 'skipped');
+      await obra('k', estado: 'skipped'); // id viejo: nunca iba a subir
 
-      expect(await db.contarSinSubir(), 3);
+      expect(await db.contarSinSubir(), 4);
+    });
+
+    test('en la bitácora cuenta también skipped: es evidencia rechazada',
+        () async {
+      await obra('o1', estado: 'synced');
+      await db.into(db.bitacoraEntrada).insert(BitacoraEntradaCompanion.insert(
+          id: 'e1', obraId: 'o1', fecha: 0, syncStatus: const Value('skipped')));
+
+      expect(await db.contarSinSubir(), 1);
+    });
+
+    test('vigilarApartadas cuenta las filas ajenas de todas las tablas',
+        () async {
+      await obra('a1', estado: 'ajena');
+      await obra('ok', estado: 'synced');
+      expect(await db.vigilarApartadas().first, 1);
     });
 
     test('no cuenta el catálogo base sembrado, que nace pending', () async {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
@@ -95,12 +97,26 @@ class SyncService {
   bool _pausado = false;
 
   /// Detiene el sync y espera a que termine el que esté en curso.
-  Future<void> pausar() async {
+  ///
+  /// Con tope: un sync colgado por la red no debe dejar girando para siempre
+  /// la pantalla que está esperando. Si se cumple, reanuda y lanza
+  /// `TimeoutException`; quien llama no vacía nada.
+  Future<void> pausar({Duration tope = const Duration(seconds: 45)}) async {
     _pausado = true;
+    final limite = DateTime.now().add(tope);
     while (_enCurso) {
+      if (DateTime.now().isAfter(limite)) {
+        _pausado = false;
+        throw TimeoutException('El sync en curso no terminó', tope);
+      }
       await Future<void>.delayed(const Duration(milliseconds: 200));
     }
   }
+
+  /// El último ciclo se detuvo porque la base local es de otra cuenta (ver
+  /// [SyncOutcome.cuentaPorConfirmar]). Lo lee el indicador de sync para no
+  /// decir "pendiente" en silencio mientras nada sube.
+  bool cuentaPorConfirmar = false;
 
   void reanudar() => _pausado = false;
 
@@ -121,9 +137,9 @@ class SyncService {
   /// fila. Es lo que muestra la pantalla de nube (U1 de la auditoría de UX).
   RechazoSync? ultimoRechazo;
 
-  /// Filas apartadas en el último ciclo por ser de OTRA empresa (genérico +
-  /// bitácora). También se acumulan en [SyncMetadata.filasAjenas], que es lo
-  /// que sobrevive a reiniciar la app.
+  /// Filas apartadas en el último ciclo (genérico + bitácora). Lo que
+  /// sobrevive a reiniciar la app es el estado [estadoApartada] en la base
+  /// (`AppDatabase.vigilarApartadas`).
   int filasAjenas = 0;
 
   /// Orden topológico de push: padres antes que hijos (respeta las FK de
@@ -252,33 +268,44 @@ class SyncService {
   /// solapado con el manual del usuario), retorna inmediatamente para no
   /// correr dos syncs concurrentes sobre los mismos datos.
   Future<SyncOutcome> syncAll() async {
-    if (_enCurso) return SyncOutcome.ok; // otro sync ya está en camino
-    if (_pausado) return SyncOutcome.ok; // se está rehaciendo la base local
+    // El guard se toma ANTES de cualquier `await`: entre la revisión y la
+    // marca no puede colarse otro sync ni un [pausar] (que, sin ver la marca,
+    // vaciaría la base con este sync a medio camino).
+    if (_enCurso || _pausado) return SyncOutcome.ok;
+    _enCurso = true;
     // ANTES de las salidas por sesión o red: actualizar la app en la obra, sin
     // señal, es justo el caso en que el aviso tiene que sobrevivir a que
     // Android mate el proceso.
-    await persistirAvisosDeMigracion();
-    if (!tieneSesion) return SyncOutcome.sinSesion;
-    if (!await hayRed) return SyncOutcome.sinRed;
-
-    // El guard se toma ANTES de la primera espera de red para que dos
-    // disparos casi simultáneos no pasen los dos.
-    _enCurso = true;
-    final String? empresaId;
+    final String empresaId;
     try {
-      empresaId = await _empresaIdActual();
-      if (empresaId == null) {
+      await persistirAvisosDeMigracion();
+      if (!tieneSesion) {
+        _enCurso = false;
+        return SyncOutcome.sinSesion;
+      }
+      if (!await hayRed) {
+        _enCurso = false;
+        return SyncOutcome.sinRed;
+      }
+      final id = await _empresaIdActual();
+      if (id == null) {
         _enCurso = false;
         return SyncOutcome.sinEmpresa;
       }
+      empresaId = id;
       // Candado del cambio de cuenta: si los datos del teléfono son de otra
-      // empresa, subirlos los mandaría a esta (el origen de los 72 rechazos
-      // del teléfono de pruebas). Se espera a que la persona decida.
+      // empresa u otro usuario, subirlos los mandaría a quien no es (el
+      // origen de los 72 rechazos del teléfono de pruebas). Se espera a que
+      // la persona decida en la pantalla de nube.
       final cuenta = cuentaLocal;
-      if (cuenta != null && !await cuenta.permiteSincronizar(empresaId)) {
+      if (cuenta != null &&
+          !await cuenta.permiteSincronizar(
+              empresaId, SupabaseConfig.currentUser?.id)) {
         _enCurso = false;
+        cuentaPorConfirmar = true;
         return SyncOutcome.cuentaPorConfirmar;
       }
+      cuentaPorConfirmar = false;
     } catch (e) {
       _enCurso = false;
       ultimoError = e.toString();
@@ -321,7 +348,15 @@ class SyncService {
         final b = bitacora;
         if (b != null) {
           final fallos = await b.push(empresaId);
-          if (fallos > 0) ultimoErrorPush = b.ultimoError;
+          if (fallos > 0) {
+            ultimoErrorPush = b.ultimoError;
+            // La bitácora trae su propia causa en sus avisos; aquí solo
+            // queda el detalle para soporte, como pasajero.
+            ultimoRechazo ??= RechazoSync(
+                tabla: 'bitacora_entrada',
+                causa: null,
+                detalleTecnico: b.ultimoError ?? '');
+          }
           erroresPush += fallos;
           filasAjenas += b.filasAjenas;
         }
@@ -339,8 +374,6 @@ class SyncService {
       }
 
       await _diagnosticoAsistencias();
-
-      if (filasAjenas > 0) await metadata.sumarFilasAjenas(filasAjenas);
 
       if (erroresPush > 0) {
         final motivo =
@@ -391,14 +424,21 @@ class SyncService {
     debugPrint('[SyncService] ⓘ asistencias por estado: $resumen');
   }
 
-  /// Marca `skipped` una fila de otra empresa y la cuenta en [filasAjenas].
+  /// Estado de una fila que la nube no acepta para ESTA cuenta: es de otra
+  /// empresa, o el servidor dice que existe y esta cuenta ya no la ve (un
+  /// residente al que le quitaron la obra). No se sube ni se reintenta, pero
+  /// —a diferencia de `skipped`— cuenta como trabajo sin subir: rehacer la
+  /// copia o cambiar de cuenta avisa antes de borrarla.
+  static const estadoApartada = 'ajena';
+
+  /// Marca [estadoApartada] una fila y la cuenta en [filasAjenas].
   /// `customUpdate` (no `customStatement`) para que el indicador se entere.
   Future<void> _apartarAjena(String name, TableInfo t, List<String> pk,
       Map<String, Object?> fila) async {
     final pkVals = pk.map((c) => '$c=${fila[c]}').join(', ');
     debugPrint('[SyncService] ⚠ AJENA $name ($pkVals): es de otra empresa');
     await db.customUpdate(
-      "UPDATE $name SET sync_status='skipped' "
+      "UPDATE $name SET sync_status='$estadoApartada' "
       "WHERE ${pk.map((c) => '$c = ?').join(' AND ')}",
       variables: pk.map<Variable>((c) => Variable(fila[c])).toList(),
       updates: {t},
@@ -576,7 +616,7 @@ class SyncService {
     for (final r in pendientes) {
       // Red de seguridad del cambio de cuenta: una fila de OTRA empresa no se
       // sube como si fuera de esta (abajo se sobrescribe `empresa_id`). Queda
-      // `skipped` (terminal): para esta cuenta nunca va a subir.
+      // apartada ([estadoApartada]): para esta cuenta nunca va a subir.
       if (esDeOtraEmpresa(r.data['empresa_id'] as String?, empresaId)) {
         await _apartarAjena(name, t, pk, r.data);
         continue;
@@ -717,7 +757,9 @@ class SyncService {
         );
         final pkVals = pk.map((c) => '$c=${r.data[c]}').join(', ');
         debugPrint('[SyncService] ✖ PUSH $name fallo en fila ($pkVals): $e');
-        debugPrint('[SyncService]   data enviada: $data');
+        // La fila completa solo en desarrollo: en release `debugPrint` llega
+        // a logcat, y ahí no deben quedar nombres ni montos.
+        if (kDebugMode) debugPrint('[SyncService]   data enviada: $data');
         final whereSqlErr = pk.map((c) => '$c = ?').join(' AND ');
         final whereArgsErr = pk.map((c) => r.data[c]).toList();
         await db.customStatement(
@@ -730,7 +772,9 @@ class SyncService {
         ultimoErrorPush = '$name: $e';
         final pkVals = pk.map((c) => '$c=${r.data[c]}').join(', ');
         debugPrint('[SyncService] ✖ PUSH $name fallo en fila ($pkVals): $e');
-        debugPrint('[SyncService]   data enviada: $data');
+        // La fila completa solo en desarrollo: en release `debugPrint` llega
+        // a logcat, y ahí no deben quedar nombres ni montos.
+        if (kDebugMode) debugPrint('[SyncService]   data enviada: $data');
         final whereSqlErr = pk.map((c) => '$c = ?').join(' AND ');
         final whereArgsErr = pk.map((c) => r.data[c]).toList();
         await db.customStatement(

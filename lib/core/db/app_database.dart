@@ -603,27 +603,46 @@ class AppDatabase extends _$AppDatabase {
     return rows.map((r) => r.read<String>('e')).toSet();
   }
 
-  /// Cambios que se perderían si se vaciara la base ahora: filas que no han
-  /// llegado a la nube (`pending`, `error`) o que esperan una decisión
-  /// (`conflict`). Cuenta las fotos de la bitácora sin subir, porque cada una
-  /// es una fila de `bitacora_foto`.
+  /// Cambios que se perderían si se vaciara la base ahora:
+  /// - lo que no ha llegado a la nube (`pending`, `error`) o espera una
+  ///   decisión (`conflict`);
+  /// - lo que la nube no acepta para esta cuenta (`ajena`): puede ser de otra
+  ///   cuenta, pero también trabajo propio de alguien que ya no tiene acceso,
+  ///   así que nunca se borra sin avisar;
+  /// - en la bitácora, también `skipped`: ahí es evidencia rechazada con su
+  ///   aviso (obra que no sube, foto perdida), no un id viejo.
   ///
-  /// No cuenta el catálogo base sembrado en el teléfono (`es_personalizado =
-  /// 0`): nace `pending` pero nunca se sube, y el servidor tiene el suyo.
-  /// Tampoco `skipped`: son filas que la nube ya rechazó para siempre (ids
-  /// viejos o de otra cuenta) y que de todos modos no iban a subir.
+  /// Cuenta las fotos de la bitácora sin subir, porque cada una es una fila de
+  /// `bitacora_foto`. No cuenta el catálogo base sembrado (`es_personalizado =
+  /// 0`): nace `pending` pero nunca se sube, y el servidor tiene el suyo. Ni
+  /// el `skipped` de las demás tablas: ids viejos que nunca iban a subir.
   Future<int> contarSinSubir() async {
     var total = 0;
     for (final t in tablasLocales) {
       final soloDelUsuario =
           t == 'catalogo_conceptos' ? ' AND es_personalizado = 1' : '';
+      final estados = t.startsWith('bitacora_')
+          ? "'pending', 'error', 'conflict', 'ajena', 'skipped'"
+          : "'pending', 'error', 'conflict', 'ajena'";
       final row = await customSelect(
         "SELECT COUNT(*) AS n FROM $t "
-        "WHERE sync_status IN ('pending', 'error', 'conflict')$soloDelUsuario",
+        "WHERE sync_status IN ($estados)$soloDelUsuario",
       ).getSingle();
       total += row.read<int>('n');
     }
     return total;
+  }
+
+  /// Filas que el sync apartó porque la nube no las acepta para esta cuenta
+  /// (estado `ajena`). Se vigila para que la pantalla de nube ofrezca rehacer
+  /// la copia mientras queden (decisión D2).
+  Stream<int> vigilarApartadas() {
+    final suma = tablasLocales
+        .map((t) => "(SELECT COUNT(*) FROM $t WHERE sync_status = 'ajena')")
+        .join(' + ');
+    return customSelect('SELECT $suma AS n', readsFrom: allTables.toSet())
+        .watchSingle()
+        .map((r) => r.read<int>('n'));
   }
 
   /// Deja la base como recién instalada: borra TODAS las tablas y vuelve a

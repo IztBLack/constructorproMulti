@@ -34,10 +34,27 @@ void main() {
           TipoEntrada.cambioDeCuenta);
     });
 
-    test('teléfono ya mezclado: hay filas de otra empresa además de la propia',
-        () {
+    test('teléfono ya mezclado con dueño conocido: NO es cambio de cuenta', () {
+      // Las filas ajenas apartadas se quedan en la base. Si contaran, abrir la
+      // pantalla de nube preguntaría (o vaciaría) cada vez, y "Volver a esa
+      // cuenta" mandaría a la persona a su propia cuenta en bucle. Las
+      // resuelve "Rehacer la copia".
       expect(clasificarEntrada(empresaNueva: b, dueno: b, empresasEnBase: {a, b}),
+          TipoEntrada.mismaCuenta);
+      expect(clasificarEntrada(empresaNueva: b, empresaSesion: b, empresasEnBase: {a, b}),
+          TipoEntrada.mismaCuenta);
+    });
+
+    test('otro usuario de la misma empresa es cambio de cuenta', () {
+      // Un admin bajó sueldos; entra alguien de compras: no son sus datos.
+      expect(
+          clasificarEntrada(
+              empresaNueva: a, dueno: a, duenoUsuario: 'admin', usuarioNuevo: 'compras'),
           TipoEntrada.cambioDeCuenta);
+      expect(
+          clasificarEntrada(
+              empresaNueva: a, dueno: a, duenoUsuario: 'admin', usuarioNuevo: 'admin'),
+          TipoEntrada.mismaCuenta);
     });
 
     test('teléfono de antes de la 1.5.1 con sesión: usa empresa_id de prefs', () {
@@ -68,23 +85,34 @@ void main() {
       expect(cuenta.duenoCorreo, 'a@ejemplo.com');
     });
 
-    test('permiteSincronizar: solo a la empresa dueña', () async {
+    test('permiteSincronizar: solo a la empresa y el usuario dueños', () async {
+      final cuenta = await con({
+        CuentaLocal.kDueno: a,
+        CuentaLocal.kDuenoUsuario: 'u1',
+      });
+      expect(await cuenta.permiteSincronizar(a, 'u1'), isTrue);
+      expect(await cuenta.permiteSincronizar(b, 'u1'), isFalse);
+      expect(await cuenta.permiteSincronizar(a, 'u2'), isFalse);
+    });
+
+    test('un dueño sin usuario guardado adopta al que sincroniza', () async {
       final cuenta = await con({CuentaLocal.kDueno: a});
-      expect(await cuenta.permiteSincronizar(a), isTrue);
-      expect(await cuenta.permiteSincronizar(b), isFalse);
+      expect(await cuenta.permiteSincronizar(a, 'u1'), isTrue);
+      expect(cuenta.duenoUsuario, 'u1');
     });
 
     test('permiteSincronizar migra el teléfono de antes de la 1.5.1', () async {
       final cuenta = await con({CuentaLocal.kEmpresaSesion: a});
-      expect(await cuenta.permiteSincronizar(a), isTrue);
+      expect(await cuenta.permiteSincronizar(a, 'u1'), isTrue);
       expect(cuenta.dueno, a, reason: 'queda fijado para la próxima vez');
+      expect(cuenta.duenoUsuario, 'u1');
     });
 
     test('permiteSincronizar sin dueño ni sesión que coincida: espera', () async {
       // Recién entró una cuenta y aún no se revisa la base: subir ahora podría
       // mandar filas de la cuenta anterior a esta.
       final cuenta = await con({});
-      expect(await cuenta.permiteSincronizar(b), isFalse);
+      expect(await cuenta.permiteSincronizar(b, 'u1'), isFalse);
     });
 
     test('olvidarDueno deja la base sin dueño', () async {
@@ -92,8 +120,10 @@ void main() {
         CuentaLocal.kDueno: a,
         CuentaLocal.kDuenoNombre: 'Casas A',
         CuentaLocal.kDuenoCorreo: 'a@ejemplo.com',
+        CuentaLocal.kDuenoUsuario: 'u1',
       });
       await cuenta.olvidarDueno();
+      expect(cuenta.duenoUsuario, isNull);
       expect(cuenta.dueno, isNull);
       expect(cuenta.duenoNombre, isNull);
       expect(cuenta.duenoCorreo, isNull);
@@ -114,16 +144,6 @@ void main() {
 
       expect(prefs.getKeys().where((k) => k.startsWith('sync_cursor_')), isEmpty);
       expect(prefs.getString('empresa_id'), a, reason: 'solo cursores');
-    });
-
-    test('filas ajenas se acumulan y se limpian', () async {
-      SharedPreferences.setMockInitialValues({});
-      final m = SyncMetadata(await SharedPreferences.getInstance());
-      await m.sumarFilasAjenas(70);
-      await m.sumarFilasAjenas(2);
-      expect(m.filasAjenas, 72);
-      await m.limpiarFilasAjenas();
-      expect(m.filasAjenas, 0);
     });
 
     test('última subida completa', () async {

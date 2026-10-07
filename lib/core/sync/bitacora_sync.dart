@@ -137,11 +137,13 @@ class BitacoraSync {
         final r = Map<String, Object?>.from(f.data);
         // Red de seguridad del cambio de cuenta: una fila de otra empresa no se
         // sube como si fuera de esta (cada `subir` pone `empresa_id` con la
-        // actual). Queda `skipped`: en este teléfono, para esta cuenta, nunca
-        // va a subir. La pantalla de nube ofrece rehacer la copia.
+        // actual). Queda apartada: en este teléfono, para esta cuenta, nunca
+        // va a subir, pero cuenta como trabajo sin subir (ver
+        // `SyncService.estadoApartada`). La pantalla de nube ofrece rehacer
+        // la copia.
         if (esDeOtraEmpresa(r['empresa_id'] as String?, empresaId)) {
           filasAjenas++;
-          await _marcar(tabla, r['id'] as String, 'skipped');
+          await _marcar(tabla, r['id'] as String, 'ajena');
           continue;
         }
         try {
