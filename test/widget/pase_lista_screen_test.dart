@@ -145,7 +145,7 @@ void main() {
 
     expect(await fracciones(t), {ana: 1.0, beto: 1.0});
     expect(find.textContaining('Día completo a 2 persona(s).'), findsOneWidget);
-    expect(find.textContaining('1 tenía(n) ½ o ¾ y se sobrescribió.'),
+    expect(find.textContaining('1 tenía ½ o ¾ y se sobrescribió.'),
         findsOneWidget);
 
     await t.tap(find.text('Deshacer'));

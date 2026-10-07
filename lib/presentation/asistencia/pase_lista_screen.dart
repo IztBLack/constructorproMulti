@@ -317,8 +317,10 @@ class _ObraPaseLista extends ConsumerWidget {
         'Todos ya tenían día completo.'
       else if (cambiados.isNotEmpty)
         'Día completo a ${cambiados.length} persona(s).',
-      if (sobrescritos > 0)
-        '$sobrescritos tenía(n) ½ o ¾ y se sobrescribió.',
+      if (sobrescritos == 1)
+        '1 tenía ½ o ¾ y se sobrescribió.'
+      else if (sobrescritos > 1)
+        '$sobrescritos tenían ½ o ¾ y se sobrescribieron.',
       if (omitidos.isNotEmpty)
         'No se marcaron ${omitidos.length}: ya tienen jornada ese día en otra '
             'obra (${omitidos.join(', ')}).',
