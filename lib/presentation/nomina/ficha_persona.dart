@@ -391,7 +391,9 @@ class _ChipDia extends StatelessWidget {
     final capturado = celda.origen == OrigenCelda.real;
 
     Color fondo = Colors.transparent;
-    Color tinta = c.textFaint;
+    // `textMuted`: el «+» y la letra del día dicen «este día no cuenta, toca
+    // para prenderlo». Es un estado, no un adorno.
+    Color tinta = c.textMuted;
     Color borde = c.border;
     IconData? icono;
     String? texto = '+';
@@ -705,7 +707,7 @@ class _RenglonPrestamo extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.only(left: 6),
               child: Text('ya capturado',
-                  style: t.bodySmall?.copyWith(color: c.textFaint)),
+                  style: t.bodySmall?.copyWith(color: c.textMuted)),
             ),
         ],
       ),

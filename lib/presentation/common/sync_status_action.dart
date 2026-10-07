@@ -60,9 +60,11 @@ class SyncStatusAction extends ConsumerWidget {
         '${estado.pendientes}',
         '${estado.pendientes} cambio(s) esperando subir a la nube.',
       ),
+      // `textMuted` y no `textFaint`: "no hay nube" ES información, y al sol
+      // el gris de adorno no se distingue.
       SyncFase.desconectado => (
         Icons.cloud_off_outlined,
-        c.textFaint,
+        c.textMuted,
         '',
         'Sin conexión a la nube. Tus datos están a salvo en este teléfono.',
       ),

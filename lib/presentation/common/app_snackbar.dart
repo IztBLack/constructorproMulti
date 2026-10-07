@@ -32,7 +32,9 @@ ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showAppSnack(
   VoidCallback? onUndo,
   Duration duracion = const Duration(seconds: 4),
 }) {
-  final c = context.colores;
+  // El aviso va sobre el fondo INVERTIDO del tema: los colores de estado que
+  // se leen ahí son los del tema contrario (ver `AppColors.sobreInvertido`).
+  final c = context.colores.sobreInvertido;
   final messenger = ScaffoldMessenger.of(context);
 
   final (IconData? icono, Color? colorIcono) = switch (tone) {
