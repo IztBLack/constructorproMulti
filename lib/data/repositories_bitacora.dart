@@ -53,6 +53,10 @@ class EntradaConDetalle {
 }
 
 class BitacoraRepository {
+  /// Tope del servidor para una foto: CHECK `bytes between 1 and 10485760` de
+  /// `bitacora_foto` (0041) y límite del bucket.
+  static const _maxBytesFoto = 10485760;
+
   BitacoraRepository(this.db, this.fotos);
 
   final AppDatabase db;
@@ -344,6 +348,11 @@ class BitacoraRepository {
         await fotos.guardarCopia(origen: origen, fotoId: fotoId, mime: mime);
     try {
       final bytes = await copia.length();
+      // El servidor exige 1..10 MB (CHECK de 0041 y límite del bucket): una
+      // foto fuera de rango fallaría en cada sync, así que se dice ya.
+      if (bytes < 1 || bytes > _maxBytesFoto) {
+        throw ArgumentError('La foto está vacía o pesa más de 10 MB.');
+      }
       // La verificación y el insert van juntos en una transacción: dos altas a
       // la vez (doble toque) no pueden pasar ambas por el último lugar.
       await db.transaction(() async {
@@ -413,16 +422,22 @@ class BitacoraRepository {
   /// (`Semana.inicioDia`): NO es la medianoche de la Ciudad de México con la que
   /// se guarda la fecha de la entrada, y en un teléfono en otra zona no
   /// coinciden. Quien llama pasa el valor ya calculado.
+  ///
+  /// [diaMexicoMs] (la medianoche de CDMX del mismo día) se busca TAMBIÉN: la
+  /// web guarda las asistencias con esa medianoche, y en un teléfono fuera de
+  /// ese huso (Quintana Roo) las del pase de lista web no coincidirían.
   Future<List<String>> personalSugerido({
     required String obraId,
     required int diaLocalMs,
+    int? diaMexicoMs,
   }) async {
     final filas = await (db.select(db.asistencias).join([
       innerJoin(db.colaboradores,
           db.colaboradores.id.equalsExp(db.asistencias.colaboradorId)),
     ])
           ..where(db.asistencias.obraId.equals(obraId) &
-              db.asistencias.fecha.equals(diaLocalMs) &
+              db.asistencias.fecha
+                  .isIn({diaLocalMs, ?diaMexicoMs}) &
               db.asistencias.fraccion.isBiggerThanValue(0) &
               db.asistencias.deletedAt.isNull() &
               db.colaboradores.deletedAt.isNull()))

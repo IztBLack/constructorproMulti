@@ -366,6 +366,127 @@ void main() {
     });
   });
 
+  group('correcciones de la revisión ECC', () {
+    Future<void> obra(String estado, {int? sello}) => db.customStatement(
+          "INSERT INTO obras (id, nombre, cliente, ubicacion, fecha_inicio, "
+          "activa, sync_status, server_updated_at) "
+          "VALUES ('o1', 'Alfaro', '', '', 0, 1, '$estado', ${sello ?? 'NULL'})",
+        );
+
+    test('la entrada espera a que suba su obra (no es un "sin permiso")',
+        () async {
+      await obra('error');
+      await entrada('e1');
+      expect(await sync.push(empresa), 0);
+      expect((await local('bitacora_entrada', 'e1'))!['sync_status'], 'pending');
+      expect(avisos.todos, isEmpty);
+      expect(srv.fila('bitacora_entrada', 'e1'), isNull);
+
+      await db.customStatement(
+          "UPDATE obras SET sync_status = 'synced', server_updated_at = 1 WHERE id = 'o1'");
+      await sync.push(empresa);
+      expect(srv.fila('bitacora_entrada', 'e1'), isNotNull);
+    });
+
+    test('una obra que nunca va a subir descarta la entrada con su motivo',
+        () async {
+      await obra('skipped');
+      await entrada('e1');
+      await sync.push(empresa);
+      expect((await local('bitacora_entrada', 'e1'))!['sync_status'], 'skipped');
+      expect(avisos.deFila('e1')!.rechazo, RechazoBitacora.obraNoSube);
+    });
+
+    test('lo que se edita MIENTRAS sube no se pierde', () async {
+      await entrada('e1', texto: 'Colado');
+      srv.alInsertar = () => editarTexto('e1', 'Colado de losa N2');
+
+      expect(await sync.push(empresa), 0);
+      final l = (await local('bitacora_entrada', 'e1'))!;
+      expect(l['texto'], 'Colado de losa N2');
+      expect(l['sync_status'], 'pending',
+          reason: 'sigue pendiente para subir la corrección');
+      expect(l['server_updated_at'], isNotNull,
+          reason: 'con el sello, la siguiente vuelta va por UPDATE');
+
+      await sync.push(empresa);
+      expect(srv.fila('bitacora_entrada', 'e1')!['texto'], 'Colado de losa N2');
+      expect(avisos.todos, isEmpty);
+    });
+
+    test('publicar con una edición pendiente no inventa un conflicto', () async {
+      await entrada('e1', texto: 'Original');
+      await sync.push(empresa);
+      await editarTexto('e1', 'Mía');
+      await sync.publicar('e1', true);
+
+      await sync.push(empresa);
+      expect(srv.fila('bitacora_entrada', 'e1')!['texto'], 'Mía');
+      expect(srv.fila('bitacora_entrada', 'e1')!['visible_cliente'], isTrue);
+      expect(avisos.todos, isEmpty);
+    });
+
+    test('publicar NO tapa un cambio de la oficina: el push lo detecta',
+        () async {
+      await entrada('e1', texto: 'Original');
+      await sync.push(empresa);
+      await editarTexto('e1', 'Mía');
+      srv.editar('bitacora_entrada', 'e1', {'texto': 'De oficina'});
+      await sync.publicar('e1', true);
+
+      await sync.push(empresa);
+      expect(srv.fila('bitacora_entrada', 'e1')!['texto'], 'De oficina');
+      expect(avisos.deFila('e1')!.rechazo, RechazoBitacora.cambiada);
+    });
+
+    test('un fallo repetido se queda en error (no alterna con pendiente)',
+        () async {
+      await entrada('e1');
+      srv.sinRed = true;
+      await sync.push(empresa);
+      await sync.push(empresa);
+      expect((await local('bitacora_entrada', 'e1'))!['sync_status'], 'error');
+    });
+
+    test('un alta rechazada que se corrige revive con sus fotos y aclaraciones',
+        () async {
+      await entrada('e1');
+      await foto('f1', 'e1');
+      await aclaracion('a1', 'e1');
+      srv.insertDenegado = true;
+      await sync.push(empresa);
+      expect(avisos.deFila('e1'), isNotNull);
+
+      srv.insertDenegado = false;
+      await editarTexto('e1', 'Corregida'); // el trigger la vuelve pending
+      expect(await sync.push(empresa), 0);
+      // La foto y la aclaración revivieron con la entrada y suben en la
+      // siguiente vuelta (esperan a que su entrada quede confirmada).
+      await sync.push(empresa);
+
+      for (final (t, id) in [
+        ('bitacora_entrada', 'e1'),
+        ('bitacora_foto', 'f1'),
+        ('bitacora_aclaracion', 'a1'),
+      ]) {
+        expect((await local(t, id))!['sync_status'], 'synced', reason: t);
+      }
+      expect(avisos.deFila('e1'), isNull, reason: 'el aviso de alta ya no aplica');
+    });
+
+    test('dos ediciones rechazadas distintas conservan los dos textos', () async {
+      await entrada('e1', texto: 'Original');
+      await sync.push(empresa);
+      srv.reloj += h24 + 1;
+      await editarTexto('e1', 'Primera');
+      await sync.push(empresa);
+      await editarTexto('e1', 'Segunda');
+      await sync.push(empresa);
+
+      expect(avisos.todos.map((a) => a.texto), ['Primera', 'Segunda']);
+    });
+  });
+
   test('pull: el text[] del servidor se guarda como JSON', () {
     expect(
         BitacoraSync.valorLocal(
@@ -388,6 +509,10 @@ class _Servidor implements BitacoraRemoto {
   bool sinRed = false;
   bool insertDenegado = false;
   Map<String, dynamic>? ultimoUpdate;
+
+  /// Corre "mientras" el INSERT está en vuelo (después de guardar la fila en
+  /// el servidor, antes de responder): simula a la persona editando en ese rato.
+  Future<void> Function()? alInsertar;
 
   final _t = <String, Map<String, Map<String, dynamic>>>{
     'bitacora_entrada': {},
@@ -476,6 +601,11 @@ class _Servidor implements BitacoraRemoto {
       r['autor_nombre'] = 'Yo';
     }
     _t[tabla]![fila['id'] as String] = r;
+    final hook = alInsertar;
+    if (hook != null) {
+      alInsertar = null;
+      await hook();
+    }
     if (perderRespuestaInsert) {
       // El INSERT entró pero la red se cayó justo después: tampoco se podrá
       // leer en este ciclo. (Si la red siguiera, el sync lo resuelve en la

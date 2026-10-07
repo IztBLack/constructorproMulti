@@ -159,10 +159,21 @@ class BitacoraSync {
         if (srv == null) return _borrarEntradaLocal(id);
         sut = _sut(srv);
       } else {
+        // Su obra tiene que existir en el servidor (la RLS lo exige). Si la
+        // obra también se creó en el teléfono y aún no sube, la entrada espera:
+        // intentarlo daría un "sin permiso" falso que la descartaría.
+        final obra = await _fila('obras', r['obra_id'] as String);
+        if (obra != null && obra['server_updated_at'] == null) {
+          if (obra['sync_status'] == 'skipped') {
+            return _rechazarAlta(entradas, r, forzado: RechazoBitacora.obraNoSube);
+          }
+          return;
+        }
         try {
           final res = await remoto.insertar(
               entradas, _altaEntrada(r, empresaId), _colsSello);
-          return _confirmar(entradas, id, res, empresaId);
+          await _confirmar(entradas, r, res, empresaId);
+          return _revivirHijas(id, quitarAvisos: true);
         } on RemotoError catch (e) {
           srv = await remoto.leer(entradas, id, '*');
           if (srv == null) return _rechazarAlta(entradas, r, error: e);
@@ -173,17 +184,18 @@ class BitacoraSync {
 
     // Rama UPDATE: la entrada existe en el servidor.
     if (srv != null && coincideEntrada(r, srv)) {
-      return _confirmar(entradas, id, srv, empresaId);
+      await _aplicarServidor(entradas, r, srv);
+      return _revivirHijas(id);
     }
     try {
       final res = await remoto.actualizarSiNoCambio(
           entradas, id, sut!, _cambiosEntrada(r), _colsSello);
-      if (res.isNotEmpty) return _confirmar(entradas, id, res.first, empresaId);
+      if (res.isNotEmpty) return _confirmar(entradas, r, res.first, empresaId);
       // 0 filas: la RLS no la dejó, o alguien más la cambió. O el cambio YA
       // entró en un intento anterior cuya respuesta se perdió.
       srv = await remoto.leer(entradas, id, '*');
       if (srv != null && coincideEntrada(r, srv)) {
-        return _confirmar(entradas, id, srv, empresaId);
+        return _aplicarServidor(entradas, r, srv);
       }
       final rechazo = srv != null && _sut(srv) != sut
           ? RechazoBitacora.cambiada
@@ -235,7 +247,12 @@ class BitacoraSync {
       final e = await _entradaLocal(r['entrada_id'] as String);
       if (r['deleted_at'] != null) {
         srv = await remoto.leer(fotos, id, '*');
-        if (srv == null) return _borrarFotoLocal(id, mime);
+        if (srv == null) {
+          // La fila no entró, pero el archivo pudo alcanzar a subir en un
+          // intento anterior: no se deja huérfano en Storage.
+          if (e != null) await _borrarRemotoSilencioso(_rutaFoto(empresaId, e, r));
+          return _borrarFotoLocal(id, mime);
+        }
         sut = _sut(srv);
       } else {
         // Sin entrada local (se borró sin llegar nunca): la foto sobra.
@@ -248,13 +265,12 @@ class BitacoraSync {
 
         // La ruta se arma con la empresa de AHORA: la de captura podía estar
         // vacía (sin sesión todavía) y la RLS exige el prefijo de la empresa.
-        final nombre = (r['path'] as String).split('/').last;
-        final path = '$empresaId/${e['obra_id']}/${e['id']}/$nombre';
+        final path = _rutaFoto(empresaId, e, r);
 
         final archivo = await archivoLocal(id, mime);
         if (!await archivo.exists()) {
           srv = await remoto.leer(fotos, id, '*');
-          if (srv != null) return _confirmar(fotos, id, srv, empresaId);
+          if (srv != null) return _aplicarServidor(fotos, r, srv);
           return _rechazarAlta(fotos, r,
               forzado: RechazoBitacora.archivoPerdido, entrada: e);
         }
@@ -299,7 +315,7 @@ class BitacoraSync {
         };
         try {
           final res = await remoto.insertar(fotos, fila, 'server_updated_at');
-          return _confirmar(fotos, id, res, empresaId, extra: {'path': path});
+          return _confirmar(fotos, r, res, empresaId, extra: {'path': path});
         } on RemotoError catch (err) {
           srv = await remoto.leer(fotos, id, '*');
           if (srv == null) {
@@ -319,7 +335,11 @@ class BitacoraSync {
 
     // Rama UPDATE: solo orden y borrado (el servidor no deja cambiar la ruta).
     if (srv != null && _coincideFoto(r, srv)) {
-      return _confirmar(fotos, id, srv, empresaId);
+      await _aplicarServidor(fotos, r, srv);
+      if (r['deleted_at'] != null) {
+        await _limpiarFotoBorrada(srv['path'] as String?, id, mime);
+      }
+      return;
     }
     try {
       final res = await remoto.actualizarSiNoCambio(
@@ -330,20 +350,19 @@ class BitacoraSync {
         'server_updated_at,path',
       );
       if (res.isNotEmpty) {
-        await _confirmar(fotos, id, res.first, empresaId);
+        await _confirmar(fotos, r, res.first, empresaId);
         if (r['deleted_at'] != null) {
-          // Quitar una foto también quita el archivo (como la web). Si la RLS
-          // no lo deja, queda en Storage: la fila ya dice que está borrada.
-          try {
-            await remoto.borrarArchivo(res.first['path'] as String);
-          } catch (_) {}
-          await _borrarArchivoLocal(id, mime);
+          await _limpiarFotoBorrada(res.first['path'] as String?, id, mime);
         }
         return;
       }
       srv = await remoto.leer(fotos, id, '*');
       if (srv != null && _coincideFoto(r, srv)) {
-        return _confirmar(fotos, id, srv, empresaId);
+        await _aplicarServidor(fotos, r, srv);
+        if (r['deleted_at'] != null) {
+          await _limpiarFotoBorrada(srv['path'] as String?, id, mime);
+        }
+        return;
       }
       final rechazo = srv != null && _sut(srv) != sut
           ? RechazoBitacora.cambiada
@@ -389,10 +408,10 @@ class BitacoraSync {
         },
         _colsSello,
       );
-      return _confirmar(aclaraciones, id, res, empresaId);
+      return _confirmar(aclaraciones, r, res, empresaId);
     } on RemotoError catch (err) {
       final srv = await remoto.leer(aclaraciones, id, '*');
-      if (srv != null) return _confirmar(aclaraciones, id, srv, empresaId);
+      if (srv != null) return _aplicarServidor(aclaraciones, r, srv);
       return _rechazarAlta(aclaraciones, r, error: err, entrada: e);
     }
   }
@@ -404,21 +423,38 @@ class BitacoraSync {
   /// `cambiarVisibilidadEntrada` de la web): se permite aun con la entrada
   /// cerrada, y nunca arrastra una edición de texto.
   Future<void> publicar(String entradaId, bool visible) async {
+    final local = await _fila(entradas, entradaId);
+    final pendiente = local != null && local['sync_status'] != 'synced';
+    // Con una edición pendiente importa saber si la oficina cambió la entrada
+    // ANTES de publicar: el sello que devuelva la publicación tapa ese cambio.
+    int? selloAntes;
+    if (pendiente) {
+      selloAntes = _sut(await remoto.leer(entradas, entradaId, 'server_updated_at'));
+    }
     final res = await remoto.actualizar(entradas, entradaId,
         {'visible_cliente': visible}, '*');
     if (res.isEmpty) {
       throw RemotoError(explicarRechazo(RechazoBitacora.sinPermiso),
           code: '42501');
     }
-    final local = await _fila(entradas, entradaId);
-    if (local == null || local['sync_status'] == 'synced') {
-      return _restaurar(entradas, res.first);
+    if (!pendiente) {
+      return local == null
+          ? _restaurar(entradas, res.first)
+          : _aplicarServidor(entradas, local, res.first);
     }
-    // Hay una edición pendiente: se respeta y solo se anota lo publicado y el
-    // nuevo sello (el UPDATE condicional de esa edición lo necesita).
+    // Hay una edición pendiente: se respeta y se anota lo publicado. El sello
+    // nuevo solo se adopta si el servidor seguía en el que conoce el teléfono:
+    // si la oficina la cambió antes, adoptarlo haría que el push pisara ese
+    // cambio en silencio; dejándolo, el push lo detecta como conflicto.
+    final adoptar = selloAntes != null && selloAntes == _int(local['server_updated_at']);
     await db.customUpdate(
-      'UPDATE $entradas SET visible_cliente = ?, server_updated_at = ? WHERE id = ?',
-      variables: [Variable(visible), Variable(_sut(res.first)), Variable(entradaId)],
+      'UPDATE $entradas SET visible_cliente = ?'
+      '${adoptar ? ', server_updated_at = ?' : ''} WHERE id = ?',
+      variables: [
+        Variable(visible),
+        if (adoptar) Variable(_sut(res.first)),
+        Variable(entradaId),
+      ],
       updates: {db.bitacoraEntrada},
     );
   }
@@ -439,24 +475,31 @@ class BitacoraSync {
   Future<Map<String, Object?>?> _entradaLocal(String id) => _fila(entradas, id);
 
   /// Cambia solo el estado. Como CAMBIA `sync_status`, el trigger
-  /// `mark_pending` no se dispara.
+  /// `mark_pending` no se dispara. Si ya tenía ese estado no se escribe: un
+  /// UPDATE sin cambio de estado SÍ dispara el trigger, y una fila en `error`
+  /// marcada otra vez `error` acabaría en `pending` (el indicador alternaría).
   Future<void> _marcar(String tabla, String id, String estado) async {
     await db.customUpdate(
-      'UPDATE $tabla SET sync_status = ? WHERE id = ?',
-      variables: [Variable(estado), Variable(id)],
+      'UPDATE $tabla SET sync_status = ? WHERE id = ? AND sync_status != ?',
+      variables: [Variable(estado), Variable(id), Variable(estado)],
       updates: {_tabla(tabla)},
     );
   }
 
   /// La fila ya está en el servidor: se anota su sello (y lo que él pone) y
-  /// pasa a `synced`.
+  /// pasa a `synced` — SOLO si nadie la editó mientras subía. El sync corre en
+  /// segundo plano y una foto de varios MB tarda: si la persona corrigió algo
+  /// en ese rato (`updated_at` ya no es el del snapshot [r]), se anota solo el
+  /// sello y la fila sigue `pending`, para que su edición suba en la siguiente
+  /// vuelta por el UPDATE condicional en vez de perderse con el pull.
   Future<void> _confirmar(
     String tabla,
-    String id,
+    Map<String, Object?> r,
     Map<String, dynamic> srv,
     String empresaId, {
     Map<String, Object?> extra = const {},
   }) async {
+    final id = r['id'] as String;
     final sets = <String, Object?>{
       'sync_status': 'synced',
       'server_updated_at': _sut(srv),
@@ -471,11 +514,49 @@ class BitacoraSync {
     if (sets['autor_nombre'] == null && sets.containsKey('autor_nombre')) {
       sets['autor_nombre'] = '';
     }
+    final n = await db.customUpdate(
+      'UPDATE $tabla SET ${sets.keys.map((c) => '$c = ?').join(', ')} '
+      'WHERE id = ? AND updated_at = ?',
+      variables: [
+        ...sets.values.map((v) => Variable(v)),
+        Variable(id),
+        Variable(r['updated_at']),
+      ],
+      updates: {_tabla(tabla)},
+    );
+    if (n == 0) await _anotarSello(tabla, id, srv, extra: extra);
+  }
+
+  /// Solo el sello (y la ruta de una foto): la fila sigue `pending` con la
+  /// edición que la persona hizo mientras subía.
+  Future<void> _anotarSello(String tabla, String id, Map<String, dynamic> srv,
+      {Map<String, Object?> extra = const {}}) async {
+    final sets = {'server_updated_at': _sut(srv), ...extra};
     await db.customUpdate(
       'UPDATE $tabla SET ${sets.keys.map((c) => '$c = ?').join(', ')} WHERE id = ?',
       variables: [...sets.values.map((v) => Variable(v)), Variable(id)],
       updates: {_tabla(tabla)},
     );
+  }
+
+  /// Hay fila COMPLETA del servidor y lo editable ya coincide: se adopta tal
+  /// cual (trae `visible_cliente`, la ruta definitiva de la foto, los sellos),
+  /// salvo que la persona haya editado mientras subía.
+  Future<void> _aplicarServidor(
+      String tabla, Map<String, Object?> r, Map<String, dynamic> srv) async {
+    final id = r['id'] as String;
+    final intacta = await _intacta(tabla, r);
+    if (intacta) {
+      await _restaurar(tabla, srv);
+    } else {
+      await _anotarSello(tabla, id, srv);
+    }
+  }
+
+  /// ¿La fila local sigue igual que cuando el push la leyó?
+  Future<bool> _intacta(String tabla, Map<String, Object?> r) async {
+    final f = await _fila(tabla, r['id'] as String);
+    return f != null && f['updated_at'] == r['updated_at'];
   }
 
   /// Reescribe la fila local con la versión del servidor, ya `synced`.
@@ -512,6 +593,46 @@ class BitacoraSync {
     await _borrarArchivoLocal(fotoId, mime);
   }
 
+  /// Ruta en el bucket con la empresa de AHORA: la de captura podía estar
+  /// vacía (sin sesión todavía) y la RLS exige el prefijo de la empresa.
+  static String _rutaFoto(
+          String empresaId, Map<String, Object?> e, Map<String, Object?> f) =>
+      '$empresaId/${e['obra_id']}/${e['id']}/${(f['path'] as String).split('/').last}';
+
+  Future<void> _borrarRemotoSilencioso(String path) async {
+    try {
+      await remoto.borrarArchivo(path);
+    } catch (_) {
+      // La RLS de Storage no deja a todos borrar (p. ej. al colaborador): el
+      // archivo se queda, pero la fila ya dice que la foto está quitada.
+    }
+  }
+
+  /// Quitar una foto también quita sus archivos (como la web), en el servidor
+  /// y en el teléfono.
+  Future<void> _limpiarFotoBorrada(String? path, String fotoId, String mime) async {
+    if (path != null) await _borrarRemotoSilencioso(path);
+    await _borrarArchivoLocal(fotoId, mime);
+  }
+
+  /// Una entrada que por fin llegó al servidor: las fotos y aclaraciones que
+  /// se habían quedado `skipped` con ella (p. ej. su alta se rechazó y la
+  /// persona la corrigió) vuelven a intentarlo. Con [quitarAvisos] (solo tras
+  /// un INSERT que entró) se quitan sus avisos: en una entrada que nunca había
+  /// llegado solo puede haber avisos de ALTA, ya resueltos. En una confirmada
+  /// podría haber el de una edición rechazada cuyo texto aún no se rescata.
+  Future<void> _revivirHijas(String entradaId, {bool quitarAvisos = false}) async {
+    for (final hija in [fotos, aclaraciones]) {
+      await db.customUpdate(
+        "UPDATE $hija SET sync_status = 'pending' "
+        "WHERE entrada_id = ? AND server_updated_at IS NULL AND sync_status = 'skipped'",
+        variables: [Variable(entradaId)],
+        updates: {_tabla(hija)},
+      );
+    }
+    if (quitarAvisos) await avisos.quitarDeFila(entradaId);
+  }
+
   /// Una entrada que nunca llegó al servidor, con todo lo que cuelga de ella
   /// (que tampoco salió: fotos y aclaraciones esperan a su entrada).
   Future<void> _borrarEntradaLocal(String id) async {
@@ -544,18 +665,9 @@ class BitacoraSync {
             : clasificarRechazo(code: error.code, message: error.message));
     if (rechazo == null) throw error ?? RemotoError('rechazo sin motivo');
     final id = r['id'] as String;
-    await _marcar(tabla, id, 'skipped');
     final e = tabla == entradas ? r : entrada;
-    if (tabla == entradas) {
-      for (final hija in [fotos, aclaraciones]) {
-        await db.customUpdate(
-          "UPDATE $hija SET sync_status = 'skipped' "
-          "WHERE entrada_id = ? AND server_updated_at IS NULL AND sync_status != 'skipped'",
-          variables: [Variable(id)],
-          updates: {_tabla(hija)},
-        );
-      }
-    }
+    // El aviso ANTES del `skipped`: si la app muere entre los dos pasos, peor
+    // es una fila descartada sin motivo que un aviso de algo que se reintenta.
     await avisos.agregar(AvisoBitacora(
       id: _uuid.v4(),
       filaId: id,
@@ -567,6 +679,17 @@ class BitacoraSync {
       fechaEntrada: _int(e?['fecha']),
       creadoEn: _ahora(),
     ));
+    await _marcar(tabla, id, 'skipped');
+    if (tabla == entradas) {
+      for (final hija in [fotos, aclaraciones]) {
+        await db.customUpdate(
+          "UPDATE $hija SET sync_status = 'skipped' "
+          "WHERE entrada_id = ? AND server_updated_at IS NULL AND sync_status != 'skipped'",
+          variables: [Variable(id)],
+          updates: {_tabla(hija)},
+        );
+      }
+    }
     debugPrint('[BitacoraSync] ⚑ alta rechazada $tabla $id: ${rechazo.name}');
   }
 
@@ -580,6 +703,10 @@ class BitacoraSync {
     String empresaId,
   ) async {
     final id = r['id'] as String;
+    // Si la persona la volvió a editar mientras subía, se deja para la
+    // siguiente vuelta: el aviso debe llevar SU texto más reciente, y
+    // restaurar aquí borraría esa edición.
+    if (!await _intacta(entradas, r)) return;
     await avisos.agregar(AvisoBitacora(
       id: _uuid.v4(),
       filaId: id,
@@ -603,6 +730,7 @@ class BitacoraSync {
   /// Cambio de una foto confirmada (orden o quitarla) que no va a entrar.
   Future<void> _rechazarCambioHijo(String tabla, Map<String, Object?> r,
       RechazoBitacora rechazo, Map<String, dynamic>? srv) async {
+    if (!await _intacta(tabla, r)) return;
     final e = await _entradaLocal(r['entrada_id'] as String);
     await avisos.agregar(AvisoBitacora(
       id: _uuid.v4(),

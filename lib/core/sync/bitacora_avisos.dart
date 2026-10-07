@@ -117,17 +117,29 @@ class AvisosBitacora {
   AvisoBitacora? deFila(String filaId) =>
       todos.where((a) => a.filaId == filaId).lastOrNull;
 
-  /// Agrega un aviso; si ya había uno de la misma fila y el mismo rechazo, lo
-  /// reemplaza (un reintento no debe apilar avisos repetidos).
+  /// Agrega un aviso. Si ya había uno IGUAL (misma fila, mismo rechazo y mismo
+  /// texto) lo reemplaza, para que un reintento no apile repetidos; con otro
+  /// texto se conservan los dos: son dos ediciones distintas que no subieron,
+  /// y la primera no se ha rescatado.
   Future<void> agregar(AvisoBitacora a) async {
     final resto = todos
-        .where((x) => !(x.filaId == a.filaId && x.rechazo == a.rechazo))
+        .where((x) => !(x.filaId == a.filaId &&
+            x.rechazo == a.rechazo &&
+            x.texto == a.texto))
         .toList();
     await _guardar([...resto, a]);
   }
 
   Future<void> quitar(String avisoId) async {
     await _guardar(todos.where((a) => a.id != avisoId).toList());
+  }
+
+  /// Quita los avisos de una fila que ya se resolvió sola (p. ej. un alta
+  /// rechazada que la persona corrigió y por fin entró).
+  Future<void> quitarDeFila(String filaId) async {
+    final actuales = todos;
+    if (!actuales.any((a) => a.filaId == filaId)) return;
+    await _guardar(actuales.where((a) => a.filaId != filaId).toList());
   }
 
   /// Al cambiar de cuenta o de empresa: lo de la otra cuenta no aplica aquí.

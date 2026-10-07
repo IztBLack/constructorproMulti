@@ -372,6 +372,14 @@ enum RechazoBitacora {
   /// La foto ya no está en el teléfono (se borraron los datos de la app, o el
   /// archivo se perdió antes de subir). Reintentar no la va a hacer aparecer.
   archivoPerdido,
+
+  /// La obra de la entrada no se puede subir (id viejo que no es UUID): sin
+  /// obra en el servidor, la entrada tampoco entra.
+  obraNoSube,
+
+  /// El servidor rechaza los datos por sus reglas (CHECK 23514, archivo
+  /// demasiado grande 413). Los mismos datos fallarían igual cada vez.
+  datosInvalidos,
 }
 
 /// Distingue un rechazo definitivo de un fallo pasajero.
@@ -393,6 +401,9 @@ RechazoBitacora? clasificarRechazo({String? code, required String message}) {
   if (code == '42501' || message.toLowerCase().contains('row-level security')) {
     return RechazoBitacora.sinPermiso;
   }
+  // CHECK de la tabla (tamaño de la foto, catálogos, largo del texto) y
+  // archivo que Storage no acepta por tamaño: los mismos datos fallarían igual.
+  if (code == '23514' || code == '413') return RechazoBitacora.datosInvalidos;
   return null;
 }
 
@@ -413,4 +424,10 @@ String explicarRechazo(RechazoBitacora r) => switch (r) {
         'quedó la versión de la oficina; tu texto está guardado aquí.',
   RechazoBitacora.archivoPerdido =>
     'La foto ya no está en el teléfono y no se pudo subir.',
+  RechazoBitacora.obraNoSube =>
+    'La obra de esta entrada no se puede subir a la nube, así que la entrada '
+        'se queda en este teléfono.',
+  RechazoBitacora.datosInvalidos =>
+    'El servidor no aceptó estos datos (por ejemplo, una foto vacía o de más '
+        'de 10 MB).',
 };

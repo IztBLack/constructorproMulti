@@ -69,6 +69,12 @@ class SupabaseBitacoraRemoto implements BitacoraRemoto {
 
   static const bucket = 'bitacora';
 
+  /// Plazos máximos. Sin ellos, una subida que se queda colgada con señal débil
+  /// bloquea TODO el sync (el guardia `_enCurso` no deja empezar otro) hasta
+  /// reiniciar la app. Al vencer, el fallo es transitorio y se reintenta.
+  static const _esperaDatos = Duration(seconds: 30);
+  static const _esperaArchivo = Duration(minutes: 2);
+
   Never _traducir(Object e) {
     if (e is PostgrestException) {
       throw RemotoError(e.message,
@@ -92,7 +98,12 @@ class SupabaseBitacoraRemoto implements BitacoraRemoto {
   Future<Map<String, dynamic>> insertar(
       String tabla, Map<String, dynamic> fila, String columnas) async {
     try {
-      return await client.from(tabla).insert(fila).select(columnas).single();
+      return await client
+          .from(tabla)
+          .insert(fila)
+          .select(columnas)
+          .single()
+          .timeout(_esperaDatos);
     } catch (e) {
       _traducir(e);
     }
@@ -102,7 +113,12 @@ class SupabaseBitacoraRemoto implements BitacoraRemoto {
   Future<Map<String, dynamic>?> leer(
       String tabla, String id, String columnas) async {
     try {
-      return await client.from(tabla).select(columnas).eq('id', id).maybeSingle();
+      return await client
+          .from(tabla)
+          .select(columnas)
+          .eq('id', id)
+          .maybeSingle()
+          .timeout(_esperaDatos);
     } catch (e) {
       _traducir(e);
     }
@@ -122,7 +138,8 @@ class SupabaseBitacoraRemoto implements BitacoraRemoto {
           .update(cambios)
           .eq('id', id)
           .eq('server_updated_at', serverUpdatedAt)
-          .select(columnas);
+          .select(columnas)
+          .timeout(_esperaDatos);
       return (r as List).cast<Map<String, dynamic>>();
     } catch (e) {
       _traducir(e);
@@ -133,8 +150,12 @@ class SupabaseBitacoraRemoto implements BitacoraRemoto {
   Future<List<Map<String, dynamic>>> actualizar(String tabla, String id,
       Map<String, dynamic> cambios, String columnas) async {
     try {
-      final r =
-          await client.from(tabla).update(cambios).eq('id', id).select(columnas);
+      final r = await client
+          .from(tabla)
+          .update(cambios)
+          .eq('id', id)
+          .select(columnas)
+          .timeout(_esperaDatos);
       return (r as List).cast<Map<String, dynamic>>();
     } catch (e) {
       _traducir(e);
@@ -145,7 +166,8 @@ class SupabaseBitacoraRemoto implements BitacoraRemoto {
   Future<void> subirArchivo(String path, Uint8List bytes, String mime) async {
     try {
       await client.storage.from(bucket).uploadBinary(path, bytes,
-          fileOptions: FileOptions(contentType: mime, upsert: false));
+          fileOptions: FileOptions(contentType: mime, upsert: false))
+          .timeout(_esperaArchivo);
     } catch (e) {
       _traducir(e);
     }
@@ -154,7 +176,7 @@ class SupabaseBitacoraRemoto implements BitacoraRemoto {
   @override
   Future<void> borrarArchivo(String path) async {
     try {
-      await client.storage.from(bucket).remove([path]);
+      await client.storage.from(bucket).remove([path]).timeout(_esperaDatos);
     } catch (e) {
       _traducir(e);
     }
@@ -163,7 +185,7 @@ class SupabaseBitacoraRemoto implements BitacoraRemoto {
   @override
   Future<Uint8List> descargarArchivo(String path) async {
     try {
-      return await client.storage.from(bucket).download(path);
+      return await client.storage.from(bucket).download(path).timeout(_esperaArchivo);
     } catch (e) {
       _traducir(e);
     }
