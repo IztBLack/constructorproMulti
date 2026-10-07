@@ -115,7 +115,9 @@ class _EntradaFormScreenState extends ConsumerState<EntradaFormScreen> {
     final repo = ref.read(bitacoraRepositoryProvider);
     try {
       final nombres = await repo.personalSugerido(
-          obraId: widget.obraId, diaLocalMs: _diaLocalMs);
+          obraId: widget.obraId,
+          diaLocalMs: _diaLocalMs,
+          diaMexicoMs: medianocheMexicoMs(_dia));
       if (!mounted || _tocoNombres || nombres.isEmpty) return;
       setState(() => _nombres = nombres);
     } catch (_) {
@@ -131,7 +133,9 @@ class _EntradaFormScreenState extends ConsumerState<EntradaFormScreen> {
     });
     try {
       final nombres = await repo.personalSugerido(
-          obraId: widget.obraId, diaLocalMs: _diaLocalMs);
+          obraId: widget.obraId,
+          diaLocalMs: _diaLocalMs,
+          diaMexicoMs: medianocheMexicoMs(_dia));
       if (!mounted) return;
       if (nombres.isEmpty) {
         setState(() => _aviso =
