@@ -455,6 +455,34 @@ primer sync con red conserva lo que el usuario vio.
 `~/.android/debug.keystore` y **no hay respaldo**. Si ese archivo se pierde,
 ningún teléfono podrá actualizar sin desinstalar (y perder sus datos locales).
 
+## Bitácora en el móvil (2026-10-06) — Fase 1 de la paridad web → móvil
+
+Plan y diseño: `docs/PLAN_BITACORA_MOVIL.md`. Sin cambios de servidor. Hecho con
+subagentes (exploración, TDD de reglas y repositorio, pantallas) y revisado con
+ECC en cuatro rondas (`ecc:architect` sobre el plan; `ecc:flutter-reviewer` y
+`ecc:security-reviewer` sobre datos y sync; `ecc:flutter-reviewer` sobre
+pantallas). Versión **1.5.0+20**, Drift **v15**.
+
+| # | Decisión | Por qué |
+|---|---|---|
+| BITM-1 | Tablas espejo con las MISMAS columnas que el servidor; `personal_nombres` (`text[]`) como JSON local | El push manda la fila: una columna solo-local rompería cada subida |
+| BITM-2 | Push propio "insertar primero" (no el upsert genérico) | El colaborador inserta pero no actualiza; los BEFORE INSERT de 0041 corren aunque haya conflicto; Storage exige la entrada ya creada y abierta |
+| BITM-3 | Ante cualquier fallo del INSERT, leer por id antes de decidir | Un alta que entró sin respuesta no debe perder la edición posterior ni pasar por "no cupo" |
+| BITM-4 | UPDATE condicional por `server_updated_at`; 0 filas = rechazo | La RLS bloquea en silencio; así no se pisa lo que cambió la oficina |
+| BITM-5 | Rechazos definitivos → aviso en el teléfono + versión del servidor o `skipped` | En `error` se reintentarían cada 25 s para siempre con el indicador en rojo |
+| BITM-6 | Publicar al cliente aparte y en línea, solo `visible_cliente` | Una edición sin señal nunca vuelve a publicar algo que la oficina retiró |
+| BITM-7 | Fecha = medianoche de CDMX (zona real, con horario de verano antes de oct-2022) | Igual que la web; un teléfono en otra zona agruparía en otro día |
+| BITM-8 | Fotos: 1600 px / JPEG 80 con `image_picker`, guardadas en `getApplicationSupportDirectory()/bitacora/<id>.<ext>` | Paridad con la web; la caché la puede borrar Android |
+| BITM-9 | La entrada espera a que suba su obra | Evita un "sin permiso" falso que la descartaría |
+| BITM-10 | Al cambiar de empresa se borran los avisos, no las fotos | Una foto pendiente es evidencia que aún no sube; la base local tampoco se vacía |
+
+**Huecos del SERVIDOR encontrados (no aplicados; requieren migración en prod y el visto bueno de Mario):**
+1. Colaborador/residente pueden INSERTAR una entrada con `visible_cliente = true` por API (el móvil no lo hace). Corrección: en `bitacora_entrada_sellar`, forzar `false` al insertar si no es admin/supervisor.
+2. `bitacora_foto_update` no está atada al autor: un supervisor/residente puede quitar fotos de entradas ajenas abiertas (y Storage borra el archivo). Corrección: exigir autor o admin, como en `bitacora_entrada_update`.
+3. Android `allowBackup` activo (de antes): fotos, avisos y base entran al respaldo de Google.
+
+**Menores que se quedan:** un conflicto por una publicación de la oficina se reporta como "la cambió alguien" (la edición queda en el aviso); el pull baja 1000 filas por ciclo; tras cambiar de cuenta en el mismo teléfono la base local (de antes) y las fotos siguen ahí.
+
 ## Despliegue (2026-09-27)
 
 - **Migraciones 0035 → 0045 APLICADAS EN PRODUCCIÓN** vía Management API, una por una y cada una dentro de `begin/commit` (todas respondieron 201 `[]`). Antes se confirmó que 0034 ya estaba aplicada. El token viejo de `.env.tokens` estaba revocado (401); Mario lo renovó.
