@@ -365,9 +365,13 @@ class ConfigScreen extends ConsumerWidget {
       await file.writeAsBytes(bytes);
       await Share.shareXFiles([XFile(file.path)], text: 'Respaldo ConstructorPro');
     } catch (e) {
+      // El detalle técnico va al registro, no a la pantalla: a quien está en
+      // la obra no le dice nada y asusta.
+      debugPrint('[ConfigScreen] exportar respaldo: $e');
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error al exportar: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('No se pudo crear el respaldo. Intenta de nuevo; '
+                'tus datos siguen en el teléfono.')));
       }
     }
   }
@@ -409,9 +413,11 @@ class ConfigScreen extends ConsumerWidget {
             const SnackBar(content: Text('Respaldo restaurado correctamente.')));
       }
     } catch (e) {
+      debugPrint('[ConfigScreen] restaurar respaldo: $e');
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error al restaurar: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('No se pudo restaurar el respaldo. Revisa que el '
+                'archivo sea un respaldo de ConstructorPro.')));
       }
     }
   }

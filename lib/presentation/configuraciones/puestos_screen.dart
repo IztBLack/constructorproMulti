@@ -5,6 +5,8 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/db/app_database.dart';
 import '../../data/providers.dart';
+import '../common/empty_state_view.dart';
+import '../common/error_state_view.dart';
 
 class PuestosScreen extends ConsumerWidget {
   const PuestosScreen({super.key});
@@ -19,12 +21,14 @@ class PuestosScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Puestos y salarios')),
       body: puestosAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) =>
+            ErrorStateView(onRetry: () => ref.invalidate(puestosProvider)),
         data: (puestos) {
           if (puestos.isEmpty) {
-            return const Center(
-              child: Text('No hay puestos configurados.\nToca + para agregar uno.',
-                  textAlign: TextAlign.center),
+            return const EmptyStateView(
+              icon: Icons.badge_outlined,
+              title: 'No hay puestos configurados.',
+              hint: 'Toca + para agregar uno.',
             );
           }
           return ListView.separated(

@@ -32,6 +32,7 @@ import '../../pdf/pdf_service.dart';
 import '../common/app_card.dart';
 import '../common/app_snackbar.dart';
 import '../common/confirm_dialog.dart';
+import '../common/error_state_view.dart';
 import '../common/money_text.dart';
 import '../common/section_header.dart';
 import '../common/selector_fraccion.dart';
@@ -399,12 +400,15 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     return Scaffold(
       body: asignadosAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => ErrorStateView(
+            onRetry: () => ref.invalidate(colaboradoresPorObraProvider(_obraId))),
         data: (asignados) {
           if (asignados.isEmpty) {
-            return const Center(
-                child: Text('Sin equipo asignado.\nToca + para asignar.',
-                    textAlign: TextAlign.center));
+            return const EmptyStateView(
+              icon: Icons.groups_outlined,
+              title: 'Sin equipo asignado.',
+              hint: 'Toca «Asignar» para agregar gente a esta obra.',
+            );
           }
           return ListView(
             children: asignados
@@ -601,12 +605,12 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
         Expanded(
           child: asignadosAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Error: $e')),
+            error: (e, _) => ErrorStateView(
+                onRetry: () =>
+                    ref.invalidate(colaboradoresPorObraProvider(_obraId))),
             data: (asignados) {
               final dia = asignados.where((c) => c.tipoPago == 'DIA').toList();
-              if (dia.isEmpty) {
-                return const Center(child: Text('Sin trabajadores por día asignados.'));
-              }
+              if (dia.isEmpty) return const _SinTrabajadoresPorDia();
               final asistencias = asistenciasAsync.asData?.value ?? [];
               final fracPorColab = {for (final a in asistencias) a.colaboradorId: a.fraccion};
               return ListView(
@@ -658,9 +662,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     final asistencias = ref.watch(asistenciasRangoProvider(rango)).asData?.value ?? [];
     final trabajadores = asignados.where((c) => c.tipoPago == 'DIA').toList();
 
-    if (trabajadores.isEmpty) {
-      return const Center(child: Text('Sin trabajadores por día asignados.'));
-    }
+    if (trabajadores.isEmpty) return const _SinTrabajadoresPorDia();
 
     // mapa colaboradorId|fechaDia -> fraccion (asistencia en ESTA obra)
     final mapa = <String, double>{};
@@ -882,7 +884,11 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
             );
 
             if (summary.items.isEmpty) {
-              return const Center(child: Text('Sin equipo asignado.'));
+              return const EmptyStateView(
+                icon: Icons.groups_outlined,
+                title: 'Sin equipo asignado.',
+                hint: 'Asigna gente en la pestaña Equipo para ver su nómina.',
+              );
             }
             return Column(
               children: [
@@ -1118,7 +1124,8 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     return Scaffold(
       body: movsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => ErrorStateView(
+            onRetry: () => ref.invalidate(movimientosPorObraProvider(_obraId))),
         data: (movs) {
           final c = context.colores;
           final resumen = const FlujoCalculator()
@@ -1195,9 +1202,11 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
               ),
               const Divider(height: 1),
               if (movs.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(32),
-                  child: Center(child: Text('Sin movimientos.')),
+                const EmptyStateView(
+                  icon: Icons.receipt_long_outlined,
+                  title: 'Sin movimientos.',
+                  hint: 'Registra una entrada o una salida con los botones de '
+                      'abajo.',
                 )
               else
                 ...movs.map((m) {
@@ -1975,4 +1984,18 @@ class _NotaConciliacionCardState extends ConsumerState<_NotaConciliacionCard> {
       ),
     );
   }
+}
+
+/// Vacío de la asistencia (día y semana): solo los de pago por día llevan pase
+/// de lista, y eso es justo lo que no se adivina viendo una lista en blanco.
+class _SinTrabajadoresPorDia extends StatelessWidget {
+  const _SinTrabajadoresPorDia();
+
+  @override
+  Widget build(BuildContext context) => const EmptyStateView(
+        icon: Icons.event_busy,
+        title: 'Sin trabajadores por día asignados.',
+        hint: 'Solo quien cobra por día lleva asistencia; los de destajo se '
+            'pagan por avance.',
+      );
 }

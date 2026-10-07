@@ -11,6 +11,8 @@ import '../../data/repositories_nota_obra.dart';
 import '../../domain/logic/notas_obra_calculo.dart';
 import '../../pdf/pdf_service.dart';
 import '../common/confirm_dialog.dart';
+import '../common/empty_state_view.dart';
+import '../common/error_state_view.dart';
 import '../common/sync_status_action.dart';
 import '../common/texto_final_card.dart';
 import '../pdf_preview_screen.dart';
@@ -40,13 +42,21 @@ class NotaObraDetailScreen extends ConsumerWidget {
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(
         appBar: AppBar(),
-        body: Center(child: Text('No se pudo cargar la nota.\n$e')),
+        body: ErrorStateView(
+          message: 'No se pudo mostrar la nota. Tus datos están a salvo en el '
+              'teléfono.',
+          onRetry: () => ref.invalidate(notaObraProvider(notaId)),
+        ),
       ),
       data: (nota) {
         if (nota == null) {
           return Scaffold(
             appBar: AppBar(),
-            body: const Center(child: Text('Esta nota ya no existe.')),
+            body: const EmptyStateView(
+              icon: Icons.handshake_outlined,
+              title: 'Esta nota ya no existe.',
+              hint: 'Alguien la borró, aquí o desde otro teléfono.',
+            ),
           );
         }
         return _Editor(nota: nota, obraNombre: obraNombre);

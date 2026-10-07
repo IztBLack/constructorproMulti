@@ -658,9 +658,14 @@ class _PaseListaRowState extends ConsumerState<_PaseListaRow> {
             content: Text('${widget.nombre} movido a la otra obra$extra.')));
       }
     } catch (e) {
+      debugPrint('[PaseLista] mover a otra obra: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('No se pudo mover: $e')));
+        showAppSnack(
+          context,
+          'No se pudo mover a ${widget.nombre}. Sigue en esta obra; '
+          'intenta de nuevo.',
+          tone: SnackTone.danger,
+        );
       }
     }
   }
