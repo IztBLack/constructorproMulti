@@ -18,10 +18,14 @@ import '../common/sync_status_action.dart';
 /// elegir cuál registro es el correcto, y esa decisión necesita ver los DOS
 /// datos con nombres, no un UUID ni un código de Postgres.
 ///
-/// De ahí el formato de cada tarjeta: "en la nube tenemos X, en esta tableta
-/// Y", y tres salidas explícitas —Cancelar (decidir luego), Omitir (gana la
-/// nube) y Subir (gana lo de aquí y reemplaza)—. "Subir" pide confirmación
-/// aparte porque es la única que modifica lo que los demás ya ven.
+/// De ahí el formato de cada tarjeta: "en la nube tenemos X, en este teléfono
+/// Y", y salidas que dicen lo que HACEN: Eliminar (gana la nube y lo de aquí
+/// se borra), Subir (gana lo de aquí y reemplaza), "Dejar solo en este
+/// teléfono" (no sube, pero tampoco se borra) y "Decidir después" (sale sin
+/// tocar nada). Antes las dos últimas eran "Omitir" y "Cancelar": no decían
+/// qué pasaba con el dato, y "Cancelar" ni siquiera cancelaba algo, sacaba de
+/// la pantalla. "Subir" pide confirmación aparte porque es la única que
+/// modifica lo que los demás ya ven.
 class ConflictosScreen extends ConsumerWidget {
   const ConflictosScreen({super.key});
 
@@ -115,19 +119,21 @@ class _TarjetaConflictoState extends ConsumerState<_TarjetaConflicto> {
 
   ConflictoAsistencia get c => widget.conflicto;
 
-  /// Omitir: gana la nube pero el dato local NO se borra. Se avisa de la
-  /// consecuencia —el día queda con doble jornada en este dispositivo— porque
+  /// "Dejar solo en este teléfono" (el `omitirConflicto` del repositorio): no
+  /// se sube y deja de pelear con la nube, pero el dato local NO se borra. Se
+  /// avisa de la consecuencia —el día queda con doble jornada en este
+  /// teléfono— porque
   /// afecta la nómina que se calcula aquí, y callarlo sería el tipo de detalle
   /// que se descubre semanas después en un pago mal hecho.
   Future<void> _omitir() async {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('¿Conservar el dato solo aquí?'),
+        title: const Text('¿Dejarlo solo en este teléfono?'),
         content: Text(
-          'No se subirá a la nube, pero se queda guardado en este dispositivo.\n\n'
+          'No se subirá a la nube, pero se queda guardado en este teléfono.\n\n'
           'Ojo: ${c.colaborador} quedará con 2 jornadas ese día en la nómina de '
-          'esta tableta (en la nube tendrá 1). Si no lo quieres, usa Eliminar.',
+          'este teléfono (en la nube tendrá 1). Si no lo quieres, usa Eliminar.',
         ),
         actions: [
           TextButton(
@@ -136,7 +142,7 @@ class _TarjetaConflictoState extends ConsumerState<_TarjetaConflicto> {
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Conservar aquí'),
+            child: const Text('Dejar solo aquí'),
           ),
         ],
       ),
@@ -149,7 +155,9 @@ class _TarjetaConflictoState extends ConsumerState<_TarjetaConflicto> {
     if (!mounted) return;
     setState(() => _ocupado = false);
     messenger.showSnackBar(SnackBar(
-      content: Text('Se conservó el registro de la nube para ${c.colaborador}.'),
+      content: Text('${c.colaborador}: lo de ${c.obraLocal} se queda solo en '
+          'este teléfono. En la nube sigue '
+          '${c.obraRival ?? 'el otro registro'}.'),
     ));
   }
 
@@ -282,7 +290,7 @@ class _TarjetaConflictoState extends ConsumerState<_TarjetaConflicto> {
             const SizedBox(height: 8),
             _FilaDato(
               icono: Icons.tablet_android_outlined,
-              etiqueta: 'En este dispositivo (el dato nuevo)',
+              etiqueta: 'En este teléfono (el dato nuevo)',
               valor: '${c.obraLocal} · ${_jornada(c.fraccion)}',
               color: col.info,
               fondo: col.infoSoft,
@@ -302,7 +310,8 @@ class _TarjetaConflictoState extends ConsumerState<_TarjetaConflicto> {
               // Dos filas: cuatro acciones en una sola dejarían los toques por
               // debajo del mínimo cómodo en un teléfono. Arriba las dos que
               // resuelven de verdad (Eliminar deja el día cuadrado; Subir
-              // reemplaza en la nube); abajo las de salida sin resolver.
+              // reemplaza en la nube); abajo las que no lo cuadran: salir sin
+              // decidir, o quedárselo sin subirlo.
               Row(
                 children: [
                   Expanded(
@@ -327,9 +336,12 @@ class _TarjetaConflictoState extends ConsumerState<_TarjetaConflicto> {
               Row(
                 children: [
                   Expanded(
+                    // Sale de la pantalla y el conflicto sigue ahí, contado en
+                    // el indicador de sync: se puede volver cuando se sepa.
                     child: TextButton(
                       onPressed: () => Navigator.of(context).maybePop(),
-                      child: const Text('Cancelar'),
+                      child: const Text('Decidir después',
+                          textAlign: TextAlign.center),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -338,7 +350,8 @@ class _TarjetaConflictoState extends ConsumerState<_TarjetaConflicto> {
                       onPressed: _omitir,
                       style: TextButton.styleFrom(
                           foregroundColor: col.textMuted),
-                      child: const Text('Omitir'),
+                      child: const Text('Dejar solo en este teléfono',
+                          textAlign: TextAlign.center),
                     ),
                   ),
                 ],
