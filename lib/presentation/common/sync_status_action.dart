@@ -55,6 +55,13 @@ class SyncStatusAction extends ConsumerWidget {
             : '${estado.conflictos} asistencia(s) en conflicto. '
                 'Toca para elegir cuál se queda.',
       ),
+      SyncFase.cuentaPorConfirmar => (
+        Icons.manage_accounts_outlined,
+        c.warning,
+        '',
+        'Este teléfono tiene datos de otra cuenta y no se está '
+            'sincronizando. Toca para decidir qué hacer.',
+      ),
       SyncFase.sincronizando => (
         Icons.sync,
         c.info,

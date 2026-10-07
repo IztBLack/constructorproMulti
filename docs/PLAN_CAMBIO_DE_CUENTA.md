@@ -44,6 +44,18 @@ Hay, además, un riesgo de privacidad: el teléfono de una cuenta conserva datos
 - (a) La capa 3 aparta las filas ajenas y la app ofrece **"Rehacer la copia de este teléfono desde la nube"** en Nube y sincronización (vacía lo local y baja todo; antes avisa si hay cambios propios sin subir) — *recomendado.* Ya no se puede "limpiar solo lo ajeno": tras el sellado viejo, lo ajeno no se distingue en local.
 - (b) Solo apartarlas en silencio.
 
+## Estado (2026-10-07): incrementos 1–5 HECHOS en `claude/auditoria-ux-movil-73d586`; falta el 6 (RedMagic)
+
+Lo que cambió respecto al plan, por la revisión ECC (`flutter-reviewer` + `security-reviewer`):
+- **El dueño es empresa Y usuario** (`datos_locales_usuario`): otro usuario de la misma empresa (otro rol) no hereda lo que bajó el anterior (sueldos, obras ajenas). Cuenta como cambio de cuenta.
+- **Las empresas presentes en la base solo cuentan si no se sabe el dueño.** Con dueño conocido, las filas ajenas apartadas NO disparan un cambio de cuenta (evita el bucle "volver a esa cuenta" en el RedMagic); las resuelve el botón de D2.
+- **Estado `ajena`** (no `skipped`) para lo que la nube no acepta para esta cuenta: no se sube ni se reintenta, pero **sí cuenta como trabajo sin subir**. Un 42501 «USING» de una fila que esta cuenta no ve también puede ser un residente que perdió la obra, no solo otra cuenta: nunca se borra sin avisar.
+- **Candado del sync** (`SyncOutcome.cuentaPorConfirmar`) + estado propio en el indicador.
+- **Vaciado a prueba de cortes:** cursores primero, dueño al final; las acciones usan el `ProviderContainer` de la app. Al pasar a OTRA empresa también se borran adjuntos de cotización, logo, firma y la config local de PDF (que en la misma empresa se conserva).
+- "Cerrar sesión" ofrece **"Cerrar y borrar datos"** cuando ya todo subió; "Restablecer TODO" usa la misma rutina.
+
+Quedan conocidos y aceptados: el código de vinculación se consume aunque la persona elija "Volver a esa cuenta"; sin sesión la app sigue mostrando los datos locales (por diseño offline-first; para teléfonos compartidos está "Cerrar y borrar datos"); usuarios en dos empresas (`usuarios_empresa ... limit(1)` sin orden) vaciarían la base si el servidor alternara la fila.
+
 ## 4. Incrementos
 1. **Detección + preferencia `datos_locales_empresa`** (capa 1), con tests de los escenarios: misma cuenta, otra cuenta, primer login sin cuenta previa, teléfono ya mezclado.
 2. **Vaciado genérico** de la base (todas las tablas de `allTables`) + fotos + avisos + cachés; `restablecerTodo()` pasa a usarlo. Test que falla si una tabla nueva queda fuera.

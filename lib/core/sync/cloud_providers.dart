@@ -142,6 +142,8 @@ final syncServiceProvider = Provider<SyncService>((ref) => SyncService(
       metadata: ref.watch(syncMetadataProvider),
       bitacora: ref.watch(bitacoraSyncProvider),
       cuentaLocal: ref.watch(cuentaLocalProvider),
+      onCuentaPorConfirmar: (v) => Future.microtask(
+          () => ref.read(cuentaPorConfirmarProvider.notifier).state = v),
       // Refleja "hay un sync corriendo" en un provider observable por la UI. Se
       // difiere con microtask para no mutar estado de Riverpod en medio de la
       // construcción de otro provider (lo prohíbe) cuando el sync arranca

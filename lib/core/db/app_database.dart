@@ -556,7 +556,7 @@ class AppDatabase extends _$AppDatabase {
   /// Todas las tablas de la base local. Cada una es espejo de una tabla del
   /// servidor (lleva `SyncCols`), así que lo que se haga "a toda la base" se
   /// hace recorriendo esta lista: una tabla nueva queda incluida sola, sin que
-  /// alguien tenga que acordarse de agregarla (que es como `restablecerTodo` y
+  /// alguien tenga que acordarse de agregarla (que es como el viejo `restablecerTodo` y
   /// el sellado se quedaron viejos).
   Iterable<String> get tablasLocales =>
       allTables.map((t) => t.actualTableName);

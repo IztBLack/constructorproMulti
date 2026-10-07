@@ -190,7 +190,14 @@ class ConfigScreen extends ConsumerWidget {
               _danger(context, ref, 'Vaciar catálogo de conceptos', 'VACIAR',
                   () => ref.read(maintenanceRepositoryProvider).vaciarCatalogo()),
               _danger(context, ref, 'Restablecer TODO', 'RESTABLECER',
-                  () => ref.read(maintenanceRepositoryProvider).restablecerTodo()),
+                  // La misma rutina que "Rehacer la copia": además de la
+                  // base, fotos, avisos y cachés, y los cursores PRIMERO. Con
+                  // sesión, el siguiente sync vuelve a bajar todo de la nube
+                  // (antes la base quedaba vacía con los cursores al día y
+                  // nada volvía). Sin sesión, el teléfono queda de fábrica.
+                  () => vaciarCopiaLocal(
+                      ProviderScope.containerOf(context, listen: false),
+                      otraEmpresa: false)),
             ],
           ),
         ],

@@ -36,8 +36,7 @@ class MaintenanceRepository {
 
   Future<void> vaciarCatalogo() => db.delete(db.catalogoConceptos).go();
 
-  /// Deja el teléfono como recién instalado. Antes era una lista a mano que se
-  /// quedó vieja (no borraba cuadrillas, notas, caja, presupuesto ni
-  /// bitácora); ahora recorre todas las tablas de la base.
-  Future<void> restablecerTodo() => db.vaciarDatosLocales();
+  // "Restablecer TODO" ya no vive aquí: es `vaciarCopiaLocal`
+  // (core/sync/cloud_providers.dart), que además de la base reinicia cursores,
+  // fotos, avisos y cachés. La lista a mano que había aquí se quedó vieja.
 }

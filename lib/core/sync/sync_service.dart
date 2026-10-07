@@ -64,6 +64,7 @@ class SyncService {
     this.onActividad,
     this.bitacora,
     this.cuentaLocal,
+    this.onCuentaPorConfirmar,
   }) : client = client ?? SupabaseConfig.client;
 
   final AppDatabase db;
@@ -114,9 +115,18 @@ class SyncService {
   }
 
   /// El último ciclo se detuvo porque la base local es de otra cuenta (ver
-  /// [SyncOutcome.cuentaPorConfirmar]). Lo lee el indicador de sync para no
-  /// decir "pendiente" en silencio mientras nada sube.
-  bool cuentaPorConfirmar = false;
+  /// [SyncOutcome.cuentaPorConfirmar]). Se avisa por [onCuentaPorConfirmar]
+  /// para que el indicador de sync no diga "pendiente" en silencio mientras
+  /// nada sube.
+  bool _cuentaPorConfirmar = false;
+  bool get cuentaPorConfirmar => _cuentaPorConfirmar;
+  set cuentaPorConfirmar(bool v) {
+    if (v == _cuentaPorConfirmar) return;
+    _cuentaPorConfirmar = v;
+    onCuentaPorConfirmar?.call(v);
+  }
+
+  final void Function(bool)? onCuentaPorConfirmar;
 
   void reanudar() => _pausado = false;
 
