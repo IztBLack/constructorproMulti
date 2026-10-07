@@ -6,6 +6,7 @@ import '../../core/sync/cloud_providers.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
 import '../../data/repositories_obra.dart';
+import '../common/sync_status_action.dart';
 
 /// Conflictos de jornada por resolver.
 ///
@@ -28,7 +29,10 @@ class ConflictosScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final repo = ref.watch(asistenciaRepositoryProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Conflictos por resolver')),
+      appBar: AppBar(
+        title: const Text('Conflictos por resolver'),
+        actions: const [SyncStatusAction(enConflictos: true)],
+      ),
       body: StreamBuilder<List<ConflictoAsistencia>>(
         stream: repo.watchConflictos(),
         builder: (context, snap) {

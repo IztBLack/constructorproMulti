@@ -11,6 +11,7 @@ import '../../data/repositories_nota_obra.dart';
 import '../../domain/logic/notas_obra_calculo.dart';
 import '../../pdf/pdf_service.dart';
 import '../common/confirm_dialog.dart';
+import '../common/sync_status_action.dart';
 import '../common/texto_final_card.dart';
 import '../pdf_preview_screen.dart';
 import 'campo_a_nombre_de.dart';
@@ -74,6 +75,7 @@ class _Editor extends ConsumerWidget {
         // la lista: así se ve desde la barra que a esta nota le falta el dato.
         title: NombreDeNota(nota.nota.destinatario),
         actions: [
+          const SyncStatusAction(),
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
             tooltip: 'PDF para compartir',

@@ -6,15 +6,18 @@ import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
 import '../../core/modulos/modulos.dart';
 import '../../core/modulos/modulos_provider.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/sync/cloud_providers.dart';
 import '../../core/sync/rol_provider.dart';
+import '../../core/sync/sync_status.dart';
 import '../../data/providers.dart';
+import '../common/app_badge.dart';
 import '../common/app_snackbar.dart';
 import '../common/app_spacing.dart';
 import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
+import '../common/insignia_sync.dart';
 import '../common/selector_fraccion.dart';
+import '../common/sync_status_action.dart';
 import '../cuadrillas/cuadrillas_screen.dart' show especialidadLabel;
 
 /// Pase de lista UNIFICADO: pasa lista de todas las obras activas en un día.
@@ -37,6 +40,9 @@ class _PaseListaScreenState extends ConsumerState<PaseListaScreen> {
       appBar: AppBar(
         title: const Text('Pase de lista'),
         actions: [
+          // Aquí más que en ninguna otra pantalla: el pase de lista se captura
+          // en la obra, muchas veces sin señal.
+          const SyncStatusAction(),
           IconButton(
             icon: const Icon(Icons.chevron_left),
             tooltip: 'Día anterior',
@@ -128,6 +134,7 @@ class _ObraPaseLista extends ConsumerWidget {
         .toList();
     if (dia.isEmpty) return const SizedBox.shrink();
     final frac = {for (final a in asistencias) a.colaboradorId: a.fraccion};
+    final syncDe = {for (final a in asistencias) a.colaboradorId: a.syncStatus};
     // El registro completo de cada quien, para que "marcar a todos" pueda
     // deshacerse dejando a cada persona exactamente como estaba.
     final previos = {for (final a in asistencias) a.colaboradorId: a};
@@ -222,6 +229,7 @@ class _ObraPaseLista extends ConsumerWidget {
             nombre: c.nombre,
             diaMillis: diaMillis,
             fraccionInicial: frac[c.id] ?? 0.0,
+            syncStatus: syncDe[c.id],
             // Con el módulo apagado el grupo "sin cuadrilla" NO significa que
             // no la tengan: solo no se enseña. Ausente = la etiqueta que ya
             // tenga la fila se respeta (ver `setFraccion`).
@@ -431,6 +439,7 @@ class _PaseListaRow extends ConsumerStatefulWidget {
     required this.diaMillis,
     required this.fraccionInicial,
     this.cuadrilla = const Value.absent(),
+    this.syncStatus,
   });
 
   final String obraId;
@@ -439,6 +448,9 @@ class _PaseListaRow extends ConsumerStatefulWidget {
   final int diaMillis;
   final double fraccionInicial;
   final Value<String?> cuadrilla;
+
+  /// `sync_status` de la asistencia de hoy (null si todavía no hay registro).
+  final String? syncStatus;
 
   @override
   ConsumerState<_PaseListaRow> createState() => _PaseListaRowState();
@@ -653,30 +665,53 @@ class _PaseListaRowState extends ConsumerState<_PaseListaRow> {
     }
   }
 
-  Widget _statusIcon() {
+  /// Lo que la fila dice de su guardado, en TEXTO y no solo con un ícono de
+  /// color: antes era una palomita verde de 18 px que al sol no se veía y que
+  /// el lector de pantalla no leía. Es el mismo lenguaje de la bitácora.
+  ///
+  /// Sin registro no dice nada. "Subido" solo aparece en lo que se tocó en
+  /// esta visita: en una lista de treinta personas ya sincronizadas, treinta
+  /// "Subido" serían ruido que se deja de leer (la misma razón por la que
+  /// [SyncStatusAction] se oculta cuando todo está al día).
+  Widget? _estadoGuardado(bool hayNube) {
     switch (_save) {
       case _SaveState.saving:
-        return const SizedBox(
-          width: 16,
-          height: 16,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        );
-      case _SaveState.saved:
-        return Icon(Icons.check_circle,
-            size: 18, color: context.colores.success);
+        return Row(mainAxisSize: MainAxisSize.min, children: [
+          const SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Text('Guardando…', style: Theme.of(context).textTheme.labelSmall),
+        ]);
       case _SaveState.error:
-        return Tooltip(
-          message: 'No se guardó. Toca de nuevo para reintentar.',
-          child: Icon(Icons.error_outline,
-              size: 18, color: Theme.of(context).colorScheme.error),
-        );
+        return const AppBadge('No se guardó · toca de nuevo',
+            tone: BadgeTone.danger, icon: Icons.error_outline);
       case _SaveState.idle:
-        return const SizedBox(width: 16);
+      case _SaveState.saved:
+        break;
     }
+    return switch (widget.syncStatus) {
+      null => null,
+      // 'error' es transitorio: el sync lo reintenta solo en cada vuelta.
+      'pending' || 'error' => InsigniaSync.porSubir(
+          texto: hayNube
+              ? 'Guardado en el teléfono · se sube después'
+              // Sin sesión no hay a dónde subir: prometer "se sube después"
+              // sería mentir.
+              : 'Guardado en el teléfono'),
+      'conflict' => const AppBadge('En conflicto: ya tiene jornada en otra obra',
+          tone: BadgeTone.warning, icon: Icons.rule),
+      'skipped' => InsigniaSync.noSeSubio(),
+      _ => _save == _SaveState.saved ? InsigniaSync.subido() : null,
+    };
   }
 
   @override
   Widget build(BuildContext context) {
+    final hayNube = ref.watch(syncStatusProvider).fase != SyncFase.desconectado;
+    final estado = _estadoGuardado(hayNube);
     return Padding(
       padding: AppSpacing.rowLg,
       child: Column(
@@ -685,7 +720,6 @@ class _PaseListaRowState extends ConsumerState<_PaseListaRow> {
           Row(
             children: [
               Expanded(child: Text(widget.nombre)),
-              _statusIcon(),
               // Un solo control para las dos acciones de la persona. Con dos
               // iconos sueltos la fila se apretaba y el objetivo táctil bajaba
               // de los 48 px que pide el trabajo con guantes.
@@ -716,6 +750,17 @@ class _PaseListaRowState extends ConsumerState<_PaseListaRow> {
               ),
             ],
           ),
+          // Región viva: TalkBack la vuelve a leer sola cuando cambia, así quien
+          // marca sin mirar sabe que quedó guardado sin tener que buscarlo.
+          if (estado != null)
+            Semantics(
+              liveRegion: true,
+              container: true,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: estado,
+              ),
+            ),
           AppSpacing.gapXs,
           SelectorFraccion(
             valor: _fraccion,

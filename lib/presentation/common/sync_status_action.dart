@@ -20,7 +20,11 @@ import '../configuraciones/conflictos_screen.dart';
 /// algo que decir (subiendo, pendientes, error) o cuando conviene recordar que
 /// no hay nube (sin sesión).
 class SyncStatusAction extends ConsumerWidget {
-  const SyncStatusAction({super.key});
+  const SyncStatusAction({super.key, this.enConflictos = false});
+
+  /// Ya se está en la pantalla de conflictos: tocar el aviso de conflicto no
+  /// debe abrir OTRA igual encima, sino la de nube (subidas y errores).
+  final bool enConflictos;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -45,8 +49,11 @@ class SyncStatusAction extends ConsumerWidget {
         Icons.rule,
         c.warning,
         '${estado.conflictos}',
-        '${estado.conflictos} asistencia(s) en conflicto. '
-            'Toca para elegir cuál se queda.',
+        enConflictos
+            ? '${estado.conflictos} asistencia(s) en conflicto. '
+                'Toca para ver la sincronización.'
+            : '${estado.conflictos} asistencia(s) en conflicto. '
+                'Toca para elegir cuál se queda.',
       ),
       SyncFase.sincronizando => (
         Icons.sync,
@@ -84,7 +91,7 @@ class SyncStatusAction extends ConsumerWidget {
       // de nube lo dejaría a un toque más de lo único que puede hacer.
       onPressed: () => Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => estado.fase == SyncFase.conflicto
+          builder: (_) => estado.fase == SyncFase.conflicto && !enConflictos
               ? const ConflictosScreen()
               : const CloudSyncScreen(),
         ),

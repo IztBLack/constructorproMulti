@@ -35,6 +35,7 @@ import '../common/confirm_dialog.dart';
 import '../common/money_text.dart';
 import '../common/section_header.dart';
 import '../common/selector_fraccion.dart';
+import '../common/sync_status_action.dart';
 import '../common/texto_final_card.dart';
 import '../bitacora/bitacora_screen.dart';
 import '../../domain/asistencia/fracciones.dart';
@@ -188,6 +189,9 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
       appBar: AppBar(
         title: Text(widget.obra.nombre),
         actions: [
+          // La obra es donde se captura asistencia y caja en campo: aquí
+          // tiene que verse si algo no ha subido.
+          const SyncStatusAction(),
           IconButton(
             icon: const Icon(Icons.swap_horiz),
             tooltip: 'Cambiar a obra',
