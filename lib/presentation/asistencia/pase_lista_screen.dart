@@ -14,6 +14,7 @@ import '../common/app_snackbar.dart';
 import '../common/app_spacing.dart';
 import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
+import '../common/selector_fraccion.dart';
 import '../cuadrillas/cuadrillas_screen.dart' show especialidadLabel;
 
 /// Pase de lista UNIFICADO: pasa lista de todas las obras activas en un día.
@@ -127,6 +128,9 @@ class _ObraPaseLista extends ConsumerWidget {
         .toList();
     if (dia.isEmpty) return const SizedBox.shrink();
     final frac = {for (final a in asistencias) a.colaboradorId: a.fraccion};
+    // El registro completo de cada quien, para que "marcar a todos" pueda
+    // deshacerse dejando a cada persona exactamente como estaba.
+    final previos = {for (final a in asistencias) a.colaboradorId: a};
 
     // Agrupa por cuadrilla vigente. Los que no tienen cuadrilla caen bajo la
     // clave null ("Sin cuadrilla").
@@ -173,47 +177,13 @@ class _ObraPaseLista extends ConsumerWidget {
           nombre: cuadrilla.nombre,
           especialidad: especialidadLabel(cuadrilla.especialidad),
           count: miembros.length,
-          onMarcarTodos: () async {
-            final repo = ref.read(asistenciaRepositoryProvider);
-            // Se captura antes de los await: las escrituras de setFraccion hacen
-            // rebuild de la lista y dejarían este context inválido después.
-            final messenger = ScaffoldMessenger.of(context);
-            final warn = context.colores.warning;
-            // T0: espeja el trigger 0016. A cada miembro se le omite si marcar
-            // día completo aquí lo pasaría de 1 jornada ese día sumando todas las
-            // obras; así "marcar todos" no crea filas que la nube rechazaría.
-            final omitidos = <String>[];
-            for (final c in miembros) {
-              final otras = await repo.fraccionOtrasObras(c.id, diaMillis, obraId);
-              if (1.0 + otras > 1.0 + 1e-9) {
-                omitidos.add(c.nombre);
-                continue;
-              }
-              await repo.setFraccion(
-                obraId: obraId,
-                colaboradorId: c.id,
-                fecha: diaMillis,
-                fraccion: 1.0,
-                cuadrillaId: Value(cid),
-              );
-            }
-            if (omitidos.isNotEmpty) {
-              messenger.hideCurrentSnackBar();
-              messenger.showSnackBar(SnackBar(
-                behavior: SnackBarBehavior.floating,
-                content: Row(children: [
-                  Icon(Icons.warning_amber_outlined, size: 20, color: warn),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'No se marcaron ${omitidos.length}: ya tienen jornada ese '
-                      'día en otra obra (${omitidos.join(', ')}).',
-                    ),
-                  ),
-                ]),
-              ));
-            }
-          },
+          onMarcarTodos: () => _marcarTodosCompleto(
+            context,
+            ref,
+            miembros: miembros,
+            cuadrillaId: cid,
+            previos: previos,
+          ),
         ));
       }
       // Miembros ARRASTRABLES: mantén presionado un colaborador y suéltalo donde
@@ -288,6 +258,90 @@ class _ObraPaseLista extends ConsumerWidget {
     );
   }
 
+  /// "Marcar a todos completo": día completo a cada miembro de la cuadrilla,
+  /// SIN diálogo y CON deshacer.
+  ///
+  /// Toca la raya de toda la cuadrilla de un golpe, así que no puede ser una
+  /// acción sin vuelta atrás. La web pregunta antes ("los que tengan ½ o ¾ se
+  /// sobrescriben"); aquí se hace al revés —primero se marca y el aviso dice
+  /// cuántos se sobrescribieron— porque en la obra se usa varias veces al día
+  /// y deshacer cuesta un toque solo cuando hace falta. El Deshacer dura 8 s y
+  /// no 6: con guantes, el dedo tarda en llegar.
+  Future<void> _marcarTodosCompleto(
+    BuildContext context,
+    WidgetRef ref, {
+    required List<Colaborador> miembros,
+    required String? cuadrillaId,
+    required Map<String, Asistencia> previos,
+  }) async {
+    final repo = ref.read(asistenciaRepositoryProvider);
+    // Se captura antes de los await: las escrituras de setFraccion hacen
+    // rebuild de la lista y dejarían este context inválido después.
+    final messenger = ScaffoldMessenger.of(context);
+    // T0: espeja el trigger 0016. A cada miembro se le omite si marcar día
+    // completo aquí lo pasaría de 1 jornada ese día sumando todas las obras;
+    // así "marcar a todos" no crea filas que la nube rechazaría.
+    final omitidos = <String>[];
+    final cambiados = <Colaborador>[];
+    var sobrescritos = 0;
+    for (final c in miembros) {
+      final previa = previos[c.id]?.fraccion ?? 0.0;
+      if (previa == 1.0) continue;
+      final otras = await repo.fraccionOtrasObras(c.id, diaMillis, obraId);
+      if (1.0 + otras > 1.0 + 1e-9) {
+        omitidos.add(c.nombre);
+        continue;
+      }
+      await repo.setFraccion(
+        obraId: obraId,
+        colaboradorId: c.id,
+        fecha: diaMillis,
+        fraccion: 1.0,
+        cuadrillaId: Value(cuadrillaId),
+      );
+      cambiados.add(c);
+      if (previa > 0) sobrescritos++;
+    }
+    if (!messenger.mounted) return;
+
+    final partes = [
+      if (cambiados.isEmpty && omitidos.isEmpty)
+        'Todos ya tenían día completo.'
+      else if (cambiados.isNotEmpty)
+        'Día completo a ${cambiados.length} persona(s).',
+      if (sobrescritos > 0)
+        '$sobrescritos tenía(n) ½ o ¾ y se sobrescribió.',
+      if (omitidos.isNotEmpty)
+        'No se marcaron ${omitidos.length}: ya tienen jornada ese día en otra '
+            'obra (${omitidos.join(', ')}).',
+    ];
+    showAppSnackEn(
+      messenger,
+      partes.join(' '),
+      tone: omitidos.isEmpty ? SnackTone.success : SnackTone.warning,
+      duracion: const Duration(seconds: 8),
+      // Deshacer deja a cada quien como estaba: su fracción y su etiqueta de
+      // cuadrilla. A quien no tenía registro se le deja en "Falta" (0), que es
+      // como se veía antes de marcar.
+      onUndo: cambiados.isEmpty
+          ? null
+          : () async {
+              for (final c in cambiados) {
+                final antes = previos[c.id];
+                await repo.setFraccion(
+                  obraId: obraId,
+                  colaboradorId: c.id,
+                  fecha: diaMillis,
+                  fraccion: antes?.fraccion ?? 0.0,
+                  cuadrillaId: antes == null
+                      ? Value(cuadrillaId)
+                      : Value(antes.cuadrillaId),
+                );
+              }
+            },
+    );
+  }
+
   /// Da de alta a alguien y lo asigna a ESTA obra, sin salir del pase de lista.
   ///
   /// Pide lo mínimo para que la nómina salga bien: nombre, puesto y —si se
@@ -311,7 +365,10 @@ class _ObraPaseLista extends ConsumerWidget {
 }
 
 /// Encabezado de un grupo de cuadrilla dentro del pase de lista, con acción
-/// rápida para marcar a todos los miembros como presentes (día completo).
+/// rápida para marcar a todos los miembros como presentes (día completo). El
+/// botón dice "Todos completo" porque el nombre largo no cabe junto al de la
+/// cuadrilla en un teléfono; el lector de pantalla y la pulsación larga leen el
+/// nombre completo.
 class _CuadrillaHeader extends StatelessWidget {
   const _CuadrillaHeader({
     required this.nombre,
@@ -339,10 +396,20 @@ class _CuadrillaHeader extends StatelessWidget {
             child: Text('$nombre · $especialidad',
                 style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
-          TextButton.icon(
-            icon: const Icon(Icons.done_all, size: 18),
-            label: const Text('Todos ✓'),
-            onPressed: onMarcarTodos,
+          Tooltip(
+            message: 'Marcar a todos completo',
+            excludeFromSemantics: true,
+            child: Semantics(
+              button: true,
+              label: 'Marcar a todos completo. Los que tengan ½ o ¾ se '
+                  'sobrescriben; se puede deshacer.',
+              excludeSemantics: true,
+              child: TextButton.icon(
+                icon: const Icon(Icons.done_all, size: 18),
+                label: const Text('Todos completo'),
+                onPressed: onMarcarTodos,
+              ),
+            ),
           ),
         ],
       ),
@@ -380,6 +447,19 @@ class _PaseListaRow extends ConsumerStatefulWidget {
 class _PaseListaRowState extends ConsumerState<_PaseListaRow> {
   late double _fraccion = widget.fraccionInicial;
   _SaveState _save = _SaveState.idle;
+
+  /// La fila conserva su estado entre reconstrucciones (va con `key`), así que
+  /// lo que se escribe desde FUERA de ella —"marcar a todos", su Deshacer, el
+  /// sync que baja otro teléfono— no se vería sin esto: el botón seguiría en
+  /// el valor viejo aunque la base ya tenga el nuevo.
+  @override
+  void didUpdateWidget(covariant _PaseListaRow old) {
+    super.didUpdateWidget(old);
+    if (old.fraccionInicial != widget.fraccionInicial &&
+        _save != _SaveState.saving) {
+      _fraccion = widget.fraccionInicial;
+    }
+  }
 
   Future<void> _guardar(double nueva) async {
     final previa = _fraccion;
@@ -637,21 +717,10 @@ class _PaseListaRowState extends ConsumerState<_PaseListaRow> {
             ],
           ),
           AppSpacing.gapXs,
-          SegmentedButton<double>(
-            showSelectedIcon: false,
-            style: const ButtonStyle(
-              // Target táctil amplio para dedos con guantes / pantalla sucia.
-              minimumSize: WidgetStatePropertyAll(Size(48, 48)),
-              tapTargetSize: MaterialTapTargetSize.padded,
-            ),
-            segments: const [
-              ButtonSegment(value: 0.0, label: Text('F')),
-              ButtonSegment(value: 0.5, label: Text('½')),
-              ButtonSegment(value: 0.75, label: Text('¾')),
-              ButtonSegment(value: 1.0, label: Text('✓')),
-            ],
-            selected: {_fraccion},
-            onSelectionChanged: (s) => _guardar(s.first),
+          SelectorFraccion(
+            valor: _fraccion,
+            nombre: widget.nombre,
+            onChanged: _guardar,
           ),
         ],
       ),

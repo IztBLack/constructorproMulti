@@ -31,11 +31,30 @@ ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showAppSnack(
   String? undoLabel,
   VoidCallback? onUndo,
   Duration duracion = const Duration(seconds: 4),
+}) =>
+    showAppSnackEn(
+      ScaffoldMessenger.of(context),
+      mensaje,
+      tone: tone,
+      undoLabel: undoLabel,
+      onUndo: onUndo,
+      duracion: duracion,
+    );
+
+/// [showAppSnack] para quien ya tiene el [ScaffoldMessengerState] en la mano:
+/// lo toma ANTES de una serie de escrituras que reconstruyen la pantalla (y
+/// pueden dejar inválido su `context`), y avisa al terminar.
+ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showAppSnackEn(
+  ScaffoldMessengerState messenger,
+  String mensaje, {
+  SnackTone tone = SnackTone.neutral,
+  String? undoLabel,
+  VoidCallback? onUndo,
+  Duration duracion = const Duration(seconds: 4),
 }) {
   // El aviso va sobre el fondo INVERTIDO del tema: los colores de estado que
   // se leen ahí son los del tema contrario (ver `AppColors.sobreInvertido`).
-  final c = context.colores.sobreInvertido;
-  final messenger = ScaffoldMessenger.of(context);
+  final c = messenger.context.colores.sobreInvertido;
 
   final (IconData? icono, Color? colorIcono) = switch (tone) {
     SnackTone.neutral => (null, null),
