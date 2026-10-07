@@ -74,6 +74,16 @@ void main() {
       // fondo. Es la razón por la que AppBadge.neutral usa el tono de cuerpo.
       exigir('text sobre neutralSoft', c.text, c.neutralSoft);
 
+      // ── Solo decorativo / hint: placeholders, deshabilitados, adornos ─────
+      // `textFaint` NO es texto informativo (eso es `textMuted`, arriba), así
+      // que no se le pide 4.5:1; pero sí debe verse al sol: 3:1 de 1.4.11. Si
+      // un uso de `textFaint` empieza a transmitir información, se sube a
+      // `textMuted`, no se baja este umbral.
+      exigir('textFaint sobre surface', c.textFaint, c.surface,
+          minimo: _aaNoTextual);
+      exigir('textFaint sobre page', c.textFaint, c.page,
+          minimo: _aaNoTextual);
+
       // ── Bordes y separadores: no son texto, pero sí deben verse ──────────
       exigir('borderStrong sobre surface', c.borderStrong, c.surface,
           minimo: 1.3);
@@ -126,6 +136,23 @@ void main() {
         final texto = tema.snackBarTheme.contentTextStyle!.color!;
         expect(_contraste(texto, fondo), greaterThanOrEqualTo(_aa));
       });
+
+      // Los íconos de estado de `showAppSnack` (✓, ⚠, ✕) van sobre el fondo
+      // invertido del aviso. Con los colores del propio tema el verde del
+      // oscuro daba 1.3:1: el ícono no se veía. Por eso salen de la paleta
+      // contraria (`AppColors.sobreInvertido`).
+      final aviso = tema.extension<AppColors>()!.sobreInvertido;
+      for (final (que, color) in [
+        ('success', aviso.success),
+        ('danger', aviso.danger),
+        ('warning', aviso.warning),
+      ]) {
+        test('$nombre · ícono $que sobre el SnackBar', () {
+          final fondo = tema.snackBarTheme.backgroundColor!;
+          expect(_contraste(color, fondo),
+              greaterThanOrEqualTo(_aaNoTextual));
+        });
+      }
 
       test('$nombre · la extensión AppColors está registrada', () {
         expect(tema.extension<AppColors>(), isNotNull);

@@ -50,8 +50,10 @@ class EmptyStateView extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 // 40 y no 72: un ícono enorme y gris compite con el texto, que
-                // es lo que de verdad explica qué pasa y qué hacer.
-                Icon(icon, size: 40, color: c.textFaint),
+                // es lo que de verdad explica qué pasa y qué hacer. En
+                // `textMuted`: el ícono dice QUÉ está vacío (obras, notas…), y
+                // con el gris de adorno no se distinguía al sol.
+                Icon(icon, size: 40, color: c.textMuted),
                 AppSpacing.gapMd,
                 Text(
                   title,

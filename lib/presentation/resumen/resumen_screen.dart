@@ -17,6 +17,7 @@ import '../../pdf/pdf_service.dart';
 import '../asistencia/pase_lista_screen.dart';
 import '../configuraciones/catalogo_screen.dart';
 import '../common/app_card.dart';
+import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
 import '../common/sync_status_action.dart';
 import '../common/money_text.dart';
@@ -281,9 +282,10 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
                     : null,
               ),
               if (obras.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(child: Text('Sin obras registradas.')),
+                const EmptyStateView(
+                  icon: Icons.foundation_outlined,
+                  title: 'Sin obras registradas.',
+                  hint: 'Da de alta la primera en la pestaña Obras.',
                 )
               else
                 ...obras.map((o) {

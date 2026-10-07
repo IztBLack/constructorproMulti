@@ -26,7 +26,13 @@ class _Claro {
   static const n100 = Color(0xFFF5F5F5);
   static const n200 = Color(0xFFE5E5E5);
   static const n300 = Color(0xFFD4D4D4);
-  static const n400 = Color(0xFFA3A3A3);
+  // La web usa `neutral-400` (#a3a3a3) para placeholders y deshabilitados: da
+  // 2.5:1 sobre blanco y al sol de la obra no se ve. Se oscurece al gris más
+  // claro que cruza el 3:1 de WCAG 1.4.11 sobre tarjeta Y sobre página (3.2 y
+  // 3.1). Sigue claramente por debajo de `n500` (4.7:1), así que lo
+  // deshabilitado no se confunde con lo activo. Desviación deliberada,
+  // verificada por `test/theme/app_colors_contrast_test.dart`.
+  static const n400 = Color(0xFF8F8F8F);
   static const n500 = Color(0xFF737373);
   static const n700 = Color(0xFF404040);
   static const n900 = Color(0xFF171717);
@@ -162,7 +168,9 @@ class AppColors extends ThemeExtension<AppColors> {
   /// Texto secundario (subtítulos, ayudas). Pasa AA.
   final Color textMuted;
 
-  /// Texto deshabilitado y placeholders. NO lo uses para información.
+  /// Texto deshabilitado, placeholders e íconos de adorno. Pasa el 3:1 de lo
+  /// no textual (WCAG 1.4.11), NO el 4.5:1 del texto: si algo transmite
+  /// información —un estado, un dato, un ícono que se toca— va en [textMuted].
   final Color textFaint;
 
   // ── Familias semánticas (fuerte = texto/ícono · Soft = fondo) ─────────────
@@ -266,6 +274,17 @@ class AppColors extends ThemeExtension<AppColors> {
     if (valor < 0) return danger;
     return textStrong;
   }
+
+  /// La paleta del tema CONTRARIO, para lo que se dibuja sobre un fondo
+  /// invertido: el SnackBar y el tooltip usan [textStrong] de fondo (casi negro
+  /// en claro, casi blanco en oscuro). Encima de él, el [success] de este mismo
+  /// tema se pierde —el verde pastel del oscuro sobre casi blanco da 1.3:1—;
+  /// el del tema contrario es justo el que fue pensado para ese fondo.
+  ///
+  /// Se decide por la luminancia del texto fuerte y no por identidad con
+  /// [light]/[dark], para que siga funcionando a media animación de tema.
+  AppColors get sobreInvertido =>
+      textStrong.computeLuminance() > 0.5 ? light : dark;
 
   @override
   AppColors copyWith({

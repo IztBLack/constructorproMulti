@@ -47,8 +47,9 @@ Future<void> exportarProyeccionPdf(
       ),
     ));
   } catch (e) {
+    debugPrint('[proyeccion_pdf] $e');
     if (!context.mounted) return;
-    showAppSnack(context, 'No se pudo generar el PDF: $e',
+    showAppSnack(context, 'No se pudo generar el PDF. Intenta de nuevo.',
         tone: SnackTone.danger);
   }
 }

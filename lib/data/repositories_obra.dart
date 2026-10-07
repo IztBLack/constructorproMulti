@@ -194,7 +194,8 @@ class AsistenciaRepository {
         updates: {db.asistencias},
       );
 
-  /// "Omitir": el registro de la nube se queda y este cambio local se descarta.
+  /// "Dejar solo en este teléfono" (antes "Omitir"): el registro de la nube se
+  /// queda y este cambio local NO se sube, pero tampoco se borra.
   /// Se marca `skipped` (terminal) en vez de borrarse: la fila sigue visible en
   /// los reportes locales, pero deja de pelear por subir y de contar como
   /// conflicto. Es la salida no destructiva del diálogo.

@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/db/app_database.dart';
 import '../../core/format/format.dart';
 import '../../data/providers.dart';
+import '../common/empty_state_view.dart';
+import '../common/error_state_view.dart';
 
 class CatalogoScreen extends ConsumerStatefulWidget {
   const CatalogoScreen({super.key});
@@ -53,14 +55,26 @@ class _CatalogoScreenState extends ConsumerState<CatalogoScreen> {
       ),
       body: catalogoAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) =>
+            ErrorStateView(onRetry: () => ref.invalidate(catalogoTodoProvider)),
         data: (todos) {
           final lista = todos.where((c) =>
               c.clave.toLowerCase().contains(_query) ||
               c.descripcion.toLowerCase().contains(_query) ||
               c.categoria.toLowerCase().contains(_query)).toList();
           if (lista.isEmpty) {
-            return const Center(child: Text('Sin conceptos.'));
+            // Vacío por búsqueda y vacío de verdad no se arreglan igual.
+            return _query.isEmpty
+                ? const EmptyStateView(
+                    icon: Icons.menu_book_outlined,
+                    title: 'Sin conceptos en el catálogo.',
+                    hint: 'Carga el catálogo oficial con el botón de la nube '
+                        'de arriba.',
+                  )
+                : const EmptyStateView(
+                    icon: Icons.search_off,
+                    title: 'Ningún concepto coincide con la búsqueda.',
+                  );
           }
           // Agrupar por categoría.
           final porCategoria = <String, List<CatalogoConcepto>>{};

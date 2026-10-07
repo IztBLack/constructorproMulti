@@ -12,7 +12,10 @@ import 'app_spacing.dart';
 class ErrorStateView extends StatelessWidget {
   const ErrorStateView({
     super.key,
-    this.message = 'No se pudo cargar la información.',
+    // El dato no se perdió: lo que falló es mostrarlo. Decirlo evita que
+    // alguien en la obra lo vuelva a capturar "por si acaso" y lo duplique.
+    this.message =
+        'No se pudo mostrar esto. Tus datos están a salvo en el teléfono.',
     this.onRetry,
   });
 
