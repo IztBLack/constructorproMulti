@@ -63,40 +63,50 @@ class SyncMetadata {
     await _prefs.remove(_kId(table));
   }
 
-  /// Reinicia los cursores de TODAS las tablas conocidas (se usa al cerrar
-  /// sesión o al detectar un cambio de empresa, para evitar mezcla de datos
-  /// entre dos cuentas/empresas distintas).
+  /// Reinicia los cursores de TODAS las tablas (se usa al cerrar sesión o al
+  /// cambiar de empresa, para evitar mezcla de datos entre dos cuentas).
+  ///
+  /// Por prefijo de llave y no con una lista de tablas: la lista a mano que
+  /// había aquí era una copia de `SyncService.pushOrder` que había que
+  /// mantener a la par, y una tabla olvidada se quedaba sin bajar completa.
   Future<void> resetAll() async {
-    // Las mismas tablas que SyncService.pushOrder; se duplica aquí para no
-    // crear una dependencia circular entre sync_metadata y sync_service.
-    const tablas = [
-      'puestos',
-      'colaboradores',
-      'colaborador_sueldo',
-      'obras',
-      'obra_caja_nota',
-      'nota_obra',
-      'nota_obra_renglon',
-      'cuadrillas',
-      'cuadrilla_miembro',
-      'asignacion_cuadrilla_obra',
-      'obra_presupuesto',
-      'cotizaciones',
-      'secciones',
-      'partidas',
-      'pagos',
-      'obra_colaborador',
-      'asistencias',
-      'destajos',
-      'movimientos',
-      'catalogo_conceptos',
-      'archivos_cotizacion',
-      'bitacora_entrada',
-      'bitacora_foto',
-      'bitacora_aclaracion',
-    ];
-    for (final t in tablas) {
-      await reset(t);
+    final cursores =
+        _prefs.getKeys().where((k) => k.startsWith('sync_cursor_')).toList();
+    for (final k in cursores) {
+      await _prefs.remove(k);
     }
   }
+
+  // ── Filas de otra cuenta apartadas por el sync ──
+  //
+  // El sync aparta (`skipped`) las filas que son de otra empresa. Localmente
+  // ya no se distinguen de las demás `skipped` (ids viejos), así que se lleva
+  // la cuenta aquí: es lo que hace que la pantalla de nube ofrezca rehacer la
+  // copia del teléfono (decisión D2 de `docs/PLAN_CAMBIO_DE_CUENTA.md`).
+
+  static const _kFilasAjenas = 'sync_filas_ajenas';
+
+  int get filasAjenas => _prefs.getInt(_kFilasAjenas) ?? 0;
+
+  Future<void> sumarFilasAjenas(int n) =>
+      _prefs.setInt(_kFilasAjenas, filasAjenas + n);
+
+  /// La base se vació: ya no queda nada ajeno.
+  Future<void> limpiarFilasAjenas() => _prefs.remove(_kFilasAjenas);
+
+  // ── Última subida completa ──
+  //
+  // "Última subida completa: hoy 14:32" le dice a quien está en la obra hasta
+  // cuándo su trabajo está a salvo en la nube, que es la pregunta real detrás
+  // del ícono de sync.
+
+  static const _kUltimaSubida = 'sync_ultima_subida_ok';
+
+  DateTime? get ultimaSubidaCompleta {
+    final ms = _prefs.getInt(_kUltimaSubida);
+    return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
+  }
+
+  Future<void> marcarSubidaCompleta(DateTime cuando) =>
+      _prefs.setInt(_kUltimaSubida, cuando.millisecondsSinceEpoch);
 }

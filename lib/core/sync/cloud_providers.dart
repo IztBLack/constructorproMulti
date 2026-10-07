@@ -1,12 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/providers.dart';
+import '../modulos/modulos_provider.dart';
 import '../settings/settings_provider.dart';
 import 'bitacora_avisos.dart';
 import 'bitacora_remoto.dart';
 import 'bitacora_sync.dart';
+import 'cuenta_local.dart';
+import 'rol_provider.dart';
 import 'supabase_config.dart';
 import 'sync_controller.dart';
 import 'sync_metadata.dart';
@@ -64,6 +69,12 @@ final empresaNombreProvider = FutureProvider<String?>((ref) async {
     if (nombre != cache) {
       await ref.read(sharedPreferencesProvider).setString(_kEmpresaNombre, nombre);
     }
+    // Y como nombre del dueño de los datos locales: si otra cuenta entra en
+    // este teléfono, el aviso dirá "cambios de *este nombre*".
+    final cuenta = ref.read(cuentaLocalProvider);
+    if (cuenta.dueno == empresaId) {
+      await cuenta.fijarDueno(empresaId, nombre: nombre);
+    }
     return nombre;
   } catch (e) {
     // Sin red o RLS negando: se conserva lo último conocido en vez de mostrar
@@ -108,10 +119,15 @@ final bitacoraSyncProvider = Provider<BitacoraSync>((ref) {
   );
 });
 
+/// De quién son los datos de la base local (ver [CuentaLocal]).
+final cuentaLocalProvider = Provider<CuentaLocal>(
+    (ref) => CuentaLocal(ref.watch(sharedPreferencesProvider)));
+
 final syncServiceProvider = Provider<SyncService>((ref) => SyncService(
       db: ref.watch(databaseProvider),
       metadata: ref.watch(syncMetadataProvider),
       bitacora: ref.watch(bitacoraSyncProvider),
+      cuentaLocal: ref.watch(cuentaLocalProvider),
       // Refleja "hay un sync corriendo" en un provider observable por la UI. Se
       // difiere con microtask para no mutar estado de Riverpod en medio de la
       // construcción de otro provider (lo prohíbe) cuando el sync arranca
@@ -132,23 +148,38 @@ final syncControllerProvider = Provider<SyncController>((ref) {
   return c;
 });
 
+/// La persona eligió no descartar los cambios sin subir de la cuenta anterior
+/// (decisión D1: "Volver a esa cuenta"). No se tocó nada de la base local.
+class CambioDeCuentaCancelado implements Exception {
+  const CambioDeCuentaCancelado();
+}
+
+/// Pregunta a la persona qué hacer con [CambioDeCuenta.sinSubir] cambios de la
+/// cuenta anterior. `true` = descartarlos y seguir con la cuenta nueva.
+typedef ConfirmarCambioDeCuenta = Future<bool> Function(CambioDeCuenta info);
+
 /// Tras un login exitoso: resuelve el `empresa_id` del usuario (vía
-/// `usuarios_empresa`, protegido por RLS), lo persiste y **sella** las filas
-/// locales que se crearon offline sin empresa. Devuelve el `empresa_id` o null
-/// si el usuario aún no está vinculado a ninguna empresa.
+/// `usuarios_empresa`, protegido por RLS) y deja la base local lista para esa
+/// empresa con [adoptarEmpresa]. Devuelve el `empresa_id` o null si el usuario
+/// aún no está vinculado a ninguna empresa.
 ///
-/// Si la empresa resuelta es DISTINTA a la que había en prefs (cambio de
-/// cuenta/empresa), resetea todos los cursores de sync antes de sellar para
-/// forzar un pull completo de la empresa nueva y evitar mezcla de datos.
-Future<String?> resolverEmpresaYsellar(WidgetRef ref) async {
+/// Lanza [CambioDeCuentaCancelado] si el teléfono tenía datos de otra cuenta
+/// sin subir y la persona prefirió no descartarlos.
+///
+/// [timeout] limita SOLO la consulta de red (un cuelgue no es un error y la
+/// pantalla giraría para siempre); no cuenta el tiempo que la persona tarde en
+/// decidir en el diálogo. Lanza `TimeoutException` si se cumple.
+Future<String?> resolverEmpresaYsellar(WidgetRef ref,
+    {ConfirmarCambioDeCuenta? confirmarCambio, Duration? timeout}) async {
   final user = SupabaseConfig.currentUser;
   if (user == null) return null;
 
+  final String empresaId;
   try {
-    final rows = await SupabaseConfig.client
-        .from('usuarios_empresa')
-        .select('empresa_id')
-        .limit(1);
+    final consulta =
+        SupabaseConfig.client.from('usuarios_empresa').select('empresa_id').limit(1);
+    final rows =
+        timeout == null ? await consulta : await consulta.timeout(timeout);
     if (rows.isEmpty) {
       // El servidor es la fuente de verdad: este usuario NO tiene empresa.
       // Limpia cualquier empresa_id viejo en prefs (p. ej. de una vinculación
@@ -163,33 +194,113 @@ Future<String?> resolverEmpresaYsellar(WidgetRef ref) async {
       return null;
     }
 
-    final empresaId = rows.first['empresa_id'] as String;
-    final prefs = ref.read(sharedPreferencesProvider);
-    final empresaAnterior = prefs.getString(_kEmpresaId);
-
-    // Detecta cambio de empresa: resetea cursores para forzar pull completo.
-    if (empresaAnterior != null && empresaAnterior != empresaId) {
-      debugPrint(
-        '[cloud_providers] Cambio de empresa detectado '
-        '($empresaAnterior → $empresaId). Reseteando cursores de sync.',
-      );
-      await ref.read(syncMetadataProvider).resetAll();
-      // Los avisos de la bitácora hablan de filas de la otra empresa. Las
-      // FOTOS no se borran: una pendiente es evidencia que aún no sube, y la
-      // base local tampoco se vacía al cambiar de empresa.
-      await ref.read(avisosBitacoraProvider).borrarTodo();
-    }
-
-    await prefs.setString(_kEmpresaId, empresaId);
-    await ref.read(databaseProvider).sellarEmpresaId(empresaId);
-    ref.invalidate(empresaIdProvider);
-    // Y se refresca el NOMBRE: este método ya corre en el login y al abrir la
-    // pantalla de nube, así que es el punto natural para que un renombrado
-    // hecho en la web aparezca en el dispositivo sin acción del usuario.
-    ref.invalidate(empresaNombreProvider);
-    return empresaId;
+    empresaId = rows.first['empresa_id'] as String;
+  } on TimeoutException {
+    rethrow; // la pantalla lo muestra como "no se pudo verificar", no "sin empresa"
   } catch (e) {
     debugPrint('[cloud_providers] resolverEmpresaYsellar error: $e');
     return null;
   }
+
+  // Fuera del try: un fallo al rehacer la base local NO es "sin empresa" (eso
+  // mandaría a la pantalla de vinculación); la pantalla lo muestra como error.
+  await adoptarEmpresa(ref, empresaId, confirmarCambio: confirmarCambio);
+  return empresaId;
+}
+
+/// Deja la base local lista para trabajar con [empresaId]. Es el único camino
+/// por el que una empresa se vuelve dueña de los datos del teléfono: lo usan el
+/// login y la vinculación con código.
+///
+/// 1. Revisa ANTES de sellar si la base tiene datos de otra cuenta
+///    ([clasificarEntrada]).
+/// 2. Si es un cambio de cuenta y hay cambios sin subir, pregunta con
+///    [confirmarCambio] (sin quien pregunte, no descarta nada y lanza
+///    [CambioDeCuentaCancelado]). Sin pendientes, vacía directo.
+/// 3. Fija el dueño, sella las filas sin empresa y refresca la empresa.
+Future<void> adoptarEmpresa(WidgetRef ref, String empresaId,
+    {ConfirmarCambioDeCuenta? confirmarCambio}) async {
+  final prefs = ref.read(sharedPreferencesProvider);
+  final db = ref.read(databaseProvider);
+  final cuenta = ref.read(cuentaLocalProvider);
+
+  final tipo = clasificarEntrada(
+    empresaNueva: empresaId,
+    dueno: cuenta.dueno,
+    empresaSesion: prefs.getString(_kEmpresaId),
+    empresasEnBase: await db.empresasEnBase(),
+  );
+
+  if (tipo == TipoEntrada.cambioDeCuenta) {
+    final sinSubir = await db.contarSinSubir();
+    if (sinSubir > 0) {
+      final descartar = await confirmarCambio?.call(CambioDeCuenta(
+            sinSubir: sinSubir,
+            empresaAnteriorNombre: cuenta.duenoNombre,
+            correoAnterior: cuenta.duenoCorreo,
+          )) ??
+          false;
+      if (!descartar) throw const CambioDeCuentaCancelado();
+    }
+    debugPrint('[cloud_providers] Cambio de cuenta: se vacía la base local '
+        '($sinSubir cambio(s) sin subir descartados).');
+    await vaciarCopiaLocal(ref);
+  }
+
+  await prefs.setString(_kEmpresaId, empresaId);
+  await cuenta.fijarDueno(empresaId,
+      correo: SupabaseConfig.currentUser?.email);
+  await db.sellarEmpresaId(empresaId);
+  ref.invalidate(empresaIdProvider);
+  // Y se refresca el NOMBRE: esto ya corre en el login y al abrir la pantalla
+  // de nube, así que es el punto natural para que un renombrado hecho en la
+  // web aparezca en el dispositivo sin acción del usuario.
+  ref.invalidate(empresaNombreProvider);
+}
+
+/// Llaves de prefs que guardan algo de UNA empresa (cachés de lo que vive en
+/// `empresa_config` y similares). Al vaciar la base se van con ella: el nombre,
+/// el logo o los textos de los PDF de una empresa no deben aparecer en los
+/// documentos de la siguiente.
+bool _esCacheDeEmpresa(String llave) =>
+    llave.startsWith('pdf_') ||
+    const {
+      'modulos_empresa_cache',
+      'ui_orden_cache',
+      'rol_usuario',
+      'empresa_nombre',
+      'sync_ultima_subida_ok',
+    }.contains(llave);
+
+/// Deja el teléfono sin nada de la cuenta anterior: base local (como recién
+/// instalada), fotos y avisos de la bitácora, cachés por empresa y cursores.
+/// El siguiente sync baja todo de la cuenta vigente.
+///
+/// Es lo que hace "Rehacer la copia de este teléfono" (decisión D2) y el paso
+/// de un cambio de cuenta. Quien la llama revisa antes lo que no ha subido.
+Future<void> vaciarCopiaLocal(WidgetRef ref) async {
+  final sync = ref.read(syncServiceProvider);
+  await sync.pausar();
+  try {
+    await ref.read(databaseProvider).vaciarDatosLocales();
+    await ref.read(fotosBitacoraStorageProvider).borrarTodo();
+    await ref.read(avisosBitacoraProvider).borrarTodo();
+    final metadata = ref.read(syncMetadataProvider);
+    await metadata.resetAll();
+    await metadata.limpiarFilasAjenas();
+    final prefs = ref.read(sharedPreferencesProvider);
+    for (final k in prefs.getKeys().where(_esCacheDeEmpresa).toList()) {
+      await prefs.remove(k);
+    }
+    await ref.read(cuentaLocalProvider).olvidarDueno();
+  } finally {
+    sync.reanudar();
+  }
+  // Los estados que arrancaron de las cachés borradas se vuelven a leer.
+  ref.invalidate(empresaNombreCacheProvider);
+  ref.invalidate(modulosProvider);
+  ref.invalidate(rolUsuarioProvider);
+  ref.invalidate(ordenModoProvider);
+  ref.invalidate(pdfAspectoProvider);
+  ref.invalidate(textosPdfProvider);
 }

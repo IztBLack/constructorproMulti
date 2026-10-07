@@ -553,13 +553,24 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // ---------------- Sync nube ----------------
-  /// Sella `empresa_id` en las filas locales que NO pertenecen a la empresa
-  /// actual (creadas offline sin empresa, o cacheadas de una empresa anterior
-  /// ya borrada) y las marca `pending` para que el push las suba a la empresa
-  /// vigente. Idempotente: las filas que ya son de `empresaId` no se tocan.
+  /// Todas las tablas de la base local. Cada una es espejo de una tabla del
+  /// servidor (lleva `SyncCols`), así que lo que se haga "a toda la base" se
+  /// hace recorriendo esta lista: una tabla nueva queda incluida sola, sin que
+  /// alguien tenga que acordarse de agregarla (que es como `restablecerTodo` y
+  /// el sellado se quedaron viejos).
+  Iterable<String> get tablasLocales =>
+      allTables.map((t) => t.actualTableName);
+
+  /// Sella `empresa_id` en las filas locales que se crearon SIN empresa (sin
+  /// cuenta, o antes de vincular) y las marca `pending` para que el push las
+  /// suba a la empresa vigente. Idempotente.
   ///
-  /// Cubre el caso de reset de BD en la nube: los datos locales quedaban con el
-  /// `empresa_id` viejo → antes no se re-sellaban y no volvían a subir. Ahora sí.
+  /// Solo adopta filas vacías. Antes adoptaba también las de OTRA empresa (para
+  /// re-subir tras un reset de la BD en la nube), y eso es lo que mezclaba dos
+  /// cuentas en un mismo teléfono: las filas de la anterior quedaban
+  /// etiquetadas como de la nueva y el servidor las rechazaba para siempre. Un
+  /// teléfono con datos de otra empresa ahora es un cambio de cuenta
+  /// (`clasificarEntrada`), que se resuelve vaciando, no reetiquetando.
   ///
   /// El catálogo base (seed, `es_personalizado = 0`) NO se sube: se siembra en
   /// el servidor al crear la empresa (RPC `crear_empresa`). Si selláramos y
@@ -567,39 +578,69 @@ class AppDatabase extends _$AppDatabase {
   /// duplicados masivos en Supabase. En cambio, los conceptos que el USUARIO
   /// haya creado (`es_personalizado = 1`) SÍ se sellan y suben.
   Future<void> sellarEmpresaId(String empresaId) async {
-    const tablas = [
-      'obras',
-      'puestos',
-      'colaboradores',
-      'obra_colaborador',
-      'asistencias',
-      'destajos',
-      'cuadrillas',
-      'cuadrilla_miembro',
-      'asignacion_cuadrilla_obra',
-      'cotizaciones',
-      'secciones',
-      'partidas',
-      'pagos',
-      'movimientos',
-      'archivos_cotizacion',
-      'obra_presupuesto',
-    ];
     final now = DateTime.now().millisecondsSinceEpoch;
     await transaction(() async {
-      for (final t in tablas) {
+      for (final t in tablasLocales) {
+        final soloDelUsuario =
+            t == 'catalogo_conceptos' ? ' AND es_personalizado = 1' : '';
         await customStatement(
           "UPDATE $t SET empresa_id = ?, updated_at = ?, sync_status = 'pending' "
-          "WHERE empresa_id IS NULL OR empresa_id != ?",
-          [empresaId, now, empresaId],
+          "WHERE (empresa_id IS NULL OR empresa_id = '')$soloDelUsuario",
+          [empresaId, now],
         );
       }
-      // catalogo_conceptos: solo los personalizados del usuario, nunca el seed.
-      await customStatement(
-        "UPDATE catalogo_conceptos SET empresa_id = ?, updated_at = ?, sync_status = 'pending' "
-        "WHERE (empresa_id IS NULL OR empresa_id != ?) AND es_personalizado = 1",
-        [empresaId, now, empresaId],
-      );
+    });
+  }
+
+  /// Empresas distintas que aparecen en las filas locales (sin `''`). Si hay
+  /// alguna que no es la de la sesión, el teléfono tiene datos de otra cuenta.
+  Future<Set<String>> empresasEnBase() async {
+    final union = tablasLocales
+        .map((t) => "SELECT DISTINCT empresa_id AS e FROM $t "
+            "WHERE empresa_id IS NOT NULL AND empresa_id != ''")
+        .join(' UNION ');
+    final rows = await customSelect(union).get();
+    return rows.map((r) => r.read<String>('e')).toSet();
+  }
+
+  /// Cambios que se perderían si se vaciara la base ahora: filas que no han
+  /// llegado a la nube (`pending`, `error`) o que esperan una decisión
+  /// (`conflict`). Cuenta las fotos de la bitácora sin subir, porque cada una
+  /// es una fila de `bitacora_foto`.
+  ///
+  /// No cuenta el catálogo base sembrado en el teléfono (`es_personalizado =
+  /// 0`): nace `pending` pero nunca se sube, y el servidor tiene el suyo.
+  /// Tampoco `skipped`: son filas que la nube ya rechazó para siempre (ids
+  /// viejos o de otra cuenta) y que de todos modos no iban a subir.
+  Future<int> contarSinSubir() async {
+    var total = 0;
+    for (final t in tablasLocales) {
+      final soloDelUsuario =
+          t == 'catalogo_conceptos' ? ' AND es_personalizado = 1' : '';
+      final row = await customSelect(
+        "SELECT COUNT(*) AS n FROM $t "
+        "WHERE sync_status IN ('pending', 'error', 'conflict')$soloDelUsuario",
+      ).getSingle();
+      total += row.read<int>('n');
+    }
+    return total;
+  }
+
+  /// Deja la base como recién instalada: borra TODAS las tablas y vuelve a
+  /// sembrar el catálogo base. Es el paso que faltaba al cambiar de cuenta
+  /// (la base conservaba los datos de la anterior) y lo que usa
+  /// "Restablecer todo".
+  ///
+  /// Borra de verdad, sin tombstones: lo que hubiera en la nube sigue allá. Por
+  /// eso quien la llame revisa antes [contarSinSubir].
+  Future<void> vaciarDatosLocales() async {
+    await transaction(() async {
+      // `delete()` de Drift y no un DELETE crudo: así las pantallas abiertas
+      // (que escuchan streams de estas tablas) se enteran y se vacían.
+      for (final t in allTables) {
+        await delete(t).go();
+      }
+      await _seedInicial();
     });
   }
 

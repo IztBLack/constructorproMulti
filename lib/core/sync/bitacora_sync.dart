@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../domain/bitacora/bitacora_reglas.dart';
+import '../../domain/sync/rechazos_sync.dart';
 import '../db/app_database.dart';
 import 'bitacora_avisos.dart';
 import 'bitacora_remoto.dart';
@@ -112,12 +113,16 @@ class BitacoraSync {
   /// Último fallo transitorio (para la pantalla de nube), como en SyncService.
   String? ultimoError;
 
+  /// Filas apartadas en el último push por ser de OTRA empresa (ver [push]).
+  int filasAjenas = 0;
+
   /// Sube lo pendiente: entradas → fotos (archivo y fila) → aclaraciones.
   /// Devuelve cuántas filas fallaron por algo TRANSITORIO (quedan `error` y se
   /// reintentan); los rechazos definitivos no cuentan.
   Future<int> push(String empresaId) async {
     var errores = 0;
     ultimoError = null;
+    filasAjenas = 0;
     for (final (tabla, subir) in [
       (entradas, _pushEntrada),
       (fotos, _pushFoto),
@@ -130,6 +135,15 @@ class BitacoraSync {
           .get();
       for (final f in filas) {
         final r = Map<String, Object?>.from(f.data);
+        // Red de seguridad del cambio de cuenta: una fila de otra empresa no se
+        // sube como si fuera de esta (cada `subir` pone `empresa_id` con la
+        // actual). Queda `skipped`: en este teléfono, para esta cuenta, nunca
+        // va a subir. La pantalla de nube ofrece rehacer la copia.
+        if (esDeOtraEmpresa(r['empresa_id'] as String?, empresaId)) {
+          filasAjenas++;
+          await _marcar(tabla, r['id'] as String, 'skipped');
+          continue;
+        }
         try {
           await subir(r, empresaId);
         } catch (e) {
