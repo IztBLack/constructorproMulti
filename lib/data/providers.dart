@@ -225,9 +225,10 @@ final sueldosPorColaboradorProvider =
 final colaboradorObrasProvider = StreamProvider<Map<String, List<Obra>>>(
     (ref) => ref.watch(colaboradorRepositoryProvider).watchObrasPorColaborador());
 
-/// Conteo de conceptos en el catálogo (para verificar el seed).
-final catalogoCountProvider = FutureProvider<int>(
-    (ref) => ref.watch(databaseProvider).contarCatalogo());
+/// Conteo de conceptos en el catálogo. Vigilado: el valor que Ajustes enseña
+/// a la vista no puede quedarse viejo al vaciar o editar el catálogo.
+final catalogoCountProvider = StreamProvider<int>(
+    (ref) => ref.watch(databaseProvider).vigilarConteoCatalogo());
 
 // ---------------- Providers por obra (familia) ----------------
 final colaboradoresPorObraProvider =

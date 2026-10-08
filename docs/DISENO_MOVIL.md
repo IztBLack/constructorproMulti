@@ -51,8 +51,9 @@ Usa estos antes de armar algo a mano. Si falta uno, se crea aquí, no dentro de 
 | Componente | Para qué |
 |---|---|
 | `GrupoLista` | Un grupo con título ("Tu empresa") y una tarjeta con filas separadas por divisores sangrados. La forma estándar de cualquier lista de opciones. |
-| `FilaLista` | Fila de 64 dp: `MosaicoIcono` + título + subtítulo + **valor a la derecha** + chevron. `peligro: true` la pinta en rojo. Acepta `trailing` (p. ej. un `Switch`). |
+| `FilaLista` | Fila de 64 dp: `MosaicoIcono` + título + subtítulo + **valor a la derecha** (máx. 120 dp; se parte si es largo) + chevron. `peligro: true` la pinta en rojo. `etiquetaValor` dice el valor completo a TalkBack ("9 puestos"). Acepta `trailing` (un `Switch` o un `AppBadge`) y `debajo` (fichas). |
 | `MosaicoIcono` | Ícono de 20 dp en un cuadro de 36 dp con fondo suave del tono. Identifica la fila de un vistazo. |
+| `margenesDeLista(context, ancho)` | Márgenes de una pantalla de lista: 16 dp en teléfono; en tableta centra el contenido a 720 dp **sin achicar la zona de scroll**. Úsalo como `padding` del `ListView` dentro de un `LayoutBuilder`. |
 | `AppCard` | Contenedor con borde tenue; con `onTap` la onda queda recortada. |
 | `AppBadge` | Estado o rol en píldora ("Admin", "Archivada"). |
 | `SectionHeader` | Título + descripción dentro de una pantalla con scroll. |
@@ -82,10 +83,15 @@ Título de grupo (labelLarge, textMuted)
 - Los títulos de grupo van en **oración**, no en MAYÚSCULAS.
 - Lo que depende de un módulo apagado **no se pinta** (se lee de `modulosProvider`).
 
+### Una fila, una acción
+- Una `FilaLista` hace UNA cosa. Si lleva `Switch`, tocar la fila alterna el switch (como `SwitchListTile`). Lo demás (p. ej. el día y la hora del recordatorio) va en **otra fila**, que aparece solo cuando aplica. Dos toques distintos en una fila se funden en uno para TalkBack.
+- Un selector de varias opciones (`SegmentedButton`) va en su propio bloque a todo el ancho de la tarjeta, no dentro del texto de una fila (ver "Apariencia" en Ajustes).
+
 ### Acciones destructivas
-- Nunca más de una fila roja visible en una pantalla.
+- En una pantalla de opciones, nunca más de una fila roja: esa fila abre una pantalla dedicada a borrar (ahí todas las filas son rojas, y es lo único que hay).
 - Siempre confirman: escribir la palabra (BORRAR, VACIAR…) cuando no se puede deshacer; "Deshacer" cuando sí.
-- El texto dice qué se pierde y qué NO ("lo que ya está en la nube sigue allá").
+- El texto dice qué se pierde y qué NO ("lo que ya está en la nube sigue allá"), y si hay cambios sin subir, que esos SÍ se pierden.
+- El botón de confirmar dice qué hace ("Borrar obras"), no "Confirmar" ni "Aceptar".
 
 ### Estados
 - **Vacío:** `EmptyStateView` con qué hacer ("Toca + para agregar al primero").

@@ -65,7 +65,8 @@ class Modulo {
   final List<ClaveModulo> dependeDe;
 
   /// true si el móvil ya tiene sus pantallas. Lo que está prendido pero no
-  /// implementado aparece en Configuración → "Disponibles en la web".
+  /// implementado aparece en Ajustes → Partes de la app → "Disponibles en la
+  /// web".
   final bool implementadoEnMovil;
 
   /// false para lo que por naturaleza no vive en la app del constructor (el
@@ -75,6 +76,10 @@ class Modulo {
   /// El núcleo: siempre prendido.
   final bool nucleo;
 }
+
+/// Los módulos que ya tienen pantallas en el móvil, en el orden del catálogo.
+List<Modulo> get modulosDelMovil =>
+    [for (final m in catalogoModulos) if (m.implementadoEnMovil) m];
 
 const List<Modulo> catalogoModulos = [
   Modulo(
@@ -303,7 +308,8 @@ class ModulosActivos {
       moduloDe(clave).nucleo || activos.contains(clave);
 
   /// Prendidos en la empresa, pero que el móvil todavía no tiene: se listan en
-  /// Configuración como "Disponibles en la web". En el orden del catálogo.
+  /// Ajustes → Partes de la app como "Disponibles en la web". En el orden del
+  /// catálogo.
   List<Modulo> get soloEnLaWeb => [
     for (final m in catalogoModulos)
       if (activos.contains(m.clave) &&

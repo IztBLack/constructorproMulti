@@ -552,6 +552,16 @@ class AppDatabase extends _$AppDatabase {
     return (await q.getSingle()).read(count) ?? 0;
   }
 
+  /// [contarCatalogo] vigilado: Ajustes enseña el número a la vista y tiene
+  /// que cambiar en cuanto se agregan, borran o vacían conceptos.
+  Stream<int> vigilarConteoCatalogo() {
+    final count = countAll();
+    final q = selectOnly(catalogoConceptos)
+      ..addColumns([count])
+      ..where(catalogoConceptos.deletedAt.isNull());
+    return q.watchSingle().map((r) => r.read(count) ?? 0);
+  }
+
   // ---------------- Sync nube ----------------
   /// Todas las tablas de la base local. Cada una es espejo de una tabla del
   /// servidor (lleva `SyncCols`), así que lo que se haga "a toda la base" se

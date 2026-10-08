@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/format/format.dart';
 import '../../core/settings/settings_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/sync/cloud_providers.dart';
@@ -760,16 +760,6 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
     );
   }
 
-  /// "hoy 14:32", "ayer 09:10" o "6 oct 14:32".
-  static String _cuando(DateTime t) {
-    final hoy = DateTime.now();
-    final dia = DateTime(t.year, t.month, t.day);
-    final diferencia = DateTime(hoy.year, hoy.month, hoy.day).difference(dia).inDays;
-    final hora = DateFormat('HH:mm').format(t);
-    if (diferencia == 0) return 'hoy $hora';
-    if (diferencia == 1) return 'ayer $hora';
-    return '${DateFormat('d MMM', 'es_MX').format(t)} $hora';
-  }
 
   // ---------------------------------------------------------------------------
   // Helpers
@@ -1106,7 +1096,7 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
             else if (estado.errores > 0)
               'Reintenta también los cambios con error.',
             ultimaSubida != null
-                ? 'Última subida completa: ${_cuando(ultimaSubida)}'
+                ? 'Última subida completa: ${Fmt.cuando(ultimaSubida)}'
                 : 'Aún no hay una subida completa en este teléfono.',
           ].join('\n')),
           enabled: !_loading,

@@ -73,6 +73,17 @@ void main() {
       // `text` y no `textMuted`: el atenuado se queda en 4.35:1 sobre este
       // fondo. Es la razón por la que AppBadge.neutral usa el tono de cuerpo.
       exigir('text sobre neutralSoft', c.text, c.neutralSoft);
+      // Avisos de estado (la tarjeta de nube en Ajustes): el título y el
+      // detalle van en tono de cuerpo sobre el fondo suave de cada estado.
+      for (final (n, fondo) in [
+        ('infoSoft', c.infoSoft),
+        ('successSoft', c.successSoft),
+        ('warningSoft', c.warningSoft),
+        ('dangerSoft', c.dangerSoft),
+      ]) {
+        exigir('textStrong sobre $n', c.textStrong, fondo);
+        exigir('text sobre $n', c.text, fondo);
+      }
 
       // ── Solo decorativo / hint: placeholders, deshabilitados, adornos ─────
       // `textFaint` NO es texto informativo (eso es `textMuted`, arriba), así

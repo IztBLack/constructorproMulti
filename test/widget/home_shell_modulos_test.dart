@@ -54,14 +54,14 @@ void main() {
   testWidgets('con todo prendido se ven las cinco pestañas', (t) async {
     await t.pumpWidget(montar(ModulosActivos.porDefecto));
     await t.pumpAndSettle();
-    expect(etiquetas(t), ['Obras', 'Cotizar', 'Equipo', 'Resumen', 'Config.']);
+    expect(etiquetas(t), ['Obras', 'Cotizar', 'Equipo', 'Resumen', 'Ajustes']);
   });
 
   testWidgets('sin cotizaciones desaparece "Cotizar" y los índices siguen '
       'apuntando a la pantalla correcta', (t) async {
     await t.pumpWidget(montar(_con(['obras', 'equipo', 'caja'])));
     await t.pumpAndSettle();
-    expect(etiquetas(t), ['Obras', 'Equipo', 'Resumen', 'Config.']);
+    expect(etiquetas(t), ['Obras', 'Equipo', 'Resumen', 'Ajustes']);
 
     // La segunda pestaña ahora es Equipo: tocarla debe enseñar Equipo, no
     // la pantalla que antes ocupaba ese índice.
@@ -96,11 +96,11 @@ void main() {
     expect(t.widget<IndexedStack>(find.byType(IndexedStack)).index, 0);
   });
 
-  testWidgets('lo mínimo son tres pestañas: Obras, Resumen y Config.',
+  testWidgets('lo mínimo son tres pestañas: Obras, Resumen y Ajustes',
       (t) async {
     await t.pumpWidget(montar(_con(['obras'])));
     await t.pumpAndSettle();
-    expect(etiquetas(t), ['Obras', 'Resumen', 'Config.']);
+    expect(etiquetas(t), ['Obras', 'Resumen', 'Ajustes']);
   });
 
   test('pestañas de la obra según módulos', () {

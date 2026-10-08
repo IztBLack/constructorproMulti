@@ -8,325 +8,507 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/crash/crash_logger.dart';
+import '../../core/format/format.dart';
 import '../../core/modulos/modulos.dart';
 import '../../core/modulos/modulos_provider.dart';
 import '../../core/settings/settings_provider.dart';
 import '../../core/sync/cloud_providers.dart';
 import '../../core/sync/rol_provider.dart';
+import '../../core/sync/sync_status.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme.dart';
 import '../../data/demo_data.dart';
 import '../../data/providers.dart';
-import '../onboarding/tutorial_screen.dart';
-import 'catalogo_screen.dart';
+import '../common/app_badge.dart';
+import '../common/empty_state_view.dart';
+import '../common/lista_agrupada.dart';
 import '../common/sync_status_action.dart';
+import '../onboarding/tutorial_screen.dart';
+import 'borrar_datos_screen.dart';
+import 'catalogo_screen.dart';
 import 'cloud_sync_screen.dart';
+import 'modulos_screen.dart';
 import 'pdf_config_screen.dart';
 import 'puestos_screen.dart';
 
-class ConfigScreen extends ConsumerWidget {
+/// Ajustes (antes "Configuración"): el modelo de la línea de diseño del móvil.
+/// Ver `docs/DISENO_MOVIL.md` y `docs/PLAN_AJUSTES_REDISENO.md`.
+///
+/// Arriba lo que importa (la cuenta y si todo está en la nube), después los
+/// grupos con su valor a la vista, y al final UNA sola fila para borrar. El
+/// buscador filtra todas las filas por título, subtítulo y sinónimos.
+class ConfigScreen extends ConsumerStatefulWidget {
   const ConfigScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeModeProvider);
-    // Cada entrada se va con su módulo (F0). Apagar oculta, no borra.
+  ConsumerState<ConfigScreen> createState() => _ConfigScreenState();
+}
+
+/// Una fila de Ajustes con su grupo y lo que la encuentra en el buscador.
+class _Entrada {
+  const _Entrada(
+    this.grupo,
+    this.fila, {
+    required this.buscar,
+    this.soloEnBusqueda = false,
+  });
+
+  final String grupo;
+  final Widget fila;
+
+  /// Título, subtítulo y sinónimos ("impuesto" encuentra el IVA).
+  final String buscar;
+
+  /// Solo aparece al buscar: lo que en la pantalla ya está en otra forma (la
+  /// nube vive en la tarjeta de cuenta, que se oculta al buscar).
+  final bool soloEnBusqueda;
+}
+
+class _ConfigScreenState extends ConsumerState<ConfigScreen> {
+  final _busqueda = TextEditingController();
+  String _consulta = '';
+
+  static const _dias = [
+    '',
+    'Lunes',
+    'Martes',
+    'Miércoles',
+    'Jueves',
+    'Viernes',
+    'Sábado',
+    'Domingo',
+  ];
+
+  @override
+  void dispose() {
+    _busqueda.dispose();
+    super.dispose();
+  }
+
+  /// Minúsculas y sin acentos: "catalogo" encuentra "Catálogo".
+  static String _normalizar(String s) {
+    const con = 'áéíóúüñ';
+    const sin = 'aeiouun';
+    final b = StringBuffer();
+    for (final ch in s.toLowerCase().split('')) {
+      final i = con.indexOf(ch);
+      b.write(i < 0 ? ch : sin[i]);
+    }
+    return b.toString();
+  }
+
+  void _abrir(Widget pantalla) =>
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => pantalla));
+
+  @override
+  Widget build(BuildContext context) {
     final modulos = ref.watch(modulosProvider);
     final usaEquipo = modulos.usa(ClaveModulo.equipo);
     final usaCotizaciones = modulos.usa(ClaveModulo.cotizaciones);
-    final soloEnLaWeb = modulos.soloEnLaWeb;
+    final conSesion = ref.watch(currentUserProvider) != null;
+    final entradas = _entradas(
+      usaEquipo: usaEquipo,
+      usaCotizaciones: usaCotizaciones,
+      conSesion: conSesion,
+      modulos: modulos,
+    );
+
+    final consulta = _normalizar(_consulta.trim());
+    final buscando = consulta.isNotEmpty;
+
+    final contenido = <Widget>[
+      _buscador(),
+      const SizedBox(height: 16),
+      if (buscando)
+        ..._resultados(entradas, consulta)
+      else ...[
+        const _TarjetaCuenta(),
+        for (final grupo in _gruposEnOrden(entradas)) ...[
+          const SizedBox(height: 24),
+          GrupoLista(
+            // El grupo de borrar va sin título: una fila sola al final.
+            titulo: grupo.isEmpty ? null : grupo,
+            children: [
+              for (final e in entradas)
+                if (e.grupo == grupo && !e.soloEnBusqueda) e.fila,
+            ],
+          ),
+        ],
+      ],
+    ];
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Configuración'),
-        actions: const [SyncStatusAction()],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.only(top: 4, bottom: 28),
-        children: [
-          _Seccion(
-            titulo: 'Apariencia',
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: SegmentedButton<ThemeMode>(
-                  segments: const [
-                    ButtonSegment(value: ThemeMode.system, label: Text('Auto'), icon: Icon(Icons.brightness_auto)),
-                    ButtonSegment(value: ThemeMode.light, label: Text('Claro'), icon: Icon(Icons.light_mode)),
-                    ButtonSegment(value: ThemeMode.dark, label: Text('Oscuro'), icon: Icon(Icons.dark_mode)),
-                  ],
-                  selected: {themeMode},
-                  onSelectionChanged: (s) =>
-                      ref.read(themeModeProvider.notifier).set(s.first),
-                ),
-              ),
-            ],
+      body: CustomScrollView(
+        slivers: [
+          const SliverAppBar.large(
+            title: Text('Ajustes'),
+            actions: [SyncStatusAction()],
           ),
-          // El recordatorio es de la raya: sin equipo no hay nómina que pagar.
-          if (usaEquipo)
-            _Seccion(
-              titulo: 'Recordatorios',
-              children: [_reminderTiles(context, ref)],
-            ),
-          _Seccion(
-            titulo: 'Catálogos',
-            children: [
-              if (usaEquipo)
-                ListTile(
-                  leading: const Icon(Icons.badge_outlined),
-                  title: const Text('Puestos y salarios'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const PuestosScreen())),
-                ),
-              if (usaCotizaciones)
-                ListTile(
-                  leading: const Icon(Icons.menu_book_outlined),
-                  title: const Text('Catálogo de conceptos'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const CatalogoScreen())),
-                ),
-              ListTile(
-                leading: const Icon(Icons.picture_as_pdf_outlined),
-                title: const Text('Personalizar PDF'),
-                subtitle: const Text('Logo, color, marca de agua, empresa'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const PdfConfigScreen())),
-              ),
-              if (usaCotizaciones)
-                ListTile(
-                  leading: const Icon(Icons.percent),
-                  title: const Text('IVA por defecto'),
-                  // Cada cotización congela su tasa al crearse; cambiar este
-                  // valor solo afecta a las que se creen de aquí en adelante.
-                  subtitle: Text(
-                      '${ref.watch(ivaPorcentajeProvider).toStringAsFixed(0)}% · no recalcula cotizaciones existentes'),
-                  onTap: () => _editarIva(context, ref),
-                ),
-            ],
-          ),
-          _Seccion(
-            titulo: 'Partes de la app',
-            children: [_modulosInfo(ref)],
-          ),
-          // Lo que la empresa prendió en la web y el celular todavía no tiene.
-          // Solo texto: no hay pantalla a la cual mandar, así que no hay enlace.
-          if (soloEnLaWeb.isNotEmpty)
-            _Seccion(
-              titulo: 'Disponibles en la web',
-              children: [
-                for (final m in soloEnLaWeb)
-                  ListTile(
-                    leading: const Icon(Icons.language),
-                    title: Text(m.nombre),
-                    subtitle: Text(m.descripcion),
+          SliverToBoxAdapter(
+            child: Center(
+              child: ConstrainedBox(
+                // En la tableta las filas no se estiran a 800+ dp.
+                constraints: const BoxConstraints(maxWidth: 720),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: contenido,
                   ),
-              ],
+                ),
+              ),
             ),
-          _Seccion(
-            titulo: 'Nube',
-            children: [
-              ListTile(
-                leading: const Icon(Icons.cloud_sync_outlined),
-                title: const Text('Sincronización en la nube'),
-                subtitle: const Text('Conecta tu cuenta para sincronizar con la web'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const CloudSyncScreen())),
-              ),
-            ],
-          ),
-          _Seccion(
-            titulo: 'Datos',
-            children: [
-              ListTile(
-                leading: const Icon(Icons.science_outlined),
-                title: const Text('Cargar datos de prueba'),
-                subtitle: const Text('Reemplaza con un demo completo (4 obras, equipo, cotizaciones)'),
-                onTap: () => _cargarDemo(context, ref),
-              ),
-              ListTile(
-                leading: const Icon(Icons.upload_file),
-                title: const Text('Exportar respaldo (JSON)'),
-                onTap: () => _exportarRespaldo(context, ref),
-              ),
-              ListTile(
-                leading: const Icon(Icons.restore_page_outlined),
-                title: const Text('Restaurar respaldo (JSON)'),
-                subtitle: const Text('Reemplaza TODOS los datos actuales'),
-                onTap: () => _importarRespaldo(context, ref),
-              ),
-            ],
-          ),
-          _Seccion(
-            titulo: 'Soporte',
-            children: [
-              ListTile(
-                leading: const Icon(Icons.school_outlined),
-                title: const Text('Ver tutorial de uso'),
-                subtitle: const Text('Repasa cómo funciona cada módulo'),
-                onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                  fullscreenDialog: true,
-                  builder: (_) => const TutorialScreen(),
-                )),
-              ),
-              ListTile(
-                leading: const Icon(Icons.bug_report_outlined),
-                title: const Text('Compartir reporte de errores'),
-                onTap: () => _compartirCrash(context),
-              ),
-            ],
-          ),
-          _Seccion(
-            titulo: 'Zona de peligro',
-            peligro: true,
-            children: [
-              _danger(context, ref, 'Eliminar todas las obras', 'ELIMINAR',
-                  () => ref.read(maintenanceRepositoryProvider).deleteAllObras()),
-              _danger(context, ref, 'Eliminar todos los colaboradores', 'ELIMINAR',
-                  () => ref.read(maintenanceRepositoryProvider).deleteAllColaboradores()),
-              _danger(context, ref, 'Eliminar todas las cotizaciones', 'ELIMINAR',
-                  () => ref.read(maintenanceRepositoryProvider).deleteAllCotizaciones()),
-              _danger(context, ref, 'Vaciar catálogo de conceptos', 'VACIAR',
-                  () => ref.read(maintenanceRepositoryProvider).vaciarCatalogo()),
-              _danger(context, ref, 'Restablecer TODO', 'RESTABLECER',
-                  // La misma rutina que "Rehacer la copia": además de la
-                  // base, fotos, avisos y cachés, y los cursores PRIMERO. Con
-                  // sesión, el siguiente sync vuelve a bajar todo de la nube
-                  // (antes la base quedaba vacía con los cursores al día y
-                  // nada volvía). Sin sesión, el teléfono queda de fábrica.
-                  () => vaciarCopiaLocal(
-                      ProviderScope.containerOf(context, listen: false),
-                      otraEmpresa: false)),
-            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _danger(BuildContext context, WidgetRef ref, String titulo,
-      String palabra, Future<void> Function() accion) {
-    final error = Theme.of(context).colorScheme.error;
-    return ListTile(
-      leading: Icon(Icons.warning_amber_outlined, color: error),
-      title: Text(titulo, style: TextStyle(color: error)),
-      onTap: () => _dangerConfirm(context, titulo, palabra, accion),
-    );
+  List<String> _gruposEnOrden(List<_Entrada> entradas) {
+    final vistos = <String>[];
+    for (final e in entradas) {
+      if (!e.soloEnBusqueda && !vistos.contains(e.grupo)) vistos.add(e.grupo);
+    }
+    return vistos;
   }
 
-  Future<void> _dangerConfirm(BuildContext context, String titulo,
-      String palabra, Future<void> Function() accion) async {
-    final ctrl = TextEditingController();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(titulo),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text('Esta acción es IRREVERSIBLE.\nEscribe "$palabra" para confirmar.'),
-          const SizedBox(height: 12),
-          TextField(
-            controller: ctrl,
-            autofocus: true,
-            decoration: InputDecoration(hintText: palabra),
-          ),
-        ]),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Confirmar')),
-        ],
+  List<Widget> _resultados(List<_Entrada> entradas, String consulta) {
+    final hallados = [
+      for (final e in entradas)
+        if (_normalizar(e.buscar).contains(consulta)) e,
+    ];
+    if (hallados.isEmpty) {
+      return const [
+        SizedBox(height: 24),
+        EmptyStateView(
+          icon: Icons.search_off,
+          title: 'Ningún ajuste se llama así',
+          hint: 'Prueba con otra palabra, como "IVA", "respaldo" o "tema".',
+        ),
+      ];
+    }
+    return [
+      GrupoLista(
+        titulo: 'Resultados',
+        children: [for (final e in hallados) e.fila],
+      ),
+    ];
+  }
+
+  Widget _buscador() {
+    final c = context.colores;
+    final borde = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+      borderSide: BorderSide.none,
+    );
+    return TextField(
+      controller: _busqueda,
+      onChanged: (v) => setState(() => _consulta = v),
+      textInputAction: TextInputAction.search,
+      decoration: InputDecoration(
+        hintText: 'Buscar un ajuste',
+        prefixIcon: const Icon(Icons.search),
+        suffixIcon: _consulta.isEmpty
+            ? null
+            : IconButton(
+                tooltip: 'Borrar la búsqueda',
+                icon: const Icon(Icons.close),
+                onPressed: () => setState(() {
+                  _busqueda.clear();
+                  _consulta = '';
+                }),
+              ),
+        filled: true,
+        fillColor: c.surfaceMuted,
+        border: borde,
+        enabledBorder: borde,
+        focusedBorder: borde,
       ),
     );
-    if (ok != true) return;
-    if (ctrl.text.trim().toUpperCase() != palabra) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('La palabra no coincide. Cancelado.')));
-      }
-      return;
-    }
-    await accion();
-    if (context.mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('$titulo: hecho.')));
-    }
   }
 
-  /// Quién decide qué partes se ven y dónde se cambia. En el celular NO hay
-  /// interruptores, ni para el admin: se cambian en la web (Ajustes →
-  /// Módulos), que avisa de las dependencias y confirma antes de apagar.
-  Widget _modulosInfo(WidgetRef ref) {
-    final conSesion = ref.watch(currentUserProvider) != null;
-    final rol = ref.watch(rolUsuarioProvider).asData?.value;
-    final String texto;
-    if (!conSesion) {
-      texto = 'Sin cuenta conectada se ven todas las partes que tiene el '
-          'celular.';
-    } else if (rol == 'admin') {
-      texto = 'Las prendes o apagas desde la web, en Ajustes → Módulos. '
-          'Aquí se aplican solas. Apagar una parte la oculta; tus datos se '
-          'conservan.';
-    } else {
-      texto = 'Las elige el administrador de tu empresa desde la web. '
-          'Si te falta alguna, pídesela.';
-    }
-    return ListTile(
-      leading: const Icon(Icons.widgets_outlined),
-      title: const Text('Qué partes de la app usa tu empresa'),
-      subtitle: Text(texto),
-    );
-  }
+  // ---------------------------------------------------------------------------
+  // Las filas. El orden aquí es el orden en pantalla.
+  // ---------------------------------------------------------------------------
+  List<_Entrada> _entradas({
+    required bool usaEquipo,
+    required bool usaCotizaciones,
+    required bool conSesion,
+    required ModulosActivos modulos,
+  }) {
+    const empresa = 'Tu empresa';
+    const preferencias = 'Preferencias de este teléfono';
+    const partes = 'Módulos';
+    const datos = 'Datos y respaldo';
+    const ayuda = 'Ayuda';
+    const borrar = '';
 
-  static const _dias = ['', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-
-  Widget _reminderTiles(BuildContext context, WidgetRef ref) {
+    final puestos = ref.watch(puestosProvider).asData?.value.length;
+    final conceptos = ref.watch(catalogoCountProvider).asData?.value;
+    final iva = ref.watch(ivaPorcentajeProvider);
+    final themeMode = ref.watch(themeModeProvider);
     final rem = ref.watch(reminderProvider);
-    return Column(children: [
-      SwitchListTile(
-        secondary: const Icon(Icons.notifications_active_outlined),
-        title: const Text('Recordatorio semanal de nómina'),
-        value: rem.enabled,
-        onChanged: (v) async {
-          final ok = await ref.read(reminderProvider.notifier).setEnabled(v);
-          if (!ok && context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                content: Text('Permiso de notificaciones denegado.')));
-          }
-        },
+    final enElMovil = modulosDelMovil;
+    final prendidas = [
+      for (final m in enElMovil)
+        if (modulos.usa(m.clave)) m,
+    ];
+    // Cuatro fichas y "+N": la lista completa vive en su pantalla.
+    const fichasVisibles = 4;
+
+    return [
+      _Entrada(
+        '',
+        FilaLista(
+          icono: Icons.cloud_outlined,
+          tono: BadgeTone.info,
+          titulo: 'Nube y sincronización',
+          subtitulo: 'Tu cuenta, subir cambios y cerrar sesión',
+          onTap: () => _abrir(const CloudSyncScreen()),
+        ),
+        buscar:
+            'Nube y sincronización cuenta sesión subir sincronizar '
+            'vincular código cerrar sesión',
+        soloEnBusqueda: true,
       ),
-      ListTile(
-        enabled: rem.enabled,
-        leading: const Icon(Icons.schedule),
-        title: const Text('Día y hora'),
-        subtitle: Text('${_dias[rem.weekday]} a las ${rem.hour.toString().padLeft(2, '0')}:00'),
-        onTap: () => _programar(context, ref, rem.weekday, rem.hour),
+      _Entrada(
+        empresa,
+        FilaLista(
+          icono: Icons.picture_as_pdf_outlined,
+          tono: BadgeTone.info,
+          titulo: 'Documentos PDF',
+          subtitulo: 'Logo, color, marca de agua y empresa',
+          onTap: () => _abrir(const PdfConfigScreen()),
+        ),
+        buscar:
+            'Documentos PDF logo color marca de agua firma empresa '
+            'personalizar',
       ),
-    ]);
+      if (usaEquipo)
+        _Entrada(
+          empresa,
+          FilaLista(
+            icono: Icons.badge_outlined,
+            tono: BadgeTone.success,
+            titulo: 'Puestos y salarios',
+            subtitulo: 'Salario por día de cada puesto',
+            valor: puestos?.toString(),
+            etiquetaValor: puestos == null ? null : '$puestos puestos',
+            onTap: () => _abrir(const PuestosScreen()),
+          ),
+          buscar: 'Puestos y salarios sueldo raya oficio',
+        ),
+      if (usaCotizaciones)
+        _Entrada(
+          empresa,
+          FilaLista(
+            icono: Icons.menu_book_outlined,
+            tono: BadgeTone.warning,
+            titulo: 'Catálogo de conceptos',
+            subtitulo: 'Precios para cotizar',
+            valor: conceptos?.toString(),
+            etiquetaValor: conceptos == null ? null : '$conceptos conceptos',
+            onTap: () => _abrir(const CatalogoScreen()),
+          ),
+          buscar: 'Catálogo de conceptos precios cotizar',
+        ),
+      if (usaCotizaciones)
+        _Entrada(
+          empresa,
+          FilaLista(
+            icono: Icons.percent,
+            titulo: 'IVA por defecto',
+            // Cada cotización congela su tasa al crearse; cambiar este valor
+            // solo afecta a las que se creen de aquí en adelante.
+            subtitulo: 'Solo para cotizaciones nuevas',
+            valor: '${iva.toStringAsFixed(0)} %',
+            etiquetaValor: '${iva.toStringAsFixed(0)} por ciento',
+            onTap: _editarIva,
+          ),
+          buscar: 'IVA por defecto impuesto cotizaciones',
+        ),
+      _Entrada(
+        preferencias,
+        _BloqueApariencia(
+          seleccion: themeMode,
+          onCambio: (m) => ref.read(themeModeProvider.notifier).set(m),
+        ),
+        buscar: 'Apariencia tema oscuro claro modo noche',
+      ),
+      // El recordatorio es de la raya: sin equipo no hay nómina que pagar.
+      // Dos filas, como en la guía: la fila del interruptor solo prende o
+      // apaga (toda la fila, como SwitchListTile), y el día y la hora tienen
+      // la suya. Una sola fila con dos toques distintos confunde a TalkBack.
+      if (usaEquipo)
+        _Entrada(
+          preferencias,
+          FilaLista(
+            icono: Icons.notifications_none,
+            tono: BadgeTone.warning,
+            titulo: 'Recordatorio de nómina',
+            subtitulo: 'Un aviso cada semana para pagar la raya',
+            onTap: () => _alternarRecordatorio(!rem.enabled),
+            trailing: Switch(
+              value: rem.enabled,
+              onChanged: _alternarRecordatorio,
+            ),
+          ),
+          buscar: 'Recordatorio de nómina aviso notificación raya semana',
+        ),
+      if (usaEquipo && rem.enabled)
+        _Entrada(
+          preferencias,
+          FilaLista(
+            icono: Icons.schedule,
+            tono: BadgeTone.warning,
+            titulo: 'Día y hora del aviso',
+            valor:
+                '${_dias[rem.weekday]} '
+                '${rem.hour.toString().padLeft(2, '0')}:00',
+            onTap: () => _programar(rem.weekday, rem.hour),
+          ),
+          buscar: 'Día y hora del aviso recordatorio nómina',
+        ),
+      _Entrada(
+        partes,
+        FilaLista(
+          icono: Icons.widgets_outlined,
+          tono: BadgeTone.info,
+          titulo: 'Partes de la app',
+          subtitulo: conSesion
+              ? '${prendidas.length} de ${enElMovil.length} prendidas · '
+                    'las elige la oficina'
+              : 'Sin cuenta se ven todas',
+          debajo: Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final m in prendidas.take(fichasVisibles)) _Ficha(m.nombre),
+              if (prendidas.length > fichasVisibles)
+                _Ficha('+${prendidas.length - fichasVisibles} más'),
+            ],
+          ),
+          onTap: () => _abrir(const ModulosScreen()),
+        ),
+        buscar: 'Partes de la app módulos disponibles en la web',
+      ),
+      // Los datos de prueba solo tienen sentido sin cuenta: en una cuenta real
+      // mezclarían ejemplos con obras de verdad.
+      if (!conSesion)
+        _Entrada(
+          datos,
+          FilaLista(
+            icono: Icons.science_outlined,
+            titulo: 'Cargar datos de ejemplo',
+            subtitulo: '4 obras, equipo y cotizaciones para conocer la app',
+            onTap: _cargarDemo,
+          ),
+          buscar: 'Cargar datos de ejemplo prueba demo',
+        ),
+      _Entrada(
+        datos,
+        FilaLista(
+          icono: Icons.download_outlined,
+          titulo: 'Guardar un respaldo',
+          subtitulo: 'Archivo con todo lo de este teléfono',
+          onTap: _exportarRespaldo,
+        ),
+        buscar: 'Guardar un respaldo exportar copia zip',
+      ),
+      _Entrada(
+        datos,
+        FilaLista(
+          icono: Icons.settings_backup_restore,
+          titulo: 'Restaurar un respaldo',
+          subtitulo: 'Reemplaza lo que hay en el teléfono',
+          onTap: _importarRespaldo,
+        ),
+        buscar: 'Restaurar un respaldo importar recuperar',
+      ),
+      _Entrada(
+        ayuda,
+        FilaLista(
+          icono: Icons.school_outlined,
+          tono: BadgeTone.info,
+          titulo: 'Tutorial de uso',
+          subtitulo: 'Cómo funciona cada parte de la app',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              fullscreenDialog: true,
+              builder: (_) => const TutorialScreen(),
+            ),
+          ),
+        ),
+        buscar: 'Tutorial de uso ayuda aprender guía',
+      ),
+      _Entrada(
+        ayuda,
+        FilaLista(
+          icono: Icons.feedback_outlined,
+          titulo: 'Enviar registro de errores',
+          subtitulo: 'Para soporte, si la app se cerró sola',
+          onTap: _compartirCrash,
+        ),
+        buscar: 'Enviar registro de errores reportar problema falla soporte',
+      ),
+      _Entrada(
+        borrar,
+        FilaLista(
+          icono: Icons.delete_outline,
+          peligro: true,
+          titulo: 'Borrar datos del teléfono',
+          subtitulo: 'Obras, equipo, cotizaciones o todo',
+          onTap: () => _abrir(const BorrarDatosScreen()),
+        ),
+        buscar:
+            'Borrar datos del teléfono eliminar restablecer vaciar '
+            'zona de peligro',
+      ),
+    ];
   }
 
-  Future<void> _programar(BuildContext context, WidgetRef ref, int weekday, int hour) async {
+  // ---------------------------------------------------------------------------
+  // Acciones (las mismas de antes; solo cambió dónde se tocan)
+  // ---------------------------------------------------------------------------
+  Future<void> _alternarRecordatorio(bool v) async {
+    final ok = await ref.read(reminderProvider.notifier).setEnabled(v);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'El teléfono no dio permiso para avisar. Actívalo en '
+            'los ajustes del teléfono.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _programar(int weekday, int hour) async {
     final dia = await showDialog<int>(
       context: context,
       builder: (ctx) => SimpleDialog(
         title: const Text('Día del recordatorio'),
         children: List.generate(7, (i) => i + 1)
-            .map((d) => SimpleDialogOption(
-                  onPressed: () => Navigator.pop(ctx, d),
-                  child: Text(_dias[d]),
-                ))
+            .map(
+              (d) => SimpleDialogOption(
+                onPressed: () => Navigator.pop(ctx, d),
+                child: Text(_dias[d]),
+              ),
+            )
             .toList(),
       ),
     );
-    if (dia == null || !context.mounted) return;
+    if (dia == null || !mounted) return;
     final t = await showTimePicker(
       context: context,
       initialTime: TimeOfDay(hour: hour, minute: 0),
     );
-    if (t == null) return;
+    if (t == null || !mounted) return;
     await ref.read(reminderProvider.notifier).setSchedule(dia, t.hour);
   }
 
-  Future<void> _editarIva(BuildContext context, WidgetRef ref) async {
+  Future<void> _editarIva() async {
     final actual = ref.read(ivaPorcentajeProvider);
     final ctrl = TextEditingController(text: actual.toStringAsFixed(0));
     final v = await showDialog<double>(
@@ -337,74 +519,101 @@ class ConfigScreen extends ConsumerWidget {
           controller: ctrl,
           autofocus: true,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(labelText: 'Porcentaje', suffixText: '%'),
+          decoration: const InputDecoration(
+            labelText: 'Porcentaje',
+            suffixText: '%',
+          ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
           FilledButton(
-            onPressed: () => Navigator.pop(ctx, double.tryParse(ctrl.text.trim())),
+            onPressed: () =>
+                Navigator.pop(ctx, double.tryParse(ctrl.text.trim())),
             child: const Text('Guardar'),
           ),
         ],
       ),
     );
-    if (v != null) {
+    // Sin `dispose` aquí: el diálogo sigue en pantalla durante su animación
+    // de salida y su campo todavía usa el controlador.
+    if (v != null && mounted) {
       await ref.read(ivaPorcentajeProvider.notifier).set(v);
     }
   }
 
-  Future<void> _cargarDemo(BuildContext context, WidgetRef ref) async {
+  Future<void> _cargarDemo() async {
     final creado = await DemoData.generar(ref.read(databaseProvider));
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(creado
-          ? 'Datos de prueba cargados.'
-          : 'Ya hay datos; no se cargaron ejemplos.'),
-    ));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          creado
+              ? 'Datos de ejemplo cargados.'
+              : 'Ya hay datos; no se cargaron ejemplos.',
+        ),
+      ),
+    );
   }
 
-  Future<void> _exportarRespaldo(BuildContext context, WidgetRef ref) async {
+  Future<void> _exportarRespaldo() async {
     try {
       // ZIP completo: datos + archivos adjuntos (fotos/planos).
       final bytes = await ref.read(backupServiceProvider).exportToZipBytes();
       final dir = await getTemporaryDirectory();
       final file = File(p.join(dir.path, 'RespaldoConstructorPro.zip'));
       await file.writeAsBytes(bytes);
-      await Share.shareXFiles([XFile(file.path)], text: 'Respaldo ConstructorPro');
+      await Share.shareXFiles([
+        XFile(file.path),
+      ], text: 'Respaldo ConstructorPro');
     } catch (e) {
       // El detalle técnico va al registro, no a la pantalla: a quien está en
       // la obra no le dice nada y asusta.
       debugPrint('[ConfigScreen] exportar respaldo: $e');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('No se pudo crear el respaldo. Intenta de nuevo; '
-                'tus datos siguen en el teléfono.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'No se pudo crear el respaldo. Intenta de nuevo; '
+              'tus datos siguen en el teléfono.',
+            ),
+          ),
+        );
       }
     }
   }
 
-  Future<void> _importarRespaldo(BuildContext context, WidgetRef ref) async {
+  Future<void> _importarRespaldo() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['zip', 'json'],
     );
     if (result == null || result.files.single.path == null) return;
-    if (!context.mounted) return;
+    if (!mounted) return;
 
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Restaurar respaldo'),
+        title: const Text('Restaurar un respaldo'),
         content: const Text(
-            'Esto REEMPLAZA todos los datos actuales por los del respaldo. '
-            '¿Continuar?'),
+          'Esto REEMPLAZA todo lo que hay en el teléfono por '
+          'lo del respaldo. ¿Continuar?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Restaurar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Restaurar'),
+          ),
         ],
       ),
     );
-    if (ok != true) return;
+    if (ok != true || !mounted) return;
 
     try {
       final ruta = result.files.single.path!;
@@ -415,93 +624,358 @@ class ConfigScreen extends ConsumerWidget {
       } else {
         await svc.importFromJson(await File(ruta).readAsString());
       }
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Respaldo restaurado correctamente.')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Respaldo restaurado.')));
       }
     } catch (e) {
       debugPrint('[ConfigScreen] restaurar respaldo: $e');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('No se pudo restaurar el respaldo. Revisa que el '
-                'archivo sea un respaldo de ConstructorPro.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'No se pudo restaurar el respaldo. Revisa que el '
+              'archivo sea un respaldo de ConstructorPro.',
+            ),
+          ),
+        );
       }
     }
   }
 
-  Future<void> _compartirCrash(BuildContext context) async {
+  Future<void> _compartirCrash() async {
     final logs = await CrashLogger.getLogs();
-    if (!context.mounted) return;
+    if (!mounted) return;
     if (logs.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('No hay reportes de error. La app no ha fallado.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No hay errores registrados: la app no ha fallado.'),
+        ),
+      );
       return;
     }
-    await Share.shareXFiles([XFile(logs.first.path)],
-        text: 'Reporte de error ConstructorPro');
+    await Share.shareXFiles([
+      XFile(logs.first.path),
+    ], text: 'Reporte de error ConstructorPro');
   }
 }
 
-/// Sección de ajustes: un título tenue + una tarjeta con las filas dentro. Sube
-/// la config del móvil al mismo lenguaje visual que la web (grupos en tarjetas)
-/// en vez de una lista plana partida por divisores. Las filas se separan con un
-/// divisor sangrado DENTRO de la tarjeta, no a todo lo ancho de la pantalla.
-class _Seccion extends StatelessWidget {
-  const _Seccion({
-    required this.titulo,
-    required this.children,
-    this.peligro = false,
-  });
+/// Apariencia: título y el selector a TODO el ancho de la tarjeta. No es una
+/// `FilaLista` porque el selector tiene tres opciones con su propio nombre para
+/// TalkBack (fundirlas en la fila las volvería un solo botón), y en el ancho del
+/// texto de una fila "Automática" no cabe.
+class _BloqueApariencia extends StatelessWidget {
+  const _BloqueApariencia({required this.seleccion, required this.onCambio});
 
-  final String titulo;
-  final List<Widget> children;
-  final bool peligro;
+  final ThemeMode seleccion;
+  final ValueChanged<ThemeMode> onCambio;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final acento = peligro ? scheme.error : scheme.onSurfaceVariant;
-
-    // Divisor sangrado entre filas (no después de la última).
-    final filas = <Widget>[];
-    for (var i = 0; i < children.length; i++) {
-      if (i > 0) filas.add(const Divider(height: 1, indent: 16, endIndent: 16));
-      filas.add(children[i]);
-    }
-
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
-            child: Text(
-              titulo.toUpperCase(),
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: acento,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.6,
+          Row(
+            children: [
+              const MosaicoIcono(Icons.contrast, tono: BadgeTone.accent),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Semantics(
+                  header: true,
+                  child: Text(
+                    'Apariencia',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-            ),
-          ),
-          Card(
-            margin: EdgeInsets.zero,
-            clipBehavior: Clip.antiAlias,
-            // La zona de peligro se delinea en rojo tenue para distinguirla sin
-            // gritar; el resto usa el contorno neutro del tema.
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-              side: BorderSide(
-                color: peligro
-                    ? scheme.error.withValues(alpha: 0.4)
-                    : scheme.outlineVariant,
+                ),
               ),
-            ),
-            child: Column(children: filas),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SegmentedButton<ThemeMode>(
+            showSelectedIcon: false,
+            segments: const [
+              ButtonSegment(value: ThemeMode.system, label: Text('Automática')),
+              ButtonSegment(value: ThemeMode.light, label: Text('Clara')),
+              ButtonSegment(value: ThemeMode.dark, label: Text('Oscura')),
+            ],
+            selected: {seleccion},
+            onSelectionChanged: (s) => onCambio(s.first),
           ),
         ],
       ),
     );
+  }
+}
+
+/// Ficha de una parte prendida bajo "Partes de la app".
+class _Ficha extends StatelessWidget {
+  const _Ficha(this.texto);
+
+  final String texto;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colores;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      // Con borde: en el tema oscuro el fondo atenuado casi no se distingue de
+      // la tarjeta.
+      decoration: BoxDecoration(
+        color: c.surfaceMuted,
+        border: Border.all(color: c.border),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        texto,
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(color: c.text),
+      ),
+    );
+  }
+}
+
+/// La cabecera de Ajustes: quién eres, de qué empresa, con qué rol, y si lo
+/// del teléfono ya está en la nube. Es lo que se pregunta al abrir esta
+/// pantalla, por eso va antes que cualquier opción. Lleva a Nube y
+/// sincronización.
+class _TarjetaCuenta extends ConsumerWidget {
+  const _TarjetaCuenta();
+
+  static String _rol(String? rol) => switch (rol) {
+    'admin' => 'Admin',
+    'supervisor' => 'Supervisor',
+    'residente' => 'Residente',
+    'contador' => 'Contador',
+    'colaborador' => 'Colaborador',
+    'compras' => 'Compras',
+    'almacen' => 'Almacén',
+    _ => '',
+  };
+
+  static String _iniciales(String nombre) {
+    // De un correo, solo lo de antes de la @ ("mario.h@…" → "MH", no "MG").
+    final base = nombre.contains('@') ? nombre.split('@').first : nombre;
+    final partes = base
+        .split(RegExp(r'[\s._-]+'))
+        .where((s) => s.isNotEmpty)
+        .take(2)
+        .map((s) => s[0].toUpperCase());
+    return partes.join();
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colores;
+    final texto = Theme.of(context).textTheme;
+    final user = ref.watch(currentUserProvider);
+
+    void abrirNube() => Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const CloudSyncScreen()));
+
+    final String nombre;
+    final String detalle;
+    final String rol;
+    if (user == null) {
+      nombre = 'Sin cuenta conectada';
+      detalle = 'Tus datos están solo en este teléfono';
+      rol = '';
+    } else {
+      nombre = ref.watch(cuentaNombreProvider) ?? 'Tu cuenta';
+      detalle =
+          ref.watch(empresaNombreProvider).asData?.value ??
+          ref.watch(empresaNombreCacheProvider) ??
+          'Sin empresa vinculada';
+      rol = _rol(ref.watch(rolUsuarioProvider).asData?.value);
+    }
+
+    final estado = _estadoNube(ref, conSesion: user != null);
+    final paleta = paletaDeTono(c, estado.tono);
+
+    return Material(
+      color: c.surface,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+        side: BorderSide(color: c.border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 6, 4, 12),
+              child: Row(
+                children: [
+                  ExcludeSemantics(
+                    child: CircleAvatar(
+                      radius: 26,
+                      backgroundColor: c.textStrong,
+                      foregroundColor: c.surface,
+                      child: user == null
+                          ? const Icon(Icons.person_outline)
+                          : Text(
+                              _iniciales(nombre),
+                              style: texto.titleMedium?.copyWith(
+                                color: c.surface,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          nombre,
+                          style: texto.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          detalle,
+                          style: texto.bodyMedium?.copyWith(color: c.textMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (rol.isNotEmpty) AppBadge(rol, tone: BadgeTone.accent),
+                ],
+              ),
+            ),
+            Material(
+              color: paleta.fondo,
+              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+              clipBehavior: Clip.antiAlias,
+              child: MergeSemantics(
+                child: Semantics(
+                  button: true,
+                  child: InkWell(
+                    onTap: abrirNube,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        minHeight: AppTheme.touchTarget + 8,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        child: Row(
+                          children: [
+                            ExcludeSemantics(
+                              child: Icon(estado.icono, color: paleta.texto),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    estado.titulo,
+                                    style: texto.bodyLarge?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: c.textStrong,
+                                    ),
+                                  ),
+                                  Text(
+                                    estado.detalle,
+                                    style: texto.bodySmall?.copyWith(
+                                      color: c.text,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            ExcludeSemantics(
+                              child: Icon(
+                                Icons.chevron_right,
+                                size: 20,
+                                color: c.text,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Lo que se dice de la nube, en el mismo orden de prioridad que el
+  /// indicador del `AppBar` ([SyncFase]).
+  static ({IconData icono, BadgeTone tono, String titulo, String detalle})
+  _estadoNube(WidgetRef ref, {required bool conSesion}) {
+    if (!conSesion) {
+      return (
+        icono: Icons.cloud_off_outlined,
+        tono: BadgeTone.info,
+        titulo: 'Conectar con la nube',
+        detalle: 'Para sincronizar con la web y no perder nada',
+      );
+    }
+    final s = ref.watch(syncStatusProvider);
+    ref.watch(syncEnCursoProvider);
+    final ultima = ref.read(syncMetadataProvider).ultimaSubidaCompleta;
+    final cuandoSubio = ultima == null
+        ? 'Aún no hay una subida completa'
+        : 'Última subida completa: ${Fmt.cuando(ultima)}';
+    return switch (s.fase) {
+      SyncFase.alDia => (
+        icono: Icons.cloud_done_outlined,
+        tono: BadgeTone.success,
+        titulo: 'Todo está en la nube',
+        detalle: cuandoSubio,
+      ),
+      SyncFase.pendiente => (
+        icono: Icons.cloud_upload_outlined,
+        tono: BadgeTone.neutral,
+        titulo: '${s.pendientes} cambio(s) por subir',
+        detalle: 'Se suben solos cuando hay señal',
+      ),
+      SyncFase.sincronizando => (
+        icono: Icons.sync,
+        tono: BadgeTone.info,
+        titulo: 'Sincronizando…',
+        detalle: cuandoSubio,
+      ),
+      SyncFase.error => (
+        icono: Icons.error_outline,
+        tono: BadgeTone.danger,
+        titulo: '${s.errores} cambio(s) no se pudieron subir',
+        detalle: 'Toca para ver qué hacer',
+      ),
+      SyncFase.conflicto => (
+        icono: Icons.rule,
+        tono: BadgeTone.warning,
+        titulo: '${s.conflictos} conflicto(s) por resolver',
+        detalle: 'Toca para elegir cuál se queda',
+      ),
+      SyncFase.cuentaPorConfirmar => (
+        icono: Icons.manage_accounts_outlined,
+        tono: BadgeTone.warning,
+        titulo: 'Falta confirmar la cuenta',
+        detalle: 'Este teléfono tiene datos de otra cuenta',
+      ),
+      SyncFase.desconectado => (
+        icono: Icons.link_off,
+        tono: BadgeTone.warning,
+        titulo: 'Cuenta sin empresa vinculada',
+        detalle: 'Toca para vincularla con tu código',
+      ),
+    };
   }
 }

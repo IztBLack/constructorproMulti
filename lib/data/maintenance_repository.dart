@@ -1,6 +1,6 @@
 import '../core/db/app_database.dart';
 
-/// Borrados masivos para la "Zona de peligro" de Configuración.
+/// Borrados masivos de Ajustes → "Borrar datos del teléfono".
 class MaintenanceRepository {
   final AppDatabase db;
   MaintenanceRepository(this.db);

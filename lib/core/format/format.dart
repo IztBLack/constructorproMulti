@@ -11,6 +11,21 @@ class Fmt {
   static String date(int epochMillis) =>
       _date.format(DateTime.fromMillisecondsSinceEpoch(epochMillis));
   static String dayName(DateTime d) => _dayName.format(d);
+
+  /// Momento reciente dicho como en la obra: "hoy 14:32", "ayer 09:10" o
+  /// "6 oct 14:32". Para "última subida", "guardado a las…".
+  static String cuando(DateTime t, {DateTime? ahora}) {
+    final hoy = ahora ?? DateTime.now();
+    // En UTC: entre dos medianoches locales con cambio de horario de por medio
+    // hay 23 h, e `inDays` diría "hoy" en vez de "ayer".
+    final dia = DateTime.utc(t.year, t.month, t.day);
+    final diferencia =
+        DateTime.utc(hoy.year, hoy.month, hoy.day).difference(dia).inDays;
+    final hora = DateFormat('HH:mm').format(t);
+    if (diferencia == 0) return 'hoy $hora';
+    if (diferencia == 1) return 'ayer $hora';
+    return '${DateFormat('d MMM', 'es_MX').format(t)} $hora';
+  }
 }
 
 /// Helpers de semana (lunes→domingo) y normalización de día, alineados con
