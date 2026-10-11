@@ -8,6 +8,7 @@ import '../../data/repositories_nota_obra.dart';
 import '../../domain/logic/notas_obra_calculo.dart';
 import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
+import '../common/sync_status_action.dart';
 import 'campo_a_nombre_de.dart';
 import 'nota_obra_detail_screen.dart';
 import '../common/esqueleto.dart';
@@ -29,7 +30,10 @@ class NotasObraScreen extends ConsumerWidget {
     final notasAsync = ref.watch(notasDeObraProvider(obraId));
 
     return Scaffold(
-      appBar: AppBar(title: Text('Notas · $obraNombre')),
+      appBar: AppBar(
+        title: Text('Notas · $obraNombre'),
+        actions: const [SyncStatusAction()],
+      ),
       body: notasAsync.when(
         loading: () => const EsqueletoLista(filas: 3),
         error: (e, _) => ErrorStateView(

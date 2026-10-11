@@ -29,6 +29,12 @@ class AppTheme {
   /// Radio de controles (campos, botones). Equivale a `rounded-lg`.
   static const double radiusMd = 10;
 
+  /// Radio de los grupos de lista (`GrupoLista`) y de las tarjetas de cabecera
+  /// (la cuenta en Ajustes). Un escalón más suave que [radiusLg] para que un
+  /// bloque de varias filas se lea como una sola pieza. Ver
+  /// `docs/DISENO_MOVIL.md`.
+  static const double radiusXl = 16;
+
   /// Alto mínimo de cualquier control tocable.
   ///
   /// La web usa `min-h-11` (44px, el mínimo de Apple y de WCAG 2.5.8). En

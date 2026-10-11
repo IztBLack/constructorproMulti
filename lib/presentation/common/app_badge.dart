@@ -8,6 +8,18 @@ import '../../core/theme/app_colors.dart';
 /// positivo.
 enum BadgeTone { neutral, info, success, danger, warning, accent }
 
+/// El par (fondo suave + texto fuerte) de cada tono. Lo comparten [AppBadge] y
+/// `MosaicoIcono`: un mismo tono se ve igual en una etiqueta y en un ícono.
+({Color fondo, Color texto}) paletaDeTono(AppColors c, BadgeTone tone) =>
+    switch (tone) {
+      BadgeTone.neutral => (fondo: c.neutralSoft, texto: c.text),
+      BadgeTone.info => (fondo: c.infoSoft, texto: c.info),
+      BadgeTone.success => (fondo: c.successSoft, texto: c.success),
+      BadgeTone.danger => (fondo: c.dangerSoft, texto: c.danger),
+      BadgeTone.warning => (fondo: c.warningSoft, texto: c.warning),
+      BadgeTone.accent => (fondo: c.accentSoft, texto: c.accent),
+    };
+
 /// Etiqueta compacta de estado (cotización enviada, obra archivada, colaborador
 /// inactivo…). Gemelo de `web/src/components/ui/Badge.tsx`.
 ///
@@ -28,18 +40,9 @@ class AppBadge extends StatelessWidget {
   /// el ícono es refuerzo, no muleta.
   final IconData? icon;
 
-  ({Color fondo, Color texto}) _colores(AppColors c) => switch (tone) {
-        BadgeTone.neutral => (fondo: c.neutralSoft, texto: c.text),
-        BadgeTone.info => (fondo: c.infoSoft, texto: c.info),
-        BadgeTone.success => (fondo: c.successSoft, texto: c.success),
-        BadgeTone.danger => (fondo: c.dangerSoft, texto: c.danger),
-        BadgeTone.warning => (fondo: c.warningSoft, texto: c.warning),
-        BadgeTone.accent => (fondo: c.accentSoft, texto: c.accent),
-      };
-
   @override
   Widget build(BuildContext context) {
-    final paleta = _colores(context.colores);
+    final paleta = paletaDeTono(context.colores, tone);
     final estilo = Theme.of(context).textTheme.labelSmall?.copyWith(
           color: paleta.texto,
           fontWeight: FontWeight.w600,

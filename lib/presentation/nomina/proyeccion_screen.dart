@@ -829,7 +829,7 @@ class _EncabezadoDias extends ConsumerWidget {
                             fontWeight: FontWeight.bold,
                             color: d == hoy
                                 ? c.chartPayroll
-                                : (d == 6 ? c.textFaint : c.textStrong))),
+                                : (d == 6 ? c.textMuted : c.textStrong))),
                     Text(
                         '${DateTime.fromMillisecondsSinceEpoch(fechaDelDia(lunes, d)).day}',
                         style: t.labelSmall

@@ -5,13 +5,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/format/format.dart';
 import '../../core/settings/settings_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/sync/cloud_providers.dart';
+import '../../core/sync/cuenta_local.dart';
 import '../../core/sync/supabase_config.dart';
 import '../../core/sync/sync_service.dart';
 import '../../core/sync/sync_status.dart';
 import '../../data/providers.dart';
+import '../../domain/sync/rechazos_sync.dart';
 import '../common/error_state_view.dart';
 import 'conflictos_screen.dart';
 
@@ -28,6 +31,9 @@ class CloudSyncScreen extends ConsumerStatefulWidget {
 
 enum _PantallaEstado { login, vinculacion, conectado }
 
+/// Respuesta del diálogo de "Cerrar sesión".
+enum _AlCerrar { cancelar, sincronizar, cerrar, cerrarYBorrar }
+
 class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
@@ -35,6 +41,16 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
 
   bool _loading = false;
   String? _error;
+
+  /// El contenedor de providers de la APP, no el `ref` de esta pantalla: las
+  /// acciones de cuenta esperan red y diálogos, y si la persona sale de la
+  /// pantalla a la mitad, un `ref` muerto lanzaría en pleno vaciado.
+  late final ProviderContainer _app =
+      ProviderScope.containerOf(context, listen: false);
+
+  /// Indicación (no error) para el login, p. ej. con qué cuenta volver a
+  /// entrar para no perder cambios sin subir.
+  String? _aviso;
 
   /// Cuando es true, el formulario de login opera en modo "Crear cuenta".
   bool _modoRegistro = false;
@@ -69,8 +85,11 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
       // try/catch interno devuelve null solo ante un ERROR real; un cuelgue de
       // red (nunca responde) no es un error, así que sin timeout la pantalla
       // giraría para siempre. El timeout convierte el cuelgue en algo manejable.
-      final empresaId = await resolverEmpresaYsellar(ref)
-          .timeout(const Duration(seconds: 12));
+      final empresaId = await resolverEmpresaYsellar(
+        _app,
+        confirmarCambio: _confirmarCambioDeCuenta,
+        timeout: const Duration(seconds: 12),
+      );
       if (!mounted) return;
       setState(() {
         _validando = false;
@@ -79,6 +98,9 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
             ? _PantallaEstado.vinculacion
             : _PantallaEstado.conectado;
       });
+    } on CambioDeCuentaCancelado {
+      if (mounted) setState(() => _validando = false);
+      await _volverACuentaAnterior();
     } on TimeoutException catch (_) {
       // La red no respondió a tiempo. NO caemos a la vista de vinculación: no
       // sabemos si la cuenta está vinculada, y mandarla a "ingresa código"
@@ -130,7 +152,8 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
         email: _email.text.trim(),
         password: _password.text,
       );
-      final empresaId = await resolverEmpresaYsellar(ref);
+      final empresaId = await resolverEmpresaYsellar(_app,
+          confirmarCambio: _confirmarCambioDeCuenta);
       if (!mounted) return;
       if (empresaId == null) {
         // Usuario autenticado pero sin empresa vinculada → vista de vinculación.
@@ -138,6 +161,8 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
       } else {
         setState(() => _estado = _PantallaEstado.conectado);
       }
+    } on CambioDeCuentaCancelado {
+      await _volverACuentaAnterior();
     } on AuthException catch (e) {
       if (mounted) setState(() => _error = _traducirError(e.message));
     } catch (e) {
@@ -166,7 +191,8 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
 
       if (resp.session != null) {
         // Sesión activa inmediatamente (confirmación de email desactivada en proyecto).
-        final empresaId = await resolverEmpresaYsellar(ref);
+        final empresaId = await resolverEmpresaYsellar(_app,
+            confirmarCambio: _confirmarCambioDeCuenta);
         if (!mounted) return;
         if (empresaId == null) {
           setState(() => _estado = _PantallaEstado.vinculacion);
@@ -178,6 +204,8 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
         setState(() => _error =
             'Revisa tu correo para confirmar tu cuenta y luego inicia sesión.');
       }
+    } on CambioDeCuentaCancelado {
+      await _volverACuentaAnterior();
     } on AuthException catch (e) {
       if (mounted) setState(() => _error = _traducirError(e.message));
     } catch (e) {
@@ -229,21 +257,15 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
       if (resultado['ok'] == true) {
         final empresaId = resultado['empresa_id'] as String;
 
-        // 1. Persiste empresa_id en SharedPreferences (misma key que
-        //    resolverEmpresaYsellar usa: 'empresa_id').
-        await ref
-            .read(sharedPreferencesProvider)
-            .setString('empresa_id', empresaId);
-
-        // 2. Sella todas las filas locales offline con el empresa_id.
-        await ref.read(databaseProvider).sellarEmpresaId(empresaId);
-
-        // Invalida el provider para que la UI reactiva se actualice.
-        ref.invalidate(empresaIdProvider);
+        // 1-2. Mismo camino que el login: revisa si el teléfono tiene datos de
+        //      otra cuenta ANTES de sellar, persiste la empresa y sella las
+        //      filas capturadas sin cuenta.
+        await adoptarEmpresa(_app, empresaId,
+            confirmarCambio: _confirmarCambioDeCuenta);
 
         // 3. Sube los datos offline. El guard en SyncService evita concurrencia.
         final syncOutcome =
-            await ref.read(syncServiceProvider).syncAll();
+            await _app.read(syncServiceProvider).syncAll();
 
         if (!mounted) return;
 
@@ -271,10 +293,13 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
             'Código inválido o expirado. Solicita uno nuevo al administrador.';
         setState(() => _error = mensajeError);
       }
+    } on CambioDeCuentaCancelado {
+      await _volverACuentaAnterior();
     } catch (e, st) {
       debugPrint('[CloudSyncScreen] _vincular error: $e\n$st');
       if (mounted) {
-        setState(() => _error = 'Error local: $e');
+        setState(() => _error = 'No se pudo vincular. Revisa tu conexión e '
+            'intenta de nuevo; tus datos siguen a salvo en el teléfono.');
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -282,34 +307,238 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // Acción: Cerrar sesión (limpia empresa_id y cursores para evitar mezcla)
+  // Acción: Cerrar sesión (avisa si hay cambios sin subir)
   // ---------------------------------------------------------------------------
   Future<void> _cerrarSesion() async {
-    // Borra la empresa vinculada de prefs para que un login con otra cuenta
-    // no mezcle datos de dos empresas distintas.
-    final prefs = ref.read(sharedPreferencesProvider);
+    final sinSubir = await _app.read(databaseProvider).contarSinSubir();
+    if (!mounted) return;
+    final c = context.colores;
+    final decision = await showDialog<_AlCerrar>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cerrar sesión'),
+        content: Text(sinSubir > 0
+            ? 'Hay $sinSubir cambio(s) que todavía no suben a la nube. Se '
+                'quedan guardados en este teléfono y subirán cuando vuelvas a '
+                'entrar con esta cuenta.\n\n'
+                'Si alguien entra con otra cuenta en este teléfono, tendrá que '
+                'decidir si los descarta.'
+            : 'Todo lo de este teléfono ya está en la nube. Para volver a '
+                'sincronizar tendrás que iniciar sesión otra vez.\n\n'
+                'Si el teléfono lo va a usar otra persona, borra también los '
+                'datos: sin sesión, la app los sigue mostrando.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(_AlCerrar.cancelar),
+            child: const Text('Cancelar'),
+          ),
+          if (sinSubir > 0)
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(_AlCerrar.sincronizar),
+              child: const Text('Sincronizar primero'),
+            ),
+          if (sinSubir == 0)
+            TextButton(
+              style: TextButton.styleFrom(foregroundColor: c.danger),
+              onPressed: () => Navigator.of(ctx).pop(_AlCerrar.cerrarYBorrar),
+              child: const Text('Cerrar y borrar datos'),
+            ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: c.danger),
+            onPressed: () => Navigator.of(ctx).pop(_AlCerrar.cerrar),
+            child: const Text('Cerrar sesión'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    switch (decision) {
+      case _AlCerrar.sincronizar:
+        await _sincronizar();
+      case _AlCerrar.cerrar:
+      case _AlCerrar.cerrarYBorrar:
+        setState(() => _loading = true);
+        final cerrada = await _salirDeLaSesion();
+        if (cerrada && decision == _AlCerrar.cerrarYBorrar) {
+          // Ya no hay sesión: el teléfono queda como recién instalado.
+          await vaciarCopiaLocal(_app);
+        }
+        if (!mounted) return;
+        setState(() => _loading = false);
+        if (!cerrada) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('No se pudo cerrar la sesión. Revisa tu conexión e '
+                'intenta de nuevo.'),
+          ));
+          return;
+        }
+        _irAlLogin();
+      case _AlCerrar.cancelar:
+      case null:
+        break;
+    }
+  }
+
+  /// Cierra la sesión y SOLO después limpia lo de la sesión en el teléfono.
+  /// Antes se limpiaba primero: si `signOut` fallaba sin red, la app se quedaba
+  /// sin empresa pero con la sesión abierta.
+  ///
+  /// Los datos locales y su dueño ([CuentaLocal]) NO se tocan: lo que no ha
+  /// subido sube cuando vuelva esta cuenta, y si entra otra, el dueño es lo
+  /// que permite detectar el cambio de cuenta.
+  Future<bool> _salirDeLaSesion() async {
+    try {
+      await SupabaseConfig.client.auth.signOut();
+    } catch (e) {
+      // Supabase borra la sesión local antes de avisar al servidor; sin red,
+      // ese aviso falla pero la sesión ya se cerró aquí. Solo si sigue
+      // abierta es un fallo real.
+      debugPrint('[CloudSyncScreen] signOut: $e');
+      if (SupabaseConfig.currentUser != null) return false;
+    }
+    final prefs = _app.read(sharedPreferencesProvider);
     await prefs.remove('empresa_id');
     // También el nombre en caché: si no, la siguiente cuenta que entre en este
     // dispositivo vería el nombre de la empresa anterior mientras el suyo carga.
     await prefs.remove('empresa_nombre');
+    await _app.read(syncMetadataProvider).resetAll();
+    _app.invalidate(empresaIdProvider);
+    return true;
+  }
 
-    // Reinicia todos los cursores de sync: el próximo pull tras el login
-    // traerá los datos completos de la empresa nueva.
-    final metadata = ref.read(syncMetadataProvider);
-    await metadata.resetAll();
+  void _irAlLogin({String? aviso}) {
+    if (!mounted) return;
+    setState(() {
+      _estado = _PantallaEstado.login;
+      _error = null;
+      _aviso = aviso;
+      _modoRegistro = false;
+      _codigoCtrl.clear();
+      _password.clear();
+    });
+  }
 
-    // Invalida el provider reactivo de empresa.
-    ref.invalidate(empresaIdProvider);
+  // ---------------------------------------------------------------------------
+  // Cambio de cuenta con cambios sin subir (decisión D1: avisar y elegir)
+  // ---------------------------------------------------------------------------
+  Future<bool> _confirmarCambioDeCuenta(CambioDeCuenta info) async {
+    if (!mounted) return false;
+    final c = context.colores;
+    final de = info.empresaAnteriorNombre != null
+        ? 'de ${info.empresaAnteriorNombre}'
+        : 'de otra cuenta';
+    final entra = info.correoAnterior != null
+        ? 'entra con ${info.correoAnterior}'
+        : 'entra con esa cuenta';
+    final descartar = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hay cambios sin subir de otra cuenta'),
+        content: Text(
+          'Este teléfono tiene ${info.sinSubir} cambio(s) que todavía no '
+          'llegan a la nube ($de, o capturados sin cuenta).\n\n'
+          'Para no perderlos, $entra y sincroniza. Si los descartas, se '
+          'borran de este teléfono y no se pueden recuperar.',
+        ),
+        actions: [
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: c.danger),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Descartar y continuar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Volver a esa cuenta'),
+          ),
+        ],
+      ),
+    );
+    return descartar ?? false;
+  }
 
-    await SupabaseConfig.client.auth.signOut();
+  /// La persona eligió no descartar: se cierra la sesión nueva sin tocar la
+  /// base y se deja el login listo para la cuenta dueña de los datos.
+  Future<void> _volverACuentaAnterior() async {
+    final correo = _app.read(cuentaLocalProvider).duenoCorreo;
+    await _salirDeLaSesion();
+    if (!mounted) return;
+    if (correo != null) _email.text = correo;
+    _irAlLogin(
+      aviso: 'Entra con ${correo ?? 'la cuenta anterior'} y sincroniza. '
+          'Después podrás cambiar de cuenta sin perder nada.',
+    );
+  }
 
-    if (mounted) {
-      setState(() {
-        _estado = _PantallaEstado.login;
-        _error = null;
-        _modoRegistro = false;
-        _codigoCtrl.clear();
-      });
+  // ---------------------------------------------------------------------------
+  // Acción: Rehacer la copia del teléfono (decisión D2)
+  // ---------------------------------------------------------------------------
+  Future<void> _rehacerCopia() async {
+    // Sin señal, vaciar dejaría el teléfono sin datos hasta que vuelva la red.
+    if (!await _app.read(syncServiceProvider).hayRed) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Necesitas señal para rehacer la copia. Tus datos siguen '
+            'a salvo en el teléfono.'),
+      ));
+      return;
+    }
+    final sinSubir = await _app.read(databaseProvider).contarSinSubir();
+    if (!mounted) return;
+    final c = context.colores;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Rehacer la copia de este teléfono'),
+        content: Text(
+          'Se borra lo que hay en este teléfono y se vuelve a bajar todo de la '
+          'nube. Sirve cuando el teléfono tiene datos de otra cuenta o algo '
+          'quedó atorado.'
+          '${sinSubir > 0 ? '\n\nOjo: hay $sinSubir cambio(s) que todavía no '
+              'suben y se perderían. Si son tuyos, cancela y toca '
+              '"Sincronizar ahora" primero.' : ''}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: c.danger),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(sinSubir > 0
+                ? 'Descartar $sinSubir y rehacer'
+                : 'Rehacer la copia'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _loading = true);
+    try {
+      // Misma empresa: la configuración local de los PDF no está en la nube y
+      // se conserva.
+      await vaciarCopiaLocal(_app, otraEmpresa: false);
+      final empresaId = _app.read(sharedPreferencesProvider).getString('empresa_id');
+      // La base quedó vacía y sin dueño: esta cuenta la adopta de nuevo.
+      if (empresaId != null) await adoptarEmpresa(_app, empresaId);
+      final sync = _app.read(syncServiceProvider);
+      final outcome = await sync.syncAll();
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(
+        content: Text(outcome == SyncOutcome.ok
+            ? 'Listo: este teléfono tiene ahora solo lo de la nube.'
+            : _mensajeOutcome(outcome, sync.ultimoError)),
+      ));
+    } catch (e) {
+      debugPrint('[CloudSyncScreen] _rehacerCopia error: $e');
+      messenger.showSnackBar(const SnackBar(
+        content: Text('No se pudo rehacer la copia. Intenta de nuevo con señal.'),
+      ));
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -319,10 +548,16 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
   Future<void> _sincronizar() async {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _loading = true);
-    final syncService = ref.read(syncServiceProvider);
+    final syncService = _app.read(syncServiceProvider);
     final outcome = await syncService.syncAll();
     if (!mounted) return;
     setState(() => _loading = false);
+    // El sync se detuvo porque la base es de otra cuenta: en vez de solo
+    // decirlo, se repasa la entrada, que es la que pregunta qué hacer.
+    if (outcome == SyncOutcome.cuentaPorConfirmar) {
+      _reintentarValidacion();
+      return;
+    }
     messenger.showSnackBar(SnackBar(
       content: Text(_mensajeOutcome(outcome, syncService.ultimoError)),
       duration: outcome == SyncOutcome.error
@@ -362,10 +597,10 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _loading = true);
 
-    final metadata = ref.read(syncMetadataProvider);
+    final metadata = _app.read(syncMetadataProvider);
     await metadata.resetAll();
 
-    final syncService = ref.read(syncServiceProvider);
+    final syncService = _app.read(syncServiceProvider);
     final outcome = await syncService.syncAll();
 
     if (!mounted) return;
@@ -382,45 +617,149 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
   // Aviso de filas atoradas en `error`, con el MOTIVO real del servidor. Sin
   // esto, el usuario solo veía un ícono rojo sin explicación y sin salida.
   // ---------------------------------------------------------------------------
+  //
+  // U1 de la auditoría de UX: el motivo crudo de Postgres ya no va al frente.
+  // Primero qué pasó y qué hacer en palabras de obra; el detalle técnico queda
+  // plegado, con "Copiar para soporte". Se distingue lo que se reintenta solo
+  // (ámbar) de lo que necesita que alguien haga algo (rojo).
+  // ---------------------------------------------------------------------------
   Widget _avisoErrores(int errores) {
     final c = context.colores;
-    final detalle = ref.read(syncServiceProvider).ultimoErrorPush;
+    final texto = Theme.of(context).textTheme;
+    final sync = _app.read(syncServiceProvider);
+    final rechazo = sync.ultimoRechazo;
+    final causa = rechazo?.causa;
+    final seReintenta = rechazo?.seReintenta ?? true;
+    final tinta = seReintenta ? c.warning : c.danger;
+    final detalle = rechazo?.detalleTecnico ?? sync.ultimoErrorPush;
+
+    final (explicacion, accion) = causa != null
+        ? (explicarRechazoSync(causa), accionRechazoSync(causa))
+        : (
+            'Algo falló al subir (puede ser la señal).',
+            'No tienes que hacer nada: se reintenta solo. Si no se resuelve, '
+                'comparte el detalle con soporte.',
+          );
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+      decoration: BoxDecoration(
+        color: seReintenta ? c.warningSoft : c.dangerSoft,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(seReintenta ? Icons.schedule : Icons.error_outline,
+                  color: tinta),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$errores cambio(s) no se pudieron subir',
+                      style: texto.titleSmall?.copyWith(
+                          color: tinta, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      rechazo != null
+                          ? 'En ${nombreTablaSync(rechazo.tabla)}: $explicacion'
+                          : explicacion,
+                      style: texto.bodyMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(accion,
+                        style: texto.bodyMedium
+                            ?.copyWith(fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (detalle != null && detalle.isNotEmpty)
+            Theme(
+              // Sin las líneas que ExpansionTile dibuja al abrirse: dentro de
+              // la tarjeta de color se ven como un corte.
+              data: Theme.of(context)
+                  .copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                title: Text('Detalle técnico', style: texto.bodyMedium),
+                childrenPadding: const EdgeInsets.only(bottom: 8),
+                expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SelectableText(detalle, style: texto.bodySmall),
+                  TextButton.icon(
+                    onPressed: () async {
+                      final messenger = ScaffoldMessenger.of(context);
+                      await Clipboard.setData(ClipboardData(text: detalle));
+                      messenger.showSnackBar(const SnackBar(
+                          content: Text('Detalle copiado. Pégalo en tu '
+                              'mensaje a soporte.')));
+                    },
+                    icon: const Icon(Icons.copy),
+                    label: const Text('Copiar para soporte'),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Aviso de filas de otra cuenta apartadas por el sync (decisión D2)
+  // ---------------------------------------------------------------------------
+  Widget _avisoOtraCuenta(int filas) {
+    final c = context.colores;
+    final texto = Theme.of(context).textTheme;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: c.dangerSoft,
+        color: c.warningSoft,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.error_outline, color: c.danger),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '$errores cambio(s) no se pudieron subir',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: c.danger, fontWeight: FontWeight.w600),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.people_outline, color: c.warning),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Este teléfono tiene $filas registro(s) que la nube no acepta '
+                  'para esta cuenta: son de otra cuenta que se usó antes aquí, '
+                  'o de algo a lo que ya no tienes acceso. Ya no se reintentan, '
+                  'pero siguen viéndose en el teléfono.',
+                  style: texto.bodyMedium,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  detalle != null && detalle.isNotEmpty
-                      ? 'Motivo: $detalle'
-                      : 'Toca "Sincronizar ahora" para reintentar. Si el error '
-                          'persiste, comparte esta pantalla con soporte.',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton.icon(
+              onPressed: _loading ? null : _rehacerCopia,
+              icon: const Icon(Icons.cloud_download_outlined),
+              label: const Text('Rehacer la copia'),
             ),
           ),
         ],
       ),
     );
   }
+
 
   // ---------------------------------------------------------------------------
   // Helpers
@@ -441,6 +780,9 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
         return 'Sin conexión. Se reintentará al reconectar.';
       case SyncOutcome.sinEmpresa:
         return 'Tu usuario no está vinculado a ninguna empresa.';
+      case SyncOutcome.cuentaPorConfirmar:
+        return 'Este teléfono tiene datos de otra cuenta: hay que decidir qué '
+            'hacer con ellos antes de sincronizar.';
       case SyncOutcome.error:
         final base = 'Error al sincronizar.';
         if (detalle != null && detalle.isNotEmpty) {
@@ -509,9 +851,14 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
       };
     }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Nube y sincronización')),
-      body: body,
+    // Mientras se cierra sesión, se cambia de cuenta o se rehace la copia, no
+    // se sale de la pantalla: la operación seguiría, pero sin quien la cuente.
+    return PopScope(
+      canPop: !_loading,
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Nube y sincronización')),
+        body: body,
+      ),
     );
   }
 
@@ -526,6 +873,24 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
           'Conecta tu cuenta para sincronizar tus obras con la nube y la versión web. '
           'La app sigue funcionando sin conexión.',
         ),
+        if (_aviso != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: context.colores.infoSoft,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline, color: context.colores.info),
+                const SizedBox(width: 12),
+                Expanded(child: Text(_aviso!)),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 20),
 
         // Toggle Iniciar sesión / Crear cuenta
@@ -668,6 +1033,14 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
   // ---------------------------------------------------------------------------
   Widget _connectedView(User? user, String? empresaId) {
     final estado = ref.watch(syncStatusProvider);
+    // Se reconstruye al terminar cada sync (también los automáticos) para que
+    // la última subida y el aviso de otra cuenta estén al día.
+    ref.watch(syncEnCursoProvider);
+    final ultimaSubida = ref.read(syncMetadataProvider).ultimaSubidaCompleta;
+    final filasAjenas = ref.watch(filasApartadasProvider).asData?.value ?? 0;
+    final rechazo = ref.read(syncServiceProvider).ultimoRechazo;
+    final reintentarNoBasta =
+        estado.errores > 0 && rechazo != null && !rechazo.seReintenta;
     return ListView(
       children: [
         // Se encabeza con el NOMBRE de la persona y el correo baja a segundo
@@ -697,6 +1070,7 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
         // real del servidor (RLS, FK, columna…) para no dejar al usuario a
         // ciegas con un ícono rojo. El botón de abajo ya reintenta estas filas.
         if (estado.errores > 0) _avisoErrores(estado.errores),
+        if (filasAjenas > 0) _avisoOtraCuenta(filasAjenas),
         // Conflictos de jornada: no son un fallo, esperan una decisión. Van
         // antes que "Sincronizar ahora" porque sincronizar no los resuelve.
         if (estado.conflictos > 0)
@@ -712,9 +1086,19 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
         ListTile(
           leading: const Icon(Icons.sync),
           title: const Text('Sincronizar ahora'),
-          subtitle: estado.errores > 0
-              ? const Text('Reintenta también los cambios con error')
-              : null,
+          // Lo que importa en la obra es hasta cuándo el trabajo está a salvo
+          // en la nube; y si reintentar no va a resolver los errores, decirlo
+          // en vez de dejar que se toque el botón una y otra vez.
+          subtitle: Text([
+            if (reintentarNoBasta)
+              'Reintentar no resolverá los cambios con error: mira arriba qué '
+                  'hacer.'
+            else if (estado.errores > 0)
+              'Reintenta también los cambios con error.',
+            ultimaSubida != null
+                ? 'Última subida completa: ${Fmt.cuando(ultimaSubida)}'
+                : 'Aún no hay una subida completa en este teléfono.',
+          ].join('\n')),
           enabled: !_loading,
           onTap: _loading ? null : _sincronizar,
         ),
@@ -725,6 +1109,14 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
               'Reinicia los cursores y vuelve a traer todo del servidor'),
           enabled: !_loading,
           onTap: _loading ? null : _forzarResyncCompleto,
+        ),
+        ListTile(
+          leading: const Icon(Icons.cloud_download_outlined),
+          title: const Text('Rehacer la copia de este teléfono'),
+          subtitle: const Text(
+              'Borra lo de este teléfono y vuelve a bajar todo de la nube'),
+          enabled: !_loading,
+          onTap: _loading ? null : _rehacerCopia,
         ),
         // Cerrar sesión va al final y en rojo: es la única acción de esta
         // pantalla que se lleva el acceso a los datos de la nube, y debe

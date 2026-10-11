@@ -20,7 +20,11 @@ import '../configuraciones/conflictos_screen.dart';
 /// algo que decir (subiendo, pendientes, error) o cuando conviene recordar que
 /// no hay nube (sin sesión).
 class SyncStatusAction extends ConsumerWidget {
-  const SyncStatusAction({super.key});
+  const SyncStatusAction({super.key, this.enConflictos = false});
+
+  /// Ya se está en la pantalla de conflictos: tocar el aviso de conflicto no
+  /// debe abrir OTRA igual encima, sino la de nube (subidas y errores).
+  final bool enConflictos;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -45,8 +49,18 @@ class SyncStatusAction extends ConsumerWidget {
         Icons.rule,
         c.warning,
         '${estado.conflictos}',
-        '${estado.conflictos} asistencia(s) en conflicto. '
-            'Toca para elegir cuál se queda.',
+        enConflictos
+            ? '${estado.conflictos} asistencia(s) en conflicto. '
+                'Toca para ver la sincronización.'
+            : '${estado.conflictos} asistencia(s) en conflicto. '
+                'Toca para elegir cuál se queda.',
+      ),
+      SyncFase.cuentaPorConfirmar => (
+        Icons.manage_accounts_outlined,
+        c.warning,
+        '',
+        'Este teléfono tiene datos de otra cuenta y no se está '
+            'sincronizando. Toca para decidir qué hacer.',
       ),
       SyncFase.sincronizando => (
         Icons.sync,
@@ -60,9 +74,11 @@ class SyncStatusAction extends ConsumerWidget {
         '${estado.pendientes}',
         '${estado.pendientes} cambio(s) esperando subir a la nube.',
       ),
+      // `textMuted` y no `textFaint`: "no hay nube" ES información, y al sol
+      // el gris de adorno no se distingue.
       SyncFase.desconectado => (
         Icons.cloud_off_outlined,
-        c.textFaint,
+        c.textMuted,
         '',
         'Sin conexión a la nube. Tus datos están a salvo en este teléfono.',
       ),
@@ -82,7 +98,7 @@ class SyncStatusAction extends ConsumerWidget {
       // de nube lo dejaría a un toque más de lo único que puede hacer.
       onPressed: () => Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => estado.fase == SyncFase.conflicto
+          builder: (_) => estado.fase == SyncFase.conflicto && !enConflictos
               ? const ConflictosScreen()
               : const CloudSyncScreen(),
         ),

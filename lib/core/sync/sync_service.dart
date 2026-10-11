@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../domain/sync/rechazos_sync.dart';
 import '../db/app_database.dart';
 import 'bitacora_sync.dart';
+import 'cuenta_local.dart';
 import 'sync_metadata.dart';
 import 'supabase_config.dart';
 
@@ -14,7 +18,19 @@ import 'supabase_config.dart';
 /// fallaron (quedaron marcadas `sync_status='error'` localmente) y se
 /// reintentarán en el próximo ciclo. No oculta que la sincronización sí
 /// avanzó, a diferencia de [error] (fallo total, p. ej. el PULL).
-enum SyncOutcome { ok, sinSesion, sinRed, sinEmpresa, error, parcial }
+///
+/// [cuentaPorConfirmar]: la base del teléfono es de OTRA empresa que la de la
+/// sesión (cambio de cuenta sin resolver). No se sube ni se baja nada hasta que
+/// la persona decida en la pantalla de nube (`docs/PLAN_CAMBIO_DE_CUENTA.md`).
+enum SyncOutcome {
+  ok,
+  sinSesion,
+  sinRed,
+  sinEmpresa,
+  cuentaPorConfirmar,
+  error,
+  parcial,
+}
 
 /// Motor de sincronización offline-first (Fase 2).
 ///
@@ -47,6 +63,8 @@ class SyncService {
     SupabaseClient? client,
     this.onActividad,
     this.bitacora,
+    this.cuentaLocal,
+    this.onCuentaPorConfirmar,
   }) : client = client ?? SupabaseConfig.client;
 
   final AppDatabase db;
@@ -56,6 +74,10 @@ class SyncService {
   /// Push propio de la bitácora. Null en pruebas que no la ejercen: sus filas
   /// se quedan pendientes, pero el pull sí corre.
   final BitacoraSync? bitacora;
+
+  /// De quién son los datos locales. Null en pruebas que no ejercen el cambio
+  /// de cuenta: entonces no hay candado (el comportamiento de antes).
+  final CuentaLocal? cuentaLocal;
 
   /// Notifica cuándo hay un sync corriendo (`true`) y cuándo termina (`false`).
   ///
@@ -71,6 +93,43 @@ class SyncService {
   /// Provider singleton, cualquier llamante usa esta misma instancia.
   bool _enCurso = false;
 
+  /// Mientras se vacía la base local (cambio de cuenta, rehacer la copia), el
+  /// sync no corre: subiría o bajaría filas a la mitad del borrado.
+  bool _pausado = false;
+
+  /// Detiene el sync y espera a que termine el que esté en curso.
+  ///
+  /// Con tope: un sync colgado por la red no debe dejar girando para siempre
+  /// la pantalla que está esperando. Si se cumple, reanuda y lanza
+  /// `TimeoutException`; quien llama no vacía nada.
+  Future<void> pausar({Duration tope = const Duration(seconds: 45)}) async {
+    _pausado = true;
+    final limite = DateTime.now().add(tope);
+    while (_enCurso) {
+      if (DateTime.now().isAfter(limite)) {
+        _pausado = false;
+        throw TimeoutException('El sync en curso no terminó', tope);
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+    }
+  }
+
+  /// El último ciclo se detuvo porque la base local es de otra cuenta (ver
+  /// [SyncOutcome.cuentaPorConfirmar]). Se avisa por [onCuentaPorConfirmar]
+  /// para que el indicador de sync no diga "pendiente" en silencio mientras
+  /// nada sube.
+  bool _cuentaPorConfirmar = false;
+  bool get cuentaPorConfirmar => _cuentaPorConfirmar;
+  set cuentaPorConfirmar(bool v) {
+    if (v == _cuentaPorConfirmar) return;
+    _cuentaPorConfirmar = v;
+    onCuentaPorConfirmar?.call(v);
+  }
+
+  final void Function(bool)? onCuentaPorConfirmar;
+
+  void reanudar() => _pausado = false;
+
   /// Último error detallado de sync (para diagnóstico en la UI). Null si el
   /// último intento fue exitoso. Es un resumen ("N fila(s) no subieron…").
   String? ultimoError;
@@ -82,6 +141,16 @@ class SyncService {
   /// usuario vea la causa sin depender de logs de un APK de release. Null si el
   /// último ciclo de push no tuvo fallos de fila.
   String? ultimoErrorPush;
+
+  /// El último rechazo del push, clasificado: causa en palabras de obra, si se
+  /// reintenta solo, y el detalle técnico aparte. Null si no hubo fallos de
+  /// fila. Es lo que muestra la pantalla de nube (U1 de la auditoría de UX).
+  RechazoSync? ultimoRechazo;
+
+  /// Filas apartadas en el último ciclo (genérico + bitácora). Lo que
+  /// sobrevive a reiniciar la app es el estado [estadoApartada] en la base
+  /// (`AppDatabase.vigilarApartadas`).
+  int filasAjenas = 0;
 
   /// Orden topológico de push: padres antes que hijos (respeta las FK de
   /// `supabase/migrations/0002_schema.sql`).
@@ -209,21 +278,56 @@ class SyncService {
   /// solapado con el manual del usuario), retorna inmediatamente para no
   /// correr dos syncs concurrentes sobre los mismos datos.
   Future<SyncOutcome> syncAll() async {
-    if (_enCurso) return SyncOutcome.ok; // otro sync ya está en camino
+    // El guard se toma ANTES de cualquier `await`: entre la revisión y la
+    // marca no puede colarse otro sync ni un [pausar] (que, sin ver la marca,
+    // vaciaría la base con este sync a medio camino).
+    if (_enCurso || _pausado) return SyncOutcome.ok;
+    _enCurso = true;
     // ANTES de las salidas por sesión o red: actualizar la app en la obra, sin
     // señal, es justo el caso en que el aviso tiene que sobrevivir a que
     // Android mate el proceso.
-    await persistirAvisosDeMigracion();
-    if (!tieneSesion) return SyncOutcome.sinSesion;
-    if (!await hayRed) return SyncOutcome.sinRed;
+    final String empresaId;
+    try {
+      await persistirAvisosDeMigracion();
+      if (!tieneSesion) {
+        _enCurso = false;
+        return SyncOutcome.sinSesion;
+      }
+      if (!await hayRed) {
+        _enCurso = false;
+        return SyncOutcome.sinRed;
+      }
+      final id = await _empresaIdActual();
+      if (id == null) {
+        _enCurso = false;
+        return SyncOutcome.sinEmpresa;
+      }
+      empresaId = id;
+      // Candado del cambio de cuenta: si los datos del teléfono son de otra
+      // empresa u otro usuario, subirlos los mandaría a quien no es (el
+      // origen de los 72 rechazos del teléfono de pruebas). Se espera a que
+      // la persona decida en la pantalla de nube.
+      final cuenta = cuentaLocal;
+      if (cuenta != null &&
+          !await cuenta.permiteSincronizar(
+              empresaId, SupabaseConfig.currentUser?.id)) {
+        _enCurso = false;
+        cuentaPorConfirmar = true;
+        return SyncOutcome.cuentaPorConfirmar;
+      }
+      cuentaPorConfirmar = false;
+    } catch (e) {
+      _enCurso = false;
+      ultimoError = e.toString();
+      debugPrint('[SyncService] no se pudo resolver la empresa: $e');
+      return SyncOutcome.error;
+    }
 
-    final empresaId = await _empresaIdActual();
-    if (empresaId == null) return SyncOutcome.sinEmpresa;
-
-    _enCurso = true;
     onActividad?.call(true);
     var erroresPush = 0;
     ultimoErrorPush = null; // se llena si alguna fila falla en este ciclo
+    ultimoRechazo = null;
+    filasAjenas = 0;
     try {
       // 0) RELLENO de las columnas que una migración acaba de crear en NULL y
       //    que el servidor ya tenía llenas (ver `AppDatabase.columnasPorLlenar`,
@@ -254,8 +358,17 @@ class SyncService {
         final b = bitacora;
         if (b != null) {
           final fallos = await b.push(empresaId);
-          if (fallos > 0) ultimoErrorPush = b.ultimoError;
+          if (fallos > 0) {
+            ultimoErrorPush = b.ultimoError;
+            // La bitácora trae su propia causa en sus avisos; aquí solo
+            // queda el detalle para soporte, como pasajero.
+            ultimoRechazo ??= RechazoSync(
+                tabla: 'bitacora_entrada',
+                causa: null,
+                detalleTecnico: b.ultimoError ?? '');
+          }
           erroresPush += fallos;
+          filasAjenas += b.filasAjenas;
         }
       } catch (e, st) {
         erroresPush++;
@@ -281,6 +394,7 @@ class SyncService {
         return SyncOutcome.parcial;
       }
       ultimoError = null;
+      await metadata.marcarSubidaCompleta(DateTime.now());
       return SyncOutcome.ok;
     } catch (e, st) {
       ultimoError = e.toString();
@@ -318,6 +432,45 @@ class SyncService {
             '(borradas:${f.data['borradas']})')
         .join(' ');
     debugPrint('[SyncService] ⓘ asistencias por estado: $resumen');
+  }
+
+  /// Estado de una fila que la nube no acepta para ESTA cuenta: es de otra
+  /// empresa, o el servidor dice que existe y esta cuenta ya no la ve (un
+  /// residente al que le quitaron la obra). No se sube ni se reintenta, pero
+  /// —a diferencia de `skipped`— cuenta como trabajo sin subir: rehacer la
+  /// copia o cambiar de cuenta avisa antes de borrarla.
+  static const estadoApartada = 'ajena';
+
+  /// Marca [estadoApartada] una fila y la cuenta en [filasAjenas].
+  /// `customUpdate` (no `customStatement`) para que el indicador se entere.
+  Future<void> _apartarAjena(String name, TableInfo t, List<String> pk,
+      Map<String, Object?> fila) async {
+    final pkVals = pk.map((c) => '$c=${fila[c]}').join(', ');
+    debugPrint('[SyncService] ⚠ AJENA $name ($pkVals): es de otra empresa');
+    await db.customUpdate(
+      "UPDATE $name SET sync_status='$estadoApartada' "
+      "WHERE ${pk.map((c) => '$c = ?').join(' AND ')}",
+      variables: pk.map<Variable>((c) => Variable(fila[c])).toList(),
+      updates: {t},
+    );
+    filasAjenas++;
+  }
+
+  /// ¿Esta empresa ve la fila en el servidor? Si el upsert chocó con una fila
+  /// existente (rechazo «USING expression») y aun así no la ve, la fila es de
+  /// otra empresa. Ante cualquier duda (sin red, error) responde `true`: lo
+  /// seguro es seguir reintentando, nunca apartar de más.
+  Future<bool> _visibleEnServidor(
+      String name, List<String> pk, Map<String, Object?> fila) async {
+    try {
+      final filtro = {for (final c in pk) c: fila[c] as Object};
+      final row =
+          await client.from(name).select(pk.first).match(filtro).maybeSingle();
+      return row != null;
+    } catch (e) {
+      debugPrint('[SyncService] no se pudo verificar $name: $e');
+      return true;
+    }
   }
 
   /// empresa_id del usuario (vía RLS). Null si no está vinculado.
@@ -471,6 +624,13 @@ class SyncService {
     var erroresFila = 0;
 
     for (final r in pendientes) {
+      // Red de seguridad del cambio de cuenta: una fila de OTRA empresa no se
+      // sube como si fuera de esta (abajo se sobrescribe `empresa_id`). Queda
+      // apartada ([estadoApartada]): para esta cuenta nunca va a subir.
+      if (esDeOtraEmpresa(r.data['empresa_id'] as String?, empresaId)) {
+        await _apartarAjena(name, t, pk, r.data);
+        continue;
+      }
       final data = Map<String, dynamic>.from(r.data);
       data.remove('sync_status'); // no existe en el servidor
       data.remove('server_updated_at'); // lo pone el trigger
@@ -586,10 +746,30 @@ class SyncService {
           continue;
         }
 
+        // Fila que YA EXISTE en la nube y es de otra empresa: llegó a este
+        // teléfono con una cuenta anterior y el sellado viejo (antes de la
+        // 1.5.1) la reetiquetó como de esta. Es el caso del teléfono de
+        // pruebas: localmente ya no se distingue, solo el servidor lo sabe.
+        // Reintentarla es inútil; se aparta como las de [esDeOtraEmpresa].
+        final causa = clasificarRechazoSync(code: e.code, message: e.message);
+        if (causa == CausaRechazo.sinPermiso &&
+            esRechazoDeFilaExistente(e.message) &&
+            !await _visibleEnServidor(name, pk, r.data)) {
+          await _apartarAjena(name, t, pk, r.data);
+          continue;
+        }
+
         ultimoErrorPush = '$name: ${e.message}';
+        ultimoRechazo = RechazoSync(
+          tabla: name,
+          causa: causa,
+          detalleTecnico: '$name · ${e.code ?? 's/código'} · ${e.message}',
+        );
         final pkVals = pk.map((c) => '$c=${r.data[c]}').join(', ');
         debugPrint('[SyncService] ✖ PUSH $name fallo en fila ($pkVals): $e');
-        debugPrint('[SyncService]   data enviada: $data');
+        // La fila completa solo en desarrollo: en release `debugPrint` llega
+        // a logcat, y ahí no deben quedar nombres ni montos.
+        if (kDebugMode) debugPrint('[SyncService]   data enviada: $data');
         final whereSqlErr = pk.map((c) => '$c = ?').join(' AND ');
         final whereArgsErr = pk.map((c) => r.data[c]).toList();
         await db.customStatement(
@@ -602,7 +782,9 @@ class SyncService {
         ultimoErrorPush = '$name: $e';
         final pkVals = pk.map((c) => '$c=${r.data[c]}').join(', ');
         debugPrint('[SyncService] ✖ PUSH $name fallo en fila ($pkVals): $e');
-        debugPrint('[SyncService]   data enviada: $data');
+        // La fila completa solo en desarrollo: en release `debugPrint` llega
+        // a logcat, y ahí no deben quedar nombres ni montos.
+        if (kDebugMode) debugPrint('[SyncService]   data enviada: $data');
         final whereSqlErr = pk.map((c) => '$c = ?').join(' AND ');
         final whereArgsErr = pk.map((c) => r.data[c]).toList();
         await db.customStatement(

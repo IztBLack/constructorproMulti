@@ -22,6 +22,10 @@ enum SyncFase {
   /// sistema: necesita que una persona decida en la pantalla de conflictos.
   conflicto,
 
+  /// El sync está detenido porque los datos del teléfono son de otra cuenta:
+  /// alguien tiene que decidir en la pantalla de nube. Nada sube mientras.
+  cuentaPorConfirmar,
+
   /// Un sync está corriendo ahora mismo.
   sincronizando,
 
@@ -60,6 +64,10 @@ class SyncStatus {
 /// Es un [StateProvider] y no un estado dentro del servicio para que la UI
 /// pueda observarlo sin acoplarse al motor de sync.
 final syncEnCursoProvider = StateProvider<bool>((_) => false);
+
+/// Bandera "el sync se detuvo por un cambio de cuenta sin resolver",
+/// alimentada por [SyncService.onCuentaPorConfirmar].
+final cuentaPorConfirmarProvider = StateProvider<bool>((_) => false);
 
 /// Conteo reactivo de filas sin sincronizar (pendientes y con error) sumado
 /// sobre TODAS las tablas que participan del sync.
@@ -112,6 +120,7 @@ final syncStatusProvider = Provider<SyncStatus>((ref) {
   final hayUsuario = ref.watch(currentUserProvider) != null;
   final empresaId = ref.watch(empresaIdProvider);
   final enCurso = ref.watch(syncEnCursoProvider);
+  final porConfirmar = ref.watch(cuentaPorConfirmarProvider);
   final conteo = ref.watch(_conteoSinSyncProvider).asData?.value ??
       (pendientes: 0, errores: 0, conflictos: 0);
 
@@ -124,7 +133,10 @@ final syncStatusProvider = Provider<SyncStatus>((ref) {
   }
 
   final SyncFase fase;
-  if (conteo.errores > 0) {
+  if (porConfirmar) {
+    // Encima de todo: mientras no se decida, ningún otro número avanza.
+    fase = SyncFase.cuentaPorConfirmar;
+  } else if (conteo.errores > 0) {
     fase = SyncFase.error;
   } else if (conteo.conflictos > 0) {
     // Debajo de `error` (un fallo de sistema es más urgente) pero encima de

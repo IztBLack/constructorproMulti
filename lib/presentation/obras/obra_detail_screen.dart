@@ -32,10 +32,14 @@ import '../../pdf/pdf_service.dart';
 import '../common/app_card.dart';
 import '../common/app_snackbar.dart';
 import '../common/confirm_dialog.dart';
+import '../common/error_state_view.dart';
 import '../common/money_text.dart';
 import '../common/section_header.dart';
+import '../common/selector_fraccion.dart';
+import '../common/sync_status_action.dart';
 import '../common/texto_final_card.dart';
 import '../bitacora/bitacora_screen.dart';
+import '../../domain/asistencia/fracciones.dart';
 import '../../domain/bitacora/bitacora_reglas.dart' show puedeVerBitacora;
 import '../notas/notas_obra_screen.dart';
 import '../pdf_pre_dialog.dart';
@@ -186,6 +190,9 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
       appBar: AppBar(
         title: Text(widget.obra.nombre),
         actions: [
+          // La obra es donde se captura asistencia y caja en campo: aquí
+          // tiene que verse si algo no ha subido.
+          const SyncStatusAction(),
           IconButton(
             icon: const Icon(Icons.swap_horiz),
             tooltip: 'Cambiar a obra',
@@ -393,12 +400,15 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     return Scaffold(
       body: asignadosAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => ErrorStateView(
+            onRetry: () => ref.invalidate(colaboradoresPorObraProvider(_obraId))),
         data: (asignados) {
           if (asignados.isEmpty) {
-            return const Center(
-                child: Text('Sin equipo asignado.\nToca + para asignar.',
-                    textAlign: TextAlign.center));
+            return const EmptyStateView(
+              icon: Icons.groups_outlined,
+              title: 'Sin equipo asignado.',
+              hint: 'Toca «Asignar» para agregar gente a esta obra.',
+            );
           }
           return ListView(
             children: asignados
@@ -595,12 +605,12 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
         Expanded(
           child: asignadosAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Error: $e')),
+            error: (e, _) => ErrorStateView(
+                onRetry: () =>
+                    ref.invalidate(colaboradoresPorObraProvider(_obraId))),
             data: (asignados) {
               final dia = asignados.where((c) => c.tipoPago == 'DIA').toList();
-              if (dia.isEmpty) {
-                return const Center(child: Text('Sin trabajadores por día asignados.'));
-              }
+              if (dia.isEmpty) return const _SinTrabajadoresPorDia();
               final asistencias = asistenciasAsync.asData?.value ?? [];
               final fracPorColab = {for (final a in asistencias) a.colaboradorId: a.fraccion};
               return ListView(
@@ -615,22 +625,19 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                         children: [
                           Text(c.nombre, style: Theme.of(context).textTheme.titleMedium),
                           const SizedBox(height: 8),
-                          SegmentedButton<double>(
-                            segments: const [
-                              ButtonSegment(value: 0.0, label: Text('Falta')),
-                              ButtonSegment(value: 0.5, label: Text('½')),
-                              ButtonSegment(value: 0.75, label: Text('¾')),
-                              ButtonSegment(value: 1.0, label: Text('Completo')),
-                            ],
-                            selected: {frac},
-                            onSelectionChanged: (s) async {
-                              await ref.read(asistenciaRepositoryProvider).setFraccion(
-                                    obraId: _obraId,
-                                    colaboradorId: c.id,
-                                    fecha: diaMillis,
-                                    fraccion: s.first,
-                                  );
-                            },
+                          // El mismo control que el pase de lista: un solo
+                          // vocabulario de asistencia en toda la app.
+                          SelectorFraccion(
+                            valor: frac,
+                            nombre: c.nombre,
+                            onChanged: (f) => ref
+                                .read(asistenciaRepositoryProvider)
+                                .setFraccion(
+                                  obraId: _obraId,
+                                  colaboradorId: c.id,
+                                  fecha: diaMillis,
+                                  fraccion: f,
+                                ),
                           ),
                         ],
                       ),
@@ -655,9 +662,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     final asistencias = ref.watch(asistenciasRangoProvider(rango)).asData?.value ?? [];
     final trabajadores = asignados.where((c) => c.tipoPago == 'DIA').toList();
 
-    if (trabajadores.isEmpty) {
-      return const Center(child: Text('Sin trabajadores por día asignados.'));
-    }
+    if (trabajadores.isEmpty) return const _SinTrabajadoresPorDia();
 
     // mapa colaboradorId|fechaDia -> fraccion (asistencia en ESTA obra)
     final mapa = <String, double>{};
@@ -683,8 +688,6 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
       (otrasPorCelda['${a.colaboradorId}|${a.fecha}'] ??= []).add(a);
     }
 
-    String etiqueta(double f) =>
-        f == 0 ? '—' : (f == 1.0 ? '1' : (f == 0.75 ? '¾' : '½'));
     String inicial(String obraId) {
       final n = nombreObra[obraId] ?? '?';
       return n.isEmpty ? '?' : n[0].toUpperCase();
@@ -737,12 +740,21 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                 }
                 final f = mapa[key] ?? 0.0;
                 return DataCell(
-                  Center(child: Text(etiqueta(f),
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: f > 0
-                              ? context.colores.success
-                              : context.colores.textFaint))),
+                  // Símbolo del catálogo común (`· ½ ¾ 1`); el lector de
+                  // pantalla lee el nombre ("Falta", "Medio"…), no el signo.
+                  // La falta en `textMuted` y no en el gris de adorno: también
+                  // es un dato.
+                  Semantics(
+                    label: '${c.nombre}, ${Fmt.dayName(d)}: ${nombreFraccion(f)}',
+                    excludeSemantics: true,
+                    child: Center(
+                        child: Text(simboloFraccion(f),
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: f > 0
+                                    ? context.colores.success
+                                    : context.colores.textMuted))),
+                  ),
                   onTap: () => _editarCeldaSemana(c.id, c.nombre, d, diaMillis),
                 );
               }),
@@ -756,8 +768,6 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
   /// Detalle de un día que el trabajador pasó en otra(s) obra(s).
   Future<void> _detalleCeldaOtraObra(String nombre, DateTime dia,
       List<Asistencia> otras, Map<String, String> nombreObra) async {
-    String frac(double f) =>
-        f == 1.0 ? 'Día completo' : (f == 0.75 ? '¾ día' : (f == 0.5 ? '½ día' : 'Falta'));
     await showDialog<void>(
       context: context,
       builder: (ctx) => SimpleDialog(
@@ -771,7 +781,8 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
           ...otras.map((a) => ListTile(
                 leading: const Icon(Icons.engineering),
                 title: Text(nombreObra[a.obraId] ?? 'Obra desconocida'),
-                trailing: Text(frac(a.fraccion)),
+                trailing: Text(
+                    '${simboloFraccion(a.fraccion)} ${nombreFraccion(a.fraccion)}'),
               )),
         ],
       ),
@@ -785,10 +796,23 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
       builder: (ctx) => SimpleDialog(
         title: Text('$nombre — ${Fmt.dayName(dia)}'),
         children: [
-          for (final opt in const [(0.0, 'Falta'), (0.5, '½ día'), (0.75, '¾ día'), (1.0, 'Día completo')])
+          for (final o in opcionesFraccion)
             SimpleDialogOption(
-              onPressed: () => Navigator.pop(ctx, opt.$1),
-              child: Text(opt.$2),
+              // Alto de 48: se elige con el dedo, a veces con guantes.
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              onPressed: () => Navigator.pop(ctx, o.valor),
+              child: Semantics(
+                label: o.etiqueta,
+                excludeSemantics: true,
+                child: Row(children: [
+                  SizedBox(
+                    width: 32,
+                    child: Text(o.simbolo,
+                        style: Theme.of(ctx).textTheme.titleMedium),
+                  ),
+                  Text(o.etiqueta),
+                ]),
+              ),
             ),
         ],
       ),
@@ -860,7 +884,11 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
             );
 
             if (summary.items.isEmpty) {
-              return const Center(child: Text('Sin equipo asignado.'));
+              return const EmptyStateView(
+                icon: Icons.groups_outlined,
+                title: 'Sin equipo asignado.',
+                hint: 'Asigna gente en la pestaña Equipo para ver su nómina.',
+              );
             }
             return Column(
               children: [
@@ -1096,7 +1124,8 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     return Scaffold(
       body: movsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => ErrorStateView(
+            onRetry: () => ref.invalidate(movimientosPorObraProvider(_obraId))),
         data: (movs) {
           final c = context.colores;
           final resumen = const FlujoCalculator()
@@ -1173,9 +1202,11 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
               ),
               const Divider(height: 1),
               if (movs.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(32),
-                  child: Center(child: Text('Sin movimientos.')),
+                const EmptyStateView(
+                  icon: Icons.receipt_long_outlined,
+                  title: 'Sin movimientos.',
+                  hint: 'Registra una entrada o una salida con los botones de '
+                      'abajo.',
                 )
               else
                 ...movs.map((m) {
@@ -1953,4 +1984,18 @@ class _NotaConciliacionCardState extends ConsumerState<_NotaConciliacionCard> {
       ),
     );
   }
+}
+
+/// Vacío de la asistencia (día y semana): solo los de pago por día llevan pase
+/// de lista, y eso es justo lo que no se adivina viendo una lista en blanco.
+class _SinTrabajadoresPorDia extends StatelessWidget {
+  const _SinTrabajadoresPorDia();
+
+  @override
+  Widget build(BuildContext context) => const EmptyStateView(
+        icon: Icons.event_busy,
+        title: 'Sin trabajadores por día asignados.',
+        hint: 'Solo quien cobra por día lleva asistencia; los de destajo se '
+            'pagan por avance.',
+      );
 }

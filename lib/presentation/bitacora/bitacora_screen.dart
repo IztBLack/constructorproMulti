@@ -25,6 +25,7 @@ import '../common/confirm_dialog.dart';
 import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
 import '../common/esqueleto.dart';
+import '../common/insignia_sync.dart';
 import '../common/sync_status_action.dart';
 import 'bitacora_fotos.dart';
 import 'entrada_form_screen.dart';
@@ -405,14 +406,8 @@ class _TarjetaEntrada extends ConsumerWidget {
                         const AppBadge('La ve el cliente',
                             tone: BadgeTone.info,
                             icon: Icons.visibility_outlined),
-                      if (porSubir)
-                        const AppBadge('Por subir',
-                            tone: BadgeTone.warning,
-                            icon: Icons.cloud_upload_outlined),
-                      if (noSubio)
-                        const AppBadge('No se subió',
-                            tone: BadgeTone.danger,
-                            icon: Icons.cloud_off_outlined),
+                      if (porSubir) InsigniaSync.porSubir(),
+                      if (noSubio) InsigniaSync.noSeSubio(),
                     ],
                   ),
                 ),

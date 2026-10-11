@@ -23,7 +23,7 @@ ClaveModulo? moduloDePestana(HomeTab t) => switch (t) {
 };
 
 /// Pestañas que se dibujan con estos módulos, en su orden. Nunca menos de tres
-/// (Obras, Resumen, Config.), así la `NavigationBar` siempre es válida.
+/// (Obras, Resumen, Ajustes), así la `NavigationBar` siempre es válida.
 List<HomeTab> pestanasVisibles(ModulosActivos modulos) => HomeTab.values
     .where(
       (t) => moduloDePestana(t) == null || modulos.usa(moduloDePestana(t)!),
@@ -94,7 +94,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     HomeTab.config => const NavigationDestination(
       icon: Icon(Icons.settings_outlined),
       selectedIcon: Icon(Icons.settings),
-      label: 'Config.',
+      label: 'Ajustes',
     ),
   };
 
