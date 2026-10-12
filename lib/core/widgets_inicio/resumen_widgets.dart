@@ -13,6 +13,7 @@ import 'package:intl/intl.dart';
 import '../../domain/bitacora/bitacora_reglas.dart' show puedeCapturar, puedeVerBitacora;
 import '../modulos/modulos.dart';
 import '../sync/rol_provider.dart' show puedeEditarOperacionSegunRol;
+import 'oficina_widgets.dart';
 
 /// Versión del contrato de llaves con Kotlin. Si cambia el formato, se sube.
 const versionLlavesWidgets = 1;
@@ -39,7 +40,29 @@ class PermisosWidgets {
     required this.accionBitacora,
     required this.accionNota,
     required this.accionGasto,
+    this.material = false,
+    this.programa = false,
+    this.porAprobar = false,
+    this.sinMaterial = '',
+    this.sinPrograma = '',
+    this.sinAprobar = '',
   });
+
+  /// Por qué NO se enseña (vacío si sí): el widget lo dice en vez de un
+  /// «no disponible» que no explica nada. Casi siempre es un módulo apagado.
+  final String sinMaterial;
+  final String sinPrograma;
+  final String sinAprobar;
+
+  // --- Etapa 2 (datos de la oficina, ver oficina_widgets.dart) ---
+  /// Material de la obra: pedidos y lo que llegó.
+  final bool material;
+
+  /// Lo que toca esta semana del programa de obra.
+  final bool programa;
+
+  /// Cuántas cosas esperan visto bueno (solo admin y supervisor).
+  final bool porAprobar;
 
   final bool paseLista;
   final bool pasarLista;
@@ -63,6 +86,14 @@ PermisosWidgets permisosWidgets({
 }) {
   final campo = !_rolesSinCampo.contains(rol);
   final edita = puedeEditarOperacionSegunRol(rol);
+  String prende(String modulos) => 'Prende $modulos en la web: Ajustes → Módulos.';
+  const noRol = 'No disponible con tu cuenta.';
+  final aprobarModulo = usa(ClaveModulo.compras) ||
+      usa(ClaveModulo.cambios) ||
+      usa(ClaveModulo.estimaciones) ||
+      usa(ClaveModulo.subcontratos);
+  final aprobarRol = rol == null || rol == 'admin' || rol == 'supervisor';
+  final materialRol = rol != 'colaborador' && rol != 'cliente';
   final equipo = usa(ClaveModulo.equipo);
   final bitacora = usa(ClaveModulo.bitacora) && puedeVerBitacora(rol);
   final notas = usa(ClaveModulo.notas) && edita;
@@ -77,6 +108,19 @@ PermisosWidgets permisosWidgets({
     accionNota: notas && campo,
     // El contador SÍ usa la caja (0022), aunque no edite la operación.
     accionGasto: usa(ClaveModulo.caja) && campo,
+    // Compras y almacén SÍ: el material es justo su trabajo.
+    material: usa(ClaveModulo.compras) && materialRol,
+    programa: usa(ClaveModulo.programa) && campo,
+    porAprobar: aprobarRol && aprobarModulo,
+    sinMaterial: !materialRol
+        ? noRol
+        : (usa(ClaveModulo.compras) ? '' : prende('«Compras y material»')),
+    sinPrograma: !campo
+        ? noRol
+        : (usa(ClaveModulo.programa) ? '' : prende('«Programa de obra»')),
+    sinAprobar: !aprobarRol
+        ? 'Solo el administrador y el supervisor ven lo que espera visto bueno.'
+        : (aprobarModulo ? '' : prende('Compras, Extras o Estimaciones')),
   );
 }
 
@@ -152,7 +196,15 @@ class EntradaWidgets {
     this.incidenciasHoy = const {},
     this.avisos = const [],
     this.avisosVistosHasta = 0,
+    this.rol,
+    this.oficina,
   });
+
+  /// El rol (para a dónde lleva «Por aprobar»). Null = sin resolver.
+  final String? rol;
+
+  /// Lo último que se bajó de la oficina (etapa 2). Null = nunca se ha leído.
+  final DatosOficina? oficina;
 
   final DateTime ahora;
   final PermisosWidgets permisos;
@@ -413,6 +465,15 @@ Map<String, Object> llavesWidgets(EntradaWidgets e) {
   m['ac_bitacora'] = p.accionBitacora;
   m['ac_nota'] = p.accionNota;
   m['ac_gasto'] = p.accionGasto;
+
+  // --- Etapa 2: material, programa y por aprobar ---
+  m.addAll(llavesOficina(
+    datos: e.oficina,
+    ahora: e.ahora,
+    permisos: p,
+    obrasActivas: {for (final o in e.obras) o.id: o.nombre},
+    rol: e.rol,
+  ));
   return m;
 }
 
@@ -437,4 +498,11 @@ Map<String, Object> llavesWidgetsVacias(DateTime ahora) => {
       'ac_bitacora': false,
       'ac_nota': false,
       'ac_gasto': false,
+      'mat_ok': false,
+      'pr_ok': false,
+      'ap_ok': false,
+      'of_hay_datos': false,
+      'mat_n': 0,
+      'pr_n': 0,
+      'ap_total': 0,
     };

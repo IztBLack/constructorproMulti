@@ -2,11 +2,13 @@ package com.mario.constructorpro.widgets
 
 import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
 import android.view.View
 import android.widget.RemoteViews
 import com.mario.constructorpro.MainActivity
+import com.mario.constructorpro.R
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
 import java.time.LocalDate
 
@@ -50,6 +52,37 @@ internal object WidgetsComun {
     fun abrirApp(context: Context): PendingIntent =
         HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java)
 
+    /**
+     * Abre una página de la web (etapa 2: compras, programa y aprobaciones aún
+     * no tienen pantalla en el móvil). Sin URL, abre la app.
+     */
+    fun abrirWeb(context: Context, url: String): PendingIntent {
+        if (!url.startsWith("https://")) return abrirApp(context)
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        // Un requestCode por URL: si no, Android reusaría el mismo PendingIntent
+        // para todas las filas.
+        return PendingIntent.getActivity(
+            context,
+            url.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+    }
+
+    /** Pinta una ficha de estado con su par de colores (mismo catálogo que Dart). */
+    fun pintarFicha(context: Context, v: RemoteViews, id: Int, tono: String) {
+        val (fondo, color) = when (tono) {
+            "verde" -> R.drawable.widget_chip_verde to R.color.w_verde
+            "ambar" -> R.drawable.widget_chip_ambar to R.color.w_ambar
+            "azul" -> R.drawable.widget_chip_azul to R.color.w_azul
+            "rojo" -> R.drawable.widget_chip_rojo to R.color.w_rojo
+            else -> R.drawable.widget_chip_neutro to R.color.w_texto_medio
+        }
+        v.setInt(id, "setBackgroundResource", fondo)
+        v.setTextColor(id, context.getColor(color))
+    }
+
     fun mostrar(v: RemoteViews, id: Int, visible: Boolean) =
         v.setViewVisibility(id, if (visible) View.VISIBLE else View.GONE)
 
@@ -64,11 +97,12 @@ internal object WidgetsComun {
         contenido: Int,
         mensaje: Int,
         permitido: Boolean,
+        motivo: String = "",
     ): Boolean {
         val texto = when {
             sinFoto(p) -> "Abre ConstructorPro una vez para ver tus datos aquí."
             vacio(p) -> "Inicia sesión en ConstructorPro para ver tus datos."
-            !permitido -> "No disponible con tu cuenta."
+            !permitido -> motivo.ifEmpty { "No disponible con tu cuenta." }
             else -> null
         }
         if (texto == null) {

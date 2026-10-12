@@ -27,6 +27,8 @@ import '../modulos/modulos_provider.dart';
 import '../settings/settings_provider.dart';
 import '../sync/cloud_providers.dart';
 import '../sync/rol_provider.dart';
+import '../sync/sync_status.dart' show syncEnCursoProvider;
+import 'datos_oficina.dart';
 import 'resumen_widgets.dart';
 
 /// Las clases Kotlin (AppWidgetProvider) de cada widget.
@@ -36,6 +38,10 @@ const proveedoresWidgets = [
   'AvisosWidget',
   'AccionesWidget',
   'ObrasHoyWidget',
+  // Etapa 2
+  'MaterialWidget',
+  'ProgramaWidget',
+  'PorAprobarWidget',
 ];
 
 class WidgetsInicioController {
@@ -60,8 +66,33 @@ class WidgetsInicioController {
         .tableUpdates(const TableUpdateQuery.any())
         .listen((_) => programar());
     // Al volver a la app pudo cambiar el día: lo de ayer ya no es «hoy».
-    _ciclo = AppLifecycleListener(onResume: programar);
+    _ciclo = AppLifecycleListener(onResume: () {
+      programar();
+      unawaited(refrescarOficina());
+    });
     programar(inmediato: true);
+    unawaited(refrescarOficina());
+  }
+
+  late final DatosOficinaService _oficina =
+      DatosOficinaService(_ref.read(sharedPreferencesProvider));
+
+  /// Baja de nuevo compras, programa y aprobaciones (etapa 2) si a esta cuenta
+  /// le toca alguno de esos widgets. Sin red se queda lo guardado.
+  Future<void> refrescarOficina({bool forzar = false}) async {
+    if (!_activo) return;
+    final usuario = _ref.read(currentUserProvider);
+    final p = permisosWidgets(
+      rol: _ref.read(rolUsuarioProvider).asData?.value,
+      usa: _ref.read(modulosProvider).usa,
+    );
+    if (usuario == null || !(p.material || p.programa || p.porAprobar)) return;
+    final nuevo = await _oficina.refrescar(
+      empresaId: _ref.read(empresaIdProvider),
+      usuarioId: usuario.id,
+      forzar: forzar,
+    );
+    if (nuevo) programar();
   }
 
   /// Junta varios cambios seguidos (un pase de lista son decenas de filas) en
@@ -251,6 +282,11 @@ class WidgetsInicioController {
       avisos: avisos,
       avisosVistosHasta:
           _ref.read(sharedPreferencesProvider).getInt(kAvisosVistos) ?? 0,
+      rol: rol,
+      oficina: _oficina.leerCache(
+        empresaId: _ref.read(empresaIdProvider),
+        usuarioId: miUid,
+      ),
     ));
   }
 
@@ -273,6 +309,11 @@ final widgetsInicioProvider = Provider<WidgetsInicioController>((ref) {
   ref.listen(rolUsuarioProvider, (_, _) => c.programar());
   ref.listen(modulosProvider, (_, _) => c.programar());
   ref.listen(currentUserProvider, (_, _) => c.programar());
+  // Al terminar una sincronización, también lo de la oficina puede haber
+  // cambiado (una compra aprobada, material recibido).
+  ref.listen<bool>(syncEnCursoProvider, (antes, ahora) {
+    if (antes == true && !ahora) unawaited(c.refrescarOficina());
+  });
   c.iniciar();
   return c;
 });

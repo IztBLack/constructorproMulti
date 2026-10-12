@@ -8,4 +8,10 @@
     <string name="widget_acciones_desc">Pasar lista, bitácora, nota nueva y gasto de caja en un toque.</string>
     <string name="widget_obras_nombre">Hoy en las obras</string>
     <string name="widget_obras_desc">Cuánta gente hay hoy en cada obra y cuáles no han pasado lista.</string>
+    <string name="widget_material_nombre">Material de la obra</string>
+    <string name="widget_material_desc">Lo que pediste, si ya se aprobó o se compró, y lo que llegó hoy.</string>
+    <string name="widget_programa_nombre">Lo que toca esta semana</string>
+    <string name="widget_programa_desc">Lo que empieza, lo que termina y lo que va atrasado del programa.</string>
+    <string name="widget_aprobar_nombre">Por aprobar</string>
+    <string name="widget_aprobar_desc">Cuántos pedidos, extras y estimaciones esperan tu visto bueno.</string>
 </resources>

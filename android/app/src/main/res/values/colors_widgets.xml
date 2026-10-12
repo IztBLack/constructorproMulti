@@ -20,4 +20,6 @@
     <color name="w_azul_suave">#DBEAFE</color>
     <color name="w_azul">#1D4ED8</color>
     <color name="w_aviso_fondo">#FAF5FF</color>
+    <color name="w_rojo_suave">#FEE2E2</color>
+    <color name="w_rojo">#B91C1C</color>
 </resources>
