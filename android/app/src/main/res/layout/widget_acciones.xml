@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget «Acciones rápidas» (4x1). Lo pinta AccionesWidget. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ac_raiz"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_fondo"
+    android:padding="14dp">
+    <LinearLayout
+        android:id="@+id/ac_contenido"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <LinearLayout
+            android:id="@+id/ac_pase"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingVertical="4dp">
+            <ImageView
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/widget_mosaico_verde"
+                android:contentDescription="@null"
+                android:padding="11dp"
+                android:src="@drawable/ic_w_pase" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center"
+                android:maxLines="1"
+                android:text="Pase de lista"
+                android:textColor="@color/w_texto"
+                android:textSize="12sp" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/ac_bitacora"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingVertical="4dp">
+            <ImageView
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/widget_mosaico_morado"
+                android:contentDescription="@null"
+                android:padding="11dp"
+                android:src="@drawable/ic_w_bitacora" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center"
+                android:maxLines="1"
+                android:text="Bitácora"
+                android:textColor="@color/w_texto"
+                android:textSize="12sp" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/ac_nota"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingVertical="4dp">
+            <ImageView
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/widget_mosaico_azul"
+                android:contentDescription="@null"
+                android:padding="11dp"
+                android:src="@drawable/ic_w_nota" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center"
+                android:maxLines="1"
+                android:text="Nota nueva"
+                android:textColor="@color/w_texto"
+                android:textSize="12sp" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/ac_gasto"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:paddingVertical="4dp">
+            <ImageView
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/widget_mosaico_ambar"
+                android:contentDescription="@null"
+                android:padding="11dp"
+                android:src="@drawable/ic_w_gasto" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center"
+                android:maxLines="1"
+                android:text="Gasto de caja"
+                android:textColor="@color/w_texto"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/ac_mensaje"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:padding="8dp"
+        android:textColor="@color/w_texto_medio"
+        android:textSize="14sp"
+        android:visibility="gone" />
+</FrameLayout>

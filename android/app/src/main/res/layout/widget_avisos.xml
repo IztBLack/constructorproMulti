@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget «Avisos de la oficina» (4x2). Lo pinta AvisosWidget. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/av_raiz"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_fondo"
+    android:padding="14dp">
+    <LinearLayout
+        android:id="@+id/av_contenido"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/widget_mosaico_morado"
+                android:contentDescription="@null"
+                android:padding="7dp"
+                android:src="@drawable/ic_w_avisos" />
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:text="Avisos de la oficina"
+                android:textColor="@color/w_texto"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/av_nuevos"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/widget_badge_morado"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="3dp"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/av_vacio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Sin avisos en la última semana."
+            android:textColor="@color/w_texto_suave"
+            android:textSize="14sp" />
+        <LinearLayout
+            android:id="@+id/av0"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/widget_aviso"
+            android:orientation="vertical"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="7dp">
+            <TextView
+                android:id="@+id/av0_titulo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/w_morado"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/av0_texto"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:textColor="@color/w_texto"
+                android:textSize="14sp" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/av1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/widget_aviso"
+            android:orientation="vertical"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="7dp">
+            <TextView
+                android:id="@+id/av1_titulo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/w_morado"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/av1_texto"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:textColor="@color/w_texto"
+                android:textSize="14sp" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/av2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/widget_aviso"
+            android:orientation="vertical"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="7dp">
+            <TextView
+                android:id="@+id/av2_titulo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/w_morado"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/av2_texto"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:textColor="@color/w_texto"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/av_mensaje"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:padding="8dp"
+        android:textColor="@color/w_texto_medio"
+        android:textSize="14sp"
+        android:visibility="gone" />
+</FrameLayout>

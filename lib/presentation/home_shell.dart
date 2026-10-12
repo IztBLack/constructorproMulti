@@ -9,6 +9,7 @@ import 'colaboradores/colaboradores_screen.dart';
 import 'configuraciones/config_screen.dart';
 import 'cotizaciones/cotizaciones_screen.dart';
 import 'common/aviso_incompletos.dart';
+import 'inicio/abrir_desde_inicio.dart';
 import 'obras/obras_screen.dart';
 import 'onboarding/tutorial_screen.dart';
 import 'resumen/resumen_screen.dart';
@@ -42,10 +43,13 @@ class HomeShell extends ConsumerStatefulWidget {
   ConsumerState<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeShellState extends ConsumerState<HomeShell> {
+class _HomeShellState extends ConsumerState<HomeShell> with AbrirDesdeInicio {
   @override
   void initState() {
     super.initState();
+    // Widgets de la pantalla de inicio y atajos del ícono (solo Android).
+    // En las pruebas `pantallaDe` sustituye a la app real: ahí no se arma.
+    if (widget.pantallaDe == null) iniciarEnlacesInicio();
     // En el primer arranque (tutorial no visto), mostrarlo tras el primer frame.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -58,6 +62,12 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         );
       }
     });
+  }
+
+  @override
+  void dispose() {
+    cerrarEnlacesInicio();
+    super.dispose();
   }
 
   Widget _pantalla(HomeTab t) =>

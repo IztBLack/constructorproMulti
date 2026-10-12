@@ -29,7 +29,59 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Tocar un widget de la pantalla de inicio abre la app en una
+                 pantalla (home_widget; ver lib/core/widgets_inicio/). -->
+            <intent-filter>
+                <action android:name="es.antonborri.home_widget.action.LAUNCH" />
+            </intent-filter>
         </activity>
+
+        <!-- Widgets de la pantalla de inicio (etapa 1). Pintan la foto que arma
+             la app; nunca leen la base. Ver android/.../widgets/WidgetsInicio.kt. -->
+        <receiver
+            android:name=".widgets.PaseListaWidget"
+            android:exported="false"
+            android:label="@string/widget_pase_nombre">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_pase_lista_info" />
+        </receiver>
+        <receiver
+            android:name=".widgets.AvisosWidget"
+            android:exported="false"
+            android:label="@string/widget_avisos_nombre">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_avisos_info" />
+        </receiver>
+        <receiver
+            android:name=".widgets.AccionesWidget"
+            android:exported="false"
+            android:label="@string/widget_acciones_nombre">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_acciones_info" />
+        </receiver>
+        <receiver
+            android:name=".widgets.ObrasHoyWidget"
+            android:exported="false"
+            android:label="@string/widget_obras_nombre">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_obras_hoy_info" />
+        </receiver>
         <!-- Receivers de flutter_local_notifications. Sin el BootReceiver, los
              recordatorios programados (p. ej. nómina semanal) se PIERDEN al
              reiniciar el teléfono. MY_PACKAGE_REPLACED los re-programa también

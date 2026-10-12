@@ -69,7 +69,20 @@ bool bitacoraEnMenuDeObra(ModulosActivos m, String? rol) =>
 
 class ObraDetailScreen extends ConsumerStatefulWidget {
   final Obra obra;
-  const ObraDetailScreen({super.key, required this.obra});
+
+  /// Pestaña con la que abre (los atajos de la pantalla de inicio). Si el
+  /// módulo de esa pestaña está apagado, abre en la primera, como siempre.
+  final PestanaObra? pestanaInicial;
+
+  /// Abre de una vez el alta de una salida de caja (atajo «Gasto de caja»).
+  final bool abrirSalida;
+
+  const ObraDetailScreen({
+    super.key,
+    required this.obra,
+    this.pestanaInicial,
+    this.abrirSalida = false,
+  });
 
   @override
   ConsumerState<ObraDetailScreen> createState() => _ObraDetailScreenState();
@@ -93,7 +106,10 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     final antes = _pestanaActual;
     final viejo = _tab;
     _pestanas = nuevas;
-    final idx = antes == null ? 0 : nuevas.indexOf(antes);
+    final primera = widget.pestanaInicial;
+    final idx = antes != null
+        ? nuevas.indexOf(antes)
+        : (primera == null ? 0 : nuevas.indexOf(primera));
     _tab = nuevas.isEmpty
         ? null
         : TabController(
@@ -118,6 +134,20 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
   late String? _textoFinal = widget.obra.textoFinal;
 
   String get _obraId => widget.obra.id;
+
+  @override
+  void initState() {
+    super.initState();
+    // Atajo «Gasto de caja»: se abre la salida en cuanto la caja está a la
+    // vista. Sin el módulo de caja no hay a dónde llevarla y no se abre nada.
+    if (widget.abrirSalida) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _pestanas.contains(PestanaObra.caja)) {
+          _movDialog('SALIDA');
+        }
+      });
+    }
+  }
 
   /// Guarda (o borra, con `null`) el párrafo propio del estado de cuenta.
   Future<void> _guardarTextoFinal(String? texto) async {

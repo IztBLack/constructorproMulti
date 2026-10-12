@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/format/format.dart';
 import '../../core/sync/cloud_providers.dart';
+import '../../core/widgets_inicio/widgets_inicio_service.dart';
 import '../../data/providers.dart';
 import '../../data/repositories_nota_obra.dart';
 import '../../domain/logic/notas_obra_calculo.dart';
@@ -19,14 +22,42 @@ import '../common/esqueleto.dart';
 /// Una nota por socio dentro de la obra. El alta pide solo el nombre y la
 /// fecha; los renglones se capturan dentro, porque crear la nota vacía no es la
 /// meta de nadie: es el paso previo a apuntar el trato.
-class NotasObraScreen extends ConsumerWidget {
-  const NotasObraScreen({super.key, required this.obraId, required this.obraNombre});
+class NotasObraScreen extends ConsumerStatefulWidget {
+  const NotasObraScreen({
+    super.key,
+    required this.obraId,
+    required this.obraNombre,
+    this.crearAlAbrir = false,
+  });
 
   final String obraId;
   final String obraNombre;
 
+  /// Abre de una vez el alta (atajo «Nota nueva» de la pantalla de inicio).
+  final bool crearAlAbrir;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NotasObraScreen> createState() => _NotasObraScreenState();
+}
+
+class _NotasObraScreenState extends ConsumerState<NotasObraScreen> {
+  String get obraId => widget.obraId;
+  String get obraNombre => widget.obraNombre;
+
+  @override
+  void initState() {
+    super.initState();
+    // Lo que el widget de avisos marcaba como «nuevo» ya se vio.
+    unawaited(ref.read(widgetsInicioProvider).marcarAvisosVistos());
+    if (widget.crearAlAbrir) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _nuevaNota(context, ref);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final notasAsync = ref.watch(notasDeObraProvider(obraId));
 
     return Scaffold(
