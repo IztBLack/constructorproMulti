@@ -100,6 +100,69 @@ class PartidaPrograma {
       );
 }
 
+/// Un reporte de garantía sin cerrar (etapa 3).
+class GarantiaAbierta {
+  const GarantiaAbierta({
+    required this.obraId,
+    required this.descripcion,
+    required this.estado,
+    required this.reportadoEn,
+    this.ubicacion = '',
+    this.programadoPara,
+  });
+  final String obraId;
+  final String descripcion;
+  final String ubicacion;
+
+  /// ABIERTO | EN_REVISION | PROGRAMADO
+  final String estado;
+  final int? programadoPara;
+  final int reportadoEn;
+
+  Map<String, Object?> toJson() => {
+        'o': obraId,
+        'd': descripcion,
+        'u': ubicacion,
+        'e': estado,
+        'p': programadoPara,
+        'r': reportadoEn,
+      };
+  static GarantiaAbierta fromJson(Map<String, dynamic> j) => GarantiaAbierta(
+        obraId: j['o'] as String,
+        descripcion: (j['d'] as String?) ?? '',
+        ubicacion: (j['u'] as String?) ?? '',
+        estado: (j['e'] as String?) ?? 'ABIERTO',
+        programadoPara: (j['p'] as num?)?.toInt(),
+        reportadoEn: (j['r'] as num?)?.toInt() ?? 0,
+      );
+}
+
+/// Una herramienta prestada que no ha regresado (etapa 3). Sin costo, nunca.
+class HerramientaPrestada {
+  const HerramientaPrestada({
+    required this.nombre,
+    required this.desde,
+    this.obraId,
+    this.quien = '',
+    this.devolverAntes,
+  });
+  final String nombre;
+  final String? obraId;
+  final String quien;
+  final int desde;
+  final int? devolverAntes;
+
+  Map<String, Object?> toJson() =>
+      {'n': nombre, 'o': obraId, 'q': quien, 'd': desde, 'v': devolverAntes};
+  static HerramientaPrestada fromJson(Map<String, dynamic> j) => HerramientaPrestada(
+        nombre: (j['n'] as String?) ?? '',
+        obraId: j['o'] as String?,
+        quien: (j['q'] as String?) ?? '',
+        desde: (j['d'] as num?)?.toInt() ?? 0,
+        devolverAntes: (j['v'] as num?)?.toInt(),
+      );
+}
+
 /// Lo que se bajó de la oficina en la última lectura.
 class DatosOficina {
   const DatosOficina({
@@ -108,7 +171,21 @@ class DatosOficina {
     this.recepciones = const [],
     this.partidas = const [],
     this.aprobaciones = const {},
+    this.revisiones = const [],
+    this.incidentes = const [],
+    this.garantias = const [],
+    this.herramientas = const [],
   });
+
+  // --- Etapa 3 ---
+  /// Revisiones diarias de seguridad recientes: (obraId, fecha).
+  final List<({String obraId, int fecha})> revisiones;
+
+  /// Incidentes de la última semana: SOLO obra, fecha y tipo. Ni nombres ni
+  /// nada de salud: eso no sale nunca a la pantalla de inicio.
+  final List<({String obraId, int fecha, String tipo})> incidentes;
+  final List<GarantiaAbierta> garantias;
+  final List<HerramientaPrestada> herramientas;
 
   /// Cuándo se leyó del servidor (epoch ms): lo que el widget llama
   /// «Actualizado».
@@ -129,6 +206,10 @@ class DatosOficina {
         'r': [for (final r in recepciones) {'o': r.obraId, 'f': r.fecha}],
         'g': [for (final g in partidas) g.toJson()],
         'a': aprobaciones,
+        'sv': [for (final r in revisiones) {'o': r.obraId, 'f': r.fecha}],
+        'in': [for (final i in incidentes) {'o': i.obraId, 'f': i.fecha, 't': i.tipo}],
+        'ga': [for (final g in garantias) g.toJson()],
+        'he': [for (final h in herramientas) h.toJson()],
       };
 
   static DatosOficina fromJson(Map<String, dynamic> j) => DatosOficina(
@@ -149,6 +230,26 @@ class DatosOficina {
           for (final e in ((j['a'] as Map?) ?? const {}).entries)
             e.key as String: (e.value as num).toInt(),
         },
+        revisiones: [
+          for (final r in (j['sv'] as List? ?? const []))
+            (obraId: (r as Map)['o'] as String, fecha: (r['f'] as num).toInt()),
+        ],
+        incidentes: [
+          for (final i in (j['in'] as List? ?? const []))
+            (
+              obraId: (i as Map)['o'] as String,
+              fecha: (i['f'] as num).toInt(),
+              tipo: (i['t'] as String?) ?? '',
+            ),
+        ],
+        garantias: [
+          for (final g in (j['ga'] as List? ?? const []))
+            GarantiaAbierta.fromJson((g as Map).cast<String, dynamic>()),
+        ],
+        herramientas: [
+          for (final h in (j['he'] as List? ?? const []))
+            HerramientaPrestada.fromJson((h as Map).cast<String, dynamic>()),
+        ],
       );
 }
 
@@ -288,6 +389,12 @@ Map<String, Object> llavesOficina({
     'mat_no': permisos.sinMaterial,
     'pr_no': permisos.sinPrograma,
     'ap_no': permisos.sinAprobar,
+    'sg_ok': permisos.seguridad,
+    'ga_ok': permisos.garantias,
+    'he_ok': permisos.herramienta,
+    'sg_no': permisos.sinSeguridad,
+    'ga_no': permisos.sinGarantias,
+    'he_no': permisos.sinHerramienta,
     'of_hay_datos': datos != null,
     'of_actualizado': datos == null ? '' : 'Actualizado ${cuandoCorto(datos.leidoEn, ahora)}',
     'mat_url': '$urlPortal/admin/compras',
@@ -298,6 +405,9 @@ Map<String, Object> llavesOficina({
     m['pr_atrasadas'] = 0;
     m['ap_total'] = 0;
     m['mat_llego'] = '';
+    m['sg_n'] = 0;
+    m['ga_n'] = 0;
+    m['he_n'] = 0;
     return m;
   }
 
@@ -364,5 +474,178 @@ Map<String, Object> llavesOficina({
   m['ap_url'] = (rol == null || rol == 'admin')
       ? '$urlPortal/admin/ajustes#aprobaciones'
       : '$urlPortal/admin/compras';
+
+  m.addAll(llavesEtapa3(
+    datos: datos,
+    ahora: ahora,
+    permisos: permisos,
+    obrasActivas: obrasActivas,
+  ));
+  return m;
+}
+
+// ---------------------------------------------------------------- Etapa 3
+
+const maxGarantias = 3;
+const maxHerramientas = 3;
+const maxObrasSinRevision = 3;
+
+String _recorta(String s, int max) {
+  final t = s.replaceAll(RegExp(r'\s+'), ' ').trim();
+  return t.length <= max ? t : '${t.substring(0, max - 1).trimRight()}…';
+}
+
+/// La revisión diaria de seguridad de hoy, por obra activa.
+({List<String> hechas, List<String> pendientes, int incidentes}) resumenSeguridad(
+  DatosOficina d,
+  DateTime ahora,
+  Map<String, String> obrasActivas,
+) {
+  final hoy = claveDiaMx(ahora.millisecondsSinceEpoch);
+  final conRevision = {
+    for (final r in d.revisiones)
+      if (claveDiaMx(r.fecha) == hoy) r.obraId,
+  };
+  final desde = ahora.subtract(const Duration(days: 7)).millisecondsSinceEpoch;
+  return (
+    hechas: [for (final id in obrasActivas.keys) if (conRevision.contains(id)) id],
+    pendientes: [for (final id in obrasActivas.keys) if (!conRevision.contains(id)) id],
+    incidentes: d.incidentes
+        .where((i) => obrasActivas.containsKey(i.obraId) && i.fecha >= desde)
+        .length,
+  );
+}
+
+/// Garantías por atender: lo programado para hoy primero, luego lo abierto
+/// más viejo (lleva más tiempo esperando), luego lo demás.
+List<GarantiaAbierta> garantiasVisibles(
+  DatosOficina d,
+  DateTime ahora,
+  Map<String, String> obrasActivas,
+) {
+  final hoy = claveDiaMx(ahora.millisecondsSinceEpoch);
+  int rango(GarantiaAbierta g) {
+    if (g.programadoPara != null && claveDiaMx(g.programadoPara!) == hoy) return 0;
+    if (g.estado == 'ABIERTO') return 1;
+    return 2;
+  }
+
+  // Las garantías se atienden en obras ya entregadas (que pueden no estar
+  // activas): se enseñan todas las que la RLS deja ver.
+  return [...d.garantias]..sort((a, b) {
+      final r = rango(a).compareTo(rango(b));
+      return r != 0 ? r : a.reportadoEn.compareTo(b.reportadoEn);
+    });
+}
+
+/// Herramienta fuera de la bodega: lo que ya debió regresar primero.
+List<HerramientaPrestada> herramientasVisibles(DatosOficina d, DateTime ahora) {
+  final hoy = claveDiaMx(ahora.millisecondsSinceEpoch);
+  bool vencida(HerramientaPrestada h) =>
+      h.devolverAntes != null && claveDiaMx(h.devolverAntes!).compareTo(hoy) < 0;
+  return [...d.herramientas]..sort((a, b) {
+      final va = vencida(a) ? 0 : 1, vb = vencida(b) ? 0 : 1;
+      if (va != vb) return va.compareTo(vb);
+      final fa = a.devolverAntes ?? 1 << 52, fb = b.devolverAntes ?? 1 << 52;
+      final f = fa.compareTo(fb);
+      return f != 0 ? f : a.desde.compareTo(b.desde);
+    });
+}
+
+Map<String, Object> llavesEtapa3({
+  required DatosOficina datos,
+  required DateTime ahora,
+  required PermisosWidgets permisos,
+  required Map<String, String> obrasActivas,
+}) {
+  final m = <String, Object>{};
+  final hoy = claveDiaMx(ahora.millisecondsSinceEpoch);
+
+  // --- Seguridad de hoy ---
+  final s = permisos.seguridad
+      ? resumenSeguridad(datos, ahora, obrasActivas)
+      : (hechas: const <String>[], pendientes: const <String>[], incidentes: 0);
+  final totalObras = s.hechas.length + s.pendientes.length;
+  m['sg_resumen'] = totalObras == 0
+      ? 'Sin obras activas.'
+      : s.pendientes.isEmpty
+          ? 'Revisión hecha en todas las obras'
+          : 'Revisión hecha en ${s.hechas.length} de $totalObras obras';
+  m['sg_pendientes'] = s.pendientes.length;
+  final sinRevision = s.pendientes.take(maxObrasSinRevision).toList();
+  m['sg_n'] = sinRevision.length;
+  for (var i = 0; i < sinRevision.length; i++) {
+    final id = sinRevision[i];
+    m['sg${i}_que'] = obrasActivas[id] ?? '';
+    m['sg${i}_cuando'] = 'Sin revisión diaria hoy';
+    m['sg${i}_estado'] = 'Pendiente';
+    m['sg${i}_tono'] = 'ambar';
+    m['sg${i}_url'] = '$urlPortal/admin/obras/$id/seguridad';
+  }
+  // Solo cuántos: ni a quién ni qué le pasó.
+  m['sg_incidentes'] = s.incidentes == 0
+      ? ''
+      : (s.incidentes == 1
+          ? '1 incidente en los últimos 7 días'
+          : '${s.incidentes} incidentes en los últimos 7 días');
+
+  // --- Garantías ---
+  final garantias = permisos.garantias
+      ? garantiasVisibles(datos, ahora, obrasActivas)
+      : const <GarantiaAbierta>[];
+  m['ga_total'] = garantias.length;
+  m['ga_hoy'] = garantias
+      .where((g) => g.programadoPara != null && claveDiaMx(g.programadoPara!) == hoy)
+      .length;
+  final mostradas = garantias.take(maxGarantias).toList();
+  m['ga_n'] = mostradas.length;
+  for (var i = 0; i < mostradas.length; i++) {
+    final g = mostradas[i];
+    final obra = obrasActivas[g.obraId] ?? '';
+    final esHoy = g.programadoPara != null && claveDiaMx(g.programadoPara!) == hoy;
+    final (etiqueta, tono) = switch (g.estado) {
+      _ when esHoy => ('Hoy', 'verde'),
+      'PROGRAMADO' => ('Programada', 'verde'),
+      'EN_REVISION' => ('En revisión', 'azul'),
+      _ => ('Abierta', 'ambar'),
+    };
+    final donde = [
+      if (g.ubicacion.trim().isNotEmpty) g.ubicacion.trim(),
+      if (obra.isNotEmpty) obra,
+    ].join(' · ');
+    m['ga${i}_que'] = _recorta(g.descripcion, 60);
+    m['ga${i}_cuando'] = g.programadoPara != null && !esHoy
+        ? 'Programada el ${_texto(_deClave(claveDiaMx(g.programadoPara!)))}${donde.isEmpty ? '' : ' · $donde'}'
+        : (donde.isEmpty ? 'Reportada ${cuandoCorto(g.reportadoEn, ahora)}' : donde);
+    m['ga${i}_estado'] = etiqueta;
+    m['ga${i}_tono'] = tono;
+    m['ga${i}_url'] = '$urlPortal/admin/postventa';
+  }
+
+  // --- Herramienta en obra ---
+  final herramientas = permisos.herramienta
+      ? herramientasVisibles(datos, ahora)
+      : const <HerramientaPrestada>[];
+  bool vencida(HerramientaPrestada h) =>
+      h.devolverAntes != null && claveDiaMx(h.devolverAntes!).compareTo(hoy) < 0;
+  m['he_total'] = herramientas.length;
+  m['he_vencidas'] = herramientas.where(vencida).length;
+  final prestadas = herramientas.take(maxHerramientas).toList();
+  m['he_n'] = prestadas.length;
+  for (var i = 0; i < prestadas.length; i++) {
+    final h = prestadas[i];
+    final obra = h.obraId == null ? 'Sin obra' : (obrasActivas[h.obraId] ?? 'Otra obra');
+    final quien = h.quien.trim();
+    final (etiqueta, tono) = vencida(h)
+        ? ('Ya debió volver', 'rojo')
+        : (h.devolverAntes != null
+            ? ('Hasta el ${_texto(_deClave(claveDiaMx(h.devolverAntes!)))}', 'ambar')
+            : ('En obra', 'verde'));
+    m['he${i}_que'] = h.nombre.trim();
+    m['he${i}_cuando'] = quien.isEmpty ? obra : '$obra · la tiene $quien';
+    m['he${i}_estado'] = etiqueta;
+    m['he${i}_tono'] = tono;
+    m['he${i}_url'] = '$urlPortal/admin/herramienta';
+  }
   return m;
 }

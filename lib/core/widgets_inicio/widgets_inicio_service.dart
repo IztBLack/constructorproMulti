@@ -42,6 +42,10 @@ const proveedoresWidgets = [
   'MaterialWidget',
   'ProgramaWidget',
   'PorAprobarWidget',
+  // Etapa 3
+  'SeguridadWidget',
+  'GarantiasWidget',
+  'HerramientaWidget',
 ];
 
 class WidgetsInicioController {
@@ -86,7 +90,13 @@ class WidgetsInicioController {
       rol: _ref.read(rolUsuarioProvider).asData?.value,
       usa: _ref.read(modulosProvider).usa,
     );
-    if (usuario == null || !(p.material || p.programa || p.porAprobar)) return;
+    final alguno = p.material ||
+        p.programa ||
+        p.porAprobar ||
+        p.seguridad ||
+        p.garantias ||
+        p.herramienta;
+    if (usuario == null || !alguno) return;
     final nuevo = await _oficina.refrescar(
       empresaId: _ref.read(empresaIdProvider),
       usuarioId: usuario.id,

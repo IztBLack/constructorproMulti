@@ -14,4 +14,10 @@
     <string name="widget_programa_desc">Lo que empieza, lo que termina y lo que va atrasado del programa.</string>
     <string name="widget_aprobar_nombre">Por aprobar</string>
     <string name="widget_aprobar_desc">Cuántos pedidos, extras y estimaciones esperan tu visto bueno.</string>
+    <string name="widget_seguridad_nombre">Seguridad de hoy</string>
+    <string name="widget_seguridad_desc">En qué obras falta la revisión diaria y cuántos incidentes hubo en la semana.</string>
+    <string name="widget_garantias_nombre">Garantías abiertas</string>
+    <string name="widget_garantias_desc">Lo que reportaron los clientes y está por atenderse, con lo programado para hoy primero.</string>
+    <string name="widget_herramienta_nombre">Herramienta en obra</string>
+    <string name="widget_herramienta_desc">Qué herramienta anda fuera, quién la tiene y cuál ya debió regresar.</string>
 </resources>

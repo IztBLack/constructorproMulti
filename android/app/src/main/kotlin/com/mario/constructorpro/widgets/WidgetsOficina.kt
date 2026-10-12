@@ -168,3 +168,104 @@ class PorAprobarWidget : HomeWidgetProvider() {
         v.setTextViewText(R.id.ap_actualizado, texto(p, "of_actualizado"))
     }
 }
+
+// ---------------------------------------------------------------- Etapa 3
+
+/** «Seguridad de hoy» (4×2): obras sin revisión diaria e incidentes de la semana. */
+class SeguridadWidget : HomeWidgetProvider() {
+    override fun onUpdate(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetIds: IntArray,
+        widgetData: SharedPreferences,
+    ) = pintarCada(context, appWidgetManager, appWidgetIds, R.layout.widget_seguridad) { v ->
+        pintar(context, v, widgetData)
+    }
+
+    private val filas = listOf(
+        listOf(R.id.sg0, R.id.sg0_que, R.id.sg0_cuando, R.id.sg0_estado),
+        listOf(R.id.sg1, R.id.sg1_que, R.id.sg1_cuando, R.id.sg1_estado),
+        listOf(R.id.sg2, R.id.sg2_que, R.id.sg2_cuando, R.id.sg2_estado),
+    )
+
+    private fun pintar(c: Context, v: RemoteViews, p: SharedPreferences) {
+        if (pintarMensaje(c, v, p, R.id.sg_contenido, R.id.sg_mensaje, si(p, "sg_ok"), texto(p, "sg_no"))) return
+        if (sinDatosOficina(c, v, p, R.id.sg_contenido, R.id.sg_mensaje)) return
+        v.setOnClickPendingIntent(R.id.sg_raiz, abrirApp(c))
+
+        // La revisión es de HOY: con la foto de ayer no se sabe cuáles faltan.
+        if (deOtroDia(p)) {
+            v.setTextViewText(R.id.sg_resumen, "Abre la app para ver la revisión de hoy")
+            filas.forEach { mostrar(v, it[0], false) }
+        } else {
+            v.setTextViewText(R.id.sg_resumen, texto(p, "sg_resumen"))
+            pintarFilas(c, v, p, "sg", filas)
+        }
+        val incidentes = texto(p, "sg_incidentes")
+        mostrar(v, R.id.sg_incidentes, incidentes.isNotEmpty())
+        v.setTextViewText(R.id.sg_incidentes, incidentes)
+        v.setTextViewText(R.id.sg_actualizado, texto(p, "of_actualizado"))
+    }
+}
+
+/** «Garantías abiertas» (4×2): lo de hoy primero, luego lo que más espera. */
+class GarantiasWidget : HomeWidgetProvider() {
+    override fun onUpdate(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetIds: IntArray,
+        widgetData: SharedPreferences,
+    ) = pintarCada(context, appWidgetManager, appWidgetIds, R.layout.widget_garantias) { v ->
+        pintar(context, v, widgetData)
+    }
+
+    private val filas = listOf(
+        listOf(R.id.ga0, R.id.ga0_que, R.id.ga0_cuando, R.id.ga0_estado),
+        listOf(R.id.ga1, R.id.ga1_que, R.id.ga1_cuando, R.id.ga1_estado),
+        listOf(R.id.ga2, R.id.ga2_que, R.id.ga2_cuando, R.id.ga2_estado),
+    )
+
+    private fun pintar(c: Context, v: RemoteViews, p: SharedPreferences) {
+        if (pintarMensaje(c, v, p, R.id.ga_contenido, R.id.ga_mensaje, si(p, "ga_ok"), texto(p, "ga_no"))) return
+        if (sinDatosOficina(c, v, p, R.id.ga_contenido, R.id.ga_mensaje)) return
+        v.setOnClickPendingIntent(R.id.ga_raiz, abrirWeb(c, "https://constructorpro-tawny.vercel.app/admin/postventa"))
+
+        val total = entero(p, "ga_total")
+        mostrar(v, R.id.ga_total, total > 0)
+        v.setTextViewText(R.id.ga_total, total.toString())
+        val n = pintarFilas(c, v, p, "ga", filas)
+        mostrar(v, R.id.ga_vacio, n == 0)
+        v.setTextViewText(R.id.ga_actualizado, texto(p, "of_actualizado"))
+    }
+}
+
+/** «Herramienta en obra» (4×2): qué anda fuera, quién la tiene, cuál ya debió volver. */
+class HerramientaWidget : HomeWidgetProvider() {
+    override fun onUpdate(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetIds: IntArray,
+        widgetData: SharedPreferences,
+    ) = pintarCada(context, appWidgetManager, appWidgetIds, R.layout.widget_herramienta) { v ->
+        pintar(context, v, widgetData)
+    }
+
+    private val filas = listOf(
+        listOf(R.id.he0, R.id.he0_que, R.id.he0_cuando, R.id.he0_estado),
+        listOf(R.id.he1, R.id.he1_que, R.id.he1_cuando, R.id.he1_estado),
+        listOf(R.id.he2, R.id.he2_que, R.id.he2_cuando, R.id.he2_estado),
+    )
+
+    private fun pintar(c: Context, v: RemoteViews, p: SharedPreferences) {
+        if (pintarMensaje(c, v, p, R.id.he_contenido, R.id.he_mensaje, si(p, "he_ok"), texto(p, "he_no"))) return
+        if (sinDatosOficina(c, v, p, R.id.he_contenido, R.id.he_mensaje)) return
+        v.setOnClickPendingIntent(R.id.he_raiz, abrirWeb(c, "https://constructorpro-tawny.vercel.app/admin/herramienta"))
+
+        val vencidas = entero(p, "he_vencidas")
+        mostrar(v, R.id.he_vencidas, vencidas > 0)
+        v.setTextViewText(R.id.he_vencidas, if (vencidas == 1) "1 por regresar" else "$vencidas por regresar")
+        val n = pintarFilas(c, v, p, "he", filas)
+        mostrar(v, R.id.he_vacio, n == 0)
+        v.setTextViewText(R.id.he_actualizado, texto(p, "of_actualizado"))
+    }
+}

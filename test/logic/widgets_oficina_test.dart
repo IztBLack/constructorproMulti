@@ -253,4 +253,92 @@ void main() {
       expect(sinRed.leerCache(empresaId: 'e1', usuarioId: 'u1')!.aprobaciones, {'EXTRA': 1});
     });
   });
+
+  group('etapa 3', () {
+    Map<String, Object> llaves(DatosOficina d, [String rol = 'admin']) => llavesOficina(
+        datos: d, ahora: ahora, permisos: permisos(rol), obrasActivas: obras, rol: rol);
+
+    test('seguridad: cuáles obras no tienen la revisión de hoy; incidentes solo contados', () {
+      final m = llaves(DatosOficina(
+        leidoEn: 0,
+        revisiones: [
+          (obraId: 'o1', fecha: dia(14)),
+          (obraId: 'o2', fecha: dia(13)), // fue ayer: hoy falta
+        ],
+        incidentes: [
+          (obraId: 'o1', fecha: dia(12), tipo: 'CASI_ACCIDENTE'),
+          (obraId: 'o1', fecha: dia(1), tipo: 'ACCIDENTE'), // de hace dos semanas
+        ],
+      ));
+      expect(m['sg_resumen'], 'Revisión hecha en 1 de 2 obras');
+      expect(m['sg_n'], 1);
+      expect(m['sg0_que'], 'Boticaria');
+      expect(m['sg0_url'], '$urlPortal/admin/obras/o2/seguridad');
+      expect(m['sg_incidentes'], '1 incidente en los últimos 7 días');
+    });
+
+    test('garantías: lo programado para hoy primero, luego lo abierto más viejo', () {
+      final m = llaves(DatosOficina(leidoEn: 0, garantias: [
+        GarantiaAbierta(
+            obraId: 'o1', descripcion: 'Humedad en baño', estado: 'ABIERTO', reportadoEn: dia(10), ubicacion: 'Casa 4'),
+        GarantiaAbierta(
+            obraId: 'o1', descripcion: 'Puerta no cierra', estado: 'EN_REVISION', reportadoEn: dia(1)),
+        GarantiaAbierta(
+            obraId: 'o2',
+            descripcion: 'Fuga',
+            estado: 'PROGRAMADO',
+            reportadoEn: dia(12),
+            programadoPara: dia(14)),
+      ]));
+      expect(m['ga_total'], 3);
+      expect(m['ga_hoy'], 1);
+      expect([m['ga0_que'], m['ga1_que'], m['ga2_que']], ['Fuga', 'Humedad en baño', 'Puerta no cierra']);
+      expect(m['ga0_estado'], 'Hoy');
+      expect(m['ga1_cuando'], 'Casa 4 · Casas Bienestar');
+      expect(m['ga2_estado'], 'En revisión');
+    });
+
+    test('herramienta: la que ya debió volver primero; nunca el costo', () {
+      final m = llaves(DatosOficina(leidoEn: 0, herramientas: [
+        HerramientaPrestada(nombre: 'Revolvedora', obraId: 'o1', quien: 'Juan', desde: dia(1)),
+        HerramientaPrestada(nombre: 'Rotomartillo', obraId: 'o2', desde: dia(5), devolverAntes: dia(10)),
+        HerramientaPrestada(nombre: 'Andamio', obraId: 'o1', desde: dia(8), devolverAntes: dia(16)),
+      ]));
+      expect(m['he_total'], 3);
+      expect(m['he_vencidas'], 1);
+      expect(m['he0_que'], 'Rotomartillo');
+      expect(m['he0_estado'], 'Ya debió volver');
+      expect(m['he0_tono'], 'rojo');
+      expect(m['he1_estado'], 'Hasta el vie 16 de oct');
+      expect(m['he2_cuando'], 'Casas Bienestar · la tiene Juan');
+      for (final v in m.values.whereType<String>()) {
+        expect(v.contains(r'$'), isFalse, reason: v);
+      }
+    });
+
+    test('permisos: el almacén ve la herramienta; sin el módulo dice cuál prender', () {
+      expect(permisos('almacen').herramienta, isTrue);
+      expect(permisos('almacen').seguridad, isFalse);
+      final p = permisosWidgets(rol: 'admin', usa: (c) => c != ClaveModulo.postventa);
+      expect(p.garantias, isFalse);
+      expect(p.sinGarantias, contains('«Garantías»'));
+    });
+
+    test('lo de la etapa 3 sobrevive la ida y vuelta por JSON', () {
+      final d = DatosOficina(
+        leidoEn: 1,
+        revisiones: [(obraId: 'o1', fecha: dia(14))],
+        incidentes: [(obraId: 'o1', fecha: dia(13), tipo: 'ACCIDENTE')],
+        garantias: [GarantiaAbierta(obraId: 'o1', descripcion: 'x', estado: 'ABIERTO', reportadoEn: 5)],
+        herramientas: [HerramientaPrestada(nombre: 'Taladro', desde: 3, devolverAntes: 9)],
+      );
+      final v = DatosOficina.fromJson(d.toJson().cast<String, dynamic>());
+      expect(v.revisiones.single.obraId, 'o1');
+      expect(v.incidentes.single.tipo, 'ACCIDENTE');
+      expect(v.garantias.single.descripcion, 'x');
+      expect(v.herramientas.single.devolverAntes, 9);
+      // Una caché vieja (sin las llaves nuevas) se lee sin tronar.
+      expect(DatosOficina.fromJson({'l': 1}).herramientas, isEmpty);
+    });
+  });
 }

@@ -56,6 +56,56 @@ Future<DatosOficina> _leerDeSupabase(DateTime ahora) async {
       .isFilter('deleted_at', null)
       .limit(300);
 
+  // --- Etapa 3. Cada lectura por separado: si una falla (un rol sin permiso
+  // que el servidor rechaza en vez de filtrar), las demás siguen. Si no hay
+  // red, ya falló lo de arriba y se conservó lo guardado.
+  Future<List<Map<String, dynamic>>> opcional(
+      Future<List<Map<String, dynamic>>> Function() leer, String que) async {
+    try {
+      return await leer();
+    } catch (e) {
+      debugPrint('[datos_oficina] $que: $e');
+      return const [];
+    }
+  }
+
+  final hace2 = ahora.subtract(const Duration(days: 2)).millisecondsSinceEpoch;
+  final hace8 = ahora.subtract(const Duration(days: 8)).millisecondsSinceEpoch;
+  final revisiones = await opcional(
+      () => db
+          .from('seguridad_checklist')
+          .select('obra_id, fecha')
+          .isFilter('deleted_at', null)
+          .gte('fecha', hace2)
+          .limit(300),
+      'seguridad');
+  // Del incidente SOLO obra, fecha y tipo: ni quién ni qué pasó.
+  final incidentes = await opcional(
+      () => db
+          .from('incidente')
+          .select('obra_id, fecha, tipo')
+          .isFilter('deleted_at', null)
+          .gte('fecha', hace8)
+          .limit(300),
+      'incidentes');
+  final garantias = await opcional(
+      () => db
+          .from('garantia_reporte')
+          .select('obra_id, descripcion, ubicacion, estado, programado_para, reportado_en')
+          .isFilter('deleted_at', null)
+          .inFilter('estado', ['ABIERTO', 'EN_REVISION', 'PROGRAMADO'])
+          .limit(100),
+      'garantías');
+  // Del préstamo, sin costo de la herramienta.
+  final prestamos = await opcional(
+      () => db
+          .from('herramienta_asignacion')
+          .select('obra_id, desde, devolver_antes, recibio_nombre, herramienta(nombre, deleted_at)')
+          .isFilter('deleted_at', null)
+          .isFilter('hasta', null)
+          .limit(300),
+      'herramienta');
+
   final porTipo = <String, int>{};
   for (final a in aprob) {
     final t = a['tipo'] as String? ?? '';
@@ -106,6 +156,40 @@ Future<DatosOficina> _leerDeSupabase(DateTime ahora) async {
         ),
     ],
     aprobaciones: porTipo,
+    revisiones: [
+      for (final r in revisiones)
+        (obraId: r['obra_id'] as String, fecha: (r['fecha'] as num).toInt()),
+    ],
+    incidentes: [
+      for (final i in incidentes)
+        (
+          obraId: i['obra_id'] as String,
+          fecha: (i['fecha'] as num).toInt(),
+          tipo: i['tipo'] as String? ?? '',
+        ),
+    ],
+    garantias: [
+      for (final g in garantias)
+        GarantiaAbierta(
+          obraId: g['obra_id'] as String,
+          descripcion: g['descripcion'] as String? ?? '',
+          ubicacion: g['ubicacion'] as String? ?? '',
+          estado: g['estado'] as String? ?? 'ABIERTO',
+          programadoPara: (g['programado_para'] as num?)?.toInt(),
+          reportadoEn: (g['reportado_en'] as num?)?.toInt() ?? 0,
+        ),
+    ],
+    herramientas: [
+      for (final h in prestamos)
+        if (h['herramienta'] is Map && (h['herramienta'] as Map)['deleted_at'] == null)
+          HerramientaPrestada(
+            nombre: (h['herramienta'] as Map)['nombre'] as String? ?? '',
+            obraId: h['obra_id'] as String?,
+            quien: h['recibio_nombre'] as String? ?? '',
+            desde: (h['desde'] as num?)?.toInt() ?? 0,
+            devolverAntes: (h['devolver_antes'] as num?)?.toInt(),
+          ),
+    ],
   );
 }
 

@@ -46,7 +46,21 @@ class PermisosWidgets {
     this.sinMaterial = '',
     this.sinPrograma = '',
     this.sinAprobar = '',
+    this.seguridad = false,
+    this.garantias = false,
+    this.herramienta = false,
+    this.sinSeguridad = '',
+    this.sinGarantias = '',
+    this.sinHerramienta = '',
   });
+
+  // --- Etapa 3 ---
+  final bool seguridad;
+  final bool garantias;
+  final bool herramienta;
+  final String sinSeguridad;
+  final String sinGarantias;
+  final String sinHerramienta;
 
   /// Por qué NO se enseña (vacío si sí): el widget lo dice en vez de un
   /// «no disponible» que no explica nada. Casi siempre es un módulo apagado.
@@ -121,6 +135,19 @@ PermisosWidgets permisosWidgets({
     sinAprobar: !aprobarRol
         ? 'Solo el administrador y el supervisor ven lo que espera visto bueno.'
         : (aprobarModulo ? '' : prende('Compras, Extras o Estimaciones')),
+    seguridad: usa(ClaveModulo.seguridad) && campo,
+    garantias: usa(ClaveModulo.postventa) && campo,
+    // El almacén SÍ: prestar y recibir herramienta es su trabajo.
+    herramienta: usa(ClaveModulo.herramienta) && materialRol,
+    sinSeguridad: !campo
+        ? noRol
+        : (usa(ClaveModulo.seguridad) ? '' : prende('«Seguridad en obra»')),
+    sinGarantias: !campo
+        ? noRol
+        : (usa(ClaveModulo.postventa) ? '' : prende('«Garantías»')),
+    sinHerramienta: !materialRol
+        ? noRol
+        : (usa(ClaveModulo.herramienta) ? '' : prende('«Herramienta y maquinaria»')),
   );
 }
 
@@ -505,4 +532,10 @@ Map<String, Object> llavesWidgetsVacias(DateTime ahora) => {
       'mat_n': 0,
       'pr_n': 0,
       'ap_total': 0,
+      'sg_ok': false,
+      'ga_ok': false,
+      'he_ok': false,
+      'sg_n': 0,
+      'ga_n': 0,
+      'he_n': 0,
     };
