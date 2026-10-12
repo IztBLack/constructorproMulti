@@ -91,7 +91,8 @@ Future<DatosOficina> _leerDeSupabase(DateTime ahora) async {
   final garantias = await opcional(
       () => db
           .from('garantia_reporte')
-          .select('obra_id, descripcion, ubicacion, estado, programado_para, reportado_en')
+          .select('obra_id, descripcion, ubicacion, estado, programado_para, reportado_en, '
+              'obras(nombre)')
           .isFilter('deleted_at', null)
           .inFilter('estado', ['ABIERTO', 'EN_REVISION', 'PROGRAMADO'])
           .limit(100),
@@ -177,6 +178,7 @@ Future<DatosOficina> _leerDeSupabase(DateTime ahora) async {
           estado: g['estado'] as String? ?? 'ABIERTO',
           programadoPara: (g['programado_para'] as num?)?.toInt(),
           reportadoEn: (g['reportado_en'] as num?)?.toInt() ?? 0,
+          obraNombre: (g['obras'] is Map ? (g['obras'] as Map)['nombre'] as String? : null) ?? '',
         ),
     ],
     herramientas: [

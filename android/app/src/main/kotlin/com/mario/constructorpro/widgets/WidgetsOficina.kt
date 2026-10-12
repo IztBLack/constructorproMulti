@@ -204,7 +204,8 @@ class SeguridadWidget : HomeWidgetProvider() {
         val incidentes = texto(p, "sg_incidentes")
         mostrar(v, R.id.sg_incidentes, incidentes.isNotEmpty())
         v.setTextViewText(R.id.sg_incidentes, incidentes)
-        v.setTextViewText(R.id.sg_actualizado, texto(p, "of_actualizado"))
+        // En 4x2 no cabe el pie: el resumen ya dice cómo va el día.
+        mostrar(v, R.id.sg_actualizado, false)
     }
 }
 

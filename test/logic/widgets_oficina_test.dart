@@ -143,7 +143,9 @@ void main() {
       expect(m['pr0_estado'], 'Atrasada');
       expect(m['pr0_cuando'], 'Debía terminar el vie 9 de oct');
       expect(m['pr1_cuando'], 'Empieza el jue 15 de oct');
-      expect(m['pr2_cuando'], 'Termina el vie 16 de oct');
+      // En 4x2 caben dos filas: la tercera no se manda.
+      expect(m['pr_n'], 2);
+      expect(m.containsKey('pr2_cuando'), isFalse);
       expect(m['pr0_url'], '$urlPortal/admin/obras/o1/programa');
     });
   });
@@ -292,10 +294,10 @@ void main() {
       ]));
       expect(m['ga_total'], 3);
       expect(m['ga_hoy'], 1);
-      expect([m['ga0_que'], m['ga1_que'], m['ga2_que']], ['Fuga', 'Humedad en baño', 'Puerta no cierra']);
+      expect([m['ga0_que'], m['ga1_que']], ['Fuga', 'Humedad en baño']);
+      expect(m['ga_n'], 2);
       expect(m['ga0_estado'], 'Hoy');
       expect(m['ga1_cuando'], 'Casa 4 · Casas Bienestar');
-      expect(m['ga2_estado'], 'En revisión');
     });
 
     test('herramienta: la que ya debió volver primero; nunca el costo', () {
@@ -310,7 +312,9 @@ void main() {
       expect(m['he0_estado'], 'Ya debió volver');
       expect(m['he0_tono'], 'rojo');
       expect(m['he1_estado'], 'Hasta el vie 16 de oct');
-      expect(m['he2_cuando'], 'Casas Bienestar · la tiene Juan');
+      expect(herramientasVisibles(DatosOficina(leidoEn: 0, herramientas: [
+        HerramientaPrestada(nombre: 'Revolvedora', obraId: 'o1', quien: 'Juan', desde: dia(1)),
+      ]), ahora).length, 1);
       for (final v in m.values.whereType<String>()) {
         expect(v.contains(r'$'), isFalse, reason: v);
       }
@@ -340,5 +344,35 @@ void main() {
       // Una caché vieja (sin las llaves nuevas) se lee sin tronar.
       expect(DatosOficina.fromJson({'l': 1}).herramientas, isEmpty);
     });
+  });
+
+  group('hora del pase de lista', () {
+    test('solo se enseña si la captura cayó hoy', () {
+      expect(horaDeHoy(DateTime(2026, 10, 14, 7, 5).millisecondsSinceEpoch, ahora), '7:05');
+      // Hora de alta en 0 (asistencias viejas): antes salía «tomado 18:00».
+      expect(horaDeHoy(0, ahora), isNull);
+      expect(horaDeHoy(null, ahora), isNull);
+      expect(horaDeHoy(DateTime(2026, 10, 13, 18).millisecondsSinceEpoch, ahora), isNull);
+    });
+  });
+
+  test('material: con «hoy llegó» solo cabe un pedido; garantía de obra entregada lleva su nombre', () {
+    final m = llavesOficina(
+      datos: DatosOficina(
+        leidoEn: 0,
+        pedidos: [pedido('PENDIENTE', folio: 1), pedido('APROBADA', folio: 2)],
+        recepciones: [(obraId: 'o1', fecha: dia(14))],
+        garantias: [
+          GarantiaAbierta(
+              obraId: 'o9', obraNombre: 'Bodega Mitras', descripcion: 'Grieta', estado: 'ABIERTO', reportadoEn: 1, ubicacion: 'Andén 2'),
+        ],
+      ),
+      ahora: ahora,
+      permisos: permisos('admin'),
+      obrasActivas: obras,
+      rol: 'admin',
+    );
+    expect(m['mat_n'], 1);
+    expect(m['ga0_cuando'], 'Andén 2 · Bodega Mitras');
   });
 }

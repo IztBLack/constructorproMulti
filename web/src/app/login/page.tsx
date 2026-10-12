@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { destinoTrasLogin } from '@/lib/auth/siguiente';
 import { createClient } from '@/lib/supabase/client';
 import { Button, Field, Input } from '@/components/ui';
 import Link from 'next/link';
@@ -129,7 +130,8 @@ function LoginInner() {
     }
 
     const userId = signInData.user?.id;
-    const destino = userId ? await resolverDestino(supabase, userId) : '/admin';
+    const porRol = userId ? await resolverDestino(supabase, userId) : '/admin';
+    const destino = destinoTrasLogin(porRol, searchParams.get('next'));
     setLoading(false);
     router.push(destino);
     router.refresh();

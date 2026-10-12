@@ -109,8 +109,13 @@ class GarantiaAbierta {
     required this.reportadoEn,
     this.ubicacion = '',
     this.programadoPara,
+    this.obraNombre = '',
   });
   final String obraId;
+
+  /// Nombre de la obra (viene en la lectura: suele ser una obra ya entregada,
+  /// que no está entre las activas).
+  final String obraNombre;
   final String descripcion;
   final String ubicacion;
 
@@ -126,6 +131,7 @@ class GarantiaAbierta {
         'e': estado,
         'p': programadoPara,
         'r': reportadoEn,
+        'n': obraNombre,
       };
   static GarantiaAbierta fromJson(Map<String, dynamic> j) => GarantiaAbierta(
         obraId: j['o'] as String,
@@ -134,6 +140,7 @@ class GarantiaAbierta {
         estado: (j['e'] as String?) ?? 'ABIERTO',
         programadoPara: (j['p'] as num?)?.toInt(),
         reportadoEn: (j['r'] as num?)?.toInt() ?? 0,
+        obraNombre: (j['n'] as String?) ?? '',
       );
 }
 
@@ -253,8 +260,9 @@ class DatosOficina {
       );
 }
 
-const maxPedidos = 3;
-const maxPartidas = 3;
+// En un widget 4x2 caben dos filas con su pie; una tercera se corta.
+const maxPedidos = 2;
+const maxPartidas = 2;
 
 final _cantidad = NumberFormat('#,##0.##', 'es_MX');
 final _diaMes = DateFormat("EEE d 'de' MMM", 'es_MX');
@@ -412,8 +420,17 @@ Map<String, Object> llavesOficina({
   }
 
   // --- Material ---
+  final hoyMat = claveDiaMx(ahora.millisecondsSinceEpoch);
+  final llegoA = {
+    for (final r in datos.recepciones)
+      if (claveDiaMx(r.fecha) == hoyMat && obrasActivas.containsKey(r.obraId))
+        obrasActivas[r.obraId]!,
+  };
+  final hayLlego = permisos.material && llegoA.isNotEmpty;
   final pedidos = permisos.material
-      ? pedidosVisibles(datos, ahora, obrasActivas).take(maxPedidos).toList()
+      ? pedidosVisibles(datos, ahora, obrasActivas)
+          .take(hayLlego ? 1 : maxPedidos)
+          .toList()
       : const <PedidoMaterial>[];
   m['mat_n'] = pedidos.length;
   for (var i = 0; i < pedidos.length; i++) {
@@ -428,15 +445,7 @@ Map<String, Object> llavesOficina({
     m['mat${i}_tono'] = e.tono;
     m['mat${i}_url'] = '$urlPortal/admin/obras/${p.obraId}/material';
   }
-  final hoy = claveDiaMx(ahora.millisecondsSinceEpoch);
-  final llegoA = {
-    for (final r in datos.recepciones)
-      if (claveDiaMx(r.fecha) == hoy && obrasActivas.containsKey(r.obraId))
-        obrasActivas[r.obraId]!,
-  };
-  m['mat_llego'] = !permisos.material || llegoA.isEmpty
-      ? ''
-      : 'Hoy llegó material a ${llegoA.join(', ')}';
+  m['mat_llego'] = hayLlego ? 'Hoy llegó material a ${llegoA.join(', ')}' : '';
 
   // --- Lo que toca esta semana ---
   final partidas = permisos.programa
@@ -486,9 +495,9 @@ Map<String, Object> llavesOficina({
 
 // ---------------------------------------------------------------- Etapa 3
 
-const maxGarantias = 3;
-const maxHerramientas = 3;
-const maxObrasSinRevision = 3;
+const maxGarantias = 2;
+const maxHerramientas = 2;
+const maxObrasSinRevision = 2;
 
 String _recorta(String s, int max) {
   final t = s.replaceAll(RegExp(r'\s+'), ' ').trim();
@@ -572,7 +581,8 @@ Map<String, Object> llavesEtapa3({
           ? 'Revisión hecha en todas las obras'
           : 'Revisión hecha en ${s.hechas.length} de $totalObras obras';
   m['sg_pendientes'] = s.pendientes.length;
-  final sinRevision = s.pendientes.take(maxObrasSinRevision).toList();
+  final sinRevision =
+      s.pendientes.take(s.incidentes > 0 ? 1 : maxObrasSinRevision).toList();
   m['sg_n'] = sinRevision.length;
   for (var i = 0; i < sinRevision.length; i++) {
     final id = sinRevision[i];
@@ -601,7 +611,7 @@ Map<String, Object> llavesEtapa3({
   m['ga_n'] = mostradas.length;
   for (var i = 0; i < mostradas.length; i++) {
     final g = mostradas[i];
-    final obra = obrasActivas[g.obraId] ?? '';
+    final obra = obrasActivas[g.obraId] ?? g.obraNombre;
     final esHoy = g.programadoPara != null && claveDiaMx(g.programadoPara!) == hoy;
     final (etiqueta, tono) = switch (g.estado) {
       _ when esHoy => ('Hoy', 'verde'),

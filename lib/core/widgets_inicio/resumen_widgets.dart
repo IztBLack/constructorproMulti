@@ -354,6 +354,16 @@ ConteoObra? obraPrincipal(EntradaWidgets e) {
 final _hora = DateFormat('H:mm', 'es_MX');
 final _diaCorto = DateFormat('EEE', 'es_MX');
 
+/// La hora de una captura, solo si cayó HOY. Las asistencias viejas o bajadas
+/// de la web pueden traer la hora de alta en 0: sin esto el widget decía
+/// «tomado 18:00» (el 0 de 1970 en hora de México) a media tarde.
+String? horaDeHoy(int? ms, DateTime ahora) {
+  if (ms == null || ms <= 0) return null;
+  final d = DateTime.fromMillisecondsSinceEpoch(ms);
+  if (d.year != ahora.year || d.month != ahora.month || d.day != ahora.day) return null;
+  return _hora.format(d);
+}
+
 /// "hoy 6:40", "ayer 18:15" o "jue 9:10".
 String cuandoCorto(int ms, DateTime ahora) {
   final d = DateTime.fromMillisecondsSinceEpoch(ms);
@@ -417,9 +427,7 @@ Map<String, Object> llavesWidgets(EntradaWidgets e) {
     m['pase_presentes'] = principal.presentes;
     m['pase_total'] = principal.total;
     m['pase_por_subir'] = principal.porSubir;
-    m['pase_hora'] = principal.primeraCaptura == null
-        ? ''
-        : _hora.format(DateTime.fromMillisecondsSinceEpoch(principal.primeraCaptura!));
+    m['pase_hora'] = horaDeHoy(principal.primeraCaptura, e.ahora) ?? '';
     // Dos cuadros: si hay más grupos, el segundo junta a los demás.
     final g = principal.grupos;
     final cuadros = g.length <= 2
@@ -475,7 +483,10 @@ Map<String, Object> llavesWidgets(EntradaWidgets e) {
       if (c.primeraCaptura == null)
         'Aún no pasan lista'
       else
-        'Pase ${_hora.format(DateTime.fromMillisecondsSinceEpoch(c.primeraCaptura!))}',
+        (() {
+          final h = horaDeHoy(c.primeraCaptura, e.ahora);
+          return h == null ? 'Lista tomada' : 'Pase $h';
+        })(),
       if (incid > 0) incid == 1 ? '1 incidencia' : '$incid incidencias',
       if (incid == 0 && entradas > 0)
         entradas == 1 ? '1 entrada de bitácora' : '$entradas entradas de bitácora',

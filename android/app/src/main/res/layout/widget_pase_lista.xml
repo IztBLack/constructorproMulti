@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_fondo"
-    android:padding="14dp">
+    android:padding="12dp">
     <LinearLayout
         android:id="@+id/pase_contenido"
         android:layout_width="match_parent"
@@ -54,8 +54,8 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="bottom"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical"
             android:orientation="horizontal">
             <TextView
                 android:id="@+id/pase_presentes"
@@ -68,19 +68,31 @@
                 android:textStyle="bold" />
             <TextView
                 android:id="@+id/pase_de"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
+                android:layout_weight="1"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:layout_marginBottom="4dp"
                 android:text="de 0 presentes"
                 android:textColor="@color/w_texto_medio"
                 android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/pase_boton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:background="@drawable/widget_boton"
+                android:gravity="center"
+                android:paddingHorizontal="14dp"
+                android:text="Pasar lista"
+                android:textColor="@color/w_boton_texto"
+                android:textSize="14sp"
+                android:textStyle="bold" />
         </LinearLayout>
         <LinearLayout
             android:id="@+id/pase_cuadros"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="6dp"
             android:orientation="horizontal">
             <LinearLayout
                 android:id="@+id/pase_cu0"
@@ -90,7 +102,7 @@
                 android:background="@drawable/widget_cuadro"
                 android:orientation="vertical"
                 android:paddingHorizontal="10dp"
-                android:paddingVertical="6dp">
+                android:paddingVertical="4dp">
                 <TextView
                     android:id="@+id/pase_cu0_nombre"
                     android:layout_width="match_parent"
@@ -116,7 +128,7 @@
                 android:background="@drawable/widget_cuadro"
                 android:orientation="vertical"
                 android:paddingHorizontal="10dp"
-                android:paddingVertical="6dp">
+                android:paddingVertical="4dp">
                 <TextView
                     android:id="@+id/pase_cu1_nombre"
                     android:layout_width="match_parent"
@@ -137,16 +149,18 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="6dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
             <TextView
                 android:id="@+id/pase_chip"
+            android:visibility="gone"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/widget_chip_ambar"
+                android:layout_marginEnd="8dp"
                 android:paddingHorizontal="10dp"
-                android:paddingVertical="5dp"
+                android:paddingVertical="3dp"
                 android:textColor="@color/w_ambar"
                 android:textSize="13sp"
                 android:textStyle="bold" />
@@ -154,22 +168,10 @@
                 android:id="@+id/pase_actualizado"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
                 android:layout_weight="1"
                 android:maxLines="1"
                 android:textColor="@color/w_texto_suave"
                 android:textSize="12sp" />
-            <TextView
-                android:id="@+id/pase_boton"
-                android:layout_width="wrap_content"
-                android:layout_height="44dp"
-                android:background="@drawable/widget_boton"
-                android:gravity="center"
-                android:paddingHorizontal="16dp"
-                android:text="Pasar lista"
-                android:textColor="@color/w_boton_texto"
-                android:textSize="15sp"
-                android:textStyle="bold" />
         </LinearLayout>
     </LinearLayout>
 

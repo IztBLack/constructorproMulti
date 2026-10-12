@@ -259,8 +259,13 @@ class AsistenciaRepository {
           .write(AsistenciasCompanion(
               fraccion: Value(fraccion), cuadrillaId: cuadrillaId));
     } else {
+      // Hora de alta real: sin ella quedaba en 0 (en el servidor también) y el
+      // widget no podía decir a qué hora se pasó lista.
+      final ahora = DateTime.now().millisecondsSinceEpoch;
       await db.into(db.asistencias).insert(AsistenciasCompanion.insert(
             id: _uuid.v4(),
+            createdAt: Value(ahora),
+            updatedAt: Value(ahora),
             colaboradorId: colaboradorId,
             obraId: obraId,
             fecha: fecha,

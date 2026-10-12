@@ -34,6 +34,7 @@
                 android:textStyle="bold" />
             <TextView
                 android:id="@+id/av_nuevos"
+            android:visibility="gone"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/widget_badge_morado"
@@ -54,6 +55,7 @@
             android:textSize="14sp" />
         <LinearLayout
             android:id="@+id/av0"
+            android:visibility="gone"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -81,6 +83,7 @@
         </LinearLayout>
         <LinearLayout
             android:id="@+id/av1"
+            android:visibility="gone"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -108,6 +111,7 @@
         </LinearLayout>
         <LinearLayout
             android:id="@+id/av2"
+            android:visibility="gone"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"

@@ -206,7 +206,9 @@ class WidgetsInicioController {
           colaboradorId: a.colaboradorId,
           fraccion: a.fraccion,
           pendiente: a.syncStatus == 'pending' || a.syncStatus == 'error',
-          capturadaEn: a.createdAt > 0 ? a.createdAt : a.updatedAt,
+          capturadaEn: a.createdAt > 0
+              ? a.createdAt
+              : (a.updatedAt > 0 ? a.updatedAt : (a.serverUpdatedAt ?? 0)),
         ));
       }
 

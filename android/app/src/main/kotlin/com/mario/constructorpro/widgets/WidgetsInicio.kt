@@ -65,7 +65,11 @@ class PaseListaWidget : HomeWidgetProvider() {
         v.setTextViewText(R.id.pase_titulo, "Pase de lista · ${texto(p, "pase_obra")}")
         v.setTextViewText(
             R.id.pase_sub,
-            if (ayer || hora.isEmpty()) "Hoy · aún no se pasa lista" else "Hoy · tomado $hora",
+            when {
+                ayer || presentes == 0 -> "Hoy · aún no se pasa lista"
+                hora.isEmpty() -> "Hoy · lista tomada"
+                else -> "Hoy · tomado $hora"
+            },
         )
         v.setTextViewText(R.id.pase_presentes, presentes.toString())
         v.setTextViewText(R.id.pase_de, "de ${entero(p, "pase_total")} presentes")
@@ -88,7 +92,6 @@ class PaseListaWidget : HomeWidgetProvider() {
         val porSubir = if (ayer) 0 else entero(p, "pase_por_subir")
         mostrar(v, R.id.pase_chip, porSubir > 0)
         v.setTextViewText(R.id.pase_chip, "$porSubir por subir")
-        mostrar(v, R.id.pase_actualizado, porSubir == 0)
         v.setTextViewText(
             R.id.pase_actualizado,
             if (ayer) "Abre la app para actualizar" else "Actualizado ${texto(p, "w_actualizado")}",

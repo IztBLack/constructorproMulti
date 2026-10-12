@@ -34,6 +34,7 @@
                 android:textStyle="bold" />
             <TextView
                 android:id="@+id/he_vencidas"
+            android:visibility="gone"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/widget_chip_rojo"
@@ -54,6 +55,7 @@
             android:textSize="14sp" />
         <LinearLayout
             android:id="@+id/he0"
+            android:visibility="gone"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
@@ -96,6 +98,7 @@
         </LinearLayout>
         <LinearLayout
             android:id="@+id/he1"
+            android:visibility="gone"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
@@ -138,6 +141,7 @@
         </LinearLayout>
         <LinearLayout
             android:id="@+id/he2"
+            android:visibility="gone"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
