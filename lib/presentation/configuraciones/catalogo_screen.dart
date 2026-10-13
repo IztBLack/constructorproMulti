@@ -10,6 +10,7 @@ import '../common/error_state_view.dart';
 import '../../domain/numeros.dart';
 import '../common/hoja_formulario.dart';
 import '../common/app_snackbar.dart';
+import '../common/sync_status_action.dart';
 
 class CatalogoScreen extends ConsumerStatefulWidget {
   const CatalogoScreen({super.key});
@@ -28,6 +29,7 @@ class _CatalogoScreenState extends ConsumerState<CatalogoScreen> {
       appBar: AppBar(
         title: const Text('Catálogo de conceptos'),
         actions: [
+          const SyncStatusAction(),
           IconButton(
             icon: const Icon(Icons.cloud_download_outlined),
             tooltip: 'Cargar catálogo oficial',
@@ -119,6 +121,7 @@ class _CatalogoScreenState extends ConsumerState<CatalogoScreen> {
                     ),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete_outline),
+                      tooltip: 'Borrar concepto',
                       onPressed: () => _confirmDelete(c),
                     ),
                     onTap: () => _dialog(c),

@@ -173,7 +173,7 @@ class _Editor extends ConsumerWidget {
                     indice: i,
                     renglon: r,
                     onEditar: () => _editarRenglon(context, ref, r),
-                    onEliminar: () => _repo(ref).eliminarRenglon(r.id),
+                    onEliminar: () => _quitarRenglon(context, ref, r),
                   );
                 },
               ),
@@ -305,6 +305,23 @@ class _Editor extends ConsumerWidget {
     );
   }
 
+  /// Antes la pulsación larga borraba el renglón al instante, sin preguntar:
+  /// un dedo que se quedaba al hacer scroll perdía un importe.
+  Future<void> _quitarRenglon(
+      BuildContext context, WidgetRef ref, NotaObraRenglonRow r) async {
+    final que = r.etiqueta.trim();
+    final ok = await confirmDialog(
+      context,
+      title: 'Quitar renglón',
+      message: que.isEmpty
+          ? '¿Quitar este renglón de la nota? No se puede deshacer.'
+          : '¿Quitar «$que» de la nota? No se puede deshacer.',
+      actionLabel: 'Quitar renglón',
+    );
+    if (!ok) return;
+    await _repo(ref).eliminarRenglon(r.id);
+  }
+
   Future<void> _editarRenglon(
     BuildContext context,
     WidgetRef ref,
@@ -316,6 +333,10 @@ class _Editor extends ConsumerWidget {
       builder: (_) => _HojaRenglon(actual: actual),
     );
     if (resultado == null) return;
+    if (resultado.borrar && actual != null) {
+      if (context.mounted) await _quitarRenglon(context, ref, actual);
+      return;
+    }
 
     if (actual == null) {
       final empresaId = ref.read(empresaIdProvider);
@@ -598,7 +619,11 @@ class _DatosRenglon {
     this.porcentaje,
     this.mostrarPorcentaje = false,
     this.texto = '',
+    this.borrar = false,
   });
+
+  /// Se tocó «Quitar renglón» en la hoja (se confirma afuera).
+  final bool borrar;
 
   final TipoRenglon tipo;
   final String etiqueta;
@@ -802,6 +827,16 @@ class _HojaRenglonState extends State<_HojaRenglon> {
                   onPressed: () => Navigator.pop(context),
                   child: const Text('Cancelar'),
                 ),
+                if (widget.actual != null)
+                  TextButton(
+                    style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(context).colorScheme.error),
+                    onPressed: () => Navigator.pop(
+                      context,
+                      _DatosRenglon(tipo: _tipo, etiqueta: '', borrar: true),
+                    ),
+                    child: const Text('Quitar'),
+                  ),
                 const Spacer(),
                 FilledButton(
                   onPressed: _etiqueta.text.trim().isEmpty

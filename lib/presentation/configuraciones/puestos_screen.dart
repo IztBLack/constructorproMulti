@@ -9,6 +9,7 @@ import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
 import '../../domain/numeros.dart';
 import '../common/hoja_formulario.dart';
+import '../common/sync_status_action.dart';
 
 class PuestosScreen extends ConsumerWidget {
   const PuestosScreen({super.key});
@@ -20,7 +21,10 @@ class PuestosScreen extends ConsumerWidget {
     final puestosAsync = ref.watch(puestosProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Puestos y salarios')),
+      appBar: AppBar(
+        title: const Text('Puestos y salarios'),
+        actions: const [SyncStatusAction()],
+      ),
       body: puestosAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) =>
@@ -46,6 +50,7 @@ class PuestosScreen extends ConsumerWidget {
                 ),
                 trailing: IconButton(
                   icon: const Icon(Icons.delete_outline),
+                  tooltip: 'Borrar puesto',
                   onPressed: () => _confirmDelete(context, ref, p),
                 ),
                 onTap: () => _showDialog(context, ref, p),

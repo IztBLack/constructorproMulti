@@ -14,6 +14,7 @@ import '../common/error_state_view.dart';
 import '../common/orden_modo_toggle.dart';
 import 'destajo_cuadrilla_screen.dart';
 import '../common/hoja_formulario.dart';
+import '../common/sync_status_action.dart';
 
 /// Especialidades de cuadrilla (código en BD → etiqueta visible).
 const cuadrillaEspecialidades = <String, String>{
@@ -55,6 +56,7 @@ class _CuadrillasScreenState extends ConsumerState<CuadrillasScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Cuadrillas'),
+        actions: const [SyncStatusAction()],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(104),
           child: Padding(

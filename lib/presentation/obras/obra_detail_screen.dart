@@ -450,6 +450,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                       subtitle: Text(c.tipoPago == 'DIA' ? 'Por día' : 'Por destajo'),
                       trailing: IconButton(
                         icon: const Icon(Icons.person_remove_outlined),
+                        tooltip: 'Quitar de esta obra',
                         onPressed: () => _desvincular(c),
                       ),
                     ))
@@ -874,6 +875,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
           children: [
             IconButton(
               icon: const Icon(Icons.chevron_left),
+              tooltip: 'Semana anterior',
               onPressed: () => setState(() => _inicioSemana =
                   lunes.subtract(const Duration(days: 7)).millisecondsSinceEpoch),
             ),
@@ -881,6 +883,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                 style: Theme.of(context).textTheme.titleSmall),
             IconButton(
               icon: const Icon(Icons.chevron_right),
+              tooltip: 'Semana siguiente',
               onPressed: () => setState(() => _inicioSemana =
                   lunes.add(const Duration(days: 7)).millisecondsSinceEpoch),
             ),
@@ -1063,7 +1066,18 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                       Text(Fmt.money(d.monto)),
                       IconButton(
                         icon: const Icon(Icons.delete_outline, size: 20),
+                        tooltip: 'Borrar destajo',
                         onPressed: () async {
+                          // Antes borraba al primer toque, sin preguntar.
+                          final ok = await confirmDialog(
+                            ctx,
+                            title: 'Borrar destajo',
+                            message:
+                                '¿Borrar «${d.concepto}» por ${Fmt.money(d.monto)}? '
+                                'No se puede deshacer.',
+                            actionLabel: 'Borrar destajo',
+                          );
+                          if (!ok) return;
                           await ref.read(destajoRepositoryProvider).delete(d.id);
                           if (ctx.mounted) Navigator.pop(ctx);
                         },
@@ -1565,11 +1579,22 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
             title: Text(tiene ? 'Reemplazar con PDF' : 'Adjuntar PDF'),
             onTap: () => Navigator.pop(ctx, 'pdf'),
           ),
+          // Borrar solo existía con pulsación larga: no se descubría y
+          // TalkBack no lo veía (U14). Sigue pidiendo confirmación.
+          const Divider(height: 1),
+          ListTile(
+            leading: Icon(Icons.delete_outline, color: context.colores.danger),
+            title: Text('Borrar movimiento',
+                style: TextStyle(color: context.colores.danger)),
+            onTap: () => Navigator.pop(ctx, 'borrar'),
+          ),
         ]),
       ),
     );
     if (opcion == null) return;
-    if (opcion == 'ver') {
+    if (opcion == 'borrar') {
+      await _eliminarMov(m);
+    } else if (opcion == 'ver') {
       await _verComprobante(m);
     } else {
       await _adjuntarComprobante(m, opcion);

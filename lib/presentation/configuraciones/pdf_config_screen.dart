@@ -202,15 +202,17 @@ class _PdfConfigScreenState extends ConsumerState<PdfConfigScreen> {
               TextButton(
                 onPressed: () async {
                   final path = await _pickImage('pdf_logo');
-                  if (path != null) setState(() => _logoPath = path);
+                  if (path != null && mounted) setState(() => _logoPath = path);
                 },
                 child: const Text('Elegir'),
               ),
               if (_logoPath != null)
                 IconButton(
                   icon: const Icon(Icons.clear),
+                  tooltip: 'Quitar logo',
                   onPressed: () async {
                     await PdfPrefs.clearLogo();
+                    if (!mounted) return;
                     setState(() => _logoPath = null);
                   },
                 ),
@@ -224,15 +226,17 @@ class _PdfConfigScreenState extends ConsumerState<PdfConfigScreen> {
               TextButton(
                 onPressed: () async {
                   final path = await _pickImage('pdf_firma');
-                  if (path != null) setState(() => _firmaPath = path);
+                  if (path != null && mounted) setState(() => _firmaPath = path);
                 },
                 child: const Text('Elegir'),
               ),
               if (_firmaPath != null)
                 IconButton(
                   icon: const Icon(Icons.clear),
+                  tooltip: 'Quitar firma',
                   onPressed: () async {
                     await PdfPrefs.clearFirma();
+                    if (!mounted) return;
                     setState(() => _firmaPath = null);
                   },
                 ),

@@ -41,6 +41,7 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
   final _codigoCtrl = TextEditingController();
 
   bool _loading = false;
+  bool _verPassword = false;
   String? _error;
 
   /// El contenedor de providers de la APP, no el `ref` de esta pantalla: las
@@ -796,7 +797,18 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
     if (m.contains('unable to validate email address')) {
       return 'El formato del correo no es válido.';
     }
-    return message; // devuelve el original si no se reconoce
+    if (m.contains('rate limit') || m.contains('too many')) {
+      return 'Demasiados intentos. Espera unos minutos e intenta de nuevo.';
+    }
+    if (m.contains('socket') ||
+        m.contains('host lookup') ||
+        m.contains('network') ||
+        m.contains('timed out')) {
+      return 'Sin señal. Revisa tu conexión e intenta de nuevo; '
+          'puedes seguir trabajando sin señal.';
+    }
+    // Antes se mostraba el mensaje original en inglés.
+    return 'No se pudo entrar. Revisa el correo y la contraseña.';
   }
 
   @override
@@ -891,22 +903,48 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
         ),
         const SizedBox(height: 20),
 
-        TextField(
-          controller: _email,
-          keyboardType: TextInputType.emailAddress,
-          autocorrect: false,
-          decoration: const InputDecoration(
-            labelText: 'Correo',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _password,
-          obscureText: true,
-          decoration: const InputDecoration(
-            labelText: 'Contraseña',
-            border: OutlineInputBorder(),
+        // U13: el gestor de contraseñas del teléfono llena correo y clave
+        // (AutofillGroup + hints) y se puede ver lo que se escribió.
+        AutofillGroup(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: _email,
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.email],
+                decoration: const InputDecoration(labelText: 'Correo'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _password,
+                obscureText: !_verPassword,
+                textInputAction: TextInputAction.done,
+                autofillHints: [
+                  _modoRegistro
+                      ? AutofillHints.newPassword
+                      : AutofillHints.password,
+                ],
+                onSubmitted: (_) {
+                  if (!_loading) _modoRegistro ? _registrar() : _conectar();
+                },
+                decoration: InputDecoration(
+                  labelText: 'Contraseña',
+                  suffixIcon: IconButton(
+                    tooltip: _verPassword
+                        ? 'Ocultar contraseña'
+                        : 'Mostrar contraseña',
+                    icon: Icon(_verPassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined),
+                    onPressed: () =>
+                        setState(() => _verPassword = !_verPassword),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         if (_error != null) ...[

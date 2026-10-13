@@ -8,6 +8,7 @@ import '../common/async_action_button.dart';
 import 'cuadrillas_screen.dart' show especialidadLabel;
 import '../../domain/numeros.dart';
 import '../common/app_snackbar.dart';
+import '../common/sync_status_action.dart';
 
 /// Fase 4 — Destajo por cuadrilla: captura una BOLSA (concepto + total) y la
 /// reparte por porcentaje entre los miembros vigentes. Al guardar genera una
@@ -101,6 +102,7 @@ class _DestajoCuadrillaScreenState
     return Scaffold(
       appBar: AppBar(
         title: const Text('Destajo por cuadrilla'),
+        actions: const [SyncStatusAction()],
       ),
       body: miembros.isEmpty
           ? const Center(

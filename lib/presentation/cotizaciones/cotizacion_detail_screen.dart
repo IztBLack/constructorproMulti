@@ -35,6 +35,7 @@ import '../pdf_pre_dialog.dart';
 import '../../domain/numeros.dart';
 import '../common/hoja_formulario.dart';
 import '../common/app_snackbar.dart';
+import '../common/sync_status_action.dart';
 
 class CotizacionDetailScreen extends ConsumerStatefulWidget {
   final Cotizacion cotizacion;
@@ -80,6 +81,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
             ubicacion: widget.cotizacion.ubicacion,
             cliente: widget.cotizacion.cliente)),
         actions: [
+          const SyncStatusAction(),
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
             tooltip: 'Exportar presupuesto PDF',
