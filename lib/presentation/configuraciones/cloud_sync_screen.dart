@@ -18,6 +18,11 @@ import '../../domain/sync/rechazos_sync.dart';
 import '../common/error_state_view.dart';
 import 'conflictos_screen.dart';
 import '../common/app_snackbar.dart';
+import '../../core/theme/app_theme.dart';
+import '../common/app_badge.dart';
+import '../common/app_spacing.dart';
+import '../common/lista_agrupada.dart';
+import 'estado_nube.dart';
 
 /// Pantalla de conexión a la nube (Fase 2). Sin sesión muestra el login; con
 /// sesión y empresa muestra el estado y el botón de sincronizar; con sesión pero
@@ -1063,94 +1068,161 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
     final rechazo = ref.read(syncServiceProvider).ultimoRechazo;
     final reintentarNoBasta =
         estado.errores > 0 && rechazo != null && !rechazo.seReintenta;
-    return ListView(
-      children: [
-        // Se encabeza con el NOMBRE de la persona y el correo baja a segundo
-        // plano: al abrir esta pantalla la pregunta es "¿con qué cuenta estoy?",
-        // y un nombre la responde antes que una dirección de correo.
-        ListTile(
-          leading:
-              Icon(Icons.cloud_done_outlined, color: context.colores.success),
-          title: Text(ref.watch(cuentaNombreProvider) ?? 'Conectado'),
-          subtitle: Text(user?.email ?? user?.id ?? ''),
-        ),
-        // Nombre, no UUID: el identificador solo servía para depurar y no le
-        // decía nada al usuario. Si aún no llega del servidor se usa el último
-        // conocido; el UUID queda como último recurso para poder dar soporte.
-        ListTile(
-          leading: const Icon(Icons.apartment_outlined),
-          title: const Text('Empresa'),
-          subtitle: Text(
-            ref.watch(empresaNombreProvider).asData?.value ??
-                ref.watch(empresaNombreCacheProvider) ??
-                empresaId ??
-                'Sin empresa vinculada',
-          ),
-        ),
-        const Divider(),
-        // Diagnóstico: solo aparece si hay filas atoradas. Muestra el MOTIVO
-        // real del servidor (RLS, FK, columna…) para no dejar al usuario a
-        // ciegas con un ícono rojo. El botón de abajo ya reintenta estas filas.
-        if (estado.errores > 0) _avisoErrores(estado.errores),
-        if (filasAjenas > 0) _avisoOtraCuenta(filasAjenas),
-        // Conflictos de jornada: no son un fallo, esperan una decisión. Van
-        // antes que "Sincronizar ahora" porque sincronizar no los resuelve.
-        if (estado.conflictos > 0)
-          ListTile(
-            leading: Icon(Icons.rule, color: context.colores.warning),
-            title: Text('${estado.conflictos} conflicto(s) por resolver'),
-            subtitle: const Text('Doble jornada el mismo día: elige cuál se queda'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ConflictosScreen()),
+    final nube = estadoNube(ref, conSesion: true);
+    final paleta = paletaDeTono(context.colores, nube.tono);
+    final t = Theme.of(context).textTheme;
+    final c = context.colores;
+    final empresa = ref.watch(empresaNombreProvider).asData?.value ??
+        ref.watch(empresaNombreCacheProvider) ??
+        empresaId ??
+        'Sin empresa vinculada';
+
+    // Línea de Ajustes (DISENO_MOVIL §4): cabecera con la cuenta y el estado,
+    // grupos de opciones y UNA fila roja al final. Antes era una lista plana
+    // de ListTile con «Cerrar sesión» entre las acciones de sincronizar.
+    return LayoutBuilder(
+      builder: (context, box) => ListView(
+        padding: margenesDeLista(context, box.maxWidth),
+        children: [
+          Material(
+            color: c.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+              side: BorderSide(color: c.border),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Se encabeza con el NOMBRE: al abrir esta pantalla la
+                  // pregunta es "¿con qué cuenta estoy?".
+                  Text(ref.watch(cuentaNombreProvider) ?? 'Tu cuenta',
+                      style:
+                          t.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                  Text(user?.email ?? '',
+                      style: t.bodyMedium?.copyWith(color: c.textMuted)),
+                  AppSpacing.gapXs,
+                  Text(empresa, style: t.bodyMedium),
+                  AppSpacing.gapMd,
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: paleta.fondo,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(nube.icono, color: paleta.texto),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(nube.titulo,
+                                  style: t.titleSmall?.copyWith(
+                                      color: paleta.texto,
+                                      fontWeight: FontWeight.w600)),
+                              Text(nube.detalle,
+                                  style: t.bodySmall
+                                      ?.copyWith(color: paleta.texto)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ListTile(
-          leading: const Icon(Icons.sync),
-          title: const Text('Sincronizar ahora'),
-          // Lo que importa en la obra es hasta cuándo el trabajo está a salvo
-          // en la nube; y si reintentar no va a resolver los errores, decirlo
-          // en vez de dejar que se toque el botón una y otra vez.
-          subtitle: Text([
-            if (reintentarNoBasta)
-              'Reintentar no resolverá los cambios con error: mira arriba qué '
-                  'hacer.'
-            else if (estado.errores > 0)
-              'Reintenta también los cambios con error.',
-            ultimaSubida != null
-                ? 'Última subida completa: ${Fmt.cuando(ultimaSubida)}'
-                : 'Aún no hay una subida completa en este teléfono.',
-          ].join('\n')),
-          enabled: !_loading,
-          onTap: _loading ? null : _sincronizar,
-        ),
-        ListTile(
-          leading: const Icon(Icons.restart_alt),
-          title: const Text('Forzar re-sync completo'),
-          subtitle: const Text(
-              'Reinicia los cursores y vuelve a traer todo del servidor'),
-          enabled: !_loading,
-          onTap: _loading ? null : _forzarResyncCompleto,
-        ),
-        ListTile(
-          leading: const Icon(Icons.cloud_download_outlined),
-          title: const Text('Rehacer la copia de este teléfono'),
-          subtitle: const Text(
-              'Borra lo de este teléfono y vuelve a bajar todo de la nube'),
-          enabled: !_loading,
-          onTap: _loading ? null : _rehacerCopia,
-        ),
-        // Cerrar sesión va al final y en rojo: es la única acción de esta
-        // pantalla que se lleva el acceso a los datos de la nube, y debe
-        // distinguirse de las de sincronizar (regla
-        // `destructive-nav-separation`).
-        ListTile(
-          leading: Icon(Icons.logout, color: context.colores.danger),
-          title: Text('Cerrar sesión',
-              style: TextStyle(color: context.colores.danger)),
-          onTap: _cerrarSesion,
-        ),
-      ],
+          // Diagnóstico: solo si hay filas atoradas, con el motivo real.
+          if (estado.errores > 0) ...[
+            AppSpacing.gapMd,
+            _avisoErrores(estado.errores),
+          ],
+          if (filasAjenas > 0) ...[
+            AppSpacing.gapMd,
+            _avisoOtraCuenta(filasAjenas),
+          ],
+          const SizedBox(height: AppSpacing.xl),
+          GrupoLista(
+            titulo: 'Sincronización',
+            children: [
+              // Los conflictos no son un fallo: esperan una decisión, y
+              // sincronizar no los resuelve; por eso van antes.
+              if (estado.conflictos > 0)
+                FilaLista(
+                  icono: Icons.rule,
+                  tono: BadgeTone.warning,
+                  titulo: 'Conflictos por resolver',
+                  subtitulo: 'Doble jornada el mismo día: elige cuál se queda',
+                  valor: '${estado.conflictos}',
+                  etiquetaValor: '${estado.conflictos} conflictos',
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ConflictosScreen()),
+                  ),
+                ),
+              FilaLista(
+                icono: Icons.sync,
+                tono: BadgeTone.success,
+                titulo: 'Sincronizar ahora',
+                // Si reintentar no resolverá los errores, decirlo en vez de
+                // dejar que se toque una y otra vez.
+                subtitulo: [
+                  if (reintentarNoBasta)
+                    'Reintentar no resolverá los cambios con error: mira '
+                        'arriba qué hacer.'
+                  else if (estado.errores > 0)
+                    'Reintenta también los cambios con error.',
+                  ultimaSubida != null
+                      ? 'Última subida completa: ${Fmt.cuando(ultimaSubida)}'
+                      : 'Aún no hay una subida completa en este teléfono.',
+                ].join('\n'),
+                trailing: _loading
+                    ? const SizedBox.square(
+                        dimension: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : null,
+                onTap: _loading ? null : _sincronizar,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          GrupoLista(
+            titulo: 'Si algo no cuadra',
+            children: [
+              FilaLista(
+                icono: Icons.restart_alt,
+                titulo: 'Volver a revisar todo con la nube',
+                subtitulo: 'Trae de nuevo todo lo del servidor; no borra lo '
+                    'de este teléfono',
+                onTap: _loading ? null : _forzarResyncCompleto,
+              ),
+              FilaLista(
+                icono: Icons.cloud_download_outlined,
+                titulo: 'Rehacer la copia de este teléfono',
+                subtitulo:
+                    'Borra lo de este teléfono y vuelve a bajar todo de la nube',
+                onTap: _loading ? null : _rehacerCopia,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          // La única acción que se lleva el acceso a la nube: sola y en rojo.
+          GrupoLista(
+            children: [
+              FilaLista(
+                icono: Icons.logout,
+                titulo: 'Cerrar sesión',
+                peligro: true,
+                onTap: _cerrarSesion,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xl),
+        ],
+      ),
     );
   }
 }

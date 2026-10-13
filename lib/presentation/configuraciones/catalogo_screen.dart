@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/db/app_database.dart';
-import '../../core/format/format.dart';
 import '../../data/providers.dart';
 import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
@@ -11,6 +10,9 @@ import '../../domain/numeros.dart';
 import '../common/hoja_formulario.dart';
 import '../common/app_snackbar.dart';
 import '../common/sync_status_action.dart';
+import '../../core/theme/app_colors.dart';
+import '../common/app_spacing.dart';
+import '../common/money_text.dart';
 
 class CatalogoScreen extends ConsumerStatefulWidget {
   const CatalogoScreen({super.key});
@@ -87,48 +89,49 @@ class _CatalogoScreenState extends ConsumerState<CatalogoScreen> {
                     title: 'Ningún concepto coincide con la búsqueda.',
                   );
           }
-          // Agrupar por categoría.
+          // Agrupar por categoría. Lista PEREZOSA (`ListView.builder`): el
+          // catálogo oficial trae más de mil conceptos y armarlos todos de
+          // golpe trababa la pantalla.
           final porCategoria = <String, List<CatalogoConcepto>>{};
           for (final c in lista) {
             porCategoria.putIfAbsent(c.categoria, () => []).add(c);
           }
           final cats = porCategoria.keys.toList()..sort();
-          return ListView(
-            children: cats.expand((cat) {
-              return [
-                Container(
-                  width: double.infinity,
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 6,
+          final filas = <Object>[
+            for (final cat in cats) ...[cat, ...porCategoria[cat]!],
+          ];
+          final t = Theme.of(context).textTheme;
+          final col = context.colores;
+          return ListView.builder(
+            padding: const EdgeInsets.only(bottom: 88),
+            itemCount: filas.length,
+            itemBuilder: (context, i) {
+              final f = filas[i];
+              if (f is String) {
+                // Encabezado de grupo: oración, gris, como en Ajustes.
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.xs),
+                  child: Semantics(
+                    header: true,
+                    child: Text(f.isEmpty ? 'Sin categoría' : f,
+                        style: t.labelLarge?.copyWith(color: col.textMuted)),
                   ),
-                  child: Text(
-                    cat,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                ...porCategoria[cat]!.map(
-                  (c) => ListTile(
-                    dense: true,
-                    title: Text(
-                      '${c.clave} · ${c.descripcion}',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    subtitle: Text(
-                      '${c.unidad} · ${Fmt.money(c.precioUnitarioDefault)}',
-                    ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      tooltip: 'Borrar concepto',
-                      onPressed: () => _confirmDelete(c),
-                    ),
-                    onTap: () => _dialog(c),
-                  ),
-                ),
-              ];
-            }).toList(),
+                );
+              }
+              final c = f as CatalogoConcepto;
+              return ListTile(
+                title: Text(c.descripcion,
+                    maxLines: 2, overflow: TextOverflow.ellipsis),
+                subtitle: Text([
+                  if (c.clave.trim().isNotEmpty) c.clave.trim(),
+                  if (c.unidad.trim().isNotEmpty) c.unidad.trim(),
+                ].join(' · ')),
+                // El valor a la vista; borrar vive en la hoja de edición.
+                trailing: MoneyText(c.precioUnitarioDefault),
+                onTap: () => _dialog(c),
+              );
+            },
           );
         },
       ),
@@ -154,7 +157,10 @@ class _CatalogoScreenState extends ConsumerState<CatalogoScreen> {
       context,
       builder: (ctx) => HojaFormulario(
         titulo: c == null ? 'Nuevo concepto' : 'Editar concepto',
+        subtitulo: c?.clave,
         textoGuardar: c == null ? 'Agregar concepto' : 'Guardar cambios',
+        textoQuitar: c == null ? null : 'Borrar concepto',
+        onQuitar: c == null ? null : () => _confirmDelete(c),
         campos: [
           TextFormField(
             controller: claveCtrl,

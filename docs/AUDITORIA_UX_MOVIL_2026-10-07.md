@@ -58,6 +58,32 @@ Decisiones tomadas al implementar (revisables):
 - U3: "Subido" aparece solo en las filas tocadas en esa visita (treinta "Subido" serían ruido).
 - U12: "Omitir" → "Dejar solo en este teléfono" (eso es lo que hace: `skipped`, la fila local sigue viva).
 
+## Estado (2026-10-12) — Fase B y auditoría de formularios
+Rama `feat/ux-fase-b` (sobre `feat/widgets-movil`). Hecho:
+- **U7** nombres de la web (Inicio, Cotizaciones, Obras, Equipo, Notas, Pase de lista).
+- **U11** tamaños fijos → escala del tema (salvo la tabla densa de Proyección, a propósito).
+- **U13** login: autocompletar, ver contraseña, errores siempre en español.
+- **U14** acciones solo en pulsación larga: borrar movimiento ahora en su hoja; el renglón de nota se borraba al instante → confirma.
+- **U15** fechas «6 oct 2026» en pantallas y PDF.
+- **Formularios**: 13 diálogos de varios campos → `HojaFormulario` (ver DISENO_MOVIL §4 «Formularios»).
+- Pantallas de Ajustes que se habían quedado atrás → línea nueva: Nube y sincronización, Documentos PDF, Puestos, Catálogo.
+- Snacks a mano → `showAppSnack`; «Deshacer» 8 s.
+
+Bugs encontrados en la auditoría (todos corregidos):
+| Bug | Efecto |
+|---|---|
+| Montos con coma («1,500», «$1,500») | Catálogo, destajo, descuento y ajustes de nómina guardaban **0 sin avisar**; caja/puestos lo rechazaban como inválido. |
+| Doble toque en «Guardar» de caja | Creaba **dos movimientos**. |
+| Pulsación larga en renglón de nota | **Borraba al instante**, sin confirmar ni deshacer. |
+| Bote de basura del destajo | Borraba al primer toque. |
+| Documentos PDF | Salir con la flecha **tiraba lo escrito** sin avisar. |
+| Asistencias sin hora de alta | `created_at` = 0 en todas (también en el servidor); arreglado en 1.7.1. |
+| Nueva nota sin empresa | Tocabas «Crear» y no pasaba nada. |
+| 8 botones de ícono sin nombre | TalkBack decía «botón». |
+| setState tras await (Documentos PDF) | Posible error al salir mientras carga. |
+
+Pendiente: **U8** ayuda en pantalla, **U16** tipografía Geist, Fase C (navegación por categorías U6, Caja U9, tableta).
+
 ## Orden propuesto
 - **Fase A — "que no asuste y que no pierda nada" (≈1 semana, 1.5.1):** cambio de cuenta (3 capas) + U1 + U2 + U3 + U4 + U5 + U12 + U10.
 - **Fase B — "que hable como la web" (≈1 semana, 1.6.0):** U7, U15, U16, U11, U13, U14, ayuda paso 1 (U8) y reescribir el documento de diseño.

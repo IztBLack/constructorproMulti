@@ -14,6 +14,11 @@ import '../../core/sync/cloud_providers.dart';
 import '../../data/pdf_config_service.dart';
 import '../../data/providers.dart';
 import '../common/app_snackbar.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme.dart';
+import '../common/app_badge.dart';
+import '../common/app_spacing.dart';
+import '../common/lista_agrupada.dart';
 
 class PdfConfigScreen extends ConsumerStatefulWidget {
   const PdfConfigScreen({super.key});
@@ -141,114 +146,218 @@ class _PdfConfigScreenState extends ConsumerState<PdfConfigScreen> {
     }
   }
 
+  /// Foto de lo que había al cargar: para saber si salir pierde algo.
+  String _foto = '';
+
+  String _fotoActual() => [
+        _contacto.text,
+        _color.text,
+        _pie.text,
+        _watermark.text,
+        _firmaIzq.text,
+        _firmaDer.text,
+        '$_mayusculas',
+        '$_compacto',
+      ].join('\u0001');
+
+  bool get _hayCambios => _cargado && _fotoActual() != _foto;
+
+  /// Antes, salir con la flecha tiraba lo escrito sin avisar: solo guardaba el
+  /// botón del fondo.
+  Future<bool> _confirmarSalida() async {
+    if (!_hayCambios) return true;
+    final r = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('¿Guardar los cambios?'),
+        content: const Text(
+            'Cambiaste el aspecto de los PDF y todavía no se guarda.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, 'tirar'),
+              child: const Text('Salir sin guardar')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, 'guardar'),
+              child: const Text('Guardar cambios')),
+        ],
+      ),
+    );
+    if (r == 'guardar') {
+      await _guardar();
+      return false; // _guardar ya cierra la pantalla
+    }
+    return r == 'tirar';
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_cargado) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        appBar: AppBar(title: const Text('Documentos PDF')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
-    return Scaffold(
-      appBar: AppBar(title: const Text('Personalizar PDF')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // El nombre no se edita aquí: sale del registro de la empresa, que es
-          // la misma fuente que usa la web. Tener dos campos hacía que un mismo
-          // documento saliera con nombres distintos según de dónde se emitiera.
-          _AvisoCompartido(),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _contacto,
-            maxLines: 2,
-            decoration: const InputDecoration(
-                labelText: 'Contacto (teléfono, correo, dirección)'),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _color,
-            decoration: const InputDecoration(
-                labelText: 'Color de marca (HEX)', hintText: '#1A3A5C'),
-          ),
-          const SizedBox(height: 8),
-          TextField(controller: _pie, decoration: const InputDecoration(labelText: 'Pie de página')),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _watermark,
-            decoration: const InputDecoration(
-                labelText: 'Marca de agua (diagonal)', hintText: 'Ej: COTIZACIÓN'),
-          ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Texto en MAYÚSCULAS'),
-            value: _mayusculas,
-            onChanged: (v) => setState(() => _mayusculas = v),
-          ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Modo compacto'),
-            subtitle: const Text('Márgenes reducidos'),
-            value: _compacto,
-            onChanged: (v) => setState(() => _compacto = v),
-          ),
-          const SizedBox(height: 8),
-          TextField(controller: _firmaIzq, decoration: const InputDecoration(labelText: 'Firma izquierda')),
-          const SizedBox(height: 8),
-          TextField(controller: _firmaDer, decoration: const InputDecoration(labelText: 'Firma derecha')),
-          const Divider(),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.image_outlined),
-            title: Text(_logoPath == null ? 'Logo: sin asignar' : 'Logo asignado'),
-            trailing: Wrap(spacing: 4, children: [
-              TextButton(
-                onPressed: () async {
-                  final path = await _pickImage('pdf_logo');
-                  if (path != null && mounted) setState(() => _logoPath = path);
-                },
-                child: const Text('Elegir'),
+    if (_foto.isEmpty) _foto = _fotoActual();
+    final t = Theme.of(context).textTheme;
+    final c = context.colores;
+    Widget titulo(String texto) => Padding(
+          padding: const EdgeInsets.only(
+              left: AppSpacing.xs, bottom: AppSpacing.sm),
+          child: Text(texto, style: t.labelLarge?.copyWith(color: c.textMuted)),
+        );
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        if (await _confirmarSalida() && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Documentos PDF'),
+          actions: [
+            TextButton(onPressed: _guardar, child: const Text('Guardar')),
+          ],
+        ),
+        body: LayoutBuilder(
+          builder: (context, box) => ListView(
+            padding: margenesDeLista(context, box.maxWidth),
+            children: [
+              // El nombre no se edita aquí: sale del registro de la empresa,
+              // la misma fuente que usa la web.
+              _AvisoCompartido(),
+              const SizedBox(height: AppSpacing.xl),
+              titulo('Encabezado y pie'),
+              TextField(
+                controller: _contacto,
+                maxLines: 2,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(
+                    labelText: 'Contacto (teléfono, correo, dirección)'),
               ),
-              if (_logoPath != null)
-                IconButton(
-                  icon: const Icon(Icons.clear),
-                  tooltip: 'Quitar logo',
-                  onPressed: () async {
-                    await PdfPrefs.clearLogo();
-                    if (!mounted) return;
-                    setState(() => _logoPath = null);
-                  },
-                ),
-            ]),
-          ),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.draw_outlined),
-            title: Text(_firmaPath == null ? 'Firma: sin asignar' : 'Firma asignada'),
-            trailing: Wrap(spacing: 4, children: [
-              TextButton(
-                onPressed: () async {
-                  final path = await _pickImage('pdf_firma');
-                  if (path != null && mounted) setState(() => _firmaPath = path);
-                },
-                child: const Text('Elegir'),
+              AppSpacing.gapMd,
+              TextField(
+                controller: _pie,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(labelText: 'Pie de página'),
               ),
-              if (_firmaPath != null)
-                IconButton(
-                  icon: const Icon(Icons.clear),
-                  tooltip: 'Quitar firma',
-                  onPressed: () async {
-                    await PdfPrefs.clearFirma();
-                    if (!mounted) return;
-                    setState(() => _firmaPath = null);
-                  },
-                ),
-            ]),
+              AppSpacing.gapMd,
+              TextField(
+                controller: _watermark,
+                textCapitalization: TextCapitalization.characters,
+                decoration: const InputDecoration(
+                    labelText: 'Marca de agua (diagonal)',
+                    hintText: 'Ej. COTIZACIÓN'),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              titulo('Formato'),
+              TextField(
+                controller: _color,
+                decoration: const InputDecoration(
+                    labelText: 'Color de marca (HEX)', hintText: '#1A3A5C'),
+              ),
+              AppSpacing.gapMd,
+              GrupoLista(
+                children: [
+                  FilaLista(
+                    icono: Icons.text_fields,
+                    titulo: 'Texto en mayúsculas',
+                    trailing: Switch(
+                      value: _mayusculas,
+                      onChanged: (v) => setState(() => _mayusculas = v),
+                    ),
+                    onTap: () => setState(() => _mayusculas = !_mayusculas),
+                  ),
+                  FilaLista(
+                    icono: Icons.compress,
+                    titulo: 'Modo compacto',
+                    subtitulo: 'Márgenes reducidos',
+                    trailing: Switch(
+                      value: _compacto,
+                      onChanged: (v) => setState(() => _compacto = v),
+                    ),
+                    onTap: () => setState(() => _compacto = !_compacto),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              titulo('Firmas'),
+              TextField(
+                controller: _firmaIzq,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(labelText: 'Firma izquierda'),
+              ),
+              AppSpacing.gapMd,
+              TextField(
+                controller: _firmaDer,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(labelText: 'Firma derecha'),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              titulo('Imágenes de este teléfono'),
+              GrupoLista(
+                children: [
+                  FilaLista(
+                    icono: Icons.image_outlined,
+                    tono: BadgeTone.info,
+                    titulo: 'Logo',
+                    valor: _logoPath == null ? 'Sin asignar' : 'Asignado',
+                    trailing: _logoPath == null
+                        ? null
+                        : IconButton(
+                            icon: const Icon(Icons.clear),
+                            tooltip: 'Quitar logo',
+                            onPressed: () async {
+                              await PdfPrefs.clearLogo();
+                              if (!mounted) return;
+                              setState(() => _logoPath = null);
+                            },
+                          ),
+                    onTap: () async {
+                      final path = await _pickImage('pdf_logo');
+                      if (path != null && mounted) {
+                        setState(() => _logoPath = path);
+                      }
+                    },
+                  ),
+                  FilaLista(
+                    icono: Icons.draw_outlined,
+                    tono: BadgeTone.info,
+                    titulo: 'Imagen de firma',
+                    valor: _firmaPath == null ? 'Sin asignar' : 'Asignada',
+                    trailing: _firmaPath == null
+                        ? null
+                        : IconButton(
+                            icon: const Icon(Icons.clear),
+                            tooltip: 'Quitar firma',
+                            onPressed: () async {
+                              await PdfPrefs.clearFirma();
+                              if (!mounted) return;
+                              setState(() => _firmaPath = null);
+                            },
+                          ),
+                    onTap: () async {
+                      final path = await _pickImage('pdf_firma');
+                      if (path != null && mounted) {
+                        setState(() => _firmaPath = path);
+                      }
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(AppTheme.touchTarget)),
+                onPressed: _guardar,
+                child: const Text('Guardar cambios'),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+            ],
           ),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: _guardar,
-            icon: const Icon(Icons.save),
-            label: const Text('Guardar'),
-          ),
-        ],
+        ),
       ),
     );
   }
