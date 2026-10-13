@@ -4,12 +4,15 @@ import 'package:intl/intl.dart';
 class Fmt {
   static final _currency =
       NumberFormat.currency(locale: 'es_MX', symbol: '\$');
-  static final _date = DateFormat('dd/MM/yyyy', 'es_MX');
+  // «6 oct 2026», como la web (`formatDate` en web/src/lib/data/format.ts).
+  // intl pone punto a los meses abreviados («oct.»); la web no.
+  static final _date = DateFormat('d MMM y', 'es_MX');
   static final _dayName = DateFormat('EEE dd MMM', 'es_MX');
 
   static String money(num v) => _currency.format(v);
-  static String date(int epochMillis) =>
-      _date.format(DateTime.fromMillisecondsSinceEpoch(epochMillis));
+  static String date(int epochMillis) => _date
+      .format(DateTime.fromMillisecondsSinceEpoch(epochMillis))
+      .replaceAll('.', '');
   static String dayName(DateTime d) => _dayName.format(d);
 
   /// Momento reciente dicho como en la obra: "hoy 14:32", "ayer 09:10" o
@@ -24,7 +27,7 @@ class Fmt {
     final hora = DateFormat('HH:mm').format(t);
     if (diferencia == 0) return 'hoy $hora';
     if (diferencia == 1) return 'ayer $hora';
-    return '${DateFormat('d MMM', 'es_MX').format(t)} $hora';
+    return '${DateFormat('d MMM', 'es_MX').format(t).replaceAll('.', '')} $hora';
   }
 }
 

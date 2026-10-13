@@ -13,6 +13,7 @@ import '../../core/pdf/textos_finales.dart';
 import '../../core/sync/cloud_providers.dart';
 import '../../data/pdf_config_service.dart';
 import '../../data/providers.dart';
+import '../common/app_snackbar.dart';
 
 class PdfConfigScreen extends ConsumerStatefulWidget {
   const PdfConfigScreen({super.key});
@@ -135,8 +136,7 @@ class _PdfConfigScreenState extends ConsumerState<PdfConfigScreen> {
     }
 
     if (mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Configuración de PDF guardada.')));
+      showAppSnack(context, 'Configuración de PDF guardada.');
       Navigator.pop(context);
     }
   }
@@ -274,7 +274,7 @@ class _AvisoCompartido extends ConsumerWidget {
             'Esta configuración es de la empresa: se comparte con la web y con '
             'los demás dispositivos. El nombre se cambia en los ajustes de la '
             'empresa. El logo y la firma sí son de este teléfono.',
-            style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
           ),
         ],
       ),

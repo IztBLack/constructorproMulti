@@ -30,6 +30,8 @@ import 'cloud_sync_screen.dart';
 import 'modulos_screen.dart';
 import 'pdf_config_screen.dart';
 import 'puestos_screen.dart';
+import '../../domain/numeros.dart';
+import '../common/app_snackbar.dart';
 
 /// Ajustes (antes "Configuración"): el modelo de la línea de diseño del móvil.
 /// Ver `docs/DISENO_MOVIL.md` y `docs/PLAN_AJUSTES_REDISENO.md`.
@@ -473,14 +475,8 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
   Future<void> _alternarRecordatorio(bool v) async {
     final ok = await ref.read(reminderProvider.notifier).setEnabled(v);
     if (!ok && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'El teléfono no dio permiso para avisar. Actívalo en '
-            'los ajustes del teléfono.',
-          ),
-        ),
-      );
+      showAppSnack(context, 'El teléfono no dio permiso para avisar. Actívalo en '
+            'los ajustes del teléfono.');
     }
   }
 
@@ -531,7 +527,7 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
           ),
           FilledButton(
             onPressed: () =>
-                Navigator.pop(ctx, double.tryParse(ctrl.text.trim())),
+                Navigator.pop(ctx, leerNumero(ctrl.text)),
             child: const Text('Guardar'),
           ),
         ],
@@ -547,15 +543,9 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
   Future<void> _cargarDemo() async {
     final creado = await DemoData.generar(ref.read(databaseProvider));
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          creado
+    showAppSnack(context, creado
               ? 'Datos de ejemplo cargados.'
-              : 'Ya hay datos; no se cargaron ejemplos.',
-        ),
-      ),
-    );
+              : 'Ya hay datos; no se cargaron ejemplos.');
   }
 
   Future<void> _exportarRespaldo() async {
@@ -573,14 +563,8 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
       // la obra no le dice nada y asusta.
       debugPrint('[ConfigScreen] exportar respaldo: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'No se pudo crear el respaldo. Intenta de nuevo; '
-              'tus datos siguen en el teléfono.',
-            ),
-          ),
-        );
+        showAppSnack(context, 'No se pudo crear el respaldo. Intenta de nuevo; '
+              'tus datos siguen en el teléfono.', tone: SnackTone.danger);
       }
     }
   }
@@ -625,21 +609,13 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
         await svc.importFromJson(await File(ruta).readAsString());
       }
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Respaldo restaurado.')));
+        showAppSnack(context, 'Respaldo restaurado.', tone: SnackTone.success);
       }
     } catch (e) {
       debugPrint('[ConfigScreen] restaurar respaldo: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'No se pudo restaurar el respaldo. Revisa que el '
-              'archivo sea un respaldo de ConstructorPro.',
-            ),
-          ),
-        );
+        showAppSnack(context, 'No se pudo restaurar el respaldo. Revisa que el '
+              'archivo sea un respaldo de ConstructorPro.', tone: SnackTone.danger);
       }
     }
   }
@@ -648,11 +624,7 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
     final logs = await CrashLogger.getLogs();
     if (!mounted) return;
     if (logs.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No hay errores registrados: la app no ha fallado.'),
-        ),
-      );
+      showAppSnack(context, 'No hay errores registrados: la app no ha fallado.', tone: SnackTone.warning);
       return;
     }
     await Share.shareXFiles([

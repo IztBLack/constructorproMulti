@@ -362,7 +362,6 @@ class _Titulo extends StatelessWidget {
         texto.toUpperCase(),
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
             color: context.colores.textMuted,
-            fontSize: 10.5,
             letterSpacing: 0.8,
             fontWeight: FontWeight.w700),
       );
@@ -455,7 +454,6 @@ class _ChipDia extends StatelessWidget {
                   children: [
                     Text(_diasCortos[celda.indice],
                         style: t.labelSmall?.copyWith(
-                            fontSize: 9.5,
                             color: tinta,
                             fontWeight: FontWeight.w700)),
                     const SizedBox(height: 1),

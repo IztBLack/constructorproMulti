@@ -8,6 +8,7 @@ import '../../data/maintenance_repository.dart';
 import '../../data/providers.dart';
 import '../common/app_badge.dart';
 import '../common/lista_agrupada.dart';
+import '../common/app_snackbar.dart';
 
 /// Ajustes → Borrar datos del teléfono.
 ///
@@ -180,11 +181,7 @@ class BorrarDatosScreen extends ConsumerWidget {
     if (ok != true) return;
     if (escrito != palabra) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('La palabra no coincide. No se borró nada.'),
-          ),
-        );
+        showAppSnack(context, 'La palabra no coincide. No se borró nada.', tone: SnackTone.danger);
       }
       return;
     }
@@ -193,21 +190,13 @@ class BorrarDatosScreen extends ConsumerWidget {
     } catch (e) {
       debugPrint('[BorrarDatosScreen] $titulo: $e');
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'No se pudo borrar. Intenta de nuevo; no se perdió '
-              'nada más.',
-            ),
-          ),
-        );
+        showAppSnack(context, 'No se pudo borrar. Intenta de nuevo; no se perdió '
+              'nada más.', tone: SnackTone.danger);
       }
       return;
     }
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('$titulo: hecho.')));
+      showAppSnack(context, '$titulo: hecho.', tone: SnackTone.success);
     }
   }
 }

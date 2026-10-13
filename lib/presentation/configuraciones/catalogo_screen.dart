@@ -7,6 +7,9 @@ import '../../core/format/format.dart';
 import '../../data/providers.dart';
 import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
+import '../../domain/numeros.dart';
+import '../common/hoja_formulario.dart';
+import '../common/app_snackbar.dart';
 
 class CatalogoScreen extends ConsumerStatefulWidget {
   const CatalogoScreen({super.key});
@@ -29,10 +32,11 @@ class _CatalogoScreenState extends ConsumerState<CatalogoScreen> {
             icon: const Icon(Icons.cloud_download_outlined),
             tooltip: 'Cargar catálogo oficial',
             onPressed: () async {
-              final n = await ref.read(catalogoRepositoryProvider).cargarOficial();
+              final n = await ref
+                  .read(catalogoRepositoryProvider)
+                  .cargarOficial();
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('$n conceptos oficiales agregados.')));
+                showAppSnack(context, '$n conceptos oficiales agregados.');
               }
             },
           ),
@@ -58,17 +62,22 @@ class _CatalogoScreenState extends ConsumerState<CatalogoScreen> {
         error: (e, _) =>
             ErrorStateView(onRetry: () => ref.invalidate(catalogoTodoProvider)),
         data: (todos) {
-          final lista = todos.where((c) =>
-              c.clave.toLowerCase().contains(_query) ||
-              c.descripcion.toLowerCase().contains(_query) ||
-              c.categoria.toLowerCase().contains(_query)).toList();
+          final lista = todos
+              .where(
+                (c) =>
+                    c.clave.toLowerCase().contains(_query) ||
+                    c.descripcion.toLowerCase().contains(_query) ||
+                    c.categoria.toLowerCase().contains(_query),
+              )
+              .toList();
           if (lista.isEmpty) {
             // Vacío por búsqueda y vacío de verdad no se arreglan igual.
             return _query.isEmpty
                 ? const EmptyStateView(
                     icon: Icons.menu_book_outlined,
                     title: 'Sin conceptos en el catálogo.',
-                    hint: 'Carga el catálogo oficial con el botón de la nube '
+                    hint:
+                        'Carga el catálogo oficial con el botón de la nube '
                         'de arriba.',
                   )
                 : const EmptyStateView(
@@ -88,21 +97,33 @@ class _CatalogoScreenState extends ConsumerState<CatalogoScreen> {
                 Container(
                   width: double.infinity,
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: Text(cat,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
+                  child: Text(
+                    cat,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
-                ...porCategoria[cat]!.map((c) => ListTile(
-                      dense: true,
-                      title: Text('${c.clave} · ${c.descripcion}',
-                          maxLines: 2, overflow: TextOverflow.ellipsis),
-                      subtitle: Text('${c.unidad} · ${Fmt.money(c.precioUnitarioDefault)}'),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete_outline),
-                        onPressed: () => _confirmDelete(c),
-                      ),
-                      onTap: () => _dialog(c),
-                    )),
+                ...porCategoria[cat]!.map(
+                  (c) => ListTile(
+                    dense: true,
+                    title: Text(
+                      '${c.clave} · ${c.descripcion}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(
+                      '${c.unidad} · ${Fmt.money(c.precioUnitarioDefault)}',
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () => _confirmDelete(c),
+                    ),
+                    onTap: () => _dialog(c),
+                  ),
+                ),
               ];
             }).toList(),
           );
@@ -121,54 +142,66 @@ class _CatalogoScreenState extends ConsumerState<CatalogoScreen> {
     final claveCtrl = TextEditingController(text: c?.clave ?? '');
     final descCtrl = TextEditingController(text: c?.descripcion ?? '');
     final unidadCtrl = TextEditingController(text: c?.unidad ?? '');
-    final precioCtrl = TextEditingController(text: c?.precioUnitarioDefault.toString() ?? '');
+    final precioCtrl = TextEditingController(
+      text: numeroParaEditar(c?.precioUnitarioDefault),
+    );
     final catCtrl = TextEditingController(text: c?.categoria ?? '');
-    final formKey = GlobalKey<FormState>();
 
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(c == null ? 'Nuevo concepto' : 'Editar concepto'),
-        content: Form(
-          key: formKey,
-          child: SingleChildScrollView(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              TextFormField(controller: claveCtrl, decoration: const InputDecoration(labelText: 'Clave')),
-              TextFormField(
-                controller: descCtrl,
-                decoration: const InputDecoration(labelText: 'Descripción'),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
-              ),
-              TextFormField(controller: unidadCtrl, decoration: const InputDecoration(labelText: 'Unidad')),
-              TextFormField(
-                controller: precioCtrl,
-                decoration: const InputDecoration(labelText: 'Precio unitario (\$)'),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              ),
-              TextFormField(controller: catCtrl, decoration: const InputDecoration(labelText: 'Categoría')),
-            ]),
+    await mostrarHojaFormulario(
+      context,
+      builder: (ctx) => HojaFormulario(
+        titulo: c == null ? 'Nuevo concepto' : 'Editar concepto',
+        textoGuardar: c == null ? 'Agregar concepto' : 'Guardar cambios',
+        campos: [
+          TextFormField(
+            controller: claveCtrl,
+            decoration: const InputDecoration(labelText: 'Clave'),
           ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-          FilledButton(
-            onPressed: () async {
-              if (!formKey.currentState!.validate()) return;
-              final repo = ref.read(catalogoRepositoryProvider);
-              await repo.upsert(CatalogoConceptosCompanion(
-                id: Value(c?.id ?? repo.newId()),
-                clave: Value(claveCtrl.text.trim()),
-                descripcion: Value(descCtrl.text.trim()),
-                unidad: Value(unidadCtrl.text.trim()),
-                precioUnitarioDefault: Value(double.tryParse(precioCtrl.text.trim()) ?? 0),
-                categoria: Value(catCtrl.text.trim().isEmpty ? 'GENERAL' : catCtrl.text.trim()),
-                esPersonalizado: const Value(true),
-              ));
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            child: const Text('Guardar'),
+          TextFormField(
+            controller: descCtrl,
+            decoration: const InputDecoration(labelText: 'Descripción'),
+            validator: (v) =>
+                (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+          ),
+          TextFormField(
+            controller: unidadCtrl,
+            decoration: const InputDecoration(labelText: 'Unidad'),
+          ),
+          TextFormField(
+            controller: precioCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Precio unitario (opcional)',
+              prefixText: r'$ ',
+            ),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            // Antes un precio mal escrito («1,250») se guardaba como $0.
+            validator: (v) =>
+                (v ?? '').trim().isEmpty || (leerNumero(v) ?? -1) >= 0
+                ? null
+                : 'Escribe un precio válido, p. ej. 1,250',
+          ),
+          TextFormField(
+            controller: catCtrl,
+            decoration: const InputDecoration(labelText: 'Categoría'),
           ),
         ],
+        onGuardar: () async {
+          final repo = ref.read(catalogoRepositoryProvider);
+          await repo.upsert(
+            CatalogoConceptosCompanion(
+              id: Value(c?.id ?? repo.newId()),
+              clave: Value(claveCtrl.text.trim()),
+              descripcion: Value(descCtrl.text.trim()),
+              unidad: Value(unidadCtrl.text.trim()),
+              precioUnitarioDefault: Value(leerNumero(precioCtrl.text) ?? 0),
+              categoria: Value(
+                catCtrl.text.trim().isEmpty ? 'GENERAL' : catCtrl.text.trim(),
+              ),
+              esPersonalizado: const Value(true),
+            ),
+          );
+          return true;
+        },
       ),
     );
   }
@@ -180,8 +213,14 @@ class _CatalogoScreenState extends ConsumerState<CatalogoScreen> {
         title: const Text('Eliminar concepto'),
         content: Text('¿Eliminar "${c.clave} · ${c.descripcion}"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Eliminar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Eliminar'),
+          ),
         ],
       ),
     );

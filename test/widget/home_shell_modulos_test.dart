@@ -54,14 +54,14 @@ void main() {
   testWidgets('con todo prendido se ven las cinco pestañas', (t) async {
     await t.pumpWidget(montar(ModulosActivos.porDefecto));
     await t.pumpAndSettle();
-    expect(etiquetas(t), ['Obras', 'Cotizar', 'Equipo', 'Resumen', 'Ajustes']);
+    expect(etiquetas(t), ['Obras', 'Cotizaciones', 'Equipo', 'Inicio', 'Ajustes']);
   });
 
   testWidgets('sin cotizaciones desaparece "Cotizar" y los índices siguen '
       'apuntando a la pantalla correcta', (t) async {
     await t.pumpWidget(montar(_con(['obras', 'equipo', 'caja'])));
     await t.pumpAndSettle();
-    expect(etiquetas(t), ['Obras', 'Equipo', 'Resumen', 'Ajustes']);
+    expect(etiquetas(t), ['Obras', 'Equipo', 'Inicio', 'Ajustes']);
 
     // La segunda pestaña ahora es Equipo: tocarla debe enseñar Equipo, no
     // la pantalla que antes ocupaba ese índice.
@@ -80,7 +80,7 @@ void main() {
       'se corrige', (t) async {
     await t.pumpWidget(montar(ModulosActivos.porDefecto));
     await t.pumpAndSettle();
-    await t.tap(find.text('Cotizar'));
+    await t.tap(find.text('Cotizaciones'));
     await t.pumpAndSettle();
 
     final c = ProviderScope.containerOf(t.element(find.byType(HomeShell)));
@@ -90,7 +90,7 @@ void main() {
         .poner(_con(['obras', 'equipo']));
     await t.pumpAndSettle();
 
-    expect(find.text('Cotizar'), findsNothing);
+    expect(find.text('Cotizaciones'), findsNothing);
     expect(c.read(homeTabProvider), HomeTab.obras);
     expect(t.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex, 0);
     expect(t.widget<IndexedStack>(find.byType(IndexedStack)).index, 0);
@@ -100,7 +100,7 @@ void main() {
       (t) async {
     await t.pumpWidget(montar(_con(['obras'])));
     await t.pumpAndSettle();
-    expect(etiquetas(t), ['Obras', 'Resumen', 'Ajustes']);
+    expect(etiquetas(t), ['Obras', 'Inicio', 'Ajustes']);
   });
 
   test('pestañas de la obra según módulos', () {

@@ -17,6 +17,8 @@ import '../common/sync_status_action.dart';
 import '../common/texto_final_card.dart';
 import '../pdf_preview_screen.dart';
 import 'campo_a_nombre_de.dart';
+import '../../domain/numeros.dart';
+import '../common/hoja_formulario.dart';
 
 /// Editor de una NOTA DE OBRA. Gemelo de `/admin/obras/[id]/notas/[notaId]`.
 ///
@@ -39,11 +41,13 @@ class NotaObraDetailScreen extends ConsumerWidget {
     final async = ref.watch(notaObraProvider(notaId));
 
     return async.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(
         appBar: AppBar(),
         body: ErrorStateView(
-          message: 'No se pudo mostrar la nota. Tus datos están a salvo en el '
+          message:
+              'No se pudo mostrar la nota. Tus datos están a salvo en el '
               'teléfono.',
           onRetry: () => ref.invalidate(notaObraProvider(notaId)),
         ),
@@ -71,13 +75,15 @@ class _Editor extends ConsumerWidget {
   final NotaConRenglones nota;
   final String obraNombre;
 
-  NotaObraRepository _repo(WidgetRef ref) => ref.read(notaObraRepositoryProvider);
+  NotaObraRepository _repo(WidgetRef ref) =>
+      ref.read(notaObraRepositoryProvider);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
     final t = nota.totales;
-    final liquidada = estadoNotaDeCadena(nota.nota.estado) == EstadoNota.liquidada;
+    final liquidada =
+        estadoNotaDeCadena(nota.nota.estado) == EstadoNota.liquidada;
 
     return Scaffold(
       appBar: AppBar(
@@ -97,24 +103,36 @@ class _Editor extends ConsumerWidget {
                 case 'encabezado':
                   await _editarEncabezado(context, ref);
                 case 'estado':
-                  await _repo(ref).actualizar(NotaObraCompanion(
-                    id: Value(nota.nota.id),
-                    estado: Value(estadoNotaACadena(
-                        liquidada ? EstadoNota.abierta : EstadoNota.liquidada)),
-                    updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
-                  ));
+                  await _repo(ref).actualizar(
+                    NotaObraCompanion(
+                      id: Value(nota.nota.id),
+                      estado: Value(
+                        estadoNotaACadena(
+                          liquidada ? EstadoNota.abierta : EstadoNota.liquidada,
+                        ),
+                      ),
+                      updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
+                    ),
+                  );
                 case 'eliminar':
                   await _eliminar(context, ref);
               }
             },
             itemBuilder: (_) => [
-              const PopupMenuItem(value: 'encabezado', child: Text('Editar datos')),
+              const PopupMenuItem(
+                value: 'encabezado',
+                child: Text('Editar datos'),
+              ),
               PopupMenuItem(
-                  value: 'estado',
-                  child: Text(liquidada
-                      ? 'Marcar como abierta'
-                      : 'Marcar como liquidada')),
-              const PopupMenuItem(value: 'eliminar', child: Text('Eliminar nota')),
+                value: 'estado',
+                child: Text(
+                  liquidada ? 'Marcar como abierta' : 'Marcar como liquidada',
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'eliminar',
+                child: Text('Eliminar nota'),
+              ),
             ],
           ),
         ],
@@ -131,9 +149,11 @@ class _Editor extends ConsumerWidget {
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Center(
-                  child: Text('La nota está vacía. Agrega el primer trabajo acordado.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: cs.onSurfaceVariant)),
+                  child: Text(
+                    'La nota está vacía. Agrega el primer trabajo acordado.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: cs.onSurfaceVariant),
+                  ),
                 ),
               ),
             )
@@ -232,64 +252,64 @@ class _Editor extends ConsumerWidget {
     String? colaboradorId = nota.nota.colaboradorId;
     var mostrarPara = nota.nota.mostrarPara;
 
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Datos de la nota'),
-        content: SingleChildScrollView(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            CampoANombreDe(
-              controller: destinatario,
-              colaboradores: colaboradores,
-              colaboradorIdInicial: colaboradorId,
-              onColaborador: (id) => colaboradorId = id,
-              mostrarParaInicial: mostrarPara,
-              onMostrarPara: (v) => mostrarPara = v,
+    final ok = await mostrarHojaFormulario(
+      context,
+      builder: (ctx) => HojaFormulario(
+        titulo: 'Datos de la nota',
+        subtitulo: obraNombre,
+        textoGuardar: 'Guardar cambios',
+        campos: [
+          CampoANombreDe(
+            controller: destinatario,
+            colaboradores: colaboradores,
+            colaboradorIdInicial: colaboradorId,
+            onColaborador: (id) => colaboradorId = id,
+            mostrarParaInicial: mostrarPara,
+            onMostrarPara: (v) => mostrarPara = v,
+          ),
+          TextFormField(
+            controller: titulo,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: const InputDecoration(
+              labelText: 'Título (opcional)',
+              hintText: 'Ej. MZ 2 LT 1',
             ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: titulo,
-              decoration: const InputDecoration(
-                  labelText: 'Título', hintText: 'Ej. MZ 2 LT 1'),
+          ),
+          TextFormField(
+            controller: pie,
+            maxLines: 3,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: const InputDecoration(
+              labelText: 'Nota al pie (opcional)',
+              helperText: 'Sale impresa en el PDF.',
             ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: pie,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Nota al pie',
-                helperText: 'Sale impresa en el PDF.',
-              ),
-            ),
-          ]),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancelar')),
-          FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Guardar')),
+          ),
         ],
+        onGuardar: () => true,
       ),
     );
-    if (ok != true) return;
+    if (!ok) return;
 
-    await _repo(ref).actualizar(NotaObraCompanion(
-      id: Value(nota.nota.id),
-      destinatario: Value(destinatario.text.trim()),
-      // Se guarda SIEMPRE, también cuando quedó en null: es como se desliga una
-      // nota del padrón al reescribirle el nombre a mano.
-      colaboradorId: Value(colaboradorId),
-      mostrarPara: Value(mostrarPara),
-      titulo: Value(titulo.text.trim()),
-      notas: Value(pie.text.trim()),
-      updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
-    ));
+    await _repo(ref).actualizar(
+      NotaObraCompanion(
+        id: Value(nota.nota.id),
+        destinatario: Value(destinatario.text.trim()),
+        // Se guarda SIEMPRE, también cuando quedó en null: es como se desliga una
+        // nota del padrón al reescribirle el nombre a mano.
+        colaboradorId: Value(colaboradorId),
+        mostrarPara: Value(mostrarPara),
+        titulo: Value(titulo.text.trim()),
+        notas: Value(pie.text.trim()),
+        updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
+      ),
+    );
   }
 
   Future<void> _editarRenglon(
-      BuildContext context, WidgetRef ref, NotaObraRenglonRow? actual) async {
+    BuildContext context,
+    WidgetRef ref,
+    NotaObraRenglonRow? actual,
+  ) async {
     final resultado = await showModalBottomSheet<_DatosRenglon>(
       context: context,
       isScrollControlled: true,
@@ -313,17 +333,19 @@ class _Editor extends ConsumerWidget {
         orden: (nota.renglones.length + 1) * pasoOrdenRenglon,
       );
     } else {
-      await _repo(ref).actualizarRenglon(NotaObraRenglonCompanion(
-        id: Value(actual.id),
-        tipo: Value(tipoRenglonACadena(resultado.tipo)),
-        etiqueta: Value(resultado.etiqueta),
-        monto: Value(resultado.monto),
-        montoBase: Value(resultado.montoBase),
-        porcentaje: Value(resultado.porcentaje),
-        mostrarPorcentaje: Value(resultado.mostrarPorcentaje),
-        texto: Value(resultado.texto),
-        updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
-      ));
+      await _repo(ref).actualizarRenglon(
+        NotaObraRenglonCompanion(
+          id: Value(actual.id),
+          tipo: Value(tipoRenglonACadena(resultado.tipo)),
+          etiqueta: Value(resultado.etiqueta),
+          monto: Value(resultado.monto),
+          montoBase: Value(resultado.montoBase),
+          porcentaje: Value(resultado.porcentaje),
+          mostrarPorcentaje: Value(resultado.mostrarPorcentaje),
+          texto: Value(resultado.texto),
+          updatedAt: Value(DateTime.now().millisecondsSinceEpoch),
+        ),
+      );
     }
   }
 
@@ -336,13 +358,15 @@ class _Editor extends ConsumerWidget {
       textosEmpresa: ref.read(textosPdfProvider),
     );
     if (!context.mounted) return;
-    await Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => PdfPreviewScreen(
-        bytes: bytes,
-        titulo: 'Nota',
-        filename: 'nota.pdf',
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PdfPreviewScreen(
+          bytes: bytes,
+          titulo: 'Nota',
+          filename: 'nota.pdf',
+        ),
       ),
-    ));
+    );
   }
 }
 
@@ -366,32 +390,47 @@ class _Encabezado extends StatelessWidget {
       margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(14),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Expanded(
-              child: Text(
-                [obraNombre, if (nota.nota.titulo.isNotEmpty) nota.nota.titulo]
-                    .join(' · '),
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    [
+                      obraNombre,
+                      if (nota.nota.titulo.isNotEmpty) nota.nota.titulo,
+                    ].join(' · '),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                if (liquidada)
+                  Chip(
+                    label: Text(
+                      'Liquidada',
+                      style: Theme.of(context).textTheme.labelSmall,
+                    ),
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    backgroundColor: cs.tertiaryContainer,
+                    side: BorderSide.none,
+                  ),
+              ],
             ),
-            if (liquidada)
-              Chip(
-                label: const Text('Liquidada', style: TextStyle(fontSize: 11)),
-                visualDensity: VisualDensity.compact,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                backgroundColor: cs.tertiaryContainer,
-                side: BorderSide.none,
+            const SizedBox(height: 4),
+            Text(
+              Fmt.date(nota.nota.fecha),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+            ),
+            if (nota.nota.notas.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                nota.nota.notas,
+                style: TextStyle(color: cs.onSurfaceVariant),
               ),
-          ]),
-          const SizedBox(height: 4),
-          Text(Fmt.date(nota.nota.fecha),
-              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
-          if (nota.nota.notas.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(nota.nota.notas, style: TextStyle(color: cs.onSurfaceVariant)),
+            ],
           ],
-        ]),
+        ),
       ),
     );
   }
@@ -444,8 +483,10 @@ class _FilaRenglon extends StatelessWidget {
         index: indice,
         child: Icon(Icons.drag_handle, color: cs.outline),
       ),
-      title: Text(renglon.etiqueta,
-          style: const TextStyle(fontWeight: FontWeight.w500)),
+      title: Text(
+        renglon.etiqueta,
+        style: const TextStyle(fontWeight: FontWeight.w500),
+      ),
       subtitle: detalle.isEmpty ? null : Text(detalle.join(' · ')),
       trailing: tipo == TipoRenglon.texto
           ? null
@@ -473,37 +514,55 @@ class _Cuentas extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    Widget fila(String etiqueta, double valor,
-            {bool fuerte = false, Color? color}) =>
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 3),
-          child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Text(etiqueta,
-                style: TextStyle(fontWeight: fuerte ? FontWeight.bold : null)),
-            Text(Fmt.money(valor),
-                style: TextStyle(
-                    fontWeight: fuerte ? FontWeight.bold : null, color: color)),
-          ]),
-        );
+    Widget fila(
+      String etiqueta,
+      double valor, {
+      bool fuerte = false,
+      Color? color,
+    }) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            etiqueta,
+            style: TextStyle(fontWeight: fuerte ? FontWeight.bold : null),
+          ),
+          Text(
+            Fmt.money(valor),
+            style: TextStyle(
+              fontWeight: fuerte ? FontWeight.bold : null,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
 
     return Card(
       margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(14),
-        child: Column(children: [
-          fila('Suma de conceptos', totales.subtotal),
-          if (totales.deducciones > 0)
-            fila('Deducciones', -totales.deducciones, color: cs.error),
-          const Divider(),
-          fila('TOTAL', totales.total, fuerte: true),
-          if (totales.totalFijado)
-            _Aclaracion('Fijado a mano · calculado ${Fmt.money(totales.totalCalculado)}'),
-          fila('Pagado', -totales.pagado, color: cs.primary),
-          const Divider(),
-          fila('SALDO', totales.saldo, fuerte: true),
-          if (totales.saldoFijado)
-            _Aclaracion('Fijado a mano · calculado ${Fmt.money(totales.saldoCalculado)}'),
-        ]),
+        child: Column(
+          children: [
+            fila('Suma de conceptos', totales.subtotal),
+            if (totales.deducciones > 0)
+              fila('Deducciones', -totales.deducciones, color: cs.error),
+            const Divider(),
+            fila('TOTAL', totales.total, fuerte: true),
+            if (totales.totalFijado)
+              _Aclaracion(
+                'Fijado a mano · calculado ${Fmt.money(totales.totalCalculado)}',
+              ),
+            fila('Pagado', -totales.pagado, color: cs.primary),
+            const Divider(),
+            fila('SALDO', totales.saldo, fuerte: true),
+            if (totales.saldoFijado)
+              _Aclaracion(
+                'Fijado a mano · calculado ${Fmt.money(totales.saldoCalculado)}',
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -517,11 +576,15 @@ class _Aclaracion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Align(
-        alignment: Alignment.centerRight,
-        child: Text(texto,
-            style: TextStyle(
-                fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-      );
+    alignment: Alignment.centerRight,
+    child: Text(
+      texto,
+      style: Theme.of(context)
+          .textTheme
+          .labelSmall
+          ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+    ),
+  );
 }
 
 // ── Hoja de captura de un renglón ─────────────────────────────────────────
@@ -556,10 +619,16 @@ class _HojaRenglon extends StatefulWidget {
 
 class _HojaRenglonState extends State<_HojaRenglon> {
   late TipoRenglon _tipo = tipoRenglonDeCadena(widget.actual?.tipo);
-  late final _etiqueta = TextEditingController(text: widget.actual?.etiqueta ?? '');
+  late final _etiqueta = TextEditingController(
+    text: widget.actual?.etiqueta ?? '',
+  );
   late final _monto = TextEditingController(text: _num(widget.actual?.monto));
-  late final _base = TextEditingController(text: _num(widget.actual?.montoBase));
-  late final _pct = TextEditingController(text: _num(widget.actual?.porcentaje));
+  late final _base = TextEditingController(
+    text: _num(widget.actual?.montoBase),
+  );
+  late final _pct = TextEditingController(
+    text: _num(widget.actual?.porcentaje),
+  );
   late final _texto = TextEditingController(text: widget.actual?.texto ?? '');
   late bool _mostrarPct = widget.actual?.mostrarPorcentaje ?? false;
 
@@ -573,7 +642,7 @@ class _HojaRenglonState extends State<_HojaRenglon> {
   double? _leer(TextEditingController c) {
     final s = c.text.trim().replaceAll(',', '');
     if (s.isEmpty) return null;
-    return double.tryParse(s);
+    return leerNumero(s);
   }
 
   @override
@@ -603,132 +672,160 @@ class _HojaRenglonState extends State<_HojaRenglon> {
         bottom: MediaQuery.of(context).viewInsets.bottom + 16,
       ),
       child: SingleChildScrollView(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          DropdownButtonFormField<TipoRenglon>(
-            initialValue: _tipo,
-            decoration: const InputDecoration(labelText: 'Tipo'),
-            items: const [
-              DropdownMenuItem(
-                  value: TipoRenglon.concepto, child: Text('Concepto (suma)')),
-              DropdownMenuItem(
-                  value: TipoRenglon.deduccion, child: Text('Deducción (resta)')),
-              DropdownMenuItem(
-                  value: TipoRenglon.pago, child: Text('Pago o proyección')),
-              DropdownMenuItem(
-                  value: TipoRenglon.texto, child: Text('Apunte sin monto')),
-            ],
-            // Dejar de ser DEDUCCION apaga la casilla del %: es el mismo
-            // criterio que ya se sigue con los montos al pasar a TEXTO —no
-            // dejar ajustes fantasma de un tipo que ya no aplica.
-            onChanged: (v) => setState(() {
-              _tipo = v ?? TipoRenglon.concepto;
-              if (_tipo != TipoRenglon.deduccion) _mostrarPct = false;
-            }),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _etiqueta,
-            textCapitalization: TextCapitalization.characters,
-            decoration: InputDecoration(
-              labelText: 'Concepto *',
-              hintText: esTexto ? 'Ej. LIQUIDADO' : 'Ej. BASE DE TINACOS',
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DropdownButtonFormField<TipoRenglon>(
+              initialValue: _tipo,
+              decoration: const InputDecoration(labelText: 'Tipo'),
+              items: const [
+                DropdownMenuItem(
+                  value: TipoRenglon.concepto,
+                  child: Text('Concepto (suma)'),
+                ),
+                DropdownMenuItem(
+                  value: TipoRenglon.deduccion,
+                  child: Text('Deducción (resta)'),
+                ),
+                DropdownMenuItem(
+                  value: TipoRenglon.pago,
+                  child: Text('Pago o proyección'),
+                ),
+                DropdownMenuItem(
+                  value: TipoRenglon.texto,
+                  child: Text('Apunte sin monto'),
+                ),
+              ],
+              // Dejar de ser DEDUCCION apaga la casilla del %: es el mismo
+              // criterio que ya se sigue con los montos al pasar a TEXTO —no
+              // dejar ajustes fantasma de un tipo que ya no aplica.
+              onChanged: (v) => setState(() {
+                _tipo = v ?? TipoRenglon.concepto;
+                if (_tipo != TipoRenglon.deduccion) _mostrarPct = false;
+              }),
             ),
-          ),
-          const SizedBox(height: 8),
-          if (esTexto)
-            TextField(
-              controller: _texto,
-              decoration: const InputDecoration(
-                labelText: 'Apunte',
-                hintText: 'Ej. BASES DE TINACOS, PRETIL Y RECORTE DE PUERTAS',
-              ),
-            )
-          else ...[
-            Row(children: [
-              Expanded(
-                child: TextField(
-                  controller: _base,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  onChanged: (_) => setState(() {}),
-                  decoration: const InputDecoration(
-                      labelText: 'Bruto', helperText: 'Opcional'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TextField(
-                  controller: _pct,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  onChanged: (_) => setState(() {}),
-                  decoration: const InputDecoration(
-                      labelText: 'Retención %', helperText: 'Opcional'),
-                ),
-              ),
-            ]),
-            // Solo en las DEDUCCION: al socio le basta cuánto se le descontó, y
-            // enseñarle el «− 4%» invita a discutir la fórmula en vez del
-            // trato. En los demás tipos el desglose explica de dónde sale el
-            // neto que se cobra, así que ahí no se ofrece apagarlo.
-            if (esDeduccion)
-              CheckboxListTile(
-                value: _mostrarPct,
-                onChanged: (v) => setState(() => _mostrarPct = v ?? false),
-                controlAffinity: ListTileControlAffinity.leading,
-                contentPadding: EdgeInsets.zero,
-                visualDensity: VisualDensity.compact,
-                title: const Text('Mostrar el %'),
-                subtitle: Text(
-                  _mostrarPct
-                      ? 'Se imprime la cuenta completa debajo del concepto.'
-                      : 'Solo se ve el valor descontado.',
-                  style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
-                ),
-              ),
             const SizedBox(height: 8),
             TextField(
-              controller: _monto,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              controller: _etiqueta,
+              textCapitalization: TextCapitalization.characters,
               decoration: InputDecoration(
-                labelText: 'Importe',
-                helperText: sugerido != null
-                    ? 'Vacío = ${Fmt.money(sugerido)} (el sugerido).'
-                    : 'El monto de este renglón.',
+                labelText: 'Concepto *',
+                hintText: esTexto ? 'Ej. LIQUIDADO' : 'Ej. BASE DE TINACOS',
               ),
             ),
             const SizedBox(height: 8),
-            TextField(
-              controller: _texto,
-              decoration: const InputDecoration(
-                  labelText: 'Aclaración', helperText: 'Opcional'),
+            if (esTexto)
+              TextField(
+                controller: _texto,
+                decoration: const InputDecoration(
+                  labelText: 'Apunte',
+                  hintText: 'Ej. BASES DE TINACOS, PRETIL Y RECORTE DE PUERTAS',
+                ),
+              )
+            else ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _base,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      onChanged: (_) => setState(() {}),
+                      decoration: const InputDecoration(
+                        labelText: 'Bruto',
+                        helperText: 'Opcional',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _pct,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      onChanged: (_) => setState(() {}),
+                      decoration: const InputDecoration(
+                        labelText: 'Retención %',
+                        helperText: 'Opcional',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              // Solo en las DEDUCCION: al socio le basta cuánto se le descontó, y
+              // enseñarle el «− 4%» invita a discutir la fórmula en vez del
+              // trato. En los demás tipos el desglose explica de dónde sale el
+              // neto que se cobra, así que ahí no se ofrece apagarlo.
+              if (esDeduccion)
+                CheckboxListTile(
+                  value: _mostrarPct,
+                  onChanged: (v) => setState(() => _mostrarPct = v ?? false),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                  title: const Text('Mostrar el %'),
+                  subtitle: Text(
+                    _mostrarPct
+                        ? 'Se imprime la cuenta completa debajo del concepto.'
+                        : 'Solo se ve el valor descontado.',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: cs.onSurfaceVariant),
+                  ),
+                ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _monto,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(
+                  labelText: 'Importe',
+                  helperText: sugerido != null
+                      ? 'Vacío = ${Fmt.money(sugerido)} (el sugerido).'
+                      : 'El monto de este renglón.',
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _texto,
+                decoration: const InputDecoration(
+                  labelText: 'Aclaración',
+                  helperText: 'Opcional',
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancelar'),
+                ),
+                const Spacer(),
+                FilledButton(
+                  onPressed: _etiqueta.text.trim().isEmpty
+                      ? null
+                      : () => Navigator.pop(
+                          context,
+                          _DatosRenglon(
+                            tipo: _tipo,
+                            etiqueta: _etiqueta.text.trim(),
+                            // Un TEXTO no lleva importe: se limpian los tres para
+                            // que cambiar de tipo no deje montos fantasma sumando.
+                            monto: esTexto ? null : _leer(_monto),
+                            montoBase: esTexto ? null : _leer(_base),
+                            porcentaje: esTexto ? null : _leer(_pct),
+                            mostrarPorcentaje: _mostrarPct,
+                            texto: _texto.text.trim(),
+                          ),
+                        ),
+                  child: Text(widget.actual == null ? 'Agregar' : 'Guardar'),
+                ),
+              ],
             ),
           ],
-          const SizedBox(height: 16),
-          Row(children: [
-            TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancelar')),
-            const Spacer(),
-            FilledButton(
-              onPressed: _etiqueta.text.trim().isEmpty
-                  ? null
-                  : () => Navigator.pop(
-                        context,
-                        _DatosRenglon(
-                          tipo: _tipo,
-                          etiqueta: _etiqueta.text.trim(),
-                          // Un TEXTO no lleva importe: se limpian los tres para
-                          // que cambiar de tipo no deje montos fantasma sumando.
-                          monto: esTexto ? null : _leer(_monto),
-                          montoBase: esTexto ? null : _leer(_base),
-                          porcentaje: esTexto ? null : _leer(_pct),
-                          mostrarPorcentaje: _mostrarPct,
-                          texto: _texto.text.trim(),
-                        ),
-                      ),
-              child: Text(widget.actual == null ? 'Agregar' : 'Guardar'),
-            ),
-          ]),
-        ]),
+        ),
       ),
     );
   }

@@ -15,6 +15,8 @@ import '../common/sync_status_action.dart';
 import 'campo_a_nombre_de.dart';
 import 'nota_obra_detail_screen.dart';
 import '../common/esqueleto.dart';
+import '../common/hoja_formulario.dart';
+import '../common/app_snackbar.dart';
 
 /// Listado de NOTAS DE OBRA: las cuentas de los tratos de palabra con socios
 /// que no están en el sistema. Gemela de `/admin/obras/[id]/notas` en la web.
@@ -76,7 +78,8 @@ class _NotasObraScreenState extends ConsumerState<NotasObraScreen> {
             return const EmptyStateView(
               icon: Icons.handshake_outlined,
               title: 'Sin notas todavía.',
-              hint: 'Aquí van las cuentas de los tratos de esta obra: cuánto se '
+              hint:
+                  'Aquí van las cuentas de los tratos de esta obra: cuánto se '
                   'acordó por cada trabajo, qué se ha pagado y qué falta.',
             );
           }
@@ -84,7 +87,8 @@ class _NotasObraScreenState extends ConsumerState<NotasObraScreen> {
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 88),
             itemCount: notas.length,
             separatorBuilder: (_, _) => const SizedBox(height: 8),
-            itemBuilder: (_, i) => _TarjetaNota(notas[i], obraNombre: obraNombre),
+            itemBuilder: (_, i) =>
+                _TarjetaNota(notas[i], obraNombre: obraNombre),
           );
         },
       ),
@@ -107,48 +111,56 @@ class _NotasObraScreenState extends ConsumerState<NotasObraScreen> {
     String? colaboradorId;
     var mostrarPara = true;
 
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Nueva nota'),
-        content: SingleChildScrollView(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            CampoANombreDe(
-              controller: destinatario,
-              colaboradores: colaboradores,
-              autofocus: true,
-              onColaborador: (id) => colaboradorId = id,
-              mostrarParaInicial: mostrarPara,
-              onMostrarPara: (v) => mostrarPara = v,
+    final ok = await mostrarHojaFormulario(
+      context,
+      builder: (ctx) => HojaFormulario(
+        titulo: 'Nueva nota',
+        subtitulo: obraNombre,
+        textoGuardar: 'Crear y capturar',
+        campos: [
+          CampoANombreDe(
+            controller: destinatario,
+            colaboradores: colaboradores,
+            autofocus: true,
+            onColaborador: (id) => colaboradorId = id,
+            mostrarParaInicial: mostrarPara,
+            onMostrarPara: (v) => mostrarPara = v,
+          ),
+          TextFormField(
+            controller: titulo,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: const InputDecoration(
+              labelText: 'Título (opcional)',
+              hintText: 'Ej. MZ 2 LT 1',
             ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: titulo,
-              decoration: const InputDecoration(
-                  labelText: 'Título', hintText: 'Ej. MZ 2 LT 1'),
-            ),
-          ]),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancelar')),
-          FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Crear y capturar')),
+          ),
         ],
+        onGuardar: () => true,
       ),
     );
 
     // El nombre ya NO es obligatorio (0034): la nota se abre y se le pone
     // después, o nunca. Lo que se captura es el trato, no la ficha del socio.
-    if (ok != true) return;
+    if (!ok) return;
 
     final empresaId = ref.read(empresaIdProvider);
-    if (empresaId == null) return;
+    if (empresaId == null) {
+      // Antes se salía sin decir nada: tocabas «Crear» y no pasaba nada.
+      if (context.mounted) {
+        showAppSnack(
+          context,
+          'Inicia sesión con tu empresa para crear notas.',
+          tone: SnackTone.danger,
+        );
+      }
+      return;
+    }
 
-    final cuantas = ref.read(notasDeObraProvider(obraId)).asData?.value.length ?? 0;
-    final id = await ref.read(notaObraRepositoryProvider).crear(
+    final cuantas =
+        ref.read(notasDeObraProvider(obraId)).asData?.value.length ?? 0;
+    final id = await ref
+        .read(notaObraRepositoryProvider)
+        .crear(
           obraId: obraId,
           empresaId: empresaId,
           destinatario: destinatario.text.trim(),
@@ -160,9 +172,12 @@ class _NotasObraScreenState extends ConsumerState<NotasObraScreen> {
 
     if (!context.mounted) return;
     // Se entra directo a capturar: es lo que sigue siempre.
-    await Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => NotaObraDetailScreen(notaId: id, obraNombre: obraNombre),
-    ));
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            NotaObraDetailScreen(notaId: id, obraNombre: obraNombre),
+      ),
+    );
   }
 }
 
@@ -176,50 +191,65 @@ class _TarjetaNota extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final t = nota.totales;
-    final liquidada = estadoNotaDeCadena(nota.nota.estado) == EstadoNota.liquidada;
+    final liquidada =
+        estadoNotaDeCadena(nota.nota.estado) == EstadoNota.liquidada;
 
     return Card(
       margin: EdgeInsets.zero,
       child: ListTile(
         contentPadding: const EdgeInsets.fromLTRB(16, 10, 12, 10),
-        title: Row(children: [
-          Expanded(
-            child: NombreDeNota(
-              nota.nota.destinatario,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+        title: Row(
+          children: [
+            Expanded(
+              child: NombreDeNota(
+                nota.nota.destinatario,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
-          ),
-          Chip(
-            label: Text(liquidada ? 'Liquidada' : 'Abierta',
-                style: const TextStyle(fontSize: 11)),
-            visualDensity: VisualDensity.compact,
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            backgroundColor:
-                liquidada ? cs.tertiaryContainer : cs.secondaryContainer,
-            side: BorderSide.none,
-          ),
-        ]),
+            Chip(
+              label: Text(
+                liquidada ? 'Liquidada' : 'Abierta',
+                style: Theme.of(context).textTheme.labelSmall,
+              ),
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              backgroundColor: liquidada
+                  ? cs.tertiaryContainer
+                  : cs.secondaryContainer,
+              side: BorderSide.none,
+            ),
+          ],
+        ),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 6),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            if (nota.nota.titulo.isNotEmpty) Text(nota.nota.titulo),
-            const SizedBox(height: 4),
-            Row(children: [
-              Expanded(child: Text('Total ${Fmt.money(t.total)}')),
-              Text(
-                'Saldo ${Fmt.money(t.saldo)}',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: t.saldo > 0 ? cs.error : cs.primary,
-                ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (nota.nota.titulo.isNotEmpty) Text(nota.nota.titulo),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Expanded(child: Text('Total ${Fmt.money(t.total)}')),
+                  Text(
+                    'Saldo ${Fmt.money(t.saldo)}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: t.saldo > 0 ? cs.error : cs.primary,
+                    ),
+                  ),
+                ],
               ),
-            ]),
-          ]),
+            ],
+          ),
         ),
-        onTap: () => Navigator.of(context).push(MaterialPageRoute(
-          builder: (_) => NotaObraDetailScreen(
-              notaId: nota.nota.id, obraNombre: obraNombre),
-        )),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => NotaObraDetailScreen(
+              notaId: nota.nota.id,
+              obraNombre: obraNombre,
+            ),
+          ),
+        ),
       ),
     );
   }

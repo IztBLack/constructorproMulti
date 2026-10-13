@@ -325,7 +325,7 @@ void main() {
       await t.pumpWidget(montarObra(_con(['notas']), rol: 'admin'));
       await t.pumpAndSettle();
       await abrirMenu(t);
-      expect(find.text('Notas de trato'), findsOneWidget);
+      expect(find.text('Notas'), findsOneWidget);
       expect(find.text('Bitácora'), findsNothing);
     });
 
@@ -334,7 +334,7 @@ void main() {
           montarObra(_con(['bitacora', 'notas']), rol: 'compras'));
       await t.pumpAndSettle();
       await abrirMenu(t);
-      expect(find.text('Notas de trato'), findsOneWidget);
+      expect(find.text('Notas'), findsOneWidget);
       expect(find.text('Bitácora'), findsNothing);
     });
 

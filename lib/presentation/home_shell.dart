@@ -89,7 +89,7 @@ class _HomeShellState extends ConsumerState<HomeShell> with AbrirDesdeInicio {
     HomeTab.cotizar => const NavigationDestination(
       icon: Icon(Icons.description_outlined),
       selectedIcon: Icon(Icons.description),
-      label: 'Cotizar',
+      label: 'Cotizaciones',
     ),
     HomeTab.equipo => const NavigationDestination(
       icon: Icon(Icons.people_outline),
@@ -99,7 +99,7 @@ class _HomeShellState extends ConsumerState<HomeShell> with AbrirDesdeInicio {
     HomeTab.resumen => const NavigationDestination(
       icon: Icon(Icons.insights_outlined),
       selectedIcon: Icon(Icons.insights),
-      label: 'Resumen',
+      label: 'Inicio',
     ),
     HomeTab.config => const NavigationDestination(
       icon: Icon(Icons.settings_outlined),

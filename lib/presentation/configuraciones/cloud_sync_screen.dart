@@ -17,6 +17,7 @@ import '../../data/providers.dart';
 import '../../domain/sync/rechazos_sync.dart';
 import '../common/error_state_view.dart';
 import 'conflictos_screen.dart';
+import '../common/app_snackbar.dart';
 
 /// Pantalla de conexión a la nube (Fase 2). Sin sesión muestra el login; con
 /// sesión y empresa muestra el estado y el botón de sincronizar; con sesión pero
@@ -285,9 +286,7 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
                 'Usa "Sincronizar ahora" para reintentar.',
         };
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(mensaje)),
-        );
+        showAppSnack(context, mensaje);
       } else {
         final mensajeError = resultado['error'] as String? ??
             'Código inválido o expirado. Solicita uno nuevo al administrador.';
@@ -366,10 +365,8 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
         if (!mounted) return;
         setState(() => _loading = false);
         if (!cerrada) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('No se pudo cerrar la sesión. Revisa tu conexión e '
-                'intenta de nuevo.'),
-          ));
+          showAppSnack(context, 'No se pudo cerrar la sesión. Revisa tu conexión e '
+                'intenta de nuevo.', tone: SnackTone.danger);
           return;
         }
         _irAlLogin();
@@ -477,10 +474,8 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
     // Sin señal, vaciar dejaría el teléfono sin datos hasta que vuelva la red.
     if (!await _app.read(syncServiceProvider).hayRed) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Necesitas señal para rehacer la copia. Tus datos siguen '
-            'a salvo en el teléfono.'),
-      ));
+      showAppSnack(context, 'Necesitas señal para rehacer la copia. Tus datos siguen '
+            'a salvo en el teléfono.', tone: SnackTone.warning);
       return;
     }
     final sinSubir = await _app.read(databaseProvider).contarSinSubir();
@@ -527,16 +522,12 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
       final sync = _app.read(syncServiceProvider);
       final outcome = await sync.syncAll();
       if (!mounted) return;
-      messenger.showSnackBar(SnackBar(
-        content: Text(outcome == SyncOutcome.ok
+      showAppSnackEn(messenger, outcome == SyncOutcome.ok
             ? 'Listo: este teléfono tiene ahora solo lo de la nube.'
-            : _mensajeOutcome(outcome, sync.ultimoError)),
-      ));
+            : _mensajeOutcome(outcome, sync.ultimoError));
     } catch (e) {
       debugPrint('[CloudSyncScreen] _rehacerCopia error: $e');
-      messenger.showSnackBar(const SnackBar(
-        content: Text('No se pudo rehacer la copia. Intenta de nuevo con señal.'),
-      ));
+      showAppSnackEn(messenger, 'No se pudo rehacer la copia. Intenta de nuevo con señal.', tone: SnackTone.danger);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -558,12 +549,9 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
       _reintentarValidacion();
       return;
     }
-    messenger.showSnackBar(SnackBar(
-      content: Text(_mensajeOutcome(outcome, syncService.ultimoError)),
-      duration: outcome == SyncOutcome.error
+    showAppSnackEn(messenger, _mensajeOutcome(outcome, syncService.ultimoError), duracion: outcome == SyncOutcome.error
           ? const Duration(seconds: 8)
-          : const Duration(seconds: 4),
-    ));
+          : const Duration(seconds: 4));
   }
 
   // ---------------------------------------------------------------------------
@@ -605,12 +593,9 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
 
     if (!mounted) return;
     setState(() => _loading = false);
-    messenger.showSnackBar(SnackBar(
-      content: Text(_mensajeOutcome(outcome, syncService.ultimoError)),
-      duration: outcome == SyncOutcome.error
+    showAppSnackEn(messenger, _mensajeOutcome(outcome, syncService.ultimoError), duracion: outcome == SyncOutcome.error
           ? const Duration(seconds: 8)
-          : const Duration(seconds: 4),
-    ));
+          : const Duration(seconds: 4));
   }
 
   // ---------------------------------------------------------------------------
@@ -699,9 +684,8 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
                     onPressed: () async {
                       final messenger = ScaffoldMessenger.of(context);
                       await Clipboard.setData(ClipboardData(text: detalle));
-                      messenger.showSnackBar(const SnackBar(
-                          content: Text('Detalle copiado. Pégalo en tu '
-                              'mensaje a soporte.')));
+                      showAppSnackEn(messenger, 'Detalle copiado. Pégalo en tu '
+                              'mensaje a soporte.');
                     },
                     icon: const Icon(Icons.copy),
                     label: const Text('Copiar para soporte'),

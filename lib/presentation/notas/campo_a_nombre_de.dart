@@ -196,7 +196,7 @@ class _CasillaPara extends StatelessWidget {
                 valor
                     ? 'Sale con una raya, para llenarlo a mano.'
                     : 'No se imprime: el encabezado se cierra sin él.',
-                style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(color: cs.onSurfaceVariant),
               ),
             ]),
           ),

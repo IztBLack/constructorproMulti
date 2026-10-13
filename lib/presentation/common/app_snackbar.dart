@@ -30,7 +30,7 @@ ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showAppSnack(
   SnackTone tone = SnackTone.neutral,
   String? undoLabel,
   VoidCallback? onUndo,
-  Duration duracion = const Duration(seconds: 4),
+  Duration? duracion,
 }) =>
     showAppSnackEn(
       ScaffoldMessenger.of(context),
@@ -50,7 +50,7 @@ ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showAppSnackEn(
   SnackTone tone = SnackTone.neutral,
   String? undoLabel,
   VoidCallback? onUndo,
-  Duration duracion = const Duration(seconds: 4),
+  Duration? duracion,
 }) {
   // El aviso va sobre el fondo INVERTIDO del tema: los colores de estado que
   // se leen ahí son los del tema contrario (ver `AppColors.sobreInvertido`).
@@ -66,7 +66,9 @@ ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showAppSnackEn(
   messenger.hideCurrentSnackBar();
   return messenger.showSnackBar(
     SnackBar(
-      duration: duracion,
+      // Con «Deshacer», 8 s: con guantes cuesta atinarle (DISENO_MOVIL §3).
+      duration: duracion ??
+          (onUndo != null ? const Duration(seconds: 8) : const Duration(seconds: 4)),
       content: Row(
         children: [
           if (icono != null) ...[

@@ -544,18 +544,15 @@ class _PaseListaRowState extends ConsumerState<_PaseListaRow> {
     await repo.desvincular(widget.obraId, widget.colaboradorId);
     if (!mounted) return;
 
-    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
-    messenger.showSnackBar(SnackBar(
-      content: Text('${widget.nombre} ya no está en esta obra.'),
-      duration: const Duration(seconds: 6),
-      action: SnackBarAction(
-        label: 'Deshacer',
-        onPressed: () => repo.asignarObra(
-          obraId: widget.obraId,
-          colaboradorId: widget.colaboradorId,
-        ),
+    showAppSnack(
+      context,
+      '${widget.nombre} ya no está en esta obra.',
+      undoLabel: 'Deshacer',
+      onUndo: () => repo.asignarObra(
+        obraId: widget.obraId,
+        colaboradorId: widget.colaboradorId,
       ),
-    ));
+    );
   }
 
   Future<void> _moverAObra() async {
@@ -563,8 +560,7 @@ class _PaseListaRowState extends ConsumerState<_PaseListaRow> {
         .where((o) => o.activa && o.id != widget.obraId)
         .toList();
     if (obras.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No hay otra obra activa a la cual mover.')));
+      showAppSnack(context, 'No hay otra obra activa a la cual mover.', tone: SnackTone.warning);
       return;
     }
     final destino = await showModalBottomSheet<String>(
@@ -656,8 +652,7 @@ class _PaseListaRowState extends ConsumerState<_PaseListaRow> {
         final extra = cuadrillaElegida != null
             ? ' y se unió a la cuadrilla ${cuadrillaElegida.nombre}'
             : '';
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('${widget.nombre} movido a la otra obra$extra.')));
+        showAppSnack(context, '${widget.nombre} movido a la otra obra$extra.');
       }
     } catch (e) {
       debugPrint('[PaseLista] mover a otra obra: $e');
@@ -819,8 +814,7 @@ class _HojaAgregarPersonaState extends ConsumerState<_HojaAgregarPersona> {
         );
     if (!mounted) return;
     Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('$nombre agregado. Te faltan sus datos.')));
+    showAppSnack(context, '$nombre agregado. Te faltan sus datos.');
   }
 
   Future<void> _traer(Colaborador c) async {
@@ -830,8 +824,7 @@ class _HojaAgregarPersonaState extends ConsumerState<_HojaAgregarPersona> {
         .asignarObra(obraId: widget.obraId, colaboradorId: c.id);
     if (!mounted) return;
     Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${c.nombre} ahora está en ${widget.obraNombre}.')));
+    showAppSnack(context, '${c.nombre} ahora está en ${widget.obraNombre}.');
   }
 
   @override
@@ -927,11 +920,11 @@ class _HojaAgregarPersonaState extends ConsumerState<_HojaAgregarPersona> {
                       subtitle: otras.isEmpty
                           ? null
                           : Text('Hoy está en ${otras.join(', ')} · se moverá',
-                              style: TextStyle(fontSize: 11, color: cs.tertiary)),
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.tertiary)),
                       trailing: idsIncompletos.contains(c.id)
                           ? Chip(
-                              label: const Text('Sin datos',
-                                  style: TextStyle(fontSize: 10)),
+                              label: Text('Sin datos',
+                                  style: Theme.of(context).textTheme.labelSmall),
                               visualDensity: VisualDensity.compact,
                               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               backgroundColor: cs.tertiaryContainer,
