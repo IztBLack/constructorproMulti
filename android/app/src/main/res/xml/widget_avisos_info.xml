@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- updatePeriodMillis: cada 30 min Android vuelve a pintar el widget; así, al
+     cambiar el día, deja de decir «hoy» con los datos de ayer. Los datos los
+     pone la app; el widget nunca consulta nada. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_avisos_desc"
+    android:initialLayout="@layout/widget_avisos"
+    android:minHeight="180dp"
+    android:minResizeHeight="110dp"
+    android:minResizeWidth="180dp"
+    android:minWidth="250dp"
+    android:previewLayout="@layout/widget_avisos"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellHeight="2"
+    android:targetCellWidth="4"
+    android:updatePeriodMillis="1800000"
+    android:widgetCategory="home_screen" />

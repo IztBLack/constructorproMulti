@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Colores de los widgets de la pantalla de inicio. Misma paleta que la app
+     (lib/core/theme/app_colors.dart): pares de fondo suave + texto fuerte. -->
+<resources>
+    <color name="w_fondo">#FFFFFF</color>
+    <color name="w_texto">#171717</color>
+    <color name="w_texto_medio">#404040</color>
+    <color name="w_texto_suave">#595959</color>
+    <color name="w_cuadro">#F5F5F5</color>
+    <color name="w_divisor">#E5E5E5</color>
+    <color name="w_boton_fondo">#171717</color>
+    <color name="w_boton_texto">#FFFFFF</color>
+    <color name="w_verde_suave">#DCFCE7</color>
+    <color name="w_verde">#15803D</color>
+    <color name="w_ambar_suave">#FEF3C7</color>
+    <color name="w_ambar">#B45309</color>
+    <color name="w_morado_suave">#F3E8FF</color>
+    <color name="w_morado">#7E22CE</color>
+    <color name="w_morado_fuerte">#7E22CE</color>
+    <color name="w_azul_suave">#DBEAFE</color>
+    <color name="w_azul">#1D4ED8</color>
+    <color name="w_aviso_fondo">#FAF5FF</color>
+    <color name="w_rojo_suave">#FEE2E2</color>
+    <color name="w_rojo">#B91C1C</color>
+</resources>

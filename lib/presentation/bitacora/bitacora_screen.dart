@@ -14,6 +14,7 @@ import '../../core/sync/cloud_providers.dart';
 import '../../core/sync/rol_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets_inicio/widgets_inicio_service.dart';
 import '../../data/providers.dart';
 import '../../data/repositories_bitacora.dart';
 import '../../domain/bitacora/bitacora_reglas.dart';
@@ -62,6 +63,8 @@ class _BitacoraScreenState extends ConsumerState<BitacoraScreen> {
   @override
   void initState() {
     super.initState();
+    // Lo que el widget de avisos marcaba como «nuevo» ya se vio.
+    unawaited(ref.read(widgetsInicioProvider).marcarAvisosVistos());
     _reloj = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) {
         setState(() => _ahora = DateTime.now().millisecondsSinceEpoch);

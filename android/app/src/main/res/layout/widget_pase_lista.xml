@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget «Pase de lista de hoy» (4x2). Lo pinta PaseListaWidget. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/pase_raiz"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_fondo"
+    android:padding="12dp">
+    <LinearLayout
+        android:id="@+id/pase_contenido"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <ImageView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@drawable/widget_mosaico_verde"
+                android:contentDescription="@null"
+                android:padding="7dp"
+                android:src="@drawable/ic_w_pase" />
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+                <TextView
+                    android:id="@+id/pase_titulo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="Pase de lista"
+                    android:textColor="@color/w_texto"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/pase_sub"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:maxLines="1"
+                    android:text="Hoy"
+                    android:textColor="@color/w_texto_suave"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <TextView
+                android:id="@+id/pase_presentes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:includeFontPadding="false"
+                android:text="0"
+                android:textColor="@color/w_texto"
+                android:textSize="36sp"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/pase_de"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="de 0 presentes"
+                android:textColor="@color/w_texto_medio"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/pase_boton"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:background="@drawable/widget_boton"
+                android:gravity="center"
+                android:paddingHorizontal="14dp"
+                android:text="Pasar lista"
+                android:textColor="@color/w_boton_texto"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/pase_cuadros"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal">
+            <LinearLayout
+                android:id="@+id/pase_cu0"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@drawable/widget_cuadro"
+                android:orientation="vertical"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp">
+                <TextView
+                    android:id="@+id/pase_cu0_nombre"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/w_texto_suave"
+                    android:textSize="12sp" />
+                <TextView
+                    android:id="@+id/pase_cu0_txt"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/w_texto"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+            <LinearLayout
+                android:id="@+id/pase_cu1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:background="@drawable/widget_cuadro"
+                android:orientation="vertical"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp">
+                <TextView
+                    android:id="@+id/pase_cu1_nombre"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/w_texto_suave"
+                    android:textSize="12sp" />
+                <TextView
+                    android:id="@+id/pase_cu1_txt"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/w_texto"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+            <TextView
+                android:id="@+id/pase_chip"
+            android:visibility="gone"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/widget_chip_ambar"
+                android:layout_marginEnd="8dp"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="3dp"
+                android:textColor="@color/w_ambar"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/pase_actualizado"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:maxLines="1"
+                android:textColor="@color/w_texto_suave"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/pase_mensaje"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:padding="8dp"
+        android:textColor="@color/w_texto_medio"
+        android:textSize="14sp"
+        android:visibility="gone" />
+</FrameLayout>

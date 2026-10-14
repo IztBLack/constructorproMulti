@@ -14,6 +14,7 @@ import 'core/storage/app_paths.dart';
 import 'core/sync/cloud_providers.dart';
 import 'core/sync/supabase_config.dart';
 import 'core/theme/app_theme.dart';
+import 'core/widgets_inicio/widgets_inicio_service.dart';
 import 'data/demo_data.dart';
 import 'data/providers.dart';
 import 'presentation/home_shell.dart';
@@ -73,6 +74,8 @@ class ConstructorProApp extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
     // Arranca el sync automático (arranque/reconexión/post-escritura).
     ref.watch(syncControllerProvider);
+    // Mantiene al día los widgets de la pantalla de inicio (solo Android).
+    ref.watch(widgetsInicioProvider);
     return MaterialApp(
       title: 'ConstructorPro',
       debugShowCheckedModeBanner: false,

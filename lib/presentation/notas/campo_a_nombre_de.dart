@@ -118,7 +118,7 @@ class _CampoANombreDeState extends State<CampoANombreDe> {
           textCapitalization: TextCapitalization.characters,
           decoration: InputDecoration(
             labelText: 'A nombre de',
-            hintText: 'Ej. ORLANDO RAMOZ',
+            hintText: 'Ej. Juan Pérez',
             helperText: _colaboradorId != null
                 ? 'Ligada al padrón de colaboradores.'
                 : 'Como lo conoces. No necesita estar dado de alta.',

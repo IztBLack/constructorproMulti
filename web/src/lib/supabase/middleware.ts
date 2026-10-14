@@ -39,6 +39,10 @@ export async function updateSession(request: NextRequest) {
   if (!user && protegida) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
+    // Recordar a dónde iba (p. ej. desde un widget del móvil) para regresar
+    // ahí al entrar. /login la valida con `siguienteSeguro`.
+    url.search = '';
+    url.searchParams.set('next', path + request.nextUrl.search);
     return NextResponse.redirect(url);
   }
 

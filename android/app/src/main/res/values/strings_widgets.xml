@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_pase_nombre">Pase de lista de hoy</string>
+    <string name="widget_pase_desc">Cuántos llegaron hoy, por cuadrilla, y lo que falta por subir.</string>
+    <string name="widget_avisos_nombre">Avisos de la oficina</string>
+    <string name="widget_avisos_desc">Instrucciones, aclaraciones y notas nuevas de tus obras.</string>
+    <string name="widget_acciones_nombre">Acciones rápidas</string>
+    <string name="widget_acciones_desc">Pasar lista, bitácora, nota nueva y gasto de caja en un toque.</string>
+    <string name="widget_obras_nombre">Hoy en las obras</string>
+    <string name="widget_obras_desc">Cuánta gente hay hoy en cada obra y cuáles no han pasado lista.</string>
+    <string name="widget_material_nombre">Material de la obra</string>
+    <string name="widget_material_desc">Lo que pediste, si ya se aprobó o se compró, y lo que llegó hoy.</string>
+    <string name="widget_programa_nombre">Lo que toca esta semana</string>
+    <string name="widget_programa_desc">Lo que empieza, lo que termina y lo que va atrasado del programa.</string>
+    <string name="widget_aprobar_nombre">Por aprobar</string>
+    <string name="widget_aprobar_desc">Cuántos pedidos, extras y estimaciones esperan tu visto bueno.</string>
+    <string name="widget_seguridad_nombre">Seguridad de hoy</string>
+    <string name="widget_seguridad_desc">En qué obras falta la revisión diaria y cuántos incidentes hubo en la semana.</string>
+    <string name="widget_garantias_nombre">Garantías abiertas</string>
+    <string name="widget_garantias_desc">Lo que reportaron los clientes y está por atenderse, con lo programado para hoy primero.</string>
+    <string name="widget_herramienta_nombre">Herramienta en obra</string>
+    <string name="widget_herramienta_desc">Qué herramienta anda fuera, quién la tiene y cuál ya debió regresar.</string>
+</resources>
