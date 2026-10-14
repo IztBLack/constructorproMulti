@@ -141,7 +141,10 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          const SliverAppBar.large(
+          // Barra normal, como las otras pestañas (Obras, Equipo, Inicio). La
+          // `.large` dejaba ~150 dp vacíos arriba del título en el teléfono.
+          const SliverAppBar(
+            pinned: true,
             title: Text('Ajustes'),
             actions: [SyncStatusAction()],
           ),

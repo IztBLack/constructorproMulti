@@ -10,6 +10,13 @@ class Fmt {
   static final _dayName = DateFormat('EEE dd MMM', 'es_MX');
 
   static String money(num v) => _currency.format(v);
+
+  static final _currencyEntero =
+      NumberFormat.currency(locale: 'es_MX', symbol: '\$', decimalDigits: 0);
+
+  /// Pesos cerrados («$3,500»): para aproximados como el sueldo semanal de un
+  /// diario de $583.33, que daría «$3,499.98».
+  static String moneyRedondo(num v) => _currencyEntero.format(v.round());
   static String date(int epochMillis) => _date
       .format(DateTime.fromMillisecondsSinceEpoch(epochMillis))
       .replaceAll('.', '');

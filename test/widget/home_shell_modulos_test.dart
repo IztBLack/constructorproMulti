@@ -54,7 +54,7 @@ void main() {
   testWidgets('con todo prendido se ven las cinco pestañas', (t) async {
     await t.pumpWidget(montar(ModulosActivos.porDefecto));
     await t.pumpAndSettle();
-    expect(etiquetas(t), ['Obras', 'Cotizaciones', 'Equipo', 'Inicio', 'Ajustes']);
+    expect(etiquetas(t), ['Obras', 'Cotizar', 'Equipo', 'Inicio', 'Ajustes']);
   });
 
   testWidgets('sin cotizaciones desaparece "Cotizar" y los índices siguen '
@@ -80,7 +80,7 @@ void main() {
       'se corrige', (t) async {
     await t.pumpWidget(montar(ModulosActivos.porDefecto));
     await t.pumpAndSettle();
-    await t.tap(find.text('Cotizaciones'));
+    await t.tap(find.text('Cotizar'));
     await t.pumpAndSettle();
 
     final c = ProviderScope.containerOf(t.element(find.byType(HomeShell)));
@@ -90,7 +90,7 @@ void main() {
         .poner(_con(['obras', 'equipo']));
     await t.pumpAndSettle();
 
-    expect(find.text('Cotizaciones'), findsNothing);
+    expect(find.text('Cotizar'), findsNothing);
     expect(c.read(homeTabProvider), HomeTab.obras);
     expect(t.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex, 0);
     expect(t.widget<IndexedStack>(find.byType(IndexedStack)).index, 0);

@@ -51,11 +51,9 @@ enum SyncOutcome {
 /// métodos de repositorio reales. (Este contrato reemplaza un comentario viejo
 /// que afirmaba lo contrario, de antes de que existiera el trigger.)
 ///
-/// LÍMITES CONOCIDOS de v1 (documentados; refinar después):
-/// - Cursor solo por `server_updated_at` (no compuesto con id) → en el borde de
-///   una página con timestamps idénticos podría re-traer/saltar filas; con
-///   pocos datos no se nota.
-/// - Pull sin paginación (límite 1000/tabla/sync).
+/// Pull por páginas de 1000 con cursor compuesto (server_updated_at, id): un
+/// alta masiva con el mismo timestamp ya no deja filas sin bajar (2026-10-13;
+/// antes era `> cursor` con límite 1000 y saltaba el resto del empate).
 class SyncService {
   SyncService({
     required this.db,
@@ -806,17 +804,45 @@ class SyncService {
     final localCols = t.$columns.map((c) => c.name).toSet();
     final cursorTs = metadata.cursorTs(name);
 
-    final serverRows = await client
-        .from(name)
-        .select()
-        .gt('server_updated_at', cursorTs)
-        .order('server_updated_at')
-        .limit(1000);
-
+    // Por páginas y con cursor COMPUESTO (server_updated_at, id). Antes era
+    // una sola consulta `> cursor` con límite 1000: si más de 1000 filas
+    // compartían el mismo server_updated_at (un alta masiva en una sola
+    // transacción), las que no cabían se saltaban PARA SIEMPRE. Se empieza
+    // con `>=` para re-leer el último grupo empatado (inofensivo: LWW) y,
+    // dentro de la corrida, se avanza por (ts, id).
+    const pagina = 1000;
+    final idCol = pk.length == 1 ? pk.first : null;
     var maxTs = cursorTs;
     String lastId = metadata.cursorId(name) ?? '';
+    var pagTs = cursorTs;
+    String? pagId;
+    final serverRows = <Map<String, dynamic>>[];
+    while (true) {
+      var q = client.from(name).select();
+      if (idCol == null) {
+        q = q.gt('server_updated_at', pagTs);
+      } else if (pagId == null) {
+        q = q.gte('server_updated_at', pagTs);
+      } else {
+        q = q.or('server_updated_at.gt.$pagTs,'
+            'and(server_updated_at.eq.$pagTs,$idCol.gt.$pagId)');
+      }
+      final ordenada = q.order('server_updated_at', ascending: true);
+      final filas = ((idCol == null
+                  ? await ordenada.limit(pagina)
+                  : await ordenada
+                      .order(idCol, ascending: true)
+                      .limit(pagina)) as List)
+          .cast<Map<String, dynamic>>();
+      serverRows.addAll(filas);
+      if (filas.length < pagina || idCol == null) break;
+      final ultima = filas.last;
+      pagTs = (ultima['server_updated_at'] as num?)?.toInt() ?? pagTs;
+      pagId = ultima[idCol]?.toString();
+      if (pagId == null) break;
+    }
 
-    for (final row in (serverRows as List).cast<Map<String, dynamic>>()) {
+    for (final row in serverRows) {
       final sut = (row['server_updated_at'] as num?)?.toInt() ?? 0;
       if (sut > maxTs) maxTs = sut;
 

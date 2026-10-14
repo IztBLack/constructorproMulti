@@ -115,7 +115,7 @@ Título de grupo (labelLarge, textMuted)
 - Español de México, tú, frases cortas. "Guardar un respaldo", no "Exportar respaldo (JSON)".
 - Decir el efecto, no la técnica: "Reemplaza lo que hay en el teléfono", no "Sobrescribe la base local".
 - Los botones dicen lo que hacen: "Dejar solo en este teléfono", no "Omitir".
-- **Nombres de la web** (U7): Ajustes · Obras · Cotizaciones · Equipo · Notas · Inicio. Fechas como la web: "6 oct 2026" (U15).
+- **Nombres de la web** (U7): Ajustes · Obras · Cotizaciones · Equipo · Notas · Inicio. Excepción: en la barra inferior la pestaña dice «Cotizar» (con 5 pestañas «Cotizaciones» se parte en dos renglones); el título de la pantalla sí es «Cotizaciones». Fechas como la web: "6 oct 2026" (U15).
 - Sin "datos de prueba", "demo" ni jerga en una cuenta real.
 
 ## 6. Accesibilidad (no negociable)

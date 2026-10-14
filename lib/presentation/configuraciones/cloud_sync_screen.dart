@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../core/format/format.dart';
 import '../../core/settings/settings_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/sync/cloud_providers.dart';
@@ -22,6 +21,7 @@ import '../../core/theme/app_theme.dart';
 import '../common/app_badge.dart';
 import '../common/app_spacing.dart';
 import '../common/lista_agrupada.dart';
+import '../common/sync_status_action.dart';
 import 'estado_nube.dart';
 
 /// Pantalla de conexión a la nube (Fase 2). Sin sesión muestra el login; con
@@ -857,7 +857,10 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
     return PopScope(
       canPop: !_loading,
       child: Scaffold(
-        appBar: AppBar(title: const Text('Nube y sincronización')),
+        appBar: AppBar(
+          title: const Text('Nube y sincronización'),
+          actions: const [SyncStatusAction()],
+        ),
         body: body,
       ),
     );
@@ -1063,7 +1066,6 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
     // Se reconstruye al terminar cada sync (también los automáticos) para que
     // la última subida y el aviso de otra cuenta estén al día.
     ref.watch(syncEnCursoProvider);
-    final ultimaSubida = ref.read(syncMetadataProvider).ultimaSubidaCompleta;
     final filasAjenas = ref.watch(filasApartadasProvider).asData?.value ?? 0;
     final rechazo = ref.read(syncServiceProvider).ultimoRechazo;
     final reintentarNoBasta =
@@ -1169,16 +1171,13 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
                 titulo: 'Sincronizar ahora',
                 // Si reintentar no resolverá los errores, decirlo en vez de
                 // dejar que se toque una y otra vez.
-                subtitulo: [
-                  if (reintentarNoBasta)
-                    'Reintentar no resolverá los cambios con error: mira '
+                // La última subida ya la dice la tarjeta de arriba.
+                subtitulo: reintentarNoBasta
+                    ? 'Reintentar no resolverá los cambios con error: mira '
                         'arriba qué hacer.'
-                  else if (estado.errores > 0)
-                    'Reintenta también los cambios con error.',
-                  ultimaSubida != null
-                      ? 'Última subida completa: ${Fmt.cuando(ultimaSubida)}'
-                      : 'Aún no hay una subida completa en este teléfono.',
-                ].join('\n'),
+                    : estado.errores > 0
+                        ? 'Reintenta también los cambios con error.'
+                        : 'Sube y baja los cambios pendientes',
                 trailing: _loading
                     ? const SizedBox.square(
                         dimension: 20,

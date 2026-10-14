@@ -57,7 +57,7 @@ class PuestosScreen extends ConsumerWidget {
                         tono: BadgeTone.success,
                         titulo: p.nombre,
                         subtitulo:
-                            '≈ ${Fmt.money(p.salarioDiaDefault * 6)} a la semana (6 días)',
+                            '≈ ${Fmt.moneyRedondo(p.salarioDiaDefault * 6)} a la semana',
                         valor: '${Fmt.money(p.salarioDiaDefault)}/día',
                         etiquetaValor:
                             '${Fmt.money(p.salarioDiaDefault)} por día',

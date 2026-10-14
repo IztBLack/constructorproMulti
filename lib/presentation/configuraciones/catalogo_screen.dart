@@ -29,7 +29,7 @@ class _CatalogoScreenState extends ConsumerState<CatalogoScreen> {
     final catalogoAsync = ref.watch(catalogoTodoProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Catálogo de conceptos'),
+        title: const Text('Catálogo'),
         actions: [
           const SyncStatusAction(),
           IconButton(

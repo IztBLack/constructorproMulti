@@ -270,6 +270,9 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                 // vacía, y no había nada que desplazar. Repartidos ocupan el
                 // ancho y crecen sus áreas tocables.
                 isScrollable: false,
+                // Con el relleno por defecto (16 a cada lado) «Asistencia» se
+                // cortaba en un teléfono de 360 dp.
+                labelPadding: const EdgeInsets.symmetric(horizontal: 4),
                 tabs: [for (final p in _pestanas) Tab(text: _tituloPestana(p))],
               ),
       ),
@@ -1999,7 +2002,7 @@ class _NotaConciliacionCardState extends ConsumerState<_NotaConciliacionCard> {
             onEditingComplete: _guardar,
             style: Theme.of(context).textTheme.bodyMedium,
             decoration: InputDecoration(
-              hintText: 'Ej. DIFERENCIA A FAVOR \$20,957 CON…',
+              hintText: 'Ej. Diferencia a favor: anticipo pendiente de facturar',
               hintStyle: TextStyle(color: c.textFaint),
               border: const OutlineInputBorder(),
             ),
