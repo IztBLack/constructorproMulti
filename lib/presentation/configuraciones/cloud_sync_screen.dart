@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../core/format/format.dart';
 import '../../core/settings/settings_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/sync/cloud_providers.dart';
@@ -17,6 +16,13 @@ import '../../data/providers.dart';
 import '../../domain/sync/rechazos_sync.dart';
 import '../common/error_state_view.dart';
 import 'conflictos_screen.dart';
+import '../common/app_snackbar.dart';
+import '../../core/theme/app_theme.dart';
+import '../common/app_badge.dart';
+import '../common/app_spacing.dart';
+import '../common/lista_agrupada.dart';
+import '../common/sync_status_action.dart';
+import 'estado_nube.dart';
 
 /// Pantalla de conexión a la nube (Fase 2). Sin sesión muestra el login; con
 /// sesión y empresa muestra el estado y el botón de sincronizar; con sesión pero
@@ -40,6 +46,7 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
   final _codigoCtrl = TextEditingController();
 
   bool _loading = false;
+  bool _verPassword = false;
   String? _error;
 
   /// El contenedor de providers de la APP, no el `ref` de esta pantalla: las
@@ -285,9 +292,7 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
                 'Usa "Sincronizar ahora" para reintentar.',
         };
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(mensaje)),
-        );
+        showAppSnack(context, mensaje);
       } else {
         final mensajeError = resultado['error'] as String? ??
             'Código inválido o expirado. Solicita uno nuevo al administrador.';
@@ -366,10 +371,8 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
         if (!mounted) return;
         setState(() => _loading = false);
         if (!cerrada) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('No se pudo cerrar la sesión. Revisa tu conexión e '
-                'intenta de nuevo.'),
-          ));
+          showAppSnack(context, 'No se pudo cerrar la sesión. Revisa tu conexión e '
+                'intenta de nuevo.', tone: SnackTone.danger);
           return;
         }
         _irAlLogin();
@@ -477,10 +480,8 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
     // Sin señal, vaciar dejaría el teléfono sin datos hasta que vuelva la red.
     if (!await _app.read(syncServiceProvider).hayRed) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Necesitas señal para rehacer la copia. Tus datos siguen '
-            'a salvo en el teléfono.'),
-      ));
+      showAppSnack(context, 'Necesitas señal para rehacer la copia. Tus datos siguen '
+            'a salvo en el teléfono.', tone: SnackTone.warning);
       return;
     }
     final sinSubir = await _app.read(databaseProvider).contarSinSubir();
@@ -527,16 +528,12 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
       final sync = _app.read(syncServiceProvider);
       final outcome = await sync.syncAll();
       if (!mounted) return;
-      messenger.showSnackBar(SnackBar(
-        content: Text(outcome == SyncOutcome.ok
+      showAppSnackEn(messenger, outcome == SyncOutcome.ok
             ? 'Listo: este teléfono tiene ahora solo lo de la nube.'
-            : _mensajeOutcome(outcome, sync.ultimoError)),
-      ));
+            : _mensajeOutcome(outcome, sync.ultimoError));
     } catch (e) {
       debugPrint('[CloudSyncScreen] _rehacerCopia error: $e');
-      messenger.showSnackBar(const SnackBar(
-        content: Text('No se pudo rehacer la copia. Intenta de nuevo con señal.'),
-      ));
+      showAppSnackEn(messenger, 'No se pudo rehacer la copia. Intenta de nuevo con señal.', tone: SnackTone.danger);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -558,12 +555,9 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
       _reintentarValidacion();
       return;
     }
-    messenger.showSnackBar(SnackBar(
-      content: Text(_mensajeOutcome(outcome, syncService.ultimoError)),
-      duration: outcome == SyncOutcome.error
+    showAppSnackEn(messenger, _mensajeOutcome(outcome, syncService.ultimoError), duracion: outcome == SyncOutcome.error
           ? const Duration(seconds: 8)
-          : const Duration(seconds: 4),
-    ));
+          : const Duration(seconds: 4));
   }
 
   // ---------------------------------------------------------------------------
@@ -605,12 +599,9 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
 
     if (!mounted) return;
     setState(() => _loading = false);
-    messenger.showSnackBar(SnackBar(
-      content: Text(_mensajeOutcome(outcome, syncService.ultimoError)),
-      duration: outcome == SyncOutcome.error
+    showAppSnackEn(messenger, _mensajeOutcome(outcome, syncService.ultimoError), duracion: outcome == SyncOutcome.error
           ? const Duration(seconds: 8)
-          : const Duration(seconds: 4),
-    ));
+          : const Duration(seconds: 4));
   }
 
   // ---------------------------------------------------------------------------
@@ -699,9 +690,8 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
                     onPressed: () async {
                       final messenger = ScaffoldMessenger.of(context);
                       await Clipboard.setData(ClipboardData(text: detalle));
-                      messenger.showSnackBar(const SnackBar(
-                          content: Text('Detalle copiado. Pégalo en tu '
-                              'mensaje a soporte.')));
+                      showAppSnackEn(messenger, 'Detalle copiado. Pégalo en tu '
+                              'mensaje a soporte.');
                     },
                     icon: const Icon(Icons.copy),
                     label: const Text('Copiar para soporte'),
@@ -812,7 +802,18 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
     if (m.contains('unable to validate email address')) {
       return 'El formato del correo no es válido.';
     }
-    return message; // devuelve el original si no se reconoce
+    if (m.contains('rate limit') || m.contains('too many')) {
+      return 'Demasiados intentos. Espera unos minutos e intenta de nuevo.';
+    }
+    if (m.contains('socket') ||
+        m.contains('host lookup') ||
+        m.contains('network') ||
+        m.contains('timed out')) {
+      return 'Sin señal. Revisa tu conexión e intenta de nuevo; '
+          'puedes seguir trabajando sin señal.';
+    }
+    // Antes se mostraba el mensaje original en inglés.
+    return 'No se pudo entrar. Revisa el correo y la contraseña.';
   }
 
   @override
@@ -856,7 +857,10 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
     return PopScope(
       canPop: !_loading,
       child: Scaffold(
-        appBar: AppBar(title: const Text('Nube y sincronización')),
+        appBar: AppBar(
+          title: const Text('Nube y sincronización'),
+          actions: const [SyncStatusAction()],
+        ),
         body: body,
       ),
     );
@@ -907,22 +911,48 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
         ),
         const SizedBox(height: 20),
 
-        TextField(
-          controller: _email,
-          keyboardType: TextInputType.emailAddress,
-          autocorrect: false,
-          decoration: const InputDecoration(
-            labelText: 'Correo',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _password,
-          obscureText: true,
-          decoration: const InputDecoration(
-            labelText: 'Contraseña',
-            border: OutlineInputBorder(),
+        // U13: el gestor de contraseñas del teléfono llena correo y clave
+        // (AutofillGroup + hints) y se puede ver lo que se escribió.
+        AutofillGroup(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: _email,
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.email],
+                decoration: const InputDecoration(labelText: 'Correo'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _password,
+                obscureText: !_verPassword,
+                textInputAction: TextInputAction.done,
+                autofillHints: [
+                  _modoRegistro
+                      ? AutofillHints.newPassword
+                      : AutofillHints.password,
+                ],
+                onSubmitted: (_) {
+                  if (!_loading) _modoRegistro ? _registrar() : _conectar();
+                },
+                decoration: InputDecoration(
+                  labelText: 'Contraseña',
+                  suffixIcon: IconButton(
+                    tooltip: _verPassword
+                        ? 'Ocultar contraseña'
+                        : 'Mostrar contraseña',
+                    icon: Icon(_verPassword
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined),
+                    onPressed: () =>
+                        setState(() => _verPassword = !_verPassword),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         if (_error != null) ...[
@@ -1036,99 +1066,162 @@ class _CloudSyncScreenState extends ConsumerState<CloudSyncScreen> {
     // Se reconstruye al terminar cada sync (también los automáticos) para que
     // la última subida y el aviso de otra cuenta estén al día.
     ref.watch(syncEnCursoProvider);
-    final ultimaSubida = ref.read(syncMetadataProvider).ultimaSubidaCompleta;
     final filasAjenas = ref.watch(filasApartadasProvider).asData?.value ?? 0;
     final rechazo = ref.read(syncServiceProvider).ultimoRechazo;
     final reintentarNoBasta =
         estado.errores > 0 && rechazo != null && !rechazo.seReintenta;
-    return ListView(
-      children: [
-        // Se encabeza con el NOMBRE de la persona y el correo baja a segundo
-        // plano: al abrir esta pantalla la pregunta es "¿con qué cuenta estoy?",
-        // y un nombre la responde antes que una dirección de correo.
-        ListTile(
-          leading:
-              Icon(Icons.cloud_done_outlined, color: context.colores.success),
-          title: Text(ref.watch(cuentaNombreProvider) ?? 'Conectado'),
-          subtitle: Text(user?.email ?? user?.id ?? ''),
-        ),
-        // Nombre, no UUID: el identificador solo servía para depurar y no le
-        // decía nada al usuario. Si aún no llega del servidor se usa el último
-        // conocido; el UUID queda como último recurso para poder dar soporte.
-        ListTile(
-          leading: const Icon(Icons.apartment_outlined),
-          title: const Text('Empresa'),
-          subtitle: Text(
-            ref.watch(empresaNombreProvider).asData?.value ??
-                ref.watch(empresaNombreCacheProvider) ??
-                empresaId ??
-                'Sin empresa vinculada',
-          ),
-        ),
-        const Divider(),
-        // Diagnóstico: solo aparece si hay filas atoradas. Muestra el MOTIVO
-        // real del servidor (RLS, FK, columna…) para no dejar al usuario a
-        // ciegas con un ícono rojo. El botón de abajo ya reintenta estas filas.
-        if (estado.errores > 0) _avisoErrores(estado.errores),
-        if (filasAjenas > 0) _avisoOtraCuenta(filasAjenas),
-        // Conflictos de jornada: no son un fallo, esperan una decisión. Van
-        // antes que "Sincronizar ahora" porque sincronizar no los resuelve.
-        if (estado.conflictos > 0)
-          ListTile(
-            leading: Icon(Icons.rule, color: context.colores.warning),
-            title: Text('${estado.conflictos} conflicto(s) por resolver'),
-            subtitle: const Text('Doble jornada el mismo día: elige cuál se queda'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ConflictosScreen()),
+    final nube = estadoNube(ref, conSesion: true);
+    final paleta = paletaDeTono(context.colores, nube.tono);
+    final t = Theme.of(context).textTheme;
+    final c = context.colores;
+    final empresa = ref.watch(empresaNombreProvider).asData?.value ??
+        ref.watch(empresaNombreCacheProvider) ??
+        empresaId ??
+        'Sin empresa vinculada';
+
+    // Línea de Ajustes (DISENO_MOVIL §4): cabecera con la cuenta y el estado,
+    // grupos de opciones y UNA fila roja al final. Antes era una lista plana
+    // de ListTile con «Cerrar sesión» entre las acciones de sincronizar.
+    return LayoutBuilder(
+      builder: (context, box) => ListView(
+        padding: margenesDeLista(context, box.maxWidth),
+        children: [
+          Material(
+            color: c.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+              side: BorderSide(color: c.border),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Se encabeza con el NOMBRE: al abrir esta pantalla la
+                  // pregunta es "¿con qué cuenta estoy?".
+                  Text(ref.watch(cuentaNombreProvider) ?? 'Tu cuenta',
+                      style:
+                          t.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+                  Text(user?.email ?? '',
+                      style: t.bodyMedium?.copyWith(color: c.textMuted)),
+                  AppSpacing.gapXs,
+                  Text(empresa, style: t.bodyMedium),
+                  AppSpacing.gapMd,
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: paleta.fondo,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(nube.icono, color: paleta.texto),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(nube.titulo,
+                                  style: t.titleSmall?.copyWith(
+                                      color: paleta.texto,
+                                      fontWeight: FontWeight.w600)),
+                              Text(nube.detalle,
+                                  style: t.bodySmall
+                                      ?.copyWith(color: paleta.texto)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ListTile(
-          leading: const Icon(Icons.sync),
-          title: const Text('Sincronizar ahora'),
-          // Lo que importa en la obra es hasta cuándo el trabajo está a salvo
-          // en la nube; y si reintentar no va a resolver los errores, decirlo
-          // en vez de dejar que se toque el botón una y otra vez.
-          subtitle: Text([
-            if (reintentarNoBasta)
-              'Reintentar no resolverá los cambios con error: mira arriba qué '
-                  'hacer.'
-            else if (estado.errores > 0)
-              'Reintenta también los cambios con error.',
-            ultimaSubida != null
-                ? 'Última subida completa: ${Fmt.cuando(ultimaSubida)}'
-                : 'Aún no hay una subida completa en este teléfono.',
-          ].join('\n')),
-          enabled: !_loading,
-          onTap: _loading ? null : _sincronizar,
-        ),
-        ListTile(
-          leading: const Icon(Icons.restart_alt),
-          title: const Text('Forzar re-sync completo'),
-          subtitle: const Text(
-              'Reinicia los cursores y vuelve a traer todo del servidor'),
-          enabled: !_loading,
-          onTap: _loading ? null : _forzarResyncCompleto,
-        ),
-        ListTile(
-          leading: const Icon(Icons.cloud_download_outlined),
-          title: const Text('Rehacer la copia de este teléfono'),
-          subtitle: const Text(
-              'Borra lo de este teléfono y vuelve a bajar todo de la nube'),
-          enabled: !_loading,
-          onTap: _loading ? null : _rehacerCopia,
-        ),
-        // Cerrar sesión va al final y en rojo: es la única acción de esta
-        // pantalla que se lleva el acceso a los datos de la nube, y debe
-        // distinguirse de las de sincronizar (regla
-        // `destructive-nav-separation`).
-        ListTile(
-          leading: Icon(Icons.logout, color: context.colores.danger),
-          title: Text('Cerrar sesión',
-              style: TextStyle(color: context.colores.danger)),
-          onTap: _cerrarSesion,
-        ),
-      ],
+          // Diagnóstico: solo si hay filas atoradas, con el motivo real.
+          if (estado.errores > 0) ...[
+            AppSpacing.gapMd,
+            _avisoErrores(estado.errores),
+          ],
+          if (filasAjenas > 0) ...[
+            AppSpacing.gapMd,
+            _avisoOtraCuenta(filasAjenas),
+          ],
+          const SizedBox(height: AppSpacing.xl),
+          GrupoLista(
+            titulo: 'Sincronización',
+            children: [
+              // Los conflictos no son un fallo: esperan una decisión, y
+              // sincronizar no los resuelve; por eso van antes.
+              if (estado.conflictos > 0)
+                FilaLista(
+                  icono: Icons.rule,
+                  tono: BadgeTone.warning,
+                  titulo: 'Conflictos por resolver',
+                  subtitulo: 'Doble jornada el mismo día: elige cuál se queda',
+                  valor: '${estado.conflictos}',
+                  etiquetaValor: '${estado.conflictos} conflictos',
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ConflictosScreen()),
+                  ),
+                ),
+              FilaLista(
+                icono: Icons.sync,
+                tono: BadgeTone.success,
+                titulo: 'Sincronizar ahora',
+                // Si reintentar no resolverá los errores, decirlo en vez de
+                // dejar que se toque una y otra vez.
+                // La última subida ya la dice la tarjeta de arriba.
+                subtitulo: reintentarNoBasta
+                    ? 'Reintentar no resolverá los cambios con error: mira '
+                        'arriba qué hacer.'
+                    : estado.errores > 0
+                        ? 'Reintenta también los cambios con error.'
+                        : 'Sube y baja los cambios pendientes',
+                trailing: _loading
+                    ? const SizedBox.square(
+                        dimension: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2))
+                    : null,
+                onTap: _loading ? null : _sincronizar,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          GrupoLista(
+            titulo: 'Si algo no cuadra',
+            children: [
+              FilaLista(
+                icono: Icons.restart_alt,
+                titulo: 'Volver a revisar todo con la nube',
+                subtitulo: 'Trae de nuevo todo lo del servidor; no borra lo '
+                    'de este teléfono',
+                onTap: _loading ? null : _forzarResyncCompleto,
+              ),
+              FilaLista(
+                icono: Icons.cloud_download_outlined,
+                titulo: 'Rehacer la copia de este teléfono',
+                subtitulo:
+                    'Borra lo de este teléfono y vuelve a bajar todo de la nube',
+                onTap: _loading ? null : _rehacerCopia,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          // La única acción que se lleva el acceso a la nube: sola y en rojo.
+          GrupoLista(
+            children: [
+              FilaLista(
+                icono: Icons.logout,
+                titulo: 'Cerrar sesión',
+                peligro: true,
+                onTap: _cerrarSesion,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xl),
+        ],
+      ),
     );
   }
 }

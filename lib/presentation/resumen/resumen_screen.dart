@@ -95,7 +95,7 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Resumen'),
+        title: const Text('Inicio'),
         actions: [
           const SyncStatusAction(),
           if (hayReportes)
@@ -335,7 +335,7 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
   /// Accesos rápidos que tocan con estos módulos. Cada uno se va con el suyo.
   List<Widget> _accesos(ModulosActivos modulos, bool verSueldos) => [
         if (modulos.usa(ClaveModulo.equipo))
-          _accion(Icons.fact_check, 'Pase lista',
+          _accion(Icons.fact_check, 'Pase de lista',
               () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PaseListaScreen()))),
         // La proyección enseña el salario de cada persona junto a su nombre,
         // así que ni siquiera se ofrece a quien no puede verla: el gate de la
@@ -345,7 +345,7 @@ class _ResumenScreenState extends ConsumerState<ResumenScreen> {
               () => Navigator.of(context).push(MaterialPageRoute(
                   builder: (_) => const ProyeccionScreen()))),
         if (modulos.usa(ClaveModulo.cotizaciones))
-          _accion(Icons.note_add, 'Cotizar',
+          _accion(Icons.note_add, 'Cotizaciones',
               () => ref.read(homeTabProvider.notifier).state = HomeTab.cotizar),
         if (modulos.usa(ClaveModulo.equipo))
           _accion(Icons.person_add, 'Equipo',

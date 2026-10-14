@@ -8,13 +8,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/crash/crash_logger.dart';
-import '../../core/format/format.dart';
 import '../../core/modulos/modulos.dart';
 import '../../core/modulos/modulos_provider.dart';
 import '../../core/settings/settings_provider.dart';
 import '../../core/sync/cloud_providers.dart';
 import '../../core/sync/rol_provider.dart';
-import '../../core/sync/sync_status.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/demo_data.dart';
@@ -27,9 +25,12 @@ import '../onboarding/tutorial_screen.dart';
 import 'borrar_datos_screen.dart';
 import 'catalogo_screen.dart';
 import 'cloud_sync_screen.dart';
+import 'estado_nube.dart';
 import 'modulos_screen.dart';
 import 'pdf_config_screen.dart';
 import 'puestos_screen.dart';
+import '../../domain/numeros.dart';
+import '../common/app_snackbar.dart';
 
 /// Ajustes (antes "Configuración"): el modelo de la línea de diseño del móvil.
 /// Ver `docs/DISENO_MOVIL.md` y `docs/PLAN_AJUSTES_REDISENO.md`.
@@ -140,7 +141,10 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          const SliverAppBar.large(
+          // Barra normal, como las otras pestañas (Obras, Equipo, Inicio). La
+          // `.large` dejaba ~150 dp vacíos arriba del título en el teléfono.
+          const SliverAppBar(
+            pinned: true,
             title: Text('Ajustes'),
             actions: [SyncStatusAction()],
           ),
@@ -473,14 +477,8 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
   Future<void> _alternarRecordatorio(bool v) async {
     final ok = await ref.read(reminderProvider.notifier).setEnabled(v);
     if (!ok && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'El teléfono no dio permiso para avisar. Actívalo en '
-            'los ajustes del teléfono.',
-          ),
-        ),
-      );
+      showAppSnack(context, 'El teléfono no dio permiso para avisar. Actívalo en '
+            'los ajustes del teléfono.');
     }
   }
 
@@ -531,7 +529,7 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
           ),
           FilledButton(
             onPressed: () =>
-                Navigator.pop(ctx, double.tryParse(ctrl.text.trim())),
+                Navigator.pop(ctx, leerNumero(ctrl.text)),
             child: const Text('Guardar'),
           ),
         ],
@@ -547,15 +545,9 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
   Future<void> _cargarDemo() async {
     final creado = await DemoData.generar(ref.read(databaseProvider));
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          creado
+    showAppSnack(context, creado
               ? 'Datos de ejemplo cargados.'
-              : 'Ya hay datos; no se cargaron ejemplos.',
-        ),
-      ),
-    );
+              : 'Ya hay datos; no se cargaron ejemplos.');
   }
 
   Future<void> _exportarRespaldo() async {
@@ -573,14 +565,8 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
       // la obra no le dice nada y asusta.
       debugPrint('[ConfigScreen] exportar respaldo: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'No se pudo crear el respaldo. Intenta de nuevo; '
-              'tus datos siguen en el teléfono.',
-            ),
-          ),
-        );
+        showAppSnack(context, 'No se pudo crear el respaldo. Intenta de nuevo; '
+              'tus datos siguen en el teléfono.', tone: SnackTone.danger);
       }
     }
   }
@@ -625,21 +611,13 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
         await svc.importFromJson(await File(ruta).readAsString());
       }
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Respaldo restaurado.')));
+        showAppSnack(context, 'Respaldo restaurado.', tone: SnackTone.success);
       }
     } catch (e) {
       debugPrint('[ConfigScreen] restaurar respaldo: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'No se pudo restaurar el respaldo. Revisa que el '
-              'archivo sea un respaldo de ConstructorPro.',
-            ),
-          ),
-        );
+        showAppSnack(context, 'No se pudo restaurar el respaldo. Revisa que el '
+              'archivo sea un respaldo de ConstructorPro.', tone: SnackTone.danger);
       }
     }
   }
@@ -648,11 +626,7 @@ class _ConfigScreenState extends ConsumerState<ConfigScreen> {
     final logs = await CrashLogger.getLogs();
     if (!mounted) return;
     if (logs.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No hay errores registrados: la app no ha fallado.'),
-        ),
-      );
+      showAppSnack(context, 'No hay errores registrados: la app no ha fallado.', tone: SnackTone.warning);
       return;
     }
     await Share.shareXFiles([
@@ -793,7 +767,7 @@ class _TarjetaCuenta extends ConsumerWidget {
       rol = _rol(ref.watch(rolUsuarioProvider).asData?.value);
     }
 
-    final estado = _estadoNube(ref, conSesion: user != null);
+    final estado = estadoNube(ref, conSesion: user != null);
     final paleta = paletaDeTono(c, estado.tono);
 
     return Material(
@@ -915,67 +889,4 @@ class _TarjetaCuenta extends ConsumerWidget {
     );
   }
 
-  /// Lo que se dice de la nube, en el mismo orden de prioridad que el
-  /// indicador del `AppBar` ([SyncFase]).
-  static ({IconData icono, BadgeTone tono, String titulo, String detalle})
-  _estadoNube(WidgetRef ref, {required bool conSesion}) {
-    if (!conSesion) {
-      return (
-        icono: Icons.cloud_off_outlined,
-        tono: BadgeTone.info,
-        titulo: 'Conectar con la nube',
-        detalle: 'Para sincronizar con la web y no perder nada',
-      );
-    }
-    final s = ref.watch(syncStatusProvider);
-    ref.watch(syncEnCursoProvider);
-    final ultima = ref.read(syncMetadataProvider).ultimaSubidaCompleta;
-    final cuandoSubio = ultima == null
-        ? 'Aún no hay una subida completa'
-        : 'Última subida completa: ${Fmt.cuando(ultima)}';
-    return switch (s.fase) {
-      SyncFase.alDia => (
-        icono: Icons.cloud_done_outlined,
-        tono: BadgeTone.success,
-        titulo: 'Todo está en la nube',
-        detalle: cuandoSubio,
-      ),
-      SyncFase.pendiente => (
-        icono: Icons.cloud_upload_outlined,
-        tono: BadgeTone.neutral,
-        titulo: '${s.pendientes} cambio(s) por subir',
-        detalle: 'Se suben solos cuando hay señal',
-      ),
-      SyncFase.sincronizando => (
-        icono: Icons.sync,
-        tono: BadgeTone.info,
-        titulo: 'Sincronizando…',
-        detalle: cuandoSubio,
-      ),
-      SyncFase.error => (
-        icono: Icons.error_outline,
-        tono: BadgeTone.danger,
-        titulo: '${s.errores} cambio(s) no se pudieron subir',
-        detalle: 'Toca para ver qué hacer',
-      ),
-      SyncFase.conflicto => (
-        icono: Icons.rule,
-        tono: BadgeTone.warning,
-        titulo: '${s.conflictos} conflicto(s) por resolver',
-        detalle: 'Toca para elegir cuál se queda',
-      ),
-      SyncFase.cuentaPorConfirmar => (
-        icono: Icons.manage_accounts_outlined,
-        tono: BadgeTone.warning,
-        titulo: 'Falta confirmar la cuenta',
-        detalle: 'Este teléfono tiene datos de otra cuenta',
-      ),
-      SyncFase.desconectado => (
-        icono: Icons.link_off,
-        tono: BadgeTone.warning,
-        titulo: 'Cuenta sin empresa vinculada',
-        detalle: 'Toca para vincularla con tu código',
-      ),
-    };
-  }
 }

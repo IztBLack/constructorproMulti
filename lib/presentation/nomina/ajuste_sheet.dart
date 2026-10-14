@@ -6,6 +6,7 @@ import '../../core/format/format.dart';
 import '../../core/theme/app_colors.dart';
 import '../../domain/logic/proyeccion_nomina.dart';
 import 'proyeccion_controller.dart';
+import '../../domain/numeros.dart';
 
 /// Pide un monto en pesos.
 ///
@@ -48,7 +49,7 @@ Future<double?> pedirMonto(
               border: OutlineInputBorder(),
             ),
             onSubmitted: (t) =>
-                Navigator.pop(ctx, double.tryParse(t) ?? 0),
+                Navigator.pop(ctx, leerNumero(t) ?? 0),
           ),
         ],
       ),
@@ -57,7 +58,7 @@ Future<double?> pedirMonto(
             onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
         FilledButton(
           onPressed: () =>
-              Navigator.pop(ctx, double.tryParse(ctrl.text) ?? 0),
+              Navigator.pop(ctx, leerNumero(ctrl.text) ?? 0),
           child: const Text('Guardar'),
         ),
       ],
@@ -132,7 +133,7 @@ class _AjusteFormState extends ConsumerState<_AjusteForm> {
     super.dispose();
   }
 
-  double get _valor => double.tryParse(_monto.text)?.abs() ?? 0;
+  double get _valor => leerNumero(_monto.text)?.abs() ?? 0;
 
   @override
   Widget build(BuildContext context) {

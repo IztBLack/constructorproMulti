@@ -32,6 +32,10 @@ import '../common/money_text.dart';
 import '../common/texto_final_card.dart';
 import '../common/error_state_view.dart';
 import '../pdf_pre_dialog.dart';
+import '../../domain/numeros.dart';
+import '../common/hoja_formulario.dart';
+import '../common/app_snackbar.dart';
+import '../common/sync_status_action.dart';
 
 class CotizacionDetailScreen extends ConsumerStatefulWidget {
   final Cotizacion cotizacion;
@@ -77,6 +81,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
             ubicacion: widget.cotizacion.ubicacion,
             cliente: widget.cotizacion.cliente)),
         actions: [
+          const SyncStatusAction(),
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
             tooltip: 'Exportar presupuesto PDF',
@@ -133,8 +138,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
   Future<void> _enviar() async {
     final err = await ref.read(cotizacionRepositoryProvider).enviar(_cotId);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(err ?? 'Cotización marcada como enviada.')));
+    showAppSnack(context, err ?? 'Cotización marcada como enviada.');
   }
 
   Future<void> _cambiarEstado() async {
@@ -145,9 +149,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
         CotizacionRepository.transicionesPermitidas[cot.estado] ?? const [];
     if (opciones.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(
-                'No hay cambios de estado disponibles desde ${cot.estado}.')));
+        showAppSnack(context, 'No hay cambios de estado disponibles desde ${cot.estado}.', tone: SnackTone.warning);
       }
       return;
     }
@@ -167,8 +169,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
     if (estado != null) {
       await repo.cambiarEstado(_cotId, estado);
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Estado: $estado')));
+        showAppSnack(context, 'Estado: $estado');
       }
     }
   }
@@ -176,8 +177,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
   Future<void> _duplicar() async {
     await ref.read(cotizacionRepositoryProvider).duplicar(_cotId);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cotización duplicada (ver la lista).')));
+      showAppSnack(context, 'Cotización duplicada (ver la lista).');
     }
   }
 
@@ -185,8 +185,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
     final obras = ref.read(obrasProvider).asData?.value ?? [];
     if (obras.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No hay obras para vincular.')));
+        showAppSnack(context, 'No hay obras para vincular.', tone: SnackTone.warning);
       }
       return;
     }
@@ -205,8 +204,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
     if (obraId != null) {
       await ref.read(cotizacionRepositoryProvider).vincularAObra(_cotId, obraId);
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Cotización vinculada a la obra.')));
+        showAppSnack(context, 'Cotización vinculada a la obra.');
       }
     }
   }
@@ -232,7 +230,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
           FilledButton(
             onPressed: () {
-              final v = double.tryParse(ctrl.text.trim());
+              final v = leerNumero(ctrl.text);
               Navigator.pop(ctx, v);
             },
             child: const Text('Aplicar'),
@@ -244,8 +242,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
     final n = await ref.read(partidaRepositoryProvider)
         .ajustarPrecios(_cotId, 1 + pct / 100);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ajuste de ${pct > 0 ? '+' : ''}$pct% aplicado a $n partidas.')));
+      showAppSnack(context, 'Ajuste de ${pct > 0 ? '+' : ''}$pct% aplicado a $n partidas.');
     }
   }
 
@@ -256,8 +253,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
     if (!ok) return;
     await ref.read(cotizacionRepositoryProvider).convertirEnObra(widget.cotizacion);
     if (mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Obra creada desde la cotización.')));
+      showAppSnack(context, 'Obra creada desde la cotización.');
     }
   }
 
@@ -685,22 +681,19 @@ class _State extends ConsumerState<CotizacionDetailScreen>
     final descCtrl = TextEditingController(text: partida?.descripcion ?? preDesc ?? '');
     final unidadCtrl = TextEditingController(text: partida?.unidad ?? preUnidad ?? '');
     final cantidadCtrl =
-        TextEditingController(text: partida?.cantidad.toString() ?? '');
+        TextEditingController(text: numeroParaEditar(partida?.cantidad));
     final precioCtrl = TextEditingController(
-        text: partida?.precioUnitario.toString() ?? prePrecio?.toString() ?? '');
-    final formKey = GlobalKey<FormState>();
+        text: numeroParaEditar(partida?.precioUnitario ?? prePrecio));
     final repo = ref.read(partidaRepositoryProvider);
     List<CatalogoConcepto> sugerencias = [];
 
-    await showDialog<void>(
-      context: context,
+    await mostrarHojaFormulario(
+      context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setS) => AlertDialog(
-        title: Text(partida == null ? 'Nueva partida' : 'Editar partida'),
-        content: Form(
-          key: formKey,
-          child: SingleChildScrollView(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
+        builder: (ctx, setS) => HojaFormulario(
+        titulo: partida == null ? 'Nueva partida' : 'Editar partida',
+        textoGuardar: partida == null ? 'Agregar partida' : 'Guardar cambios',
+        campos: [
               TextFormField(
                 controller: claveCtrl,
                 decoration: InputDecoration(
@@ -751,7 +744,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
                         claveCtrl.text = c.clave;
                         descCtrl.text = c.descripcion;
                         unidadCtrl.text = c.unidad;
-                        precioCtrl.text = c.precioUnitarioDefault.toString();
+                        precioCtrl.text = numeroParaEditar(c.precioUnitarioDefault);
                         setS(() => sugerencias = []);
                       },
                     )),
@@ -761,39 +754,30 @@ class _State extends ConsumerState<CotizacionDetailScreen>
                 decoration: const InputDecoration(labelText: 'Cantidad'),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 validator: (v) =>
-                    double.tryParse((v ?? '').trim()) == null ? 'Inválido' : null,
+                    leerNumero(v) == null ? 'Inválido' : null,
               ),
               TextFormField(
                 controller: precioCtrl,
                 decoration: const InputDecoration(labelText: 'Precio unitario (\$)'),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 validator: (v) =>
-                    double.tryParse((v ?? '').trim()) == null ? 'Inválido' : null,
+                    leerNumero(v) == null ? 'Inválido' : null,
               ),
-            ]),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-          AsyncActionButton(
-            onPressed: () async {
-              if (!formKey.currentState!.validate()) return;
+            ],
+        onGuardar: () async {
               await repo.upsert(PartidasCompanion(
                 id: Value(partida?.id ?? repo.newId()),
                 seccionId: Value(seccionId),
                 clave: Value(claveCtrl.text.trim()),
                 descripcion: Value(descCtrl.text.trim()),
                 unidad: Value(unidadCtrl.text.trim()),
-                cantidad: Value(double.parse(cantidadCtrl.text.trim())),
-                precioUnitario: Value(double.parse(precioCtrl.text.trim())),
+                cantidad: Value(leerNumero(cantidadCtrl.text)!),
+                precioUnitario: Value(leerNumero(precioCtrl.text)!),
                 orden: Value(partida?.orden ?? 0),
               ));
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            child: const Text('Guardar'),
-          ),
-        ],
-        ),
+          return true;
+        },
+      ),
       ),
     );
   }
@@ -906,15 +890,13 @@ class _State extends ConsumerState<CotizacionDetailScreen>
     final conceptoCtrl = TextEditingController(text: 'Anticipo');
     final montoCtrl = TextEditingController();
     String metodo = 'Transferencia';
-    final formKey = GlobalKey<FormState>();
-    await showDialog<void>(
-      context: context,
+    await mostrarHojaFormulario(
+      context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setS) => AlertDialog(
-          title: const Text('Registrar pago'),
-          content: Form(
-            key: formKey,
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
+        builder: (ctx, setS) => HojaFormulario(
+        titulo: 'Registrar pago',
+        textoGuardar: 'Guardar pago',
+        campos: [
               TextFormField(
                 controller: conceptoCtrl,
                 decoration: const InputDecoration(labelText: 'Concepto'),
@@ -925,11 +907,10 @@ class _State extends ConsumerState<CotizacionDetailScreen>
                 decoration: const InputDecoration(labelText: 'Monto (\$)'),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 validator: (v) {
-                  final d = double.tryParse((v ?? '').trim());
+                  final d = leerNumero(v);
                   return (d == null || d <= 0) ? 'Monto inválido' : null;
                 },
               ),
-              const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 initialValue: metodo,
                 decoration: const InputDecoration(labelText: 'Método'),
@@ -940,26 +921,18 @@ class _State extends ConsumerState<CotizacionDetailScreen>
                 ],
                 onChanged: (v) => setS(() => metodo = v ?? 'Transferencia'),
               ),
-            ]),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-            AsyncActionButton(
-              onPressed: () async {
-                if (!formKey.currentState!.validate()) return;
+            ],
+        onGuardar: () async {
                 await ref.read(pagoRepositoryProvider).add(
                       cotId: _cotId,
                       fecha: DateTime.now().millisecondsSinceEpoch,
-                      monto: double.parse(montoCtrl.text.trim()),
+                      monto: leerNumero(montoCtrl.text)!,
                       metodo: metodo,
                       concepto: conceptoCtrl.text.trim(),
                     );
-                if (ctx.mounted) Navigator.pop(ctx);
-              },
-              child: const Text('Guardar'),
-            ),
-          ],
-        ),
+          return true;
+        },
+      ),
       ),
     );
   }
@@ -1093,8 +1066,7 @@ class _State extends ConsumerState<CotizacionDetailScreen>
     final ruta = AppPaths.resolve(a.uri);
     if (!File(ruta).existsSync()) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('El archivo ya no existe.')));
+        showAppSnack(context, 'El archivo ya no existe.');
       }
       return;
     }

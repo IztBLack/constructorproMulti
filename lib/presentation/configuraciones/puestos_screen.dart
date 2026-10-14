@@ -5,8 +5,14 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/db/app_database.dart';
 import '../../data/providers.dart';
+import '../../core/format/format.dart';
+import '../common/app_badge.dart';
 import '../common/empty_state_view.dart';
 import '../common/error_state_view.dart';
+import '../../domain/numeros.dart';
+import '../common/hoja_formulario.dart';
+import '../common/lista_agrupada.dart';
+import '../common/sync_status_action.dart';
 
 class PuestosScreen extends ConsumerWidget {
   const PuestosScreen({super.key});
@@ -18,7 +24,10 @@ class PuestosScreen extends ConsumerWidget {
     final puestosAsync = ref.watch(puestosProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Puestos y salarios')),
+      appBar: AppBar(
+        title: const Text('Puestos y salarios'),
+        actions: const [SyncStatusAction()],
+      ),
       body: puestosAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) =>
@@ -31,22 +40,34 @@ class PuestosScreen extends ConsumerWidget {
               hint: 'Toca + para agregar uno.',
             );
           }
-          return ListView.separated(
-            itemCount: puestos.length,
-            separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (context, i) {
-              final p = puestos[i];
-              return ListTile(
-                leading: const CircleAvatar(child: Icon(Icons.badge_outlined)),
-                title: Text(p.nombre),
-                subtitle: Text('\$${p.salarioDiaDefault.toStringAsFixed(2)} / día'),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () => _confirmDelete(context, ref, p),
+          // Línea de Ajustes (DISENO_MOVIL §4): grupo de lista con el salario
+          // a la vista; tocar edita y borrar vive dentro de la hoja.
+          return LayoutBuilder(
+            builder: (context, box) => ListView(
+              padding: margenesDeLista(context, box.maxWidth),
+              children: [
+                GrupoLista(
+                  titulo: puestos.length == 1
+                      ? '1 puesto'
+                      : '${puestos.length} puestos',
+                  children: [
+                    for (final p in puestos)
+                      FilaLista(
+                        icono: Icons.badge_outlined,
+                        tono: BadgeTone.success,
+                        titulo: p.nombre,
+                        subtitulo:
+                            '≈ ${Fmt.moneyRedondo(p.salarioDiaDefault * 6)} a la semana',
+                        valor: '${Fmt.money(p.salarioDiaDefault)}/día',
+                        etiquetaValor:
+                            '${Fmt.money(p.salarioDiaDefault)} por día',
+                        onTap: () => _showDialog(context, ref, p),
+                      ),
+                  ],
                 ),
-                onTap: () => _showDialog(context, ref, p),
-              );
-            },
+                const SizedBox(height: 88), // que el botón + no tape la última fila
+              ],
+            ),
           );
         },
       ),
@@ -58,71 +79,84 @@ class PuestosScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _showDialog(BuildContext context, WidgetRef ref, Puesto? puesto) async {
+  Future<void> _showDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Puesto? puesto,
+  ) async {
     final nombreCtrl = TextEditingController(text: puesto?.nombre ?? '');
     final salarioCtrl = TextEditingController(
-        text: puesto != null ? puesto.salarioDiaDefault.toString() : '');
-    final formKey = GlobalKey<FormState>();
+      text: numeroParaEditar(puesto?.salarioDiaDefault),
+    );
 
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(puesto == null ? 'Nuevo puesto' : 'Editar puesto'),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: nombreCtrl,
-                decoration: const InputDecoration(labelText: 'Nombre del puesto'),
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'El nombre es obligatorio'
-                    : null,
-              ),
-              TextFormField(
-                controller: salarioCtrl,
-                decoration: const InputDecoration(labelText: 'Salario por día (\$)'),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                validator: (v) {
-                  final d = double.tryParse((v ?? '').trim());
-                  if (d == null || d < 0) return 'Ingresa un salario válido';
-                  return null;
-                },
-              ),
-            ],
+    await mostrarHojaFormulario(
+      context,
+      builder: (ctx) => HojaFormulario(
+        titulo: puesto == null ? 'Nuevo puesto' : 'Editar puesto',
+        subtitulo: puesto?.nombre,
+        textoGuardar: puesto == null ? 'Agregar puesto' : 'Guardar cambios',
+        textoQuitar: puesto == null ? null : 'Borrar puesto',
+        onQuitar: puesto == null
+            ? null
+            : () => _confirmDelete(context, ref, puesto),
+        campos: [
+          TextFormField(
+            controller: nombreCtrl,
+            decoration: const InputDecoration(labelText: 'Nombre del puesto'),
+            validator: (v) => (v == null || v.trim().isEmpty)
+                ? 'El nombre es obligatorio'
+                : null,
           ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-          FilledButton(
-            onPressed: () async {
-              if (!formKey.currentState!.validate()) return;
-              await ref.read(puestoRepositoryProvider).upsert(PuestosCompanion(
-                    id: Value(puesto?.id ?? _uuid.v4()),
-                    nombre: Value(nombreCtrl.text.trim()),
-                    salarioDiaDefault:
-                        Value(double.parse(salarioCtrl.text.trim())),
-                  ));
-              if (ctx.mounted) Navigator.pop(ctx);
+          TextFormField(
+            controller: salarioCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Salario por día',
+              prefixText: r'$ ',
+              helperText: 'Por semana: el diario × 6 días',
+            ),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            validator: (v) {
+              final d = leerNumero(v);
+              if (d == null || d < 0) return 'Ingresa un salario válido';
+              return null;
             },
-            child: const Text('Guardar'),
           ),
         ],
+        onGuardar: () async {
+          await ref
+              .read(puestoRepositoryProvider)
+              .upsert(
+                PuestosCompanion(
+                  id: Value(puesto?.id ?? _uuid.v4()),
+                  nombre: Value(nombreCtrl.text.trim()),
+                  salarioDiaDefault: Value(leerNumero(salarioCtrl.text)!),
+                ),
+              );
+          return true;
+        },
       ),
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, WidgetRef ref, Puesto p) async {
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    Puesto p,
+  ) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Confirmar eliminación'),
         content: Text('¿Eliminar el puesto "${p.nombre}"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Eliminar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Eliminar'),
+          ),
         ],
       ),
     );
