@@ -70,7 +70,11 @@ jobs:
       - name: Configurar Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # 24 (no 20): `scripts/demo-seis-meses.mjs` importa el .ts del seed
+          # directo y Node solo quita los tipos solo desde 22.18/23.6; con 20
+          # su prueba fallaba en main desde d42c247. 20 además ya está
+          # descontinuado en los runners de GitHub.
+          node-version: 24
           cache: npm
           cache-dependency-path: web/package-lock.json
 
