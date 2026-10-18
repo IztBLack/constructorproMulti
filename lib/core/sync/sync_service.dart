@@ -166,6 +166,10 @@ class SyncService {
     // después de la nota — al revés fallaría la FK en el push.
     'nota_obra',
     'nota_obra_renglon',
+    // Listas de material (0050): la lista después de obras y sus renglones
+    // después de la lista, por la misma razón.
+    'lista_material',
+    'lista_material_renglon',
     // Cuadrillas: van DESPUÉS de colaboradores/obras y ANTES de asistencias/
     // destajos, que ahora referencian cuadrilla_id (evita fallo de FK en push).
     'cuadrillas',
@@ -234,6 +238,13 @@ class SyncService {
       'UPDATE $tabla SET $col = ? '
       "WHERE $idCol = ? AND sync_status IN ('pending', 'error') "
       'AND updated_at <= ? AND $col IS NOT ?';
+
+  /// True si el servidor todavía no tiene la tabla (PostgREST PGRST205,
+  /// Postgres 42P01): una app más nueva que la base. Público para probarlo.
+  static bool esTablaInexistente(PostgrestException e) =>
+      e.code == 'PGRST205' ||
+      e.code == '42P01' ||
+      e.message.contains('Could not find the table');
 
   /// True si el fallo de push es la regla de "1 jornada/día" del servidor
   /// (CHECK, SQLSTATE 23514). PostgREST entrega el cuerpo del error como un JSON
@@ -380,7 +391,15 @@ class SyncService {
       // 2) PULL de cada tabla (orden indistinto: upsert idempotente). Corre
       //    SIEMPRE, aunque el push haya tenido errores arriba.
       for (final t in pushOrder) {
-        await _pullTabla(t);
+        try {
+          await _pullTabla(t);
+        } on PostgrestException catch (e) {
+          // Una tabla que esta versión de la app ya conoce pero el servidor
+          // todavía no (APK publicado antes de aplicar su migración) no debe
+          // dejar sin bajar a TODAS las demás. Se salta y se reintenta solo.
+          if (!esTablaInexistente(e)) rethrow;
+          debugPrint('[SyncService] PULL $t: la tabla aún no existe en el servidor');
+        }
       }
 
       await _diagnosticoAsistencias();
@@ -685,6 +704,13 @@ class SyncService {
           [serverUpd, empresaId, ...whereArgs],
         );
       } on PostgrestException catch (e) {
+        // La tabla aún no existe en el servidor (ver el PULL): las filas se
+        // quedan `pending`, sin pintar el indicador de error, y suben en
+        // cuanto se aplique la migración.
+        if (esTablaInexistente(e)) {
+          debugPrint('[SyncService] PUSH $name: la tabla aún no existe en el servidor');
+          return erroresFila;
+        }
         if (e.message.contains('uq_asist') && name == 'asistencias') {
           debugPrint('[SyncService] ⚠ PUSH $name: Conflicto uq_asist. Resolviendo...');
           // Colisión de constraint UNIQUE (colaborador_id, obra_id, fecha).

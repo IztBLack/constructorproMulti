@@ -61,7 +61,7 @@ void main() {
         final t = totalesDe([
           for (final r
               in (c['renglones'] as List).cast<Map<String, dynamic>>())
-            RenglonCalc(
+            RenglonListaCalc(
               tipo: tipoRenglonListaDeCadena(r['tipo'] as String),
               cantidad: d(r['cantidad'])!,
               largo: d(r['largo']),

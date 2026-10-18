@@ -19506,6 +19506,1969 @@ class BitacoraAclaracionCompanion
   }
 }
 
+class $ListaMaterialTable extends ListaMaterial
+    with TableInfo<$ListaMaterialTable, ListaMaterialRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ListaMaterialTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _empresaIdMeta = const VerificationMeta(
+    'empresaId',
+  );
+  @override
+  late final GeneratedColumn<String> empresaId = GeneratedColumn<String>(
+    'empresa_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _serverUpdatedAtMeta = const VerificationMeta(
+    'serverUpdatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> serverUpdatedAt = GeneratedColumn<int>(
+    'server_updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _ordenMeta = const VerificationMeta('orden');
+  @override
+  late final GeneratedColumn<int> orden = GeneratedColumn<int>(
+    'orden',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _obraIdMeta = const VerificationMeta('obraId');
+  @override
+  late final GeneratedColumn<String> obraId = GeneratedColumn<String>(
+    'obra_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tituloMeta = const VerificationMeta('titulo');
+  @override
+  late final GeneratedColumn<String> titulo = GeneratedColumn<String>(
+    'titulo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _planoMeta = const VerificationMeta('plano');
+  @override
+  late final GeneratedColumn<String> plano = GeneratedColumn<String>(
+    'plano',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _fechaMeta = const VerificationMeta('fecha');
+  @override
+  late final GeneratedColumn<int> fecha = GeneratedColumn<int>(
+    'fecha',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _estadoMeta = const VerificationMeta('estado');
+  @override
+  late final GeneratedColumn<String> estado = GeneratedColumn<String>(
+    'estado',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('ABIERTA'),
+  );
+  static const VerificationMeta _notasMeta = const VerificationMeta('notas');
+  @override
+  late final GeneratedColumn<String> notas = GeneratedColumn<String>(
+    'notas',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    orden,
+    id,
+    obraId,
+    titulo,
+    plano,
+    fecha,
+    estado,
+    notas,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'lista_material';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ListaMaterialRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('empresa_id')) {
+      context.handle(
+        _empresaIdMeta,
+        empresaId.isAcceptableOrUnknown(data['empresa_id']!, _empresaIdMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('server_updated_at')) {
+      context.handle(
+        _serverUpdatedAtMeta,
+        serverUpdatedAt.isAcceptableOrUnknown(
+          data['server_updated_at']!,
+          _serverUpdatedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('orden')) {
+      context.handle(
+        _ordenMeta,
+        orden.isAcceptableOrUnknown(data['orden']!, _ordenMeta),
+      );
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('obra_id')) {
+      context.handle(
+        _obraIdMeta,
+        obraId.isAcceptableOrUnknown(data['obra_id']!, _obraIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_obraIdMeta);
+    }
+    if (data.containsKey('titulo')) {
+      context.handle(
+        _tituloMeta,
+        titulo.isAcceptableOrUnknown(data['titulo']!, _tituloMeta),
+      );
+    }
+    if (data.containsKey('plano')) {
+      context.handle(
+        _planoMeta,
+        plano.isAcceptableOrUnknown(data['plano']!, _planoMeta),
+      );
+    }
+    if (data.containsKey('fecha')) {
+      context.handle(
+        _fechaMeta,
+        fecha.isAcceptableOrUnknown(data['fecha']!, _fechaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fechaMeta);
+    }
+    if (data.containsKey('estado')) {
+      context.handle(
+        _estadoMeta,
+        estado.isAcceptableOrUnknown(data['estado']!, _estadoMeta),
+      );
+    }
+    if (data.containsKey('notas')) {
+      context.handle(
+        _notasMeta,
+        notas.isAcceptableOrUnknown(data['notas']!, _notasMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ListaMaterialRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ListaMaterialRow(
+      empresaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}empresa_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      serverUpdatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}server_updated_at'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      orden: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}orden'],
+      )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      obraId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}obra_id'],
+      )!,
+      titulo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}titulo'],
+      )!,
+      plano: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}plano'],
+      )!,
+      fecha: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}fecha'],
+      )!,
+      estado: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}estado'],
+      )!,
+      notas: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notas'],
+      )!,
+    );
+  }
+
+  @override
+  $ListaMaterialTable createAlias(String alias) {
+    return $ListaMaterialTable(attachedDatabase, alias);
+  }
+}
+
+class ListaMaterialRow extends DataClass
+    implements Insertable<ListaMaterialRow> {
+  /// Llave multitenant + RLS. Vacío mientras no haya backend.
+  final String empresaId;
+
+  /// Alta (UTC ms). 0 en filas previas a la migración.
+  final int createdAt;
+
+  /// Última edición de cliente (UTC ms). Árbitro local de LWW + dirty flag.
+  final int updatedAt;
+
+  /// Lo pone Postgres; árbitro de LWW y cursor de pull. Null hasta sincronizar.
+  final int? serverUpdatedAt;
+
+  /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
+  final int? deletedAt;
+
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
+  final String syncStatus;
+  final int orden;
+  final String id;
+  final String obraId;
+  final String titulo;
+
+  /// Clave u hoja del plano de donde sale («E-03»).
+  final String plano;
+  final int fecha;
+
+  /// ABIERTA | CERRADA.
+  final String estado;
+  final String notas;
+  const ListaMaterialRow({
+    required this.empresaId,
+    required this.createdAt,
+    required this.updatedAt,
+    this.serverUpdatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.orden,
+    required this.id,
+    required this.obraId,
+    required this.titulo,
+    required this.plano,
+    required this.fecha,
+    required this.estado,
+    required this.notas,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['empresa_id'] = Variable<String>(empresaId);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || serverUpdatedAt != null) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    map['orden'] = Variable<int>(orden);
+    map['id'] = Variable<String>(id);
+    map['obra_id'] = Variable<String>(obraId);
+    map['titulo'] = Variable<String>(titulo);
+    map['plano'] = Variable<String>(plano);
+    map['fecha'] = Variable<int>(fecha);
+    map['estado'] = Variable<String>(estado);
+    map['notas'] = Variable<String>(notas);
+    return map;
+  }
+
+  ListaMaterialCompanion toCompanion(bool nullToAbsent) {
+    return ListaMaterialCompanion(
+      empresaId: Value(empresaId),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      serverUpdatedAt: serverUpdatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverUpdatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      orden: Value(orden),
+      id: Value(id),
+      obraId: Value(obraId),
+      titulo: Value(titulo),
+      plano: Value(plano),
+      fecha: Value(fecha),
+      estado: Value(estado),
+      notas: Value(notas),
+    );
+  }
+
+  factory ListaMaterialRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ListaMaterialRow(
+      empresaId: serializer.fromJson<String>(json['empresaId']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      serverUpdatedAt: serializer.fromJson<int?>(json['serverUpdatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      orden: serializer.fromJson<int>(json['orden']),
+      id: serializer.fromJson<String>(json['id']),
+      obraId: serializer.fromJson<String>(json['obraId']),
+      titulo: serializer.fromJson<String>(json['titulo']),
+      plano: serializer.fromJson<String>(json['plano']),
+      fecha: serializer.fromJson<int>(json['fecha']),
+      estado: serializer.fromJson<String>(json['estado']),
+      notas: serializer.fromJson<String>(json['notas']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'empresaId': serializer.toJson<String>(empresaId),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'serverUpdatedAt': serializer.toJson<int?>(serverUpdatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'orden': serializer.toJson<int>(orden),
+      'id': serializer.toJson<String>(id),
+      'obraId': serializer.toJson<String>(obraId),
+      'titulo': serializer.toJson<String>(titulo),
+      'plano': serializer.toJson<String>(plano),
+      'fecha': serializer.toJson<int>(fecha),
+      'estado': serializer.toJson<String>(estado),
+      'notas': serializer.toJson<String>(notas),
+    };
+  }
+
+  ListaMaterialRow copyWith({
+    String? empresaId,
+    int? createdAt,
+    int? updatedAt,
+    Value<int?> serverUpdatedAt = const Value.absent(),
+    Value<int?> deletedAt = const Value.absent(),
+    String? syncStatus,
+    int? orden,
+    String? id,
+    String? obraId,
+    String? titulo,
+    String? plano,
+    int? fecha,
+    String? estado,
+    String? notas,
+  }) => ListaMaterialRow(
+    empresaId: empresaId ?? this.empresaId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    serverUpdatedAt: serverUpdatedAt.present
+        ? serverUpdatedAt.value
+        : this.serverUpdatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    orden: orden ?? this.orden,
+    id: id ?? this.id,
+    obraId: obraId ?? this.obraId,
+    titulo: titulo ?? this.titulo,
+    plano: plano ?? this.plano,
+    fecha: fecha ?? this.fecha,
+    estado: estado ?? this.estado,
+    notas: notas ?? this.notas,
+  );
+  ListaMaterialRow copyWithCompanion(ListaMaterialCompanion data) {
+    return ListaMaterialRow(
+      empresaId: data.empresaId.present ? data.empresaId.value : this.empresaId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      serverUpdatedAt: data.serverUpdatedAt.present
+          ? data.serverUpdatedAt.value
+          : this.serverUpdatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      orden: data.orden.present ? data.orden.value : this.orden,
+      id: data.id.present ? data.id.value : this.id,
+      obraId: data.obraId.present ? data.obraId.value : this.obraId,
+      titulo: data.titulo.present ? data.titulo.value : this.titulo,
+      plano: data.plano.present ? data.plano.value : this.plano,
+      fecha: data.fecha.present ? data.fecha.value : this.fecha,
+      estado: data.estado.present ? data.estado.value : this.estado,
+      notas: data.notas.present ? data.notas.value : this.notas,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ListaMaterialRow(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
+          ..write('id: $id, ')
+          ..write('obraId: $obraId, ')
+          ..write('titulo: $titulo, ')
+          ..write('plano: $plano, ')
+          ..write('fecha: $fecha, ')
+          ..write('estado: $estado, ')
+          ..write('notas: $notas')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    orden,
+    id,
+    obraId,
+    titulo,
+    plano,
+    fecha,
+    estado,
+    notas,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ListaMaterialRow &&
+          other.empresaId == this.empresaId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.serverUpdatedAt == this.serverUpdatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.orden == this.orden &&
+          other.id == this.id &&
+          other.obraId == this.obraId &&
+          other.titulo == this.titulo &&
+          other.plano == this.plano &&
+          other.fecha == this.fecha &&
+          other.estado == this.estado &&
+          other.notas == this.notas);
+}
+
+class ListaMaterialCompanion extends UpdateCompanion<ListaMaterialRow> {
+  final Value<String> empresaId;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int?> serverUpdatedAt;
+  final Value<int?> deletedAt;
+  final Value<String> syncStatus;
+  final Value<int> orden;
+  final Value<String> id;
+  final Value<String> obraId;
+  final Value<String> titulo;
+  final Value<String> plano;
+  final Value<int> fecha;
+  final Value<String> estado;
+  final Value<String> notas;
+  final Value<int> rowid;
+  const ListaMaterialCompanion({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
+    this.id = const Value.absent(),
+    this.obraId = const Value.absent(),
+    this.titulo = const Value.absent(),
+    this.plano = const Value.absent(),
+    this.fecha = const Value.absent(),
+    this.estado = const Value.absent(),
+    this.notas = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ListaMaterialCompanion.insert({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
+    required String id,
+    required String obraId,
+    this.titulo = const Value.absent(),
+    this.plano = const Value.absent(),
+    required int fecha,
+    this.estado = const Value.absent(),
+    this.notas = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       obraId = Value(obraId),
+       fecha = Value(fecha);
+  static Insertable<ListaMaterialRow> custom({
+    Expression<String>? empresaId,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? serverUpdatedAt,
+    Expression<int>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<int>? orden,
+    Expression<String>? id,
+    Expression<String>? obraId,
+    Expression<String>? titulo,
+    Expression<String>? plano,
+    Expression<int>? fecha,
+    Expression<String>? estado,
+    Expression<String>? notas,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (empresaId != null) 'empresa_id': empresaId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (serverUpdatedAt != null) 'server_updated_at': serverUpdatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (orden != null) 'orden': orden,
+      if (id != null) 'id': id,
+      if (obraId != null) 'obra_id': obraId,
+      if (titulo != null) 'titulo': titulo,
+      if (plano != null) 'plano': plano,
+      if (fecha != null) 'fecha': fecha,
+      if (estado != null) 'estado': estado,
+      if (notas != null) 'notas': notas,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ListaMaterialCompanion copyWith({
+    Value<String>? empresaId,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int?>? serverUpdatedAt,
+    Value<int?>? deletedAt,
+    Value<String>? syncStatus,
+    Value<int>? orden,
+    Value<String>? id,
+    Value<String>? obraId,
+    Value<String>? titulo,
+    Value<String>? plano,
+    Value<int>? fecha,
+    Value<String>? estado,
+    Value<String>? notas,
+    Value<int>? rowid,
+  }) {
+    return ListaMaterialCompanion(
+      empresaId: empresaId ?? this.empresaId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      orden: orden ?? this.orden,
+      id: id ?? this.id,
+      obraId: obraId ?? this.obraId,
+      titulo: titulo ?? this.titulo,
+      plano: plano ?? this.plano,
+      fecha: fecha ?? this.fecha,
+      estado: estado ?? this.estado,
+      notas: notas ?? this.notas,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (empresaId.present) {
+      map['empresa_id'] = Variable<String>(empresaId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (serverUpdatedAt.present) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (orden.present) {
+      map['orden'] = Variable<int>(orden.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (obraId.present) {
+      map['obra_id'] = Variable<String>(obraId.value);
+    }
+    if (titulo.present) {
+      map['titulo'] = Variable<String>(titulo.value);
+    }
+    if (plano.present) {
+      map['plano'] = Variable<String>(plano.value);
+    }
+    if (fecha.present) {
+      map['fecha'] = Variable<int>(fecha.value);
+    }
+    if (estado.present) {
+      map['estado'] = Variable<String>(estado.value);
+    }
+    if (notas.present) {
+      map['notas'] = Variable<String>(notas.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ListaMaterialCompanion(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
+          ..write('id: $id, ')
+          ..write('obraId: $obraId, ')
+          ..write('titulo: $titulo, ')
+          ..write('plano: $plano, ')
+          ..write('fecha: $fecha, ')
+          ..write('estado: $estado, ')
+          ..write('notas: $notas, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ListaMaterialRenglonTable extends ListaMaterialRenglon
+    with TableInfo<$ListaMaterialRenglonTable, ListaMaterialRenglonRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ListaMaterialRenglonTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _empresaIdMeta = const VerificationMeta(
+    'empresaId',
+  );
+  @override
+  late final GeneratedColumn<String> empresaId = GeneratedColumn<String>(
+    'empresa_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _serverUpdatedAtMeta = const VerificationMeta(
+    'serverUpdatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> serverUpdatedAt = GeneratedColumn<int>(
+    'server_updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
+    'syncStatus',
+  );
+  @override
+  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
+    'sync_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _ordenMeta = const VerificationMeta('orden');
+  @override
+  late final GeneratedColumn<int> orden = GeneratedColumn<int>(
+    'orden',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _listaIdMeta = const VerificationMeta(
+    'listaId',
+  );
+  @override
+  late final GeneratedColumn<String> listaId = GeneratedColumn<String>(
+    'lista_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _seccionMeta = const VerificationMeta(
+    'seccion',
+  );
+  @override
+  late final GeneratedColumn<String> seccion = GeneratedColumn<String>(
+    'seccion',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _tipoMeta = const VerificationMeta('tipo');
+  @override
+  late final GeneratedColumn<String> tipo = GeneratedColumn<String>(
+    'tipo',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('PIEZA'),
+  );
+  static const VerificationMeta _descripcionMeta = const VerificationMeta(
+    'descripcion',
+  );
+  @override
+  late final GeneratedColumn<String> descripcion = GeneratedColumn<String>(
+    'descripcion',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _cantidadMeta = const VerificationMeta(
+    'cantidad',
+  );
+  @override
+  late final GeneratedColumn<double> cantidad = GeneratedColumn<double>(
+    'cantidad',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _largoMeta = const VerificationMeta('largo');
+  @override
+  late final GeneratedColumn<double> largo = GeneratedColumn<double>(
+    'largo',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _unidadMeta = const VerificationMeta('unidad');
+  @override
+  late final GeneratedColumn<String> unidad = GeneratedColumn<String>(
+    'unidad',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _separacionCmMeta = const VerificationMeta(
+    'separacionCm',
+  );
+  @override
+  late final GeneratedColumn<double> separacionCm = GeneratedColumn<double>(
+    'separacion_cm',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _notaMeta = const VerificationMeta('nota');
+  @override
+  late final GeneratedColumn<String> nota = GeneratedColumn<String>(
+    'nota',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _marcadoMeta = const VerificationMeta(
+    'marcado',
+  );
+  @override
+  late final GeneratedColumn<bool> marcado = GeneratedColumn<bool>(
+    'marcado',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("marcado" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _marcadoPorMeta = const VerificationMeta(
+    'marcadoPor',
+  );
+  @override
+  late final GeneratedColumn<String> marcadoPor = GeneratedColumn<String>(
+    'marcado_por',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _marcadoPorNombreMeta = const VerificationMeta(
+    'marcadoPorNombre',
+  );
+  @override
+  late final GeneratedColumn<String> marcadoPorNombre = GeneratedColumn<String>(
+    'marcado_por_nombre',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _marcadoAtMeta = const VerificationMeta(
+    'marcadoAt',
+  );
+  @override
+  late final GeneratedColumn<int> marcadoAt = GeneratedColumn<int>(
+    'marcado_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    orden,
+    id,
+    listaId,
+    seccion,
+    tipo,
+    descripcion,
+    cantidad,
+    largo,
+    unidad,
+    separacionCm,
+    nota,
+    marcado,
+    marcadoPor,
+    marcadoPorNombre,
+    marcadoAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'lista_material_renglon';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ListaMaterialRenglonRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('empresa_id')) {
+      context.handle(
+        _empresaIdMeta,
+        empresaId.isAcceptableOrUnknown(data['empresa_id']!, _empresaIdMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    if (data.containsKey('server_updated_at')) {
+      context.handle(
+        _serverUpdatedAtMeta,
+        serverUpdatedAt.isAcceptableOrUnknown(
+          data['server_updated_at']!,
+          _serverUpdatedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('sync_status')) {
+      context.handle(
+        _syncStatusMeta,
+        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
+      );
+    }
+    if (data.containsKey('orden')) {
+      context.handle(
+        _ordenMeta,
+        orden.isAcceptableOrUnknown(data['orden']!, _ordenMeta),
+      );
+    }
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('lista_id')) {
+      context.handle(
+        _listaIdMeta,
+        listaId.isAcceptableOrUnknown(data['lista_id']!, _listaIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_listaIdMeta);
+    }
+    if (data.containsKey('seccion')) {
+      context.handle(
+        _seccionMeta,
+        seccion.isAcceptableOrUnknown(data['seccion']!, _seccionMeta),
+      );
+    }
+    if (data.containsKey('tipo')) {
+      context.handle(
+        _tipoMeta,
+        tipo.isAcceptableOrUnknown(data['tipo']!, _tipoMeta),
+      );
+    }
+    if (data.containsKey('descripcion')) {
+      context.handle(
+        _descripcionMeta,
+        descripcion.isAcceptableOrUnknown(
+          data['descripcion']!,
+          _descripcionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cantidad')) {
+      context.handle(
+        _cantidadMeta,
+        cantidad.isAcceptableOrUnknown(data['cantidad']!, _cantidadMeta),
+      );
+    }
+    if (data.containsKey('largo')) {
+      context.handle(
+        _largoMeta,
+        largo.isAcceptableOrUnknown(data['largo']!, _largoMeta),
+      );
+    }
+    if (data.containsKey('unidad')) {
+      context.handle(
+        _unidadMeta,
+        unidad.isAcceptableOrUnknown(data['unidad']!, _unidadMeta),
+      );
+    }
+    if (data.containsKey('separacion_cm')) {
+      context.handle(
+        _separacionCmMeta,
+        separacionCm.isAcceptableOrUnknown(
+          data['separacion_cm']!,
+          _separacionCmMeta,
+        ),
+      );
+    }
+    if (data.containsKey('nota')) {
+      context.handle(
+        _notaMeta,
+        nota.isAcceptableOrUnknown(data['nota']!, _notaMeta),
+      );
+    }
+    if (data.containsKey('marcado')) {
+      context.handle(
+        _marcadoMeta,
+        marcado.isAcceptableOrUnknown(data['marcado']!, _marcadoMeta),
+      );
+    }
+    if (data.containsKey('marcado_por')) {
+      context.handle(
+        _marcadoPorMeta,
+        marcadoPor.isAcceptableOrUnknown(data['marcado_por']!, _marcadoPorMeta),
+      );
+    }
+    if (data.containsKey('marcado_por_nombre')) {
+      context.handle(
+        _marcadoPorNombreMeta,
+        marcadoPorNombre.isAcceptableOrUnknown(
+          data['marcado_por_nombre']!,
+          _marcadoPorNombreMeta,
+        ),
+      );
+    }
+    if (data.containsKey('marcado_at')) {
+      context.handle(
+        _marcadoAtMeta,
+        marcadoAt.isAcceptableOrUnknown(data['marcado_at']!, _marcadoAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ListaMaterialRenglonRow map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ListaMaterialRenglonRow(
+      empresaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}empresa_id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      serverUpdatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}server_updated_at'],
+      ),
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      syncStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_status'],
+      )!,
+      orden: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}orden'],
+      )!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      listaId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}lista_id'],
+      )!,
+      seccion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}seccion'],
+      )!,
+      tipo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tipo'],
+      )!,
+      descripcion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}descripcion'],
+      )!,
+      cantidad: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}cantidad'],
+      )!,
+      largo: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}largo'],
+      ),
+      unidad: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}unidad'],
+      )!,
+      separacionCm: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}separacion_cm'],
+      ),
+      nota: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}nota'],
+      )!,
+      marcado: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}marcado'],
+      )!,
+      marcadoPor: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}marcado_por'],
+      ),
+      marcadoPorNombre: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}marcado_por_nombre'],
+      )!,
+      marcadoAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}marcado_at'],
+      ),
+    );
+  }
+
+  @override
+  $ListaMaterialRenglonTable createAlias(String alias) {
+    return $ListaMaterialRenglonTable(attachedDatabase, alias);
+  }
+}
+
+class ListaMaterialRenglonRow extends DataClass
+    implements Insertable<ListaMaterialRenglonRow> {
+  /// Llave multitenant + RLS. Vacío mientras no haya backend.
+  final String empresaId;
+
+  /// Alta (UTC ms). 0 en filas previas a la migración.
+  final int createdAt;
+
+  /// Última edición de cliente (UTC ms). Árbitro local de LWW + dirty flag.
+  final int updatedAt;
+
+  /// Lo pone Postgres; árbitro de LWW y cursor de pull. Null hasta sincronizar.
+  final int? serverUpdatedAt;
+
+  /// Tombstone / soft-delete (UTC ms). Las queries de UI filtran IS NULL.
+  final int? deletedAt;
+
+  /// 'pending'  → cambio local sin subir (se empuja en el próximo push).
+  /// 'synced'   → ya reconciliado con el servidor.
+  /// 'error'    → falló al subir; TRANSITORIO, se reintenta cada ciclo.
+  /// 'skipped'  → no sincronizable (p. ej. id legacy no-UUID); terminal, no se
+  ///             reintenta ni cuenta para el indicador de error.
+  final String syncStatus;
+  final int orden;
+  final String id;
+  final String listaId;
+  final String seccion;
+  final String tipo;
+  final String descripcion;
+  final double cantidad;
+
+  /// Metros; solo PIEZA. Null = el plano no lo dio (no se supone).
+  final double? largo;
+  final String unidad;
+
+  /// Separación de estribos en cm («estribo 25»).
+  final double? separacionCm;
+  final String nota;
+
+  /// La casilla, con quién y cuándo se palomeó. `marcadoPor` es el uuid del
+  /// usuario (null sin sesión: un uuid vacío lo rechazaría el servidor).
+  final bool marcado;
+  final String? marcadoPor;
+  final String marcadoPorNombre;
+  final int? marcadoAt;
+  const ListaMaterialRenglonRow({
+    required this.empresaId,
+    required this.createdAt,
+    required this.updatedAt,
+    this.serverUpdatedAt,
+    this.deletedAt,
+    required this.syncStatus,
+    required this.orden,
+    required this.id,
+    required this.listaId,
+    required this.seccion,
+    required this.tipo,
+    required this.descripcion,
+    required this.cantidad,
+    this.largo,
+    required this.unidad,
+    this.separacionCm,
+    required this.nota,
+    required this.marcado,
+    this.marcadoPor,
+    required this.marcadoPorNombre,
+    this.marcadoAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['empresa_id'] = Variable<String>(empresaId);
+    map['created_at'] = Variable<int>(createdAt);
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || serverUpdatedAt != null) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt);
+    }
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    map['sync_status'] = Variable<String>(syncStatus);
+    map['orden'] = Variable<int>(orden);
+    map['id'] = Variable<String>(id);
+    map['lista_id'] = Variable<String>(listaId);
+    map['seccion'] = Variable<String>(seccion);
+    map['tipo'] = Variable<String>(tipo);
+    map['descripcion'] = Variable<String>(descripcion);
+    map['cantidad'] = Variable<double>(cantidad);
+    if (!nullToAbsent || largo != null) {
+      map['largo'] = Variable<double>(largo);
+    }
+    map['unidad'] = Variable<String>(unidad);
+    if (!nullToAbsent || separacionCm != null) {
+      map['separacion_cm'] = Variable<double>(separacionCm);
+    }
+    map['nota'] = Variable<String>(nota);
+    map['marcado'] = Variable<bool>(marcado);
+    if (!nullToAbsent || marcadoPor != null) {
+      map['marcado_por'] = Variable<String>(marcadoPor);
+    }
+    map['marcado_por_nombre'] = Variable<String>(marcadoPorNombre);
+    if (!nullToAbsent || marcadoAt != null) {
+      map['marcado_at'] = Variable<int>(marcadoAt);
+    }
+    return map;
+  }
+
+  ListaMaterialRenglonCompanion toCompanion(bool nullToAbsent) {
+    return ListaMaterialRenglonCompanion(
+      empresaId: Value(empresaId),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      serverUpdatedAt: serverUpdatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverUpdatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      syncStatus: Value(syncStatus),
+      orden: Value(orden),
+      id: Value(id),
+      listaId: Value(listaId),
+      seccion: Value(seccion),
+      tipo: Value(tipo),
+      descripcion: Value(descripcion),
+      cantidad: Value(cantidad),
+      largo: largo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(largo),
+      unidad: Value(unidad),
+      separacionCm: separacionCm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(separacionCm),
+      nota: Value(nota),
+      marcado: Value(marcado),
+      marcadoPor: marcadoPor == null && nullToAbsent
+          ? const Value.absent()
+          : Value(marcadoPor),
+      marcadoPorNombre: Value(marcadoPorNombre),
+      marcadoAt: marcadoAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(marcadoAt),
+    );
+  }
+
+  factory ListaMaterialRenglonRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ListaMaterialRenglonRow(
+      empresaId: serializer.fromJson<String>(json['empresaId']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      serverUpdatedAt: serializer.fromJson<int?>(json['serverUpdatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      syncStatus: serializer.fromJson<String>(json['syncStatus']),
+      orden: serializer.fromJson<int>(json['orden']),
+      id: serializer.fromJson<String>(json['id']),
+      listaId: serializer.fromJson<String>(json['listaId']),
+      seccion: serializer.fromJson<String>(json['seccion']),
+      tipo: serializer.fromJson<String>(json['tipo']),
+      descripcion: serializer.fromJson<String>(json['descripcion']),
+      cantidad: serializer.fromJson<double>(json['cantidad']),
+      largo: serializer.fromJson<double?>(json['largo']),
+      unidad: serializer.fromJson<String>(json['unidad']),
+      separacionCm: serializer.fromJson<double?>(json['separacionCm']),
+      nota: serializer.fromJson<String>(json['nota']),
+      marcado: serializer.fromJson<bool>(json['marcado']),
+      marcadoPor: serializer.fromJson<String?>(json['marcadoPor']),
+      marcadoPorNombre: serializer.fromJson<String>(json['marcadoPorNombre']),
+      marcadoAt: serializer.fromJson<int?>(json['marcadoAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'empresaId': serializer.toJson<String>(empresaId),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'serverUpdatedAt': serializer.toJson<int?>(serverUpdatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'syncStatus': serializer.toJson<String>(syncStatus),
+      'orden': serializer.toJson<int>(orden),
+      'id': serializer.toJson<String>(id),
+      'listaId': serializer.toJson<String>(listaId),
+      'seccion': serializer.toJson<String>(seccion),
+      'tipo': serializer.toJson<String>(tipo),
+      'descripcion': serializer.toJson<String>(descripcion),
+      'cantidad': serializer.toJson<double>(cantidad),
+      'largo': serializer.toJson<double?>(largo),
+      'unidad': serializer.toJson<String>(unidad),
+      'separacionCm': serializer.toJson<double?>(separacionCm),
+      'nota': serializer.toJson<String>(nota),
+      'marcado': serializer.toJson<bool>(marcado),
+      'marcadoPor': serializer.toJson<String?>(marcadoPor),
+      'marcadoPorNombre': serializer.toJson<String>(marcadoPorNombre),
+      'marcadoAt': serializer.toJson<int?>(marcadoAt),
+    };
+  }
+
+  ListaMaterialRenglonRow copyWith({
+    String? empresaId,
+    int? createdAt,
+    int? updatedAt,
+    Value<int?> serverUpdatedAt = const Value.absent(),
+    Value<int?> deletedAt = const Value.absent(),
+    String? syncStatus,
+    int? orden,
+    String? id,
+    String? listaId,
+    String? seccion,
+    String? tipo,
+    String? descripcion,
+    double? cantidad,
+    Value<double?> largo = const Value.absent(),
+    String? unidad,
+    Value<double?> separacionCm = const Value.absent(),
+    String? nota,
+    bool? marcado,
+    Value<String?> marcadoPor = const Value.absent(),
+    String? marcadoPorNombre,
+    Value<int?> marcadoAt = const Value.absent(),
+  }) => ListaMaterialRenglonRow(
+    empresaId: empresaId ?? this.empresaId,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    serverUpdatedAt: serverUpdatedAt.present
+        ? serverUpdatedAt.value
+        : this.serverUpdatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    syncStatus: syncStatus ?? this.syncStatus,
+    orden: orden ?? this.orden,
+    id: id ?? this.id,
+    listaId: listaId ?? this.listaId,
+    seccion: seccion ?? this.seccion,
+    tipo: tipo ?? this.tipo,
+    descripcion: descripcion ?? this.descripcion,
+    cantidad: cantidad ?? this.cantidad,
+    largo: largo.present ? largo.value : this.largo,
+    unidad: unidad ?? this.unidad,
+    separacionCm: separacionCm.present ? separacionCm.value : this.separacionCm,
+    nota: nota ?? this.nota,
+    marcado: marcado ?? this.marcado,
+    marcadoPor: marcadoPor.present ? marcadoPor.value : this.marcadoPor,
+    marcadoPorNombre: marcadoPorNombre ?? this.marcadoPorNombre,
+    marcadoAt: marcadoAt.present ? marcadoAt.value : this.marcadoAt,
+  );
+  ListaMaterialRenglonRow copyWithCompanion(
+    ListaMaterialRenglonCompanion data,
+  ) {
+    return ListaMaterialRenglonRow(
+      empresaId: data.empresaId.present ? data.empresaId.value : this.empresaId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      serverUpdatedAt: data.serverUpdatedAt.present
+          ? data.serverUpdatedAt.value
+          : this.serverUpdatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      syncStatus: data.syncStatus.present
+          ? data.syncStatus.value
+          : this.syncStatus,
+      orden: data.orden.present ? data.orden.value : this.orden,
+      id: data.id.present ? data.id.value : this.id,
+      listaId: data.listaId.present ? data.listaId.value : this.listaId,
+      seccion: data.seccion.present ? data.seccion.value : this.seccion,
+      tipo: data.tipo.present ? data.tipo.value : this.tipo,
+      descripcion: data.descripcion.present
+          ? data.descripcion.value
+          : this.descripcion,
+      cantidad: data.cantidad.present ? data.cantidad.value : this.cantidad,
+      largo: data.largo.present ? data.largo.value : this.largo,
+      unidad: data.unidad.present ? data.unidad.value : this.unidad,
+      separacionCm: data.separacionCm.present
+          ? data.separacionCm.value
+          : this.separacionCm,
+      nota: data.nota.present ? data.nota.value : this.nota,
+      marcado: data.marcado.present ? data.marcado.value : this.marcado,
+      marcadoPor: data.marcadoPor.present
+          ? data.marcadoPor.value
+          : this.marcadoPor,
+      marcadoPorNombre: data.marcadoPorNombre.present
+          ? data.marcadoPorNombre.value
+          : this.marcadoPorNombre,
+      marcadoAt: data.marcadoAt.present ? data.marcadoAt.value : this.marcadoAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ListaMaterialRenglonRow(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
+          ..write('id: $id, ')
+          ..write('listaId: $listaId, ')
+          ..write('seccion: $seccion, ')
+          ..write('tipo: $tipo, ')
+          ..write('descripcion: $descripcion, ')
+          ..write('cantidad: $cantidad, ')
+          ..write('largo: $largo, ')
+          ..write('unidad: $unidad, ')
+          ..write('separacionCm: $separacionCm, ')
+          ..write('nota: $nota, ')
+          ..write('marcado: $marcado, ')
+          ..write('marcadoPor: $marcadoPor, ')
+          ..write('marcadoPorNombre: $marcadoPorNombre, ')
+          ..write('marcadoAt: $marcadoAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    empresaId,
+    createdAt,
+    updatedAt,
+    serverUpdatedAt,
+    deletedAt,
+    syncStatus,
+    orden,
+    id,
+    listaId,
+    seccion,
+    tipo,
+    descripcion,
+    cantidad,
+    largo,
+    unidad,
+    separacionCm,
+    nota,
+    marcado,
+    marcadoPor,
+    marcadoPorNombre,
+    marcadoAt,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ListaMaterialRenglonRow &&
+          other.empresaId == this.empresaId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.serverUpdatedAt == this.serverUpdatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.syncStatus == this.syncStatus &&
+          other.orden == this.orden &&
+          other.id == this.id &&
+          other.listaId == this.listaId &&
+          other.seccion == this.seccion &&
+          other.tipo == this.tipo &&
+          other.descripcion == this.descripcion &&
+          other.cantidad == this.cantidad &&
+          other.largo == this.largo &&
+          other.unidad == this.unidad &&
+          other.separacionCm == this.separacionCm &&
+          other.nota == this.nota &&
+          other.marcado == this.marcado &&
+          other.marcadoPor == this.marcadoPor &&
+          other.marcadoPorNombre == this.marcadoPorNombre &&
+          other.marcadoAt == this.marcadoAt);
+}
+
+class ListaMaterialRenglonCompanion
+    extends UpdateCompanion<ListaMaterialRenglonRow> {
+  final Value<String> empresaId;
+  final Value<int> createdAt;
+  final Value<int> updatedAt;
+  final Value<int?> serverUpdatedAt;
+  final Value<int?> deletedAt;
+  final Value<String> syncStatus;
+  final Value<int> orden;
+  final Value<String> id;
+  final Value<String> listaId;
+  final Value<String> seccion;
+  final Value<String> tipo;
+  final Value<String> descripcion;
+  final Value<double> cantidad;
+  final Value<double?> largo;
+  final Value<String> unidad;
+  final Value<double?> separacionCm;
+  final Value<String> nota;
+  final Value<bool> marcado;
+  final Value<String?> marcadoPor;
+  final Value<String> marcadoPorNombre;
+  final Value<int?> marcadoAt;
+  final Value<int> rowid;
+  const ListaMaterialRenglonCompanion({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
+    this.id = const Value.absent(),
+    this.listaId = const Value.absent(),
+    this.seccion = const Value.absent(),
+    this.tipo = const Value.absent(),
+    this.descripcion = const Value.absent(),
+    this.cantidad = const Value.absent(),
+    this.largo = const Value.absent(),
+    this.unidad = const Value.absent(),
+    this.separacionCm = const Value.absent(),
+    this.nota = const Value.absent(),
+    this.marcado = const Value.absent(),
+    this.marcadoPor = const Value.absent(),
+    this.marcadoPorNombre = const Value.absent(),
+    this.marcadoAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ListaMaterialRenglonCompanion.insert({
+    this.empresaId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.serverUpdatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.syncStatus = const Value.absent(),
+    this.orden = const Value.absent(),
+    required String id,
+    required String listaId,
+    this.seccion = const Value.absent(),
+    this.tipo = const Value.absent(),
+    this.descripcion = const Value.absent(),
+    this.cantidad = const Value.absent(),
+    this.largo = const Value.absent(),
+    this.unidad = const Value.absent(),
+    this.separacionCm = const Value.absent(),
+    this.nota = const Value.absent(),
+    this.marcado = const Value.absent(),
+    this.marcadoPor = const Value.absent(),
+    this.marcadoPorNombre = const Value.absent(),
+    this.marcadoAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       listaId = Value(listaId);
+  static Insertable<ListaMaterialRenglonRow> custom({
+    Expression<String>? empresaId,
+    Expression<int>? createdAt,
+    Expression<int>? updatedAt,
+    Expression<int>? serverUpdatedAt,
+    Expression<int>? deletedAt,
+    Expression<String>? syncStatus,
+    Expression<int>? orden,
+    Expression<String>? id,
+    Expression<String>? listaId,
+    Expression<String>? seccion,
+    Expression<String>? tipo,
+    Expression<String>? descripcion,
+    Expression<double>? cantidad,
+    Expression<double>? largo,
+    Expression<String>? unidad,
+    Expression<double>? separacionCm,
+    Expression<String>? nota,
+    Expression<bool>? marcado,
+    Expression<String>? marcadoPor,
+    Expression<String>? marcadoPorNombre,
+    Expression<int>? marcadoAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (empresaId != null) 'empresa_id': empresaId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (serverUpdatedAt != null) 'server_updated_at': serverUpdatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (syncStatus != null) 'sync_status': syncStatus,
+      if (orden != null) 'orden': orden,
+      if (id != null) 'id': id,
+      if (listaId != null) 'lista_id': listaId,
+      if (seccion != null) 'seccion': seccion,
+      if (tipo != null) 'tipo': tipo,
+      if (descripcion != null) 'descripcion': descripcion,
+      if (cantidad != null) 'cantidad': cantidad,
+      if (largo != null) 'largo': largo,
+      if (unidad != null) 'unidad': unidad,
+      if (separacionCm != null) 'separacion_cm': separacionCm,
+      if (nota != null) 'nota': nota,
+      if (marcado != null) 'marcado': marcado,
+      if (marcadoPor != null) 'marcado_por': marcadoPor,
+      if (marcadoPorNombre != null) 'marcado_por_nombre': marcadoPorNombre,
+      if (marcadoAt != null) 'marcado_at': marcadoAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ListaMaterialRenglonCompanion copyWith({
+    Value<String>? empresaId,
+    Value<int>? createdAt,
+    Value<int>? updatedAt,
+    Value<int?>? serverUpdatedAt,
+    Value<int?>? deletedAt,
+    Value<String>? syncStatus,
+    Value<int>? orden,
+    Value<String>? id,
+    Value<String>? listaId,
+    Value<String>? seccion,
+    Value<String>? tipo,
+    Value<String>? descripcion,
+    Value<double>? cantidad,
+    Value<double?>? largo,
+    Value<String>? unidad,
+    Value<double?>? separacionCm,
+    Value<String>? nota,
+    Value<bool>? marcado,
+    Value<String?>? marcadoPor,
+    Value<String>? marcadoPorNombre,
+    Value<int?>? marcadoAt,
+    Value<int>? rowid,
+  }) {
+    return ListaMaterialRenglonCompanion(
+      empresaId: empresaId ?? this.empresaId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      serverUpdatedAt: serverUpdatedAt ?? this.serverUpdatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      syncStatus: syncStatus ?? this.syncStatus,
+      orden: orden ?? this.orden,
+      id: id ?? this.id,
+      listaId: listaId ?? this.listaId,
+      seccion: seccion ?? this.seccion,
+      tipo: tipo ?? this.tipo,
+      descripcion: descripcion ?? this.descripcion,
+      cantidad: cantidad ?? this.cantidad,
+      largo: largo ?? this.largo,
+      unidad: unidad ?? this.unidad,
+      separacionCm: separacionCm ?? this.separacionCm,
+      nota: nota ?? this.nota,
+      marcado: marcado ?? this.marcado,
+      marcadoPor: marcadoPor ?? this.marcadoPor,
+      marcadoPorNombre: marcadoPorNombre ?? this.marcadoPorNombre,
+      marcadoAt: marcadoAt ?? this.marcadoAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (empresaId.present) {
+      map['empresa_id'] = Variable<String>(empresaId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (serverUpdatedAt.present) {
+      map['server_updated_at'] = Variable<int>(serverUpdatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (syncStatus.present) {
+      map['sync_status'] = Variable<String>(syncStatus.value);
+    }
+    if (orden.present) {
+      map['orden'] = Variable<int>(orden.value);
+    }
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (listaId.present) {
+      map['lista_id'] = Variable<String>(listaId.value);
+    }
+    if (seccion.present) {
+      map['seccion'] = Variable<String>(seccion.value);
+    }
+    if (tipo.present) {
+      map['tipo'] = Variable<String>(tipo.value);
+    }
+    if (descripcion.present) {
+      map['descripcion'] = Variable<String>(descripcion.value);
+    }
+    if (cantidad.present) {
+      map['cantidad'] = Variable<double>(cantidad.value);
+    }
+    if (largo.present) {
+      map['largo'] = Variable<double>(largo.value);
+    }
+    if (unidad.present) {
+      map['unidad'] = Variable<String>(unidad.value);
+    }
+    if (separacionCm.present) {
+      map['separacion_cm'] = Variable<double>(separacionCm.value);
+    }
+    if (nota.present) {
+      map['nota'] = Variable<String>(nota.value);
+    }
+    if (marcado.present) {
+      map['marcado'] = Variable<bool>(marcado.value);
+    }
+    if (marcadoPor.present) {
+      map['marcado_por'] = Variable<String>(marcadoPor.value);
+    }
+    if (marcadoPorNombre.present) {
+      map['marcado_por_nombre'] = Variable<String>(marcadoPorNombre.value);
+    }
+    if (marcadoAt.present) {
+      map['marcado_at'] = Variable<int>(marcadoAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ListaMaterialRenglonCompanion(')
+          ..write('empresaId: $empresaId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('serverUpdatedAt: $serverUpdatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('syncStatus: $syncStatus, ')
+          ..write('orden: $orden, ')
+          ..write('id: $id, ')
+          ..write('listaId: $listaId, ')
+          ..write('seccion: $seccion, ')
+          ..write('tipo: $tipo, ')
+          ..write('descripcion: $descripcion, ')
+          ..write('cantidad: $cantidad, ')
+          ..write('largo: $largo, ')
+          ..write('unidad: $unidad, ')
+          ..write('separacionCm: $separacionCm, ')
+          ..write('nota: $nota, ')
+          ..write('marcado: $marcado, ')
+          ..write('marcadoPor: $marcadoPor, ')
+          ..write('marcadoPorNombre: $marcadoPorNombre, ')
+          ..write('marcadoAt: $marcadoAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -19548,6 +21511,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $BitacoraFotoTable bitacoraFoto = $BitacoraFotoTable(this);
   late final $BitacoraAclaracionTable bitacoraAclaracion =
       $BitacoraAclaracionTable(this);
+  late final $ListaMaterialTable listaMaterial = $ListaMaterialTable(this);
+  late final $ListaMaterialRenglonTable listaMaterialRenglon =
+      $ListaMaterialRenglonTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -19577,6 +21543,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     bitacoraEntrada,
     bitacoraFoto,
     bitacoraAclaracion,
+    listaMaterial,
+    listaMaterialRenglon,
   ];
 }
 
@@ -28633,6 +30601,917 @@ typedef $$BitacoraAclaracionTableProcessedTableManager =
       BitacoraAclaracionRow,
       PrefetchHooks Function()
     >;
+typedef $$ListaMaterialTableCreateCompanionBuilder =
+    ListaMaterialCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      Value<int> orden,
+      required String id,
+      required String obraId,
+      Value<String> titulo,
+      Value<String> plano,
+      required int fecha,
+      Value<String> estado,
+      Value<String> notas,
+      Value<int> rowid,
+    });
+typedef $$ListaMaterialTableUpdateCompanionBuilder =
+    ListaMaterialCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      Value<int> orden,
+      Value<String> id,
+      Value<String> obraId,
+      Value<String> titulo,
+      Value<String> plano,
+      Value<int> fecha,
+      Value<String> estado,
+      Value<String> notas,
+      Value<int> rowid,
+    });
+
+class $$ListaMaterialTableFilterComposer
+    extends Composer<_$AppDatabase, $ListaMaterialTable> {
+  $$ListaMaterialTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get obraId => $composableBuilder(
+    column: $table.obraId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get titulo => $composableBuilder(
+    column: $table.titulo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get plano => $composableBuilder(
+    column: $table.plano,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get fecha => $composableBuilder(
+    column: $table.fecha,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get estado => $composableBuilder(
+    column: $table.estado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notas => $composableBuilder(
+    column: $table.notas,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ListaMaterialTableOrderingComposer
+    extends Composer<_$AppDatabase, $ListaMaterialTable> {
+  $$ListaMaterialTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get obraId => $composableBuilder(
+    column: $table.obraId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get titulo => $composableBuilder(
+    column: $table.titulo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get plano => $composableBuilder(
+    column: $table.plano,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get fecha => $composableBuilder(
+    column: $table.fecha,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get estado => $composableBuilder(
+    column: $table.estado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notas => $composableBuilder(
+    column: $table.notas,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ListaMaterialTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ListaMaterialTable> {
+  $$ListaMaterialTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get empresaId =>
+      $composableBuilder(column: $table.empresaId, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get orden =>
+      $composableBuilder(column: $table.orden, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get obraId =>
+      $composableBuilder(column: $table.obraId, builder: (column) => column);
+
+  GeneratedColumn<String> get titulo =>
+      $composableBuilder(column: $table.titulo, builder: (column) => column);
+
+  GeneratedColumn<String> get plano =>
+      $composableBuilder(column: $table.plano, builder: (column) => column);
+
+  GeneratedColumn<int> get fecha =>
+      $composableBuilder(column: $table.fecha, builder: (column) => column);
+
+  GeneratedColumn<String> get estado =>
+      $composableBuilder(column: $table.estado, builder: (column) => column);
+
+  GeneratedColumn<String> get notas =>
+      $composableBuilder(column: $table.notas, builder: (column) => column);
+}
+
+class $$ListaMaterialTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ListaMaterialTable,
+          ListaMaterialRow,
+          $$ListaMaterialTableFilterComposer,
+          $$ListaMaterialTableOrderingComposer,
+          $$ListaMaterialTableAnnotationComposer,
+          $$ListaMaterialTableCreateCompanionBuilder,
+          $$ListaMaterialTableUpdateCompanionBuilder,
+          (
+            ListaMaterialRow,
+            BaseReferences<
+              _$AppDatabase,
+              $ListaMaterialTable,
+              ListaMaterialRow
+            >,
+          ),
+          ListaMaterialRow,
+          PrefetchHooks Function()
+        > {
+  $$ListaMaterialTableTableManager(_$AppDatabase db, $ListaMaterialTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ListaMaterialTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ListaMaterialTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ListaMaterialTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String> obraId = const Value.absent(),
+                Value<String> titulo = const Value.absent(),
+                Value<String> plano = const Value.absent(),
+                Value<int> fecha = const Value.absent(),
+                Value<String> estado = const Value.absent(),
+                Value<String> notas = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ListaMaterialCompanion(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                orden: orden,
+                id: id,
+                obraId: obraId,
+                titulo: titulo,
+                plano: plano,
+                fecha: fecha,
+                estado: estado,
+                notas: notas,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
+                required String id,
+                required String obraId,
+                Value<String> titulo = const Value.absent(),
+                Value<String> plano = const Value.absent(),
+                required int fecha,
+                Value<String> estado = const Value.absent(),
+                Value<String> notas = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ListaMaterialCompanion.insert(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                orden: orden,
+                id: id,
+                obraId: obraId,
+                titulo: titulo,
+                plano: plano,
+                fecha: fecha,
+                estado: estado,
+                notas: notas,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ListaMaterialTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ListaMaterialTable,
+      ListaMaterialRow,
+      $$ListaMaterialTableFilterComposer,
+      $$ListaMaterialTableOrderingComposer,
+      $$ListaMaterialTableAnnotationComposer,
+      $$ListaMaterialTableCreateCompanionBuilder,
+      $$ListaMaterialTableUpdateCompanionBuilder,
+      (
+        ListaMaterialRow,
+        BaseReferences<_$AppDatabase, $ListaMaterialTable, ListaMaterialRow>,
+      ),
+      ListaMaterialRow,
+      PrefetchHooks Function()
+    >;
+typedef $$ListaMaterialRenglonTableCreateCompanionBuilder =
+    ListaMaterialRenglonCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      Value<int> orden,
+      required String id,
+      required String listaId,
+      Value<String> seccion,
+      Value<String> tipo,
+      Value<String> descripcion,
+      Value<double> cantidad,
+      Value<double?> largo,
+      Value<String> unidad,
+      Value<double?> separacionCm,
+      Value<String> nota,
+      Value<bool> marcado,
+      Value<String?> marcadoPor,
+      Value<String> marcadoPorNombre,
+      Value<int?> marcadoAt,
+      Value<int> rowid,
+    });
+typedef $$ListaMaterialRenglonTableUpdateCompanionBuilder =
+    ListaMaterialRenglonCompanion Function({
+      Value<String> empresaId,
+      Value<int> createdAt,
+      Value<int> updatedAt,
+      Value<int?> serverUpdatedAt,
+      Value<int?> deletedAt,
+      Value<String> syncStatus,
+      Value<int> orden,
+      Value<String> id,
+      Value<String> listaId,
+      Value<String> seccion,
+      Value<String> tipo,
+      Value<String> descripcion,
+      Value<double> cantidad,
+      Value<double?> largo,
+      Value<String> unidad,
+      Value<double?> separacionCm,
+      Value<String> nota,
+      Value<bool> marcado,
+      Value<String?> marcadoPor,
+      Value<String> marcadoPorNombre,
+      Value<int?> marcadoAt,
+      Value<int> rowid,
+    });
+
+class $$ListaMaterialRenglonTableFilterComposer
+    extends Composer<_$AppDatabase, $ListaMaterialRenglonTable> {
+  $$ListaMaterialRenglonTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get listaId => $composableBuilder(
+    column: $table.listaId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get seccion => $composableBuilder(
+    column: $table.seccion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get descripcion => $composableBuilder(
+    column: $table.descripcion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get cantidad => $composableBuilder(
+    column: $table.cantidad,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get largo => $composableBuilder(
+    column: $table.largo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get unidad => $composableBuilder(
+    column: $table.unidad,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get separacionCm => $composableBuilder(
+    column: $table.separacionCm,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nota => $composableBuilder(
+    column: $table.nota,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get marcado => $composableBuilder(
+    column: $table.marcado,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get marcadoPor => $composableBuilder(
+    column: $table.marcadoPor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get marcadoPorNombre => $composableBuilder(
+    column: $table.marcadoPorNombre,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get marcadoAt => $composableBuilder(
+    column: $table.marcadoAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ListaMaterialRenglonTableOrderingComposer
+    extends Composer<_$AppDatabase, $ListaMaterialRenglonTable> {
+  $$ListaMaterialRenglonTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get empresaId => $composableBuilder(
+    column: $table.empresaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get orden => $composableBuilder(
+    column: $table.orden,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get listaId => $composableBuilder(
+    column: $table.listaId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get seccion => $composableBuilder(
+    column: $table.seccion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tipo => $composableBuilder(
+    column: $table.tipo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get descripcion => $composableBuilder(
+    column: $table.descripcion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get cantidad => $composableBuilder(
+    column: $table.cantidad,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get largo => $composableBuilder(
+    column: $table.largo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get unidad => $composableBuilder(
+    column: $table.unidad,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get separacionCm => $composableBuilder(
+    column: $table.separacionCm,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nota => $composableBuilder(
+    column: $table.nota,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get marcado => $composableBuilder(
+    column: $table.marcado,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get marcadoPor => $composableBuilder(
+    column: $table.marcadoPor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get marcadoPorNombre => $composableBuilder(
+    column: $table.marcadoPorNombre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get marcadoAt => $composableBuilder(
+    column: $table.marcadoAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ListaMaterialRenglonTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ListaMaterialRenglonTable> {
+  $$ListaMaterialRenglonTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get empresaId =>
+      $composableBuilder(column: $table.empresaId, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get serverUpdatedAt => $composableBuilder(
+    column: $table.serverUpdatedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncStatus => $composableBuilder(
+    column: $table.syncStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get orden =>
+      $composableBuilder(column: $table.orden, builder: (column) => column);
+
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get listaId =>
+      $composableBuilder(column: $table.listaId, builder: (column) => column);
+
+  GeneratedColumn<String> get seccion =>
+      $composableBuilder(column: $table.seccion, builder: (column) => column);
+
+  GeneratedColumn<String> get tipo =>
+      $composableBuilder(column: $table.tipo, builder: (column) => column);
+
+  GeneratedColumn<String> get descripcion => $composableBuilder(
+    column: $table.descripcion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get cantidad =>
+      $composableBuilder(column: $table.cantidad, builder: (column) => column);
+
+  GeneratedColumn<double> get largo =>
+      $composableBuilder(column: $table.largo, builder: (column) => column);
+
+  GeneratedColumn<String> get unidad =>
+      $composableBuilder(column: $table.unidad, builder: (column) => column);
+
+  GeneratedColumn<double> get separacionCm => $composableBuilder(
+    column: $table.separacionCm,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get nota =>
+      $composableBuilder(column: $table.nota, builder: (column) => column);
+
+  GeneratedColumn<bool> get marcado =>
+      $composableBuilder(column: $table.marcado, builder: (column) => column);
+
+  GeneratedColumn<String> get marcadoPor => $composableBuilder(
+    column: $table.marcadoPor,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get marcadoPorNombre => $composableBuilder(
+    column: $table.marcadoPorNombre,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get marcadoAt =>
+      $composableBuilder(column: $table.marcadoAt, builder: (column) => column);
+}
+
+class $$ListaMaterialRenglonTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ListaMaterialRenglonTable,
+          ListaMaterialRenglonRow,
+          $$ListaMaterialRenglonTableFilterComposer,
+          $$ListaMaterialRenglonTableOrderingComposer,
+          $$ListaMaterialRenglonTableAnnotationComposer,
+          $$ListaMaterialRenglonTableCreateCompanionBuilder,
+          $$ListaMaterialRenglonTableUpdateCompanionBuilder,
+          (
+            ListaMaterialRenglonRow,
+            BaseReferences<
+              _$AppDatabase,
+              $ListaMaterialRenglonTable,
+              ListaMaterialRenglonRow
+            >,
+          ),
+          ListaMaterialRenglonRow,
+          PrefetchHooks Function()
+        > {
+  $$ListaMaterialRenglonTableTableManager(
+    _$AppDatabase db,
+    $ListaMaterialRenglonTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ListaMaterialRenglonTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ListaMaterialRenglonTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ListaMaterialRenglonTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
+                Value<String> id = const Value.absent(),
+                Value<String> listaId = const Value.absent(),
+                Value<String> seccion = const Value.absent(),
+                Value<String> tipo = const Value.absent(),
+                Value<String> descripcion = const Value.absent(),
+                Value<double> cantidad = const Value.absent(),
+                Value<double?> largo = const Value.absent(),
+                Value<String> unidad = const Value.absent(),
+                Value<double?> separacionCm = const Value.absent(),
+                Value<String> nota = const Value.absent(),
+                Value<bool> marcado = const Value.absent(),
+                Value<String?> marcadoPor = const Value.absent(),
+                Value<String> marcadoPorNombre = const Value.absent(),
+                Value<int?> marcadoAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ListaMaterialRenglonCompanion(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                orden: orden,
+                id: id,
+                listaId: listaId,
+                seccion: seccion,
+                tipo: tipo,
+                descripcion: descripcion,
+                cantidad: cantidad,
+                largo: largo,
+                unidad: unidad,
+                separacionCm: separacionCm,
+                nota: nota,
+                marcado: marcado,
+                marcadoPor: marcadoPor,
+                marcadoPorNombre: marcadoPorNombre,
+                marcadoAt: marcadoAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                Value<String> empresaId = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> updatedAt = const Value.absent(),
+                Value<int?> serverUpdatedAt = const Value.absent(),
+                Value<int?> deletedAt = const Value.absent(),
+                Value<String> syncStatus = const Value.absent(),
+                Value<int> orden = const Value.absent(),
+                required String id,
+                required String listaId,
+                Value<String> seccion = const Value.absent(),
+                Value<String> tipo = const Value.absent(),
+                Value<String> descripcion = const Value.absent(),
+                Value<double> cantidad = const Value.absent(),
+                Value<double?> largo = const Value.absent(),
+                Value<String> unidad = const Value.absent(),
+                Value<double?> separacionCm = const Value.absent(),
+                Value<String> nota = const Value.absent(),
+                Value<bool> marcado = const Value.absent(),
+                Value<String?> marcadoPor = const Value.absent(),
+                Value<String> marcadoPorNombre = const Value.absent(),
+                Value<int?> marcadoAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ListaMaterialRenglonCompanion.insert(
+                empresaId: empresaId,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serverUpdatedAt: serverUpdatedAt,
+                deletedAt: deletedAt,
+                syncStatus: syncStatus,
+                orden: orden,
+                id: id,
+                listaId: listaId,
+                seccion: seccion,
+                tipo: tipo,
+                descripcion: descripcion,
+                cantidad: cantidad,
+                largo: largo,
+                unidad: unidad,
+                separacionCm: separacionCm,
+                nota: nota,
+                marcado: marcado,
+                marcadoPor: marcadoPor,
+                marcadoPorNombre: marcadoPorNombre,
+                marcadoAt: marcadoAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ListaMaterialRenglonTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ListaMaterialRenglonTable,
+      ListaMaterialRenglonRow,
+      $$ListaMaterialRenglonTableFilterComposer,
+      $$ListaMaterialRenglonTableOrderingComposer,
+      $$ListaMaterialRenglonTableAnnotationComposer,
+      $$ListaMaterialRenglonTableCreateCompanionBuilder,
+      $$ListaMaterialRenglonTableUpdateCompanionBuilder,
+      (
+        ListaMaterialRenglonRow,
+        BaseReferences<
+          _$AppDatabase,
+          $ListaMaterialRenglonTable,
+          ListaMaterialRenglonRow
+        >,
+      ),
+      ListaMaterialRenglonRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -28688,4 +31567,8 @@ class $AppDatabaseManager {
       $$BitacoraFotoTableTableManager(_db, _db.bitacoraFoto);
   $$BitacoraAclaracionTableTableManager get bitacoraAclaracion =>
       $$BitacoraAclaracionTableTableManager(_db, _db.bitacoraAclaracion);
+  $$ListaMaterialTableTableManager get listaMaterial =>
+      $$ListaMaterialTableTableManager(_db, _db.listaMaterial);
+  $$ListaMaterialRenglonTableTableManager get listaMaterialRenglon =>
+      $$ListaMaterialRenglonTableTableManager(_db, _db.listaMaterialRenglon);
 }

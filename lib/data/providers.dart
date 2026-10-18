@@ -16,6 +16,7 @@ import 'repositories.dart';
 import 'repositories_obra.dart';
 import 'repositories_cuadrilla.dart';
 import 'repositories_cotizacion.dart';
+import 'repositories_lista_material.dart';
 import 'repositories_nota_obra.dart';
 import 'repositories_bitacora.dart';
 import '../core/storage/fotos_bitacora_storage.dart';
@@ -262,6 +263,19 @@ final notasDeObraProvider =
 final bitacoraDeObraProvider =
     StreamProvider.family<List<EntradaConDetalle>, String>((ref, obraId) =>
         ref.watch(bitacoraRepositoryProvider).watchDeObra(obraId));
+
+/// Listas de material de una obra (Supabase 0050), con sus renglones.
+final listaMaterialRepositoryProvider = Provider<ListaMaterialRepository>(
+    (ref) => ListaMaterialRepository(ref.watch(databaseProvider)));
+
+final listasDeObraProvider =
+    StreamProvider.family<List<ListaConRenglones>, String>((ref, obraId) =>
+        ref.watch(listaMaterialRepositoryProvider).watchDeObra(obraId));
+
+/// Una lista concreta, para su pantalla.
+final listaMaterialProvider =
+    StreamProvider.family<ListaConRenglones?, String>((ref, listaId) =>
+        ref.watch(listaMaterialRepositoryProvider).watchUna(listaId));
 
 /// Una nota concreta, para la pantalla del editor.
 final notaObraProvider =

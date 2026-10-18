@@ -42,6 +42,8 @@ import '../bitacora/bitacora_screen.dart';
 import '../../domain/asistencia/fracciones.dart';
 import '../../domain/bitacora/bitacora_reglas.dart' show puedeVerBitacora;
 import '../notas/notas_obra_screen.dart';
+import '../listas/listas_obra_screen.dart';
+import '../../domain/listas/listas_calculo.dart' show puedeVerListas;
 import '../pdf_pre_dialog.dart';
 import 'importar_movimientos_screen.dart';
 
@@ -201,6 +203,16 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
             title: Text('Notas de trato'),
           ),
         ),
+      // Listas de material (0050): lo que pide el plano, para palomear.
+      if (modulos.usa(ClaveModulo.listas) && puedeVerListas(rol))
+        const PopupMenuItem(
+          value: 'listas',
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.checklist_outlined),
+            title: Text('Listas de material'),
+          ),
+        ),
       // Entra ya filtrada a esta obra. Solo para quien puede ver
       // salarios (ver `puedeVerSueldosSegunRol`).
       if (verSueldos && modulos.usa(ClaveModulo.proyeccion))
@@ -246,6 +258,12 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                 if (v == 'bitacora') {
                   Navigator.of(context).push(MaterialPageRoute(
                       builder: (_) => BitacoraScreen(
+                          obraId: widget.obra.id,
+                          obraNombre: widget.obra.nombre)));
+                }
+                if (v == 'listas') {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => ListasObraScreen(
                           obraId: widget.obra.id,
                           obraNombre: widget.obra.nombre)));
                 }

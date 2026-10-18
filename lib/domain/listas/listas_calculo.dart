@@ -17,6 +17,18 @@ enum EstadoLista { abierta, cerrada }
 /// Espaciado del `orden` (convención de 0026: 100, 200, 300…).
 const int pasoOrdenLista = 100;
 
+/// Quién ve listas: lo mismo que abren las policies de 0050. Mientras el rol
+/// carga llega null = acceso de dueño, como el resto de los gates de rol: el
+/// servidor filtra lo que no toca.
+bool puedeVerListas(String? rol) =>
+    rol == null ||
+    const {'admin', 'supervisor', 'residente', 'contador', 'compras', 'almacen'}
+        .contains(rol);
+
+/// Quién crea, edita y palomea (contador, compras y almacén solo leen).
+bool puedeEditarListas(String? rol) =>
+    rol == null || const {'admin', 'supervisor', 'residente'}.contains(rol);
+
 String tipoRenglonListaACadena(TipoRenglonLista t) => switch (t) {
       TipoRenglonLista.pieza => 'PIEZA',
       TipoRenglonLista.libre => 'LIBRE',
@@ -34,8 +46,8 @@ EstadoLista estadoListaDeCadena(String? s) =>
     s == 'CERRADA' ? EstadoLista.cerrada : EstadoLista.abierta;
 
 /// Lo mínimo que la cuenta necesita de un renglón.
-class RenglonCalc {
-  const RenglonCalc({
+class RenglonListaCalc {
+  const RenglonListaCalc({
     required this.tipo,
     required this.cantidad,
     this.largo,
@@ -57,7 +69,7 @@ const double _eps = 1e-6;
 
 /// Metros lineales de un renglón de piezas: cantidad × largo. Null si no es
 /// pieza o le falta el largo (falta el dato del plano: no se supone).
-double? metrosLineales(RenglonCalc r) {
+double? metrosLineales(RenglonListaCalc r) {
   final largo = r.largo;
   if (r.tipo != TipoRenglonLista.pieza || largo == null) return null;
   return redondear2(r.cantidad * largo);
@@ -72,7 +84,7 @@ int? estribosPorPieza(double? largo, double? separacionCm) {
 }
 
 /// Estribos de todo el renglón: por pieza × cantidad de piezas.
-int? estribosTotales(RenglonCalc r) {
+int? estribosTotales(RenglonListaCalc r) {
   final porPieza = estribosPorPieza(r.largo, r.separacionCm);
   if (r.tipo != TipoRenglonLista.pieza || porPieza == null) return null;
   return porPieza * r.cantidad.round();
@@ -105,7 +117,7 @@ class TotalesLista {
   bool get completa => renglones > 0 && marcados == renglones;
 }
 
-TotalesLista totalesDe(Iterable<RenglonCalc> renglones) {
+TotalesLista totalesDe(Iterable<RenglonListaCalc> renglones) {
   var n = 0, marcados = 0, estribos = 0;
   var piezas = 0.0, metros = 0.0;
   for (final r in renglones) {

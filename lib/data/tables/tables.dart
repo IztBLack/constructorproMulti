@@ -557,3 +557,58 @@ class BitacoraAclaracion extends Table with SyncCols {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+// ── Listas de material (Supabase 0050) ──────────────────────────────────────
+//
+// Espejo EXACTO de las columnas del servidor: el push genérico manda la fila
+// completa. Plan: docs/PLAN_LISTAS_MATERIAL.md (fase 1).
+
+/// Una lista de material de una obra: «Trabes y pasillo», sacada del plano.
+@DataClassName('ListaMaterialRow')
+class ListaMaterial extends Table with SyncCols, Orderable {
+  TextColumn get id => text()();
+  TextColumn get obraId => text()();
+  TextColumn get titulo => text().withDefault(const Constant(''))();
+
+  /// Clave u hoja del plano de donde sale («E-03»).
+  TextColumn get plano => text().withDefault(const Constant(''))();
+  IntColumn get fecha => integer()();
+
+  /// ABIERTA | CERRADA.
+  TextColumn get estado => text().withDefault(const Constant('ABIERTA'))();
+  TextColumn get notas => text().withDefault(const Constant(''))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Un renglón de la lista. `tipo` PIEZA (cantidad × largo) o LIBRE (cantidad +
+/// unidad). Los metros y estribos NO se guardan: se recalculan con
+/// `domain/listas/listas_calculo.dart`, igual que en la web.
+@DataClassName('ListaMaterialRenglonRow')
+class ListaMaterialRenglon extends Table with SyncCols, Orderable {
+  TextColumn get id => text()();
+  TextColumn get listaId => text()();
+  TextColumn get seccion => text().withDefault(const Constant(''))();
+  TextColumn get tipo => text().withDefault(const Constant('PIEZA'))();
+  TextColumn get descripcion => text().withDefault(const Constant(''))();
+  RealColumn get cantidad => real().withDefault(const Constant(0))();
+
+  /// Metros; solo PIEZA. Null = el plano no lo dio (no se supone).
+  RealColumn get largo => real().nullable()();
+  TextColumn get unidad => text().withDefault(const Constant(''))();
+
+  /// Separación de estribos en cm («estribo 25»).
+  RealColumn get separacionCm => real().nullable()();
+  TextColumn get nota => text().withDefault(const Constant(''))();
+
+  /// La casilla, con quién y cuándo se palomeó. `marcadoPor` es el uuid del
+  /// usuario (null sin sesión: un uuid vacío lo rechazaría el servidor).
+  BoolColumn get marcado => boolean().withDefault(const Constant(false))();
+  TextColumn get marcadoPor => text().nullable()();
+  TextColumn get marcadoPorNombre => text().withDefault(const Constant(''))();
+  IntColumn get marcadoAt => integer().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
