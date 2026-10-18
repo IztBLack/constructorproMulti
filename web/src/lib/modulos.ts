@@ -47,6 +47,8 @@ export const CLAVES_MODULO = [
   'seguridad',
   'postventa',
   'herramienta',
+  // Listas de material (0050)
+  'listas',
 ] as const;
 
 export type ClaveModulo = (typeof CLAVES_MODULO)[number];
@@ -357,6 +359,17 @@ export const MODULOS: readonly Modulo[] = [
     rutas: ['/admin/cumplimiento'],
     nav: [{ href: '/admin/cumplimiento', label: 'IMSS y papeles', orden: 80, categoria: 'operacion' }],
     disponible: true,
+  },
+  {
+    clave: 'listas',
+    nombre: 'Listas de material',
+    descripcion: 'Cuenta las piezas y el material de cada obra según el plano, palomea lo que ya está y sácalo en PDF.',
+    grupo: 'obra',
+    dependeDe: [],
+    // Vive dentro de cada obra (pestaña "Listas"): no pone enlace en la barra.
+    // Plan: docs/PLAN_LISTAS_MATERIAL.md. La fase 1 empezó por el móvil.
+    rutas: ['/admin/obras/*/listas'],
+    disponible: false,
   },
 ];
 

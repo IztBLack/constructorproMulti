@@ -1,0 +1,86 @@
+{
+  "_que_es": "Casos compartidos de las listas de material (0050). Los leen test/domain/listas/ (Dart) y web/src/lib/listas/*.test.ts: las dos plataformas tienen que leer la misma nota y dar los mismos números.",
+  "lectura": [
+    {
+      "nombre": "la nota real de trabes y pasillo",
+      "texto": "Través \n4 10:45\n2 12:25\n2 2:80\n1 2:80 chica \n2 3:90\n2 3:10\n2 2:10\n\n\nPasillo \n2 3:55 estribo 25\n4:10 1 \n2 3mt",
+      "renglones": [
+        { "seccion": "Trabes", "tipo": "PIEZA", "cantidad": 4, "largo": 10.45, "separacionCm": null, "unidad": "", "descripcion": "", "nota": "", "conDuda": false },
+        { "seccion": "Trabes", "tipo": "PIEZA", "cantidad": 2, "largo": 12.25, "separacionCm": null, "unidad": "", "descripcion": "", "nota": "", "conDuda": false },
+        { "seccion": "Trabes", "tipo": "PIEZA", "cantidad": 2, "largo": 2.8, "separacionCm": null, "unidad": "", "descripcion": "", "nota": "", "conDuda": false },
+        { "seccion": "Trabes", "tipo": "PIEZA", "cantidad": 1, "largo": 2.8, "separacionCm": null, "unidad": "", "descripcion": "", "nota": "chica", "conDuda": false },
+        { "seccion": "Trabes", "tipo": "PIEZA", "cantidad": 2, "largo": 3.9, "separacionCm": null, "unidad": "", "descripcion": "", "nota": "", "conDuda": false },
+        { "seccion": "Trabes", "tipo": "PIEZA", "cantidad": 2, "largo": 3.1, "separacionCm": null, "unidad": "", "descripcion": "", "nota": "", "conDuda": false },
+        { "seccion": "Trabes", "tipo": "PIEZA", "cantidad": 2, "largo": 2.1, "separacionCm": null, "unidad": "", "descripcion": "", "nota": "", "conDuda": false },
+        { "seccion": "Pasillo", "tipo": "PIEZA", "cantidad": 2, "largo": 3.55, "separacionCm": 25, "unidad": "", "descripcion": "", "nota": "", "conDuda": false },
+        { "seccion": "Pasillo", "tipo": "PIEZA", "cantidad": 1, "largo": 4.1, "separacionCm": null, "unidad": "", "descripcion": "", "nota": "", "conDuda": false },
+        { "seccion": "Pasillo", "tipo": "PIEZA", "cantidad": 2, "largo": 3, "separacionCm": null, "unidad": "", "descripcion": "", "nota": "", "conDuda": false }
+      ]
+    },
+    {
+      "nombre": "material suelto con unidad",
+      "texto": "Cemento y arena\n30 bultos de cemento\n2 viajes arena",
+      "renglones": [
+        { "seccion": "Cemento y arena", "tipo": "LIBRE", "cantidad": 30, "largo": null, "separacionCm": null, "unidad": "bultos", "descripcion": "cemento", "nota": "", "conDuda": false },
+        { "seccion": "Cemento y arena", "tipo": "LIBRE", "cantidad": 2, "largo": null, "separacionCm": null, "unidad": "viajes", "descripcion": "arena", "nota": "", "conDuda": false }
+      ]
+    },
+    {
+      "nombre": "dudas: sin pista de largo, sin cantidad, solo un número",
+      "texto": "2 3\n4:10\n7",
+      "renglones": [
+        { "seccion": "", "tipo": "PIEZA", "cantidad": 2, "largo": 3, "separacionCm": null, "unidad": "", "descripcion": "", "nota": "", "conDuda": true },
+        { "seccion": "", "tipo": "PIEZA", "cantidad": 1, "largo": 4.1, "separacionCm": null, "unidad": "", "descripcion": "", "nota": "", "conDuda": true },
+        { "seccion": "", "tipo": "LIBRE", "cantidad": 7, "largo": null, "separacionCm": null, "unidad": "", "descripcion": "", "nota": "", "conDuda": true }
+      ]
+    },
+    {
+      "nombre": "viñetas, centímetros, arroba y encabezado con número",
+      "texto": "Planta 2:\n- 3 250cm\n• 2 1.5 @20\n4 2,10 c/15",
+      "renglones": [
+        { "seccion": "Planta 2", "tipo": "PIEZA", "cantidad": 3, "largo": 2.5, "separacionCm": null, "unidad": "", "descripcion": "", "nota": "", "conDuda": false },
+        { "seccion": "Planta 2", "tipo": "PIEZA", "cantidad": 2, "largo": 1.5, "separacionCm": 20, "unidad": "", "descripcion": "", "nota": "", "conDuda": false },
+        { "seccion": "Planta 2", "tipo": "PIEZA", "cantidad": 4, "largo": 2.1, "separacionCm": 15, "unidad": "", "descripcion": "", "nota": "", "conDuda": false }
+      ]
+    }
+  ],
+  "estribos": [
+    { "largo": 3.55, "separacionCm": 25, "porPieza": 15 },
+    { "largo": 3.0, "separacionCm": 25, "porPieza": 13 },
+    { "largo": 10.45, "separacionCm": 20, "porPieza": 53 },
+    { "largo": 0.6, "separacionCm": 15, "porPieza": 5 },
+    { "largo": 3.0, "separacionCm": null, "porPieza": null }
+  ],
+  "totales": [
+    {
+      "nombre": "trabes de la nota real",
+      "renglones": [
+        { "tipo": "PIEZA", "cantidad": 4, "largo": 10.45, "separacionCm": null, "marcado": true },
+        { "tipo": "PIEZA", "cantidad": 2, "largo": 12.25, "separacionCm": null, "marcado": true },
+        { "tipo": "PIEZA", "cantidad": 2, "largo": 2.8, "separacionCm": null, "marcado": false },
+        { "tipo": "PIEZA", "cantidad": 1, "largo": 2.8, "separacionCm": null, "marcado": false },
+        { "tipo": "PIEZA", "cantidad": 2, "largo": 3.9, "separacionCm": null, "marcado": false },
+        { "tipo": "PIEZA", "cantidad": 2, "largo": 3.1, "separacionCm": null, "marcado": false },
+        { "tipo": "PIEZA", "cantidad": 2, "largo": 2.1, "separacionCm": null, "marcado": false }
+      ],
+      "esperado": { "renglones": 7, "marcados": 2, "piezas": 15, "metros": 92.9, "estribos": 0 }
+    },
+    {
+      "nombre": "pasillo de la nota real",
+      "renglones": [
+        { "tipo": "PIEZA", "cantidad": 2, "largo": 3.55, "separacionCm": 25, "marcado": false },
+        { "tipo": "PIEZA", "cantidad": 1, "largo": 4.1, "separacionCm": null, "marcado": false },
+        { "tipo": "PIEZA", "cantidad": 2, "largo": 3.0, "separacionCm": null, "marcado": false }
+      ],
+      "esperado": { "renglones": 3, "marcados": 0, "piezas": 5, "metros": 17.2, "estribos": 30 }
+    },
+    {
+      "nombre": "lo suelto no suma piezas ni metros; una pieza sin largo tampoco suma metros",
+      "renglones": [
+        { "tipo": "LIBRE", "cantidad": 30, "largo": null, "separacionCm": null, "marcado": true },
+        { "tipo": "PIEZA", "cantidad": 3, "largo": null, "separacionCm": 20, "marcado": true }
+      ],
+      "esperado": { "renglones": 2, "marcados": 2, "piezas": 3, "metros": 0, "estribos": 0 }
+    }
+  ]
+}

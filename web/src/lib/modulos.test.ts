@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
 import {
@@ -427,9 +428,24 @@ describe('paridad con supabase/migrations/0035_modulos_empresa.sql', () => {
     return sql.slice(desde + 2, hasta);
   }
 
+  // El catálogo se REESCRIBE en migraciones posteriores (0050 agregó `listas`):
+  // vale la última que lo define, que es la que queda en la base.
   test('mismo catálogo, mismo orden', () => {
-    const claves = [...cuerpo('modulos_catalogo').matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
+    const dir = fileURLToPath(new URL('../../../supabase/migrations/', import.meta.url));
+    const ultima = readdirSync(dir)
+      .filter((f) => f.endsWith('.sql'))
+      .sort()
+      .map((f) => readFileSync(join(dir, f), 'utf8'))
+      .filter((s) => s.includes('function public.modulos_catalogo()'))
+      .at(-1)!;
+    const inicio = ultima.indexOf('function public.modulos_catalogo()');
+    const desde = ultima.indexOf('$$', inicio);
+    const cuerpoUltimo = ultima.slice(desde + 2, ultima.indexOf('$$', desde + 2));
+    const claves = [...cuerpoUltimo.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
     expect(claves).toEqual([...CLAVES_MODULO]);
+    // La 0035 queda como la primera versión: sus claves son un prefijo.
+    const originales = [...cuerpo('modulos_catalogo').matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
+    expect(claves.slice(0, originales.length)).toEqual(originales);
   });
 
   test('mismas dependencias', () => {

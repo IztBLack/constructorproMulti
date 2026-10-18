@@ -58,6 +58,18 @@ export const DIFERENCIAS_CONOCIDAS: readonly { diferencia: string; porque: strin
   // diferencia ya no existe y se borra la entrada.
   // (0047 herramienta_asignacion.permanente: aplicada en prod el 2026-09-28 y
   // foto retomada; ya no es diferencia.)
+  {
+    diferencia: 'tabla lista_material: está en el repo (PGlite) y NO en producción',
+    porque:
+      'La crea `supabase/migrations/0050_listas_material.sql` (fase 1 de docs/PLAN_LISTAS_MATERIAL.md), ' +
+      'todavía sin aplicar en producción. Al aplicarla se retoma la foto y esta entrada se borra.',
+  },
+  {
+    diferencia: 'tabla lista_material_renglon: está en el repo (PGlite) y NO en producción',
+    porque:
+      'La crea `supabase/migrations/0050_listas_material.sql` junto con `lista_material`; mismo ' +
+      'caso: sin aplicar en producción hasta que se publique la fase 1.',
+  },
 ];
 
 describe('esquema de producción', () => {
