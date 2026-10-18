@@ -28,6 +28,7 @@ import { capturasDeFilas, conceptosDeContrato, type FilaAvance } from '@/lib/est
 import { calcularRentabilidad, margenObjetivoDe, rayaCalculada, type ResultadoRentabilidad } from '@/lib/rentabilidad/calculo';
 import { calcularTotales, type RenglonNota } from '@/lib/data/notas-obra-calculo';
 import { totalExtrasAprobados } from '@/lib/cambios/extras';
+import { CLAVES_MODULO } from '@/lib/modulos';
 import { saldoOrden } from '@/lib/compras/calculo';
 import { calcularNomina, semanaDe } from '@/lib/data/nomina-calculo';
 import type { Asistencia, Colaborador, Destajo, Puesto } from '@/lib/data/types';
@@ -98,7 +99,8 @@ describe('demo de seis meses', () => {
       'select modulos, perfil, iva_porcentaje as iva, pdf_config as pdf from public.empresa_config where empresa_id = $1',
       [emp.empresaId],
     );
-    expect(c.modulos.length).toBe(20);
+    // El demo prende todo el catálogo (`modulos_catalogo()`): crece con cada módulo nuevo.
+    expect(c.modulos).toEqual([...CLAVES_MODULO]);
     expect(c.perfil).toMatchObject({ demo: { guion: 'seis-meses', hasta: HOY_GUION } });
     expect(n(c.iva)).toBe(16);
     expect(c.pdf).toMatchObject({ colorHex: '#1E5B8C' });

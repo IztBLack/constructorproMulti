@@ -1,6 +1,7 @@
 # Plan: Listas de material (cuantificación con checklist)
 
-> Estado: **propuesta**, nada implementado. Prototipo del PDF ya hecho
+> Estado: **Fase 1 implementada** (móvil + web, migración `0050_listas_material.sql`
+> sin aplicar en producción todavía). Fases 2–4 pendientes. Prototipo del PDF
 > (`salidas/checklist_trabes_pasillo.pdf`, generado con el mismo encabezado,
 > paleta, títulos de sección, totales y firmas de `lib/pdf/pdf_service.dart`).
 
@@ -32,7 +33,7 @@ convierte en material a comprar. El módulo hace tres cosas:
 
 ## 2. Dónde vive
 
-- Módulo nuevo en `ClaveModulo`: **`listasMaterial`**, nombre «Listas de
+- Módulo nuevo en `ClaveModulo`: **`listas`**, nombre «Listas de
   material», descripción: «Cuenta piezas y material de cada obra, palomea lo
   que ya está y saca la lista en PDF.» **No depende** de `compras`: quien no
   compra por la app igual quiere la lista. Si `compras` está activo aparece el
@@ -52,7 +53,7 @@ convierte en material a comprar. El módulo hace tres cosas:
 Columnas de sync iguales a las de 0038 (`created_at`, `updated_at`,
 `server_updated_at`, `deleted_at` en bigint ms) y RLS por `empresa_id`.
 
-**`listas_material`**
+**`lista_material`** (así quedó en 0050)
 
 | columna | tipo | nota |
 |---|---|---|
@@ -65,7 +66,7 @@ Columnas de sync iguales a las de 0038 (`created_at`, `updated_at`,
 | notas, texto_final | text | texto_final = párrafo del PDF (0032) |
 | requisicion_id | uuid null | si ya se pidió |
 
-**`lista_material_renglon`**
+**`lista_material_renglon`** — en la fase 1 las entradas de cálculo van en columnas (`largo`, `separacion_cm`, `unidad`); `params`, `marca`, `elemento`, `avance` y `material_id` llegan con su fase.
 
 | columna | tipo | nota |
 |---|---|---|

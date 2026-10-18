@@ -367,9 +367,9 @@ export const MODULOS: readonly Modulo[] = [
     grupo: 'obra',
     dependeDe: [],
     // Vive dentro de cada obra (pestaña "Listas"): no pone enlace en la barra.
-    // Plan: docs/PLAN_LISTAS_MATERIAL.md. La fase 1 empezó por el móvil.
+    // Plan: docs/PLAN_LISTAS_MATERIAL.md (fase 1: piezas, checklist y PDF).
     rutas: ['/admin/obras/*/listas'],
-    disponible: false,
+    disponible: true,
   },
 ];
 
