@@ -1,7 +1,7 @@
 # Plan: Listas de material (cuantificación con checklist)
 
 > Estado: **Fase 1 implementada** (móvil + web, migración `0050_listas_material.sql`
-> sin aplicar en producción todavía). Fases 2–4 pendientes. Prototipo del PDF
+> aplicada en producción el 2026-10-18). Fases 2–4 pendientes. Prototipo del PDF
 > (`salidas/checklist_trabes_pasillo.pdf`, generado con el mismo encabezado,
 > paleta, títulos de sección, totales y firmas de `lib/pdf/pdf_service.dart`).
 
