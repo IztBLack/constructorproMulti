@@ -78,14 +78,14 @@ class _AvisoIncompletosState extends ConsumerState<AvisoIncompletos> {
               const SizedBox(height: 2),
               Text(
                 '${nombres.join(', ')}${resto > 0 ? ' y $resto más' : ''}',
-                style: TextStyle(fontSize: 12, color: cs.onTertiaryContainer),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onTertiaryContainer),
               ),
               const SizedBox(height: 2),
               // Se dice la consecuencia, no solo el hecho: sin esto el aviso es
               // ruido y se aprende a ignorarlo.
               Text(
                 'Sin puesto ni sueldo, la nómina los cuenta en \$0.',
-                style: TextStyle(fontSize: 11, color: cs.onTertiaryContainer),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(color: cs.onTertiaryContainer),
               ),
               const SizedBox(height: 6),
               Wrap(spacing: 8, children: [

@@ -10,7 +10,6 @@ import '../../data/orden_personalizado.dart';
 import '../../data/providers.dart';
 import '../../domain/cotizacion_titulo.dart';
 import '../common/app_spacing.dart';
-import '../common/async_action_button.dart';
 import '../common/sync_status_action.dart';
 import '../common/confirm_dialog.dart';
 import '../common/empty_state_view.dart';
@@ -19,6 +18,8 @@ import '../common/orden_modo_toggle.dart';
 import 'cotizacion_detail_screen.dart';
 import 'estado_cotizacion_badge.dart';
 import '../common/esqueleto.dart';
+import '../../domain/numeros.dart';
+import '../common/hoja_formulario.dart';
 
 class CotizacionesScreen extends ConsumerStatefulWidget {
   const CotizacionesScreen({super.key});
@@ -113,7 +114,8 @@ class _CotizacionesScreenState extends ConsumerState<CotizacionesScreen> {
           onRetry: () => ref.invalidate(cotizacionesProvider),
         ),
         data: (cots) {
-          final modo = ref.watch(ordenModoProvider)[OrdenLista.cotizaciones] ??
+          final modo =
+              ref.watch(ordenModoProvider)[OrdenLista.cotizaciones] ??
               modoNombre;
           final personalizado = esModoPersonalizado(modo);
           final visibles = ordenarPorModo(
@@ -125,7 +127,8 @@ class _CotizacionesScreenState extends ConsumerState<CotizacionesScreen> {
           );
           // Arrastrar solo sobre la lista completa (sin filtro de estado ni
           // búsqueda) y con permiso de edición.
-          final puedeArrastrar = personalizado &&
+          final puedeArrastrar =
+              personalizado &&
               puedeEditar &&
               _estado == null &&
               _query.trim().isEmpty;
@@ -145,34 +148,29 @@ class _CotizacionesScreenState extends ConsumerState<CotizacionesScreen> {
                 child: visibles.isEmpty
                     ? _vacio(cots.isEmpty)
                     : puedeArrastrar
-                        ? ReorderableListView.builder(
-                            itemCount: visibles.length,
-                            onReorder: (oldIndex, newIndex) {
-                              if (newIndex > oldIndex) newIndex -= 1;
-                              final ids =
-                                  visibles.map((c) => c.id).toList();
-                              final movido = ids.removeAt(oldIndex);
-                              ids.insert(newIndex, movido);
-                              ref
-                                  .read(ordenRepositoryProvider)
-                                  .reordenarPorId(
-                                    'cotizaciones',
-                                    esInvertido(modo)
-                                        ? ids.reversed.toList()
-                                        : ids,
-                                  );
-                            },
-                            itemBuilder: (context, i) => _fila(
-                                visibles[i], puedeEditar,
-                                arrastrable: true),
-                          )
-                        : ListView.separated(
-                            itemCount: visibles.length,
-                            separatorBuilder: (_, _) =>
-                                const Divider(height: 1),
-                            itemBuilder: (context, i) =>
-                                _fila(visibles[i], puedeEditar),
-                          ),
+                    ? ReorderableListView.builder(
+                        itemCount: visibles.length,
+                        onReorder: (oldIndex, newIndex) {
+                          if (newIndex > oldIndex) newIndex -= 1;
+                          final ids = visibles.map((c) => c.id).toList();
+                          final movido = ids.removeAt(oldIndex);
+                          ids.insert(newIndex, movido);
+                          ref
+                              .read(ordenRepositoryProvider)
+                              .reordenarPorId(
+                                'cotizaciones',
+                                esInvertido(modo) ? ids.reversed.toList() : ids,
+                              );
+                        },
+                        itemBuilder: (context, i) =>
+                            _fila(visibles[i], puedeEditar, arrastrable: true),
+                      )
+                    : ListView.separated(
+                        itemCount: visibles.length,
+                        separatorBuilder: (_, _) => const Divider(height: 1),
+                        itemBuilder: (context, i) =>
+                            _fila(visibles[i], puedeEditar),
+                      ),
               ),
             ],
           );
@@ -228,8 +226,9 @@ class _CotizacionesScreenState extends ConsumerState<CotizacionesScreen> {
 
   String _pistaSinResultados() {
     final texto = _query.trim();
-    final etiqueta =
-        _estado == null ? null : etiquetaEstadoCotizacion(_estado!);
+    final etiqueta = _estado == null
+        ? null
+        : etiquetaEstadoCotizacion(_estado!);
     if (etiqueta != null && texto.isNotEmpty) {
       return 'Ninguna cotización en “$etiqueta” coincide con “$texto”.';
     }
@@ -240,10 +239,13 @@ class _CotizacionesScreenState extends ConsumerState<CotizacionesScreen> {
   Widget _fila(Cotizacion c, bool puedeEditar, {bool arrastrable = false}) {
     return ListTile(
       key: ValueKey(c.id),
-      title: Text(tituloCotizacion(
+      title: Text(
+        tituloCotizacion(
           nombreProyecto: c.nombreProyecto,
           ubicacion: c.ubicacion,
-          cliente: c.cliente)),
+          cliente: c.cliente,
+        ),
+      ),
       // El estado dejó de ser un círculo de color a la izquierda —que
       // obligaba a memorizar qué significaba cada tono— y pasó a ser
       // una etiqueta que lo dice con palabras, igual que en la web.
@@ -270,19 +272,21 @@ class _CotizacionesScreenState extends ConsumerState<CotizacionesScreen> {
           : !puedeEditar
           ? null
           : PopupMenuButton<String>(
-        tooltip: 'Acciones de la cotización',
-        onSelected: (v) {
-          if (v == 'editar') _dialog(c);
-          if (v == 'eliminar') _confirmDelete(c);
-        },
-        itemBuilder: (_) => const [
-          PopupMenuItem(value: 'editar', child: Text('Editar')),
-          PopupMenuItem(value: 'eliminar', child: Text('Eliminar')),
-        ],
+              tooltip: 'Acciones de la cotización',
+              onSelected: (v) {
+                if (v == 'editar') _dialog(c);
+                if (v == 'eliminar') _confirmDelete(c);
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'editar', child: Text('Editar')),
+                PopupMenuItem(value: 'eliminar', child: Text('Eliminar')),
+              ],
+            ),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => CotizacionDetailScreen(cotizacion: c),
+        ),
       ),
-      onTap: () => Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => CotizacionDetailScreen(cotizacion: c),
-      )),
     );
   }
 
@@ -291,66 +295,64 @@ class _CotizacionesScreenState extends ConsumerState<CotizacionesScreen> {
     final clienteCtrl = TextEditingController(text: cot?.cliente ?? '');
     final ubicacionCtrl = TextEditingController(text: cot?.ubicacion ?? '');
     final descuentoCtrl = TextEditingController(
-        text: (cot?.descuento ?? 0) > 0 ? cot!.descuento.toString() : '');
-    final formKey = GlobalKey<FormState>();
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(cot == null ? 'Nueva cotización' : 'Editar cotización'),
-        content: Form(
-          key: formKey,
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            // Nombre y cliente son OPCIONALES (igual que en la web): hay
-            // presupuestos que se hacen con la pura ubicación.
-            TextFormField(
-              controller: nombreCtrl,
-              decoration: const InputDecoration(
-                  labelText: 'Nombre del proyecto (opcional)'),
+      text: (cot?.descuento ?? 0) > 0 ? cot!.descuento.toString() : '',
+    );
+    await mostrarHojaFormulario(
+      context,
+      builder: (ctx) => HojaFormulario(
+        titulo: cot == null ? 'Nueva cotización' : 'Editar cotización',
+        textoGuardar: cot == null ? 'Crear cotización' : 'Guardar cambios',
+        campos: [
+          // Nombre y cliente son OPCIONALES (igual que en la web): hay
+          // presupuestos que se hacen con la pura ubicación.
+          TextFormField(
+            controller: nombreCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Nombre del proyecto (opcional)',
             ),
-            TextFormField(
-              controller: clienteCtrl,
-              decoration: const InputDecoration(labelText: 'Cliente (opcional)'),
+          ),
+          TextFormField(
+            controller: clienteCtrl,
+            decoration: const InputDecoration(labelText: 'Cliente (opcional)'),
+          ),
+          TextFormField(
+            controller: ubicacionCtrl,
+            decoration: const InputDecoration(labelText: 'Ubicación'),
+          ),
+          TextFormField(
+            controller: descuentoCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Descuento (%)',
+              suffixText: '%',
             ),
-            TextFormField(
-              controller: ubicacionCtrl,
-              decoration: const InputDecoration(labelText: 'Ubicación'),
-            ),
-            TextFormField(
-              controller: descuentoCtrl,
-              decoration: const InputDecoration(
-                  labelText: 'Descuento (%)', suffixText: '%'),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            ),
-          ]),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-          AsyncActionButton(
-            onPressed: () async {
-              if (!formKey.currentState!.validate()) return;
-              await ref.read(cotizacionRepositoryProvider).upsert(
-                    CotizacionesCompanion(
-                      id: Value(cot?.id ?? _uuid.v4()),
-                      nombreProyecto: Value(nombreCtrl.text.trim()),
-                      cliente: Value(clienteCtrl.text.trim()),
-                      ubicacion: Value(ubicacionCtrl.text.trim()),
-                      fecha: Value(cot?.fecha ?? DateTime.now().millisecondsSinceEpoch),
-                      estado: Value(cot?.estado ?? 'BORRADOR'),
-                      ivaEnabled: Value(cot?.ivaEnabled ?? true),
-                      // Solo una cotización NUEVA toma la foto del IVA global
-                      // vigente; al editar se conserva la tasa ya congelada
-                      // (Value.absent no toca la columna en el upsert).
-                      ivaPorcentaje: cot == null
-                          ? Value(ref.read(ivaPorcentajeProvider))
-                          : const Value.absent(),
-                      descuento: Value(double.tryParse(descuentoCtrl.text.trim()) ?? 0),
-                    ),
-                  );
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            child: const Text('Guardar'),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
         ],
+        onGuardar: () async {
+          await ref
+              .read(cotizacionRepositoryProvider)
+              .upsert(
+                CotizacionesCompanion(
+                  id: Value(cot?.id ?? _uuid.v4()),
+                  nombreProyecto: Value(nombreCtrl.text.trim()),
+                  cliente: Value(clienteCtrl.text.trim()),
+                  ubicacion: Value(ubicacionCtrl.text.trim()),
+                  fecha: Value(
+                    cot?.fecha ?? DateTime.now().millisecondsSinceEpoch,
+                  ),
+                  estado: Value(cot?.estado ?? 'BORRADOR'),
+                  ivaEnabled: Value(cot?.ivaEnabled ?? true),
+                  // Solo una cotización NUEVA toma la foto del IVA global
+                  // vigente; al editar se conserva la tasa ya congelada
+                  // (Value.absent no toca la columna en el upsert).
+                  ivaPorcentaje: cot == null
+                      ? Value(ref.read(ivaPorcentajeProvider))
+                      : const Value.absent(),
+                  descuento: Value(leerNumero(descuentoCtrl.text) ?? 0),
+                ),
+              );
+          return true;
+        },
       ),
     );
   }
@@ -398,7 +400,9 @@ class _FiltroEstado extends StatelessWidget {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
       child: Row(
         children: [
           _chip(

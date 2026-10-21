@@ -14,6 +14,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/providers.dart';
 import '../../domain/bitacora/bitacora_reglas.dart';
+import '../common/app_snackbar.dart';
 
 // FOTOS de la bitácora en pantalla: tomarlas, verlas y compartirlas.
 //
@@ -347,9 +348,7 @@ class _VisorFotosBitacoraState extends ConsumerState<VisorFotosBitacora> {
       await compartirFotoBitacora(archivo, foto.mime);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo compartir la foto.')),
-      );
+      showAppSnack(context, 'No se pudo compartir la foto.', tone: SnackTone.danger);
     }
   }
 

@@ -12,7 +12,6 @@ import '../../domain/logic/salario_periodo.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/orden_personalizado.dart';
 import '../../data/providers.dart';
-import '../common/async_action_button.dart';
 import '../common/sync_status_action.dart';
 import '../common/confirm_dialog.dart';
 import '../common/empty_state_view.dart';
@@ -20,6 +19,9 @@ import '../common/error_state_view.dart';
 import '../common/orden_modo_toggle.dart';
 import '../cuadrillas/cuadrillas_screen.dart';
 import '../common/esqueleto.dart';
+import '../../domain/numeros.dart';
+import '../common/hoja_formulario.dart';
+import '../common/app_snackbar.dart';
 
 /// Criterio de orden propio de esta lista: por puesto. Los otros (nombre,
 /// recientes, modificados, personalizado) los da el botón de orden compartido.
@@ -71,7 +73,7 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Colaboradores'),
+        title: const Text('Equipo'),
         actions: [
           const SyncStatusAction(),
           // Las cuadrillas son su propio módulo (F0): sin él, no hay entrada.
@@ -352,9 +354,7 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
         heroTag: 'fabColaborador',
         onPressed: () {
           if (puestos.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('Primero crea un puesto en Configuración.'),
-            ));
+            showAppSnack(context, 'Primero crea un puesto en Configuración.');
             return;
           }
           _showDialog(null, puestos);
@@ -373,8 +373,7 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
         .where((o) => o.activa)
         .toList();
     if (obras.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No hay obras activas.')));
+      showAppSnack(context, 'No hay obras activas.', tone: SnackTone.warning);
       return;
     }
     await showModalBottomSheet<void>(
@@ -478,7 +477,7 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
 
     final nombreCtrl = TextEditingController(text: colaborador?.nombre ?? '');
     final montoCtrl = TextEditingController(
-        text: sueldo?.salarioPeriodo?.toString() ?? '');
+        text: numeroParaEditar(sueldo?.salarioPeriodo));
     final telCtrl = TextEditingController(text: colaborador?.telefono ?? '');
     final emNombreCtrl = TextEditingController(text: colaborador?.contactoNombre ?? '');
     final emTelCtrl = TextEditingController(text: colaborador?.contactoTelefono ?? '');
@@ -496,19 +495,15 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
         .where((o) => o.activa)
         .toList()
       ..sort((a, b) => a.nombre.compareTo(b.nombre));
-    final formKey = GlobalKey<FormState>();
 
-    await showDialog<void>(
-      context: context,
+    await mostrarHojaFormulario(
+      context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) => AlertDialog(
-          title: Text(colaborador == null ? 'Nuevo colaborador' : 'Editar colaborador'),
-          content: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+        builder: (ctx, setLocal) => HojaFormulario(
+        titulo: colaborador == null ? 'Nuevo colaborador' : 'Editar colaborador',
+        subtitulo: colaborador?.nombre,
+        textoGuardar: colaborador == null ? 'Agregar colaborador' : 'Guardar cambios',
+        campos: [
                   TextFormField(
                     controller: nombreCtrl,
                     decoration: const InputDecoration(labelText: 'Nombre'),
@@ -516,7 +511,6 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
                         ? 'El nombre es obligatorio'
                         : null,
                   ),
-                  const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     initialValue: puestoId,
                     decoration: const InputDecoration(labelText: 'Puesto'),
@@ -524,9 +518,12 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
                         .map((p) => DropdownMenuItem(value: p.id, child: Text(p.nombre)))
                         .toList(),
                     onChanged: (v) => setLocal(() => puestoId = v),
-                    validator: (v) => v == null ? 'Selecciona un puesto' : null,
+                    validator: (v) => v != null
+                        ? null
+                        : puestos.isEmpty
+                            ? 'Primero crea un puesto en Ajustes → Puestos y salarios'
+                            : 'Elige un puesto',
                   ),
-                  const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     initialValue: tipoPago,
                     decoration: const InputDecoration(labelText: 'Tipo de pago'),
@@ -536,7 +533,6 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
                     ],
                     onChanged: (v) => setLocal(() => tipoPago = v ?? 'DIA'),
                   ),
-                  const SizedBox(height: 8),
                   DropdownButtonFormField<PeriodoPago>(
                     initialValue: periodo,
                     decoration: const InputDecoration(labelText: 'Esquema de pago'),
@@ -547,7 +543,6 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
                     onChanged: (v) =>
                         setLocal(() => periodo = v ?? PeriodoPago.mensual),
                   ),
-                  const SizedBox(height: 8),
                   DropdownButtonFormField<int>(
                     initialValue: diasSemana,
                     decoration: const InputDecoration(
@@ -558,7 +553,6 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
                         .toList(),
                     onChanged: (v) => setLocal(() => diasSemana = v ?? 6),
                   ),
-                  const SizedBox(height: 8),
                   TextFormField(
                     controller: montoCtrl,
                     decoration: InputDecoration(
@@ -568,11 +562,15 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
                     keyboardType:
                         const TextInputType.numberWithOptions(decimal: true),
                     onChanged: (_) => setLocal(() {}),
+                    // Antes un monto mal escrito se guardaba como «sin sueldo».
+                    validator: (v) => (v ?? '').trim().isEmpty ||
+                            (leerNumero(v) ?? -1) >= 0
+                        ? null
+                        : 'Escribe un monto válido, p. ej. 3,500',
                   ),
-                  const SizedBox(height: 8),
                   Builder(builder: (_) {
                     final diario = salarioDiarioDesdePeriodo(
-                        double.tryParse(montoCtrl.text.trim()),
+                        leerNumero(montoCtrl.text),
                         periodo,
                         diasSemana);
                     return Align(
@@ -585,7 +583,6 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
                       ),
                     );
                   }),
-                  const SizedBox(height: 8),
                   TextFormField(
                     controller: telCtrl,
                     decoration: const InputDecoration(labelText: 'Teléfono'),
@@ -638,18 +635,11 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
                     ),
                   ],
                 ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-            AsyncActionButton(
-              onPressed: () async {
-                if (!formKey.currentState!.validate()) return;
+        onGuardar: () async {
                 final nuevoId = colaborador?.id ?? _uuid.v4();
                 final montoText = montoCtrl.text.trim();
                 final montoPeriodo =
-                    montoText.isEmpty ? null : double.tryParse(montoText);
+                    montoText.isEmpty ? null : leerNumero(montoText);
                 // El diario NO se captura: se deriva del sueldo del periodo.
                 final salarioDiario = salarioDiarioDesdePeriodo(
                     montoPeriodo, periodo, diasSemana);
@@ -687,12 +677,9 @@ class _ColaboradoresScreenState extends ConsumerState<ColaboradoresScreen> {
                         colaboradorId: nuevoId,
                       );
                 }
-                if (ctx.mounted) Navigator.pop(ctx);
-              },
-              child: const Text('Guardar'),
-            ),
-          ],
-        ),
+          return true;
+        },
+      ),
       ),
     );
   }

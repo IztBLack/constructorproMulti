@@ -11,9 +11,9 @@ import '../../data/orden_personalizado.dart';
 import '../../data/providers.dart';
 import '../common/app_badge.dart';
 import '../common/app_snackbar.dart';
+import '../common/hoja_formulario.dart';
 import '../common/app_spacing.dart';
 import '../common/cuenta_empresa_subtitulo.dart';
-import '../common/async_action_button.dart';
 import '../common/sync_status_action.dart';
 import '../common/confirm_dialog.dart';
 import '../common/empty_state_view.dart';
@@ -119,15 +119,17 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const TituloConCuenta('Mis Obras'),
+        title: const TituloConCuenta('Obras'),
         actions: [
           const SyncStatusAction(),
           Center(
             child: Padding(
               padding: const EdgeInsets.only(right: AppSpacing.md),
               child: catalogoAsync.when(
-                data: (n) => Text('Catálogo: $n',
-                    style: Theme.of(context).textTheme.labelSmall),
+                data: (n) => Text(
+                  'Catálogo: $n',
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
                 loading: () => const SizedBox.shrink(),
                 error: (_, _) => const SizedBox.shrink(),
               ),
@@ -136,17 +138,21 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
           PopupMenuButton<_Filtro>(
             // El ícono relleno avisa a distancia que hay un filtro puesto; sin
             // esa señal, una lista corta se confunde con "no hay obras".
-            icon: Icon(_filtro == _Filtro.todas
-                ? Icons.filter_alt_outlined
-                : Icons.filter_alt),
+            icon: Icon(
+              _filtro == _Filtro.todas
+                  ? Icons.filter_alt_outlined
+                  : Icons.filter_alt,
+            ),
             tooltip: 'Filtrar obras (${_filtro.etiqueta.toLowerCase()})',
             onSelected: (f) => setState(() => _filtro = f),
             itemBuilder: (_) => _Filtro.values
-                .map((f) => CheckedPopupMenuItem(
-                      value: f,
-                      checked: f == _filtro,
-                      child: Text(f.etiqueta),
-                    ))
+                .map(
+                  (f) => CheckedPopupMenuItem(
+                    value: f,
+                    checked: f == _filtro,
+                    child: Text(f.etiqueta),
+                  ),
+                )
                 .toList(),
           ),
         ],
@@ -154,7 +160,11 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
           preferredSize: const Size.fromHeight(100),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(
-                AppSpacing.md, 0, AppSpacing.md, AppSpacing.sm),
+              AppSpacing.md,
+              0,
+              AppSpacing.md,
+              AppSpacing.sm,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -215,8 +225,7 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
             }
             // Arrastrar solo con la lista completa (sin filtro ni búsqueda) y con
             // permiso de edición: reordenar un subconjunto no tendría sentido.
-            final puedeArrastrar =
-                personalizado && puedeEditar && !_hayFiltro;
+            final puedeArrastrar = personalizado && puedeEditar && !_hayFiltro;
             return Column(
               children: [
                 // Cuenta visible solo cuando algo está recortando la lista: es
@@ -225,14 +234,16 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
                 if (_hayFiltro)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
+                      AppSpacing.lg,
+                      AppSpacing.sm,
+                      AppSpacing.lg,
+                      0,
+                    ),
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
                         '${visibles.length} de ${obras.length} obras',
-                        style: Theme.of(context)
-                            .textTheme
-                            .labelMedium
+                        style: Theme.of(context).textTheme.labelMedium
                             ?.copyWith(color: context.colores.textMuted),
                       ),
                     ),
@@ -247,7 +258,9 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
                             final ids = visibles.map((o) => o.id).toList();
                             final movido = ids.removeAt(oldIndex);
                             ids.insert(newIndex, movido);
-                            ref.read(ordenRepositoryProvider).reordenarPorId(
+                            ref
+                                .read(ordenRepositoryProvider)
+                                .reordenarPorId(
                                   'obras',
                                   // En modo invertido lo que se ve está al revés
                                   // que lo guardado: se persiste al derecho.
@@ -317,7 +330,7 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
         hint: _filtro == _Filtro.todas
             ? 'Revisa el nombre, el cliente o la ubicación.'
             : 'Solo se está buscando entre las obras '
-                '${_filtro.etiqueta.toLowerCase()}.',
+                  '${_filtro.etiqueta.toLowerCase()}.',
         action: TextButton.icon(
           onPressed: _limpiarBusqueda,
           icon: const Icon(Icons.close),
@@ -340,9 +353,10 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
   }
 
   Widget _tile(Obra obra, bool puedeEditar, {bool arrastrable = false}) {
-    final detalle = [obra.cliente, obra.ubicacion]
-        .where((s) => s.isNotEmpty)
-        .join(' · ');
+    final detalle = [
+      obra.cliente,
+      obra.ubicacion,
+    ].where((s) => s.isNotEmpty).join(' · ');
 
     return ListTile(
       key: ValueKey(obra.id),
@@ -375,45 +389,43 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
           : !puedeEditar
           ? null
           : PopupMenuButton<String>(
-        onSelected: (v) {
-          if (v == 'editar') _showObraDialog(obra);
-          if (v == 'archivar') _setArchivada(obra, true);
-          if (v == 'desarchivar') _setArchivada(obra, false);
-          if (v == 'eliminar') _confirmDelete(obra);
-        },
-        // No es `const` porque el ítem de archivar depende del estado de la obra.
-        itemBuilder: (_) => [
-          const PopupMenuItem(value: 'editar', child: Text('Editar')),
-          // Archivar/desarchivar es el MISMO acto reversible visto desde los dos
-          // lados: si está activa se ofrece guardarla, si ya está guardada se
-          // ofrece reactivarla. Va antes de "Eliminar" para separar lo
-          // reversible de lo irreversible.
-          if (obra.activa)
-            const PopupMenuItem(
-              value: 'archivar',
-              child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(Icons.archive_outlined),
-                title: Text('Archivar'),
-              ),
-            )
-          else
-            const PopupMenuItem(
-              value: 'desarchivar',
-              child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(Icons.unarchive_outlined),
-                title: Text('Desarchivar'),
-              ),
+              onSelected: (v) {
+                if (v == 'editar') _showObraDialog(obra);
+                if (v == 'archivar') _setArchivada(obra, true);
+                if (v == 'desarchivar') _setArchivada(obra, false);
+                if (v == 'eliminar') _confirmDelete(obra);
+              },
+              // No es `const` porque el ítem de archivar depende del estado de la obra.
+              itemBuilder: (_) => [
+                const PopupMenuItem(value: 'editar', child: Text('Editar')),
+                // Archivar/desarchivar es el MISMO acto reversible visto desde los dos
+                // lados: si está activa se ofrece guardarla, si ya está guardada se
+                // ofrece reactivarla. Va antes de "Eliminar" para separar lo
+                // reversible de lo irreversible.
+                if (obra.activa)
+                  const PopupMenuItem(
+                    value: 'archivar',
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.archive_outlined),
+                      title: Text('Archivar'),
+                    ),
+                  )
+                else
+                  const PopupMenuItem(
+                    value: 'desarchivar',
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.unarchive_outlined),
+                      title: Text('Desarchivar'),
+                    ),
+                  ),
+                const PopupMenuItem(value: 'eliminar', child: Text('Eliminar')),
+              ],
             ),
-          const PopupMenuItem(value: 'eliminar', child: Text('Eliminar')),
-        ],
-      ),
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ObraDetailScreen(obra: obra),
-        ),
-      ),
+      onTap: () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => ObraDetailScreen(obra: obra))),
     );
   }
 
@@ -421,57 +433,52 @@ class _ObrasScreenState extends ConsumerState<ObrasScreen> {
     final nombreCtrl = TextEditingController(text: obra?.nombre ?? '');
     final clienteCtrl = TextEditingController(text: obra?.cliente ?? '');
     final ubicacionCtrl = TextEditingController(text: obra?.ubicacion ?? '');
-    final formKey = GlobalKey<FormState>();
 
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(obra == null ? 'Nueva obra' : 'Editar obra'),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: nombreCtrl,
-                decoration: const InputDecoration(labelText: 'Nombre de la obra'),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'El nombre es obligatorio' : null,
-              ),
-              TextFormField(
-                controller: clienteCtrl,
-                decoration: const InputDecoration(labelText: 'Cliente'),
-              ),
-              TextFormField(
-                controller: ubicacionCtrl,
-                decoration: const InputDecoration(labelText: 'Ubicación'),
-              ),
-            ],
+    await mostrarHojaFormulario(
+      context,
+      builder: (ctx) => HojaFormulario(
+        titulo: obra == null ? 'Nueva obra' : 'Editar obra',
+        subtitulo: obra?.nombre,
+        textoGuardar: obra == null ? 'Crear obra' : 'Guardar cambios',
+        campos: [
+          TextFormField(
+            controller: nombreCtrl,
+            autofocus: obra == null,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: const InputDecoration(labelText: 'Nombre de la obra'),
+            validator: (v) => (v == null || v.trim().isEmpty)
+                ? 'Escribe el nombre de la obra'
+                : null,
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancelar'),
+          TextFormField(
+            controller: clienteCtrl,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(labelText: 'Cliente (opcional)'),
           ),
-          AsyncActionButton(
-            onPressed: () async {
-              if (!formKey.currentState!.validate()) return;
-              final repo = ref.read(obraRepositoryProvider);
-              await repo.upsert(ObrasCompanion(
-                id: Value(obra?.id ?? _uuid.v4()),
-                nombre: Value(nombreCtrl.text.trim()),
-                cliente: Value(clienteCtrl.text.trim()),
-                ubicacion: Value(ubicacionCtrl.text.trim()),
-                fechaInicio:
-                    Value(obra?.fechaInicio ?? DateTime.now().millisecondsSinceEpoch),
-                activa: Value(obra?.activa ?? true),
-              ));
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            child: const Text('Guardar'),
+          TextFormField(
+            controller: ubicacionCtrl,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: const InputDecoration(
+              labelText: 'Ubicación (opcional)',
+            ),
           ),
         ],
+        onGuardar: () async {
+          final repo = ref.read(obraRepositoryProvider);
+          await repo.upsert(
+            ObrasCompanion(
+              id: Value(obra?.id ?? _uuid.v4()),
+              nombre: Value(nombreCtrl.text.trim()),
+              cliente: Value(clienteCtrl.text.trim()),
+              ubicacion: Value(ubicacionCtrl.text.trim()),
+              fechaInicio: Value(
+                obra?.fechaInicio ?? DateTime.now().millisecondsSinceEpoch,
+              ),
+              activa: Value(obra?.activa ?? true),
+            ),
+          );
+          return true;
+        },
       ),
     );
   }

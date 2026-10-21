@@ -570,7 +570,9 @@ class AppDatabase extends _$AppDatabase {
   /// [contarCatalogo] vigilado: Ajustes enseña el número a la vista y tiene
   /// que cambiar en cuanto se agregan, borran o vacían conceptos.
   Stream<int> vigilarConteoCatalogo() {
-    final count = countAll();
+    // Conceptos DISTINTOS: con copias repetidas el conteo decía 1000 cuando
+    // eran 270.
+    final count = catalogoConceptos.clave.upper().count(distinct: true);
     final q = selectOnly(catalogoConceptos)
       ..addColumns([count])
       ..where(catalogoConceptos.deletedAt.isNull());
@@ -705,6 +707,12 @@ class AppDatabase extends _$AppDatabase {
             precioUnitarioDefault: Value(
                 (m['precioUnitarioDefault'] as num).toDouble()),
             categoria: m['categoria'] as String,
+            // El catálogo base es una AYUDA local: no se sube. Antes cada
+            // teléfono (y cada «Rehacer la copia» o cambio de cuenta) lo
+            // sembraba con ids nuevos y lo subía: en el servidor la misma
+            // clave llegó a estar 6 veces. Si alguien edita un concepto, el
+            // trigger lo marca `pending` y ése sí sube.
+            syncStatus: const Value('skipped'),
           ),
         );
       }

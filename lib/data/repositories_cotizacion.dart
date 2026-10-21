@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 
 import '../core/db/app_database.dart';
 import '../domain/cotizacion_titulo.dart';
+import '../domain/unicos.dart';
 
 const _uuid = Uuid();
 
@@ -458,15 +459,27 @@ class CatalogoRepository {
   final AppDatabase db;
   CatalogoRepository(this.db);
 
-  Future<List<CatalogoConcepto>> buscar(String query) {
+  /// Entre copias del mismo concepto gana la que ya está en la nube y, luego,
+  /// la editada más reciente (ver [unicos]).
+  static int _preferencia(CatalogoConcepto c) =>
+      (c.syncStatus == 'synced' ? 1 << 50 : 0) + c.updatedAt;
+
+  static List<CatalogoConcepto> sinRepetidos(Iterable<CatalogoConcepto> l) =>
+      unicos(l,
+          llave: (c) => llaveConcepto(c.clave, c.descripcion),
+          preferencia: _preferencia);
+
+  Future<List<CatalogoConcepto>> buscar(String query) async {
     final q = '%$query%';
-    return (db.select(db.catalogoConceptos)
+    final filas = await (db.select(db.catalogoConceptos)
           ..where((t) =>
               (t.clave.like(q) | t.descripcion.like(q) | t.categoria.like(q)) &
               t.deletedAt.isNull())
           ..orderBy([(t) => OrderingTerm(expression: t.clave)])
-          ..limit(50))
+          // Holgura: con copias repetidas, 50 filas podían ser 8 conceptos.
+          ..limit(400))
         .get();
+    return sinRepetidos(filas).take(50).toList();
   }
 
   Stream<List<CatalogoConcepto>> watchAll() => (db.select(db.catalogoConceptos)
@@ -475,7 +488,8 @@ class CatalogoRepository {
           (t) => OrderingTerm(expression: t.categoria),
           (t) => OrderingTerm(expression: t.clave),
         ]))
-      .watch();
+      .watch()
+      .map(sinRepetidos);
 
   Future<void> upsert(CatalogoConceptosCompanion c) =>
       db.into(db.catalogoConceptos).insertOnConflictUpdate(c);

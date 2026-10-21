@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../data/providers.dart';
 import '../../data/repositories_obra.dart';
 import '../common/sync_status_action.dart';
+import '../common/app_snackbar.dart';
 
 /// Conflictos de jornada por resolver.
 ///
@@ -100,7 +101,7 @@ class _Encabezado extends StatelessWidget {
       child: Text(
         'Estas personas ya tienen jornada completa ese día en otra obra. '
         'Elige cuál registro se queda.',
-        style: TextStyle(color: context.colores.textMuted, fontSize: 13),
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: context.colores.textMuted),
       ),
     );
   }
@@ -154,11 +155,9 @@ class _TarjetaConflictoState extends ConsumerState<_TarjetaConflicto> {
     await ref.read(asistenciaRepositoryProvider).omitirConflicto(c.id);
     if (!mounted) return;
     setState(() => _ocupado = false);
-    messenger.showSnackBar(SnackBar(
-      content: Text('${c.colaborador}: lo de ${c.obraLocal} se queda solo en '
+    showAppSnackEn(messenger, '${c.colaborador}: lo de ${c.obraLocal} se queda solo en '
           'este teléfono. En la nube sigue '
-          '${c.obraRival ?? 'el otro registro'}.'),
-    ));
+          '${c.obraRival ?? 'el otro registro'}.');
   }
 
   /// Eliminar: descarta el registro capturado aquí. Es la salida limpia —deja el
@@ -195,9 +194,7 @@ class _TarjetaConflictoState extends ConsumerState<_TarjetaConflicto> {
     await ref.read(asistenciaRepositoryProvider).eliminarConflicto(c.id);
     if (!mounted) return;
     setState(() => _ocupado = false);
-    messenger.showSnackBar(SnackBar(
-      content: Text('Se eliminó el registro de ${c.colaborador} en ${c.obraLocal}.'),
-    ));
+    showAppSnackEn(messenger, 'Se eliminó el registro de ${c.colaborador} en ${c.obraLocal}.');
   }
 
   /// Subir: gana lo capturado aquí y reemplaza lo de la nube. Confirma antes,
@@ -237,9 +234,7 @@ class _TarjetaConflictoState extends ConsumerState<_TarjetaConflicto> {
     await ref.read(syncServiceProvider).syncAll();
     if (!mounted) return;
     setState(() => _ocupado = false);
-    messenger.showSnackBar(
-      SnackBar(content: Text('Se subió ${c.obraLocal} para ${c.colaborador}.')),
-    );
+    showAppSnackEn(messenger, 'Se subió ${c.obraLocal} para ${c.colaborador}.');
   }
 
   static String _jornada(double f) =>
@@ -267,11 +262,10 @@ class _TarjetaConflictoState extends ConsumerState<_TarjetaConflicto> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(c.colaborador,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w600, fontSize: 15)),
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
                       Text(Fmt.dayName(c.fecha),
                           style:
-                              TextStyle(color: col.textMuted, fontSize: 12.5)),
+                              Theme.of(context).textTheme.bodySmall?.copyWith(color: col.textMuted)),
                     ],
                   ),
                 ),
@@ -396,8 +390,8 @@ class _FilaDato extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(etiqueta, style: TextStyle(fontSize: 11, color: color)),
-                Text(valor, style: const TextStyle(fontSize: 13.5)),
+                Text(etiqueta, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: color)),
+                Text(valor, style: Theme.of(context).textTheme.bodyMedium),
               ],
             ),
           ),

@@ -18,6 +18,7 @@ import '../../domain/import/presupuesto_reconciliation.dart';
 import '../common/app_badge.dart';
 import '../common/app_spacing.dart';
 import '../common/money_text.dart';
+import '../common/app_snackbar.dart';
 
 /// Flujo de importación de un estado de cuenta (Excel/CSV) hacia la caja de
 /// una obra EXISTENTE. Consume el parser + clasificador de duplicados +
@@ -251,8 +252,7 @@ class _ImportarMovimientosScreenState
     await repo.upsertBatch(companions);
   }
 
-  void _snack(String msg) => ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(msg)));
+  void _snack(String msg) => showAppSnack(context, msg);
 
   @override
   Widget build(BuildContext context) {
