@@ -22,8 +22,20 @@ void main() {
       return texto.substring(i, j);
     }
 
+    // El catálogo se REESCRIBE en migraciones posteriores (0050 agregó
+    // `listas`): vale la última que lo define, que es la que queda en la base.
     test('mismas claves y en el mismo orden que modulos_catalogo()', () {
-      final bloque = entre(sql, 'function public.modulos_catalogo()', r'$$;');
+      final archivos = Directory('supabase/migrations')
+          .listSync()
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.sql'))
+          .toList()
+        ..sort((a, b) => a.path.compareTo(b.path));
+      final ultima = archivos
+          .map((f) => f.readAsStringSync())
+          .lastWhere((s) => s.contains('function public.modulos_catalogo()'));
+      final bloque =
+          entre(ultima, 'function public.modulos_catalogo()', r'$$;');
       final claves = RegExp(r"'(\w+)'")
           .allMatches(bloque.substring(bloque.indexOf('array[')))
           .map((m) => m.group(1))
@@ -92,6 +104,8 @@ void main() {
         ClaveModulo.notas,
         // Fase 1 de la paridad (docs/PLAN_BITACORA_MOVIL.md).
         ClaveModulo.bitacora,
+        // Fase 1 de docs/PLAN_LISTAS_MATERIAL.md.
+        ClaveModulo.listas,
       });
       expect(moduloDe(ClaveModulo.portal).aplicaEnMovil, isFalse);
     });

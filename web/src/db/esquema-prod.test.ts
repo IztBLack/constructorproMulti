@@ -58,6 +58,8 @@ export const DIFERENCIAS_CONOCIDAS: readonly { diferencia: string; porque: strin
   // diferencia ya no existe y se borra la entrada.
   // (0047 herramienta_asignacion.permanente: aplicada en prod el 2026-09-28 y
   // foto retomada; ya no es diferencia.)
+  // (0050 lista_material + lista_material_renglon: aplicada en prod el 2026-10-18
+  // y foto retomada; ya no es diferencia.)
 ];
 
 describe('esquema de producción', () => {

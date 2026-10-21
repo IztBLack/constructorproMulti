@@ -22,9 +22,9 @@ const _pasos = <_Paso>[
       'Arma presupuestos por secciones y partidas, apóyate en el catálogo de conceptos, aplica IVA o descuento, registra pagos y exporta el PDF para tu cliente.'),
   _Paso(Icons.people, 'Equipo',
       'Administra a tus colaboradores, sus puestos y salarios, asígnalos a obras y consulta su historial. Marca inactivo en vez de borrar para conservar registros.'),
-  _Paso(Icons.insights, 'Resumen',
+  _Paso(Icons.insights, 'Inicio',
       'Revisa de un vistazo ingresos, egresos, saldo por obra y el "pipeline" (valor de cotizaciones pendientes). Exporta reportes globales en PDF.'),
-  _Paso(Icons.settings, 'Configuración y respaldos',
+  _Paso(Icons.settings, 'Ajustes y respaldos',
       'Personaliza el PDF, activa el recordatorio de nómina, exporta/importa respaldos y carga datos de prueba. Puedes volver a ver este tutorial cuando quieras.'),
 ];
 

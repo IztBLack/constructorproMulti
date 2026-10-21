@@ -37,6 +37,8 @@ part 'app_database.g.dart';
   BitacoraEntrada,
   BitacoraFoto,
   BitacoraAclaracion,
+  ListaMaterial,
+  ListaMaterialRenglon,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -67,7 +69,7 @@ class AppDatabase extends _$AppDatabase {
   static final Set<String> columnasPorLlenar = <String>{};
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -470,6 +472,19 @@ class AppDatabase extends _$AppDatabase {
             }
             await _instalarTriggersSync();
           }
+          // v15 → v16: LISTAS DE MATERIAL (Supabase 0050). Tablas nuevas, como la
+          // bitácora en la v15: se crean sin tocar nada de lo que había y se
+          // reinstalan los triggers, porque `createTable` no pone el de
+          // `mark_pending` y sin él palomear un renglón no subiría.
+          if (from < 16) {
+            if (!await _tablaExiste('lista_material')) {
+              await m.createTable(listaMaterial);
+            }
+            if (!await _tablaExiste('lista_material_renglon')) {
+              await m.createTable(listaMaterialRenglon);
+            }
+            await _instalarTriggersSync();
+          }
         },
       );
 
@@ -555,7 +570,9 @@ class AppDatabase extends _$AppDatabase {
   /// [contarCatalogo] vigilado: Ajustes enseña el número a la vista y tiene
   /// que cambiar en cuanto se agregan, borran o vacían conceptos.
   Stream<int> vigilarConteoCatalogo() {
-    final count = countAll();
+    // Conceptos DISTINTOS: con copias repetidas el conteo decía 1000 cuando
+    // eran 270.
+    final count = catalogoConceptos.clave.upper().count(distinct: true);
     final q = selectOnly(catalogoConceptos)
       ..addColumns([count])
       ..where(catalogoConceptos.deletedAt.isNull());
@@ -690,6 +707,12 @@ class AppDatabase extends _$AppDatabase {
             precioUnitarioDefault: Value(
                 (m['precioUnitarioDefault'] as num).toDouble()),
             categoria: m['categoria'] as String,
+            // El catálogo base es una AYUDA local: no se sube. Antes cada
+            // teléfono (y cada «Rehacer la copia» o cambio de cuenta) lo
+            // sembraba con ids nuevos y lo subía: en el servidor la misma
+            // clave llegó a estar 6 veces. Si alguien edita un concepto, el
+            // trigger lo marca `pending` y ése sí sube.
+            syncStatus: const Value('skipped'),
           ),
         );
       }

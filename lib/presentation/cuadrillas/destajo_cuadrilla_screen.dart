@@ -6,6 +6,9 @@ import '../../core/format/format.dart';
 import '../../data/providers.dart';
 import '../common/async_action_button.dart';
 import 'cuadrillas_screen.dart' show especialidadLabel;
+import '../../domain/numeros.dart';
+import '../common/app_snackbar.dart';
+import '../common/sync_status_action.dart';
 
 /// Fase 4 — Destajo por cuadrilla: captura una BOLSA (concepto + total) y la
 /// reparte por porcentaje entre los miembros vigentes. Al guardar genera una
@@ -84,7 +87,7 @@ class _DestajoCuadrillaScreenState
       _repartirIgual(miembros);
     }
 
-    final bolsa = double.tryParse(_bolsaCtrl.text.trim()) ?? 0;
+    final bolsa = leerNumero(_bolsaCtrl.text) ?? 0;
     final totalPct = miembros.fold<int>(0, (a, c) => a + (_pct[c.id] ?? 0));
     final reparto = _reparto(bolsa, miembros);
     final montoDe = {for (final r in reparto) r.colaboradorId: r.monto};
@@ -99,6 +102,7 @@ class _DestajoCuadrillaScreenState
     return Scaffold(
       appBar: AppBar(
         title: const Text('Destajo por cuadrilla'),
+        actions: const [SyncStatusAction()],
       ),
       body: miembros.isEmpty
           ? const Center(
@@ -284,10 +288,7 @@ class _DestajoCuadrillaScreenState
                                 reparto: _reparto(bolsa, miembros),
                               );
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text('Destajo repartido y guardado.')),
-                            );
+                            showAppSnack(context, 'Destajo repartido y guardado.');
                             Navigator.of(context).pop();
                           }
                         }

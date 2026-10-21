@@ -96,7 +96,7 @@ class TextoFinalCard extends ConsumerWidget {
                             OrigenTexto.empresa => 'Texto de tus ajustes',
                             OrigenTexto.integrado => 'Texto por defecto',
                           },
-                          style: const TextStyle(fontSize: 11)),
+                          style: Theme.of(context).textTheme.labelSmall),
                       visualDensity: VisualDensity.compact,
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       backgroundColor:
@@ -113,14 +113,14 @@ class TextoFinalCard extends ConsumerWidget {
                         Border(left: BorderSide(color: cs.outlineVariant, width: 2)),
                   ),
                   child: Text(resuelto,
-                      style: TextStyle(fontSize: 12.5, color: cs.onSurfaceVariant)),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
                 ),
                 const SizedBox(height: 6),
                 Row(
                   children: [
                     Expanded(
                       child: Text('Se imprime al pie, arriba de tu pie de página.',
-                          style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: cs.onSurfaceVariant)),
                     ),
                     if (puedeEditar && propio)
                       TextButton(
@@ -169,7 +169,7 @@ class TextoFinalCard extends ConsumerWidget {
             children: [
               Text(
                 'Cambia lo que necesites. Se guarda solo en ${_esteDocumento(tipo)}.',
-                style: const TextStyle(fontSize: 12),
+                style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: 10),
               TextField(

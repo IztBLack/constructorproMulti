@@ -89,6 +89,8 @@ class _HomeShellState extends ConsumerState<HomeShell> with AbrirDesdeInicio {
     HomeTab.cotizar => const NavigationDestination(
       icon: Icon(Icons.description_outlined),
       selectedIcon: Icon(Icons.description),
+      // «Cotizaciones» no cabe en una barra de 5 pestañas (se partía en dos
+      // renglones en el Nubia); la pantalla sí se titula «Cotizaciones».
       label: 'Cotizar',
     ),
     HomeTab.equipo => const NavigationDestination(
@@ -99,7 +101,7 @@ class _HomeShellState extends ConsumerState<HomeShell> with AbrirDesdeInicio {
     HomeTab.resumen => const NavigationDestination(
       icon: Icon(Icons.insights_outlined),
       selectedIcon: Icon(Icons.insights),
-      label: 'Resumen',
+      label: 'Inicio',
     ),
     HomeTab.config => const NavigationDestination(
       icon: Icon(Icons.settings_outlined),

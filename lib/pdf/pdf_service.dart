@@ -7,7 +7,9 @@ import '../core/db/app_database.dart';
 import '../core/format/format.dart';
 import '../core/pdf/pdf_config.dart';
 import '../core/pdf/textos_finales.dart';
+import '../data/repositories_lista_material.dart';
 import '../data/repositories_nota_obra.dart';
+import '../domain/listas/listas_calculo.dart';
 import '../domain/logic/notas_obra_calculo.dart';
 import '../domain/logic/flujo_calculator.dart';
 import '../domain/logic/nomina_calculator.dart';
@@ -773,6 +775,229 @@ class PdfService {
 
         return widgets;
       },
+    ));
+
+    return doc.save();
+  }
+
+  // ---------------- Lista de material ----------------
+  /// Casilla del checklist. La Helvetica base no tiene el glifo ☐/☑, así que
+  /// se dibuja: vacía para palomear a mano, rellena si ya se palomeó en la app.
+  static pw.Widget _casilla(bool marcada) => pw.Container(
+        width: 11,
+        height: 11,
+        decoration: pw.BoxDecoration(
+          color: marcada ? _slate : null,
+          border: pw.Border.all(color: _slate, width: 1),
+          borderRadius: pw.BorderRadius.circular(2),
+        ),
+      );
+
+  static pw.Widget _celdaLista(String t,
+          {bool bold = false,
+          pw.Alignment align = pw.Alignment.centerLeft,
+          PdfColor color = _gris700,
+          double size = 10}) =>
+      pw.Container(
+        alignment: align,
+        padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+        child: pw.Text(t,
+            style: pw.TextStyle(
+                fontSize: size,
+                color: color,
+                fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal)),
+      );
+
+  /// Como [_totalLinea], pero con texto («15 pzas · 92.90 m») en vez de dinero.
+  static pw.Widget _totalTexto(String label, String valor, {bool bold = false}) =>
+      pw.Align(
+        alignment: pw.Alignment.centerRight,
+        child: pw.Container(
+          width: 300,
+          padding: const pw.EdgeInsets.symmetric(vertical: 6),
+          decoration: pw.BoxDecoration(
+            border: bold
+                ? const pw.Border(top: pw.BorderSide(color: _slate, width: 2))
+                : const pw.Border(bottom: pw.BorderSide(color: _gris100)),
+          ),
+          child: pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text(label,
+                  style: pw.TextStyle(
+                      fontSize: bold ? 13 : 11,
+                      fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
+                      color: bold ? _slate : _gris500)),
+              pw.Text(valor,
+                  style: pw.TextStyle(
+                      fontSize: bold ? 13 : 11,
+                      fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
+                      color: _slate)),
+            ],
+          ),
+        ),
+      );
+
+  static String _resumenTotales(TotalesLista t) => [
+        if (t.piezas > 0) '${numeroCorto(t.piezas)} pzas',
+        if (t.metros > 0) '${metros2(t.metros)} m',
+        if (t.estribos > 0) '${t.estribos} estribos',
+      ].join(' · ');
+
+  static String _notaRenglon(ListaMaterialRenglonRow r, PdfConfig config) {
+    final esPieza = tipoRenglonListaDeCadena(r.tipo) == TipoRenglonLista.pieza;
+    final estribos = estribosPorPieza(r.largo, r.separacionCm);
+    return [
+      if (!esPieza)
+        [r.unidad, r.descripcion].where((x) => x.isNotEmpty).join(' '),
+      if (r.separacionCm != null)
+        'Estribo @${numeroCorto(r.separacionCm!)} cm'
+            '${estribos != null ? ' (~$estribos por pieza)' : ''}',
+      if (r.nota.isNotEmpty) _u(r.nota, config),
+      // Lo que el plano no dio no se supone: se dice.
+      if (esPieza && r.largo == null) 'Falta el largo',
+    ].where((x) => x.isNotEmpty).join(' · ');
+  }
+
+  /// La lista de material con su checklist, para imprimir y palomear en obra
+  /// (docs/PLAN_LISTAS_MATERIAL.md §8). Es el prototipo que el dueño revisó:
+  /// una tabla por sección con casilla, cantidad, largo, nota y metros
+  /// lineales; totales; renglones para observaciones y firmas.
+  ///
+  /// [conMarcas] imprime rellenas las casillas ya palomeadas en la app; sin
+  /// ella sale toda en blanco, para palomear a mano.
+  static Future<Uint8List> listaMaterial({
+    required ListaConRenglones lista,
+    required String obraNombre,
+    bool conMarcas = true,
+    PdfConfig config = const PdfConfig(),
+  }) async {
+    final color = _hex(config.colorHex);
+    final l = lista.lista;
+    final secciones = lista.secciones;
+    final doc = pw.Document();
+
+    pw.Widget encabezado(String s, pw.Alignment align) =>
+        _celdaLista(s, bold: true, size: 8, color: _gris500, align: align);
+
+    pw.Widget tabla(List<ListaMaterialRenglonRow> renglones) {
+      const borde = pw.BorderSide(color: _gris100);
+      final t = totalesDe(renglones.map(ListaConRenglones.calc));
+      return pw.Table(
+        columnWidths: const {
+          0: pw.FixedColumnWidth(30),
+          1: pw.FixedColumnWidth(50),
+          2: pw.FixedColumnWidth(70),
+          3: pw.FlexColumnWidth(4),
+          4: pw.FixedColumnWidth(80),
+        },
+        border: const pw.TableBorder(horizontalInside: borde, bottom: borde),
+        children: [
+          pw.TableRow(
+            decoration: const pw.BoxDecoration(color: _grisFondo),
+            children: [
+              encabezado('OK', pw.Alignment.center),
+              encabezado('CANT.', pw.Alignment.centerRight),
+              encabezado('LARGO (m)', pw.Alignment.centerRight),
+              encabezado('NOTA', pw.Alignment.centerLeft),
+              encabezado('METROS LIN.', pw.Alignment.centerRight),
+            ],
+          ),
+          for (final r in renglones)
+            pw.TableRow(
+              verticalAlignment: pw.TableCellVerticalAlignment.middle,
+              children: [
+                pw.Center(child: _casilla(conMarcas && r.marcado)),
+                _celdaLista(numeroCorto(r.cantidad),
+                    bold: true, color: _slate, align: pw.Alignment.centerRight),
+                _celdaLista(r.largo != null ? metros2(r.largo!) : '-',
+                    align: pw.Alignment.centerRight),
+                _celdaLista(_notaRenglon(r, config)),
+                _celdaLista(
+                    switch (metrosLineales(ListaConRenglones.calc(r))) {
+                      final m? => metros2(m),
+                      null => '',
+                    },
+                    align: pw.Alignment.centerRight),
+              ],
+            ),
+          pw.TableRow(
+            children: [
+              pw.SizedBox(),
+              _celdaLista(numeroCorto(t.piezas),
+                  bold: true, color: _slate, align: pw.Alignment.centerRight),
+              _celdaLista('piezas', size: 8, color: _gris500),
+              pw.SizedBox(),
+              _celdaLista(t.metros > 0 ? '${metros2(t.metros)} m' : '',
+                  bold: true, color: _slate, align: pw.Alignment.centerRight),
+            ],
+          ),
+        ],
+      );
+    }
+
+    String nombreDe(String s) => s.isEmpty ? 'Sin sección' : s;
+
+    doc.addPage(pw.MultiPage(
+      pageTheme: _pageTheme(config),
+      footer: _footer(config),
+      build: (context) => [
+        _header(
+          'Lista de material',
+          [
+            // Raya con guiones bajos, no U+2014: la Helvetica base no la tiene
+            // (el mismo tropiezo que documenta la nota de obra).
+            'Obra: ${obraNombre.trim().isEmpty ? '____________________' : obraNombre}',
+            if (l.titulo.isNotEmpty) l.titulo,
+            if (l.plano.isNotEmpty) 'Plano: ${l.plano}',
+            'Fecha: ${Fmt.date(l.fecha)}',
+            'Medidas en metros',
+          ].join('\n'),
+          config,
+          color,
+        ),
+        if (lista.renglones.isEmpty)
+          pw.Text('Esta lista todavía no tiene renglones.',
+              style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
+        for (final (nombre, renglones) in secciones) ...[
+          _sectionTitle(nombreDe(nombre), color),
+          tabla(renglones),
+          pw.SizedBox(height: 18),
+        ],
+        if (secciones.length > 1)
+          for (final (nombre, renglones) in secciones)
+            _totalTexto(nombreDe(nombre),
+                _resumenTotales(totalesDe(renglones.map(ListaConRenglones.calc)))),
+        if (lista.renglones.isNotEmpty)
+          _totalTexto('TOTAL', _resumenTotales(lista.totales), bold: true),
+        if (l.notas.isNotEmpty) ...[
+          pw.SizedBox(height: 14),
+          pw.Text(_u(l.notas, config), style: const pw.TextStyle(fontSize: 9)),
+        ],
+        pw.SizedBox(height: 16),
+        _sectionTitle('Observaciones', color),
+        for (var i = 0; i < 3; i++)
+          pw.Container(
+            height: 22,
+            decoration: const pw.BoxDecoration(
+              border: pw.Border(bottom: pw.BorderSide(color: _gris200)),
+            ),
+          ),
+        pw.Padding(
+          padding: const pw.EdgeInsets.only(top: 30),
+          child: pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+            children: [
+              for (final t in ['Elaboró', 'Revisó / recibió'])
+                pw.Column(children: [
+                  pw.Container(width: 180, height: 1, color: PdfColors.black),
+                  pw.SizedBox(height: 4),
+                  pw.Text(t, style: const pw.TextStyle(fontSize: 10)),
+                ]),
+            ],
+          ),
+        ),
+      ],
     ));
 
     return doc.save();

@@ -40,6 +40,8 @@ enum ClaveModulo {
   seguridad,
   postventa,
   herramienta,
+  // Listas de material (0050)
+  listas,
 }
 
 class Modulo {
@@ -219,6 +221,15 @@ const List<Modulo> catalogoModulos = [
     clave: ClaveModulo.herramienta,
     nombre: 'Herramienta y maquinaria',
     descripcion: 'Qué herramienta tienes, en qué obra está y quién la trae.',
+  ),
+  Modulo(
+    clave: ClaveModulo.listas,
+    nombre: 'Listas de material',
+    descripcion:
+        'Cuenta las piezas y el material de cada obra según el plano, palomea lo que ya está y sácalo en PDF.',
+    // Fase 1 (docs/PLAN_LISTAS_MATERIAL.md): se captura en obra, así que
+    // empieza por el móvil. Fuera del paquete por defecto: la prende el dueño.
+    implementadoEnMovil: true,
   ),
 ];
 

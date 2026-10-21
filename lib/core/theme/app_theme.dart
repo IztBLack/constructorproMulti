@@ -350,7 +350,9 @@ class AppTheme {
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((estados) =>
-            estados.contains(WidgetState.selected) ? onPrimary : c.surface),
+            // Apagado: la bolita en gris medio. Con `surface` sobre
+            // `surfaceMuted` no se veía en el tema oscuro (solo el contorno).
+            estados.contains(WidgetState.selected) ? onPrimary : c.textMuted),
         trackColor: WidgetStateProperty.resolveWith((estados) =>
             estados.contains(WidgetState.selected)
                 ? c.textStrong

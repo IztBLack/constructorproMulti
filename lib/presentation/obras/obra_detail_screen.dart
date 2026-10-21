@@ -31,6 +31,7 @@ import '../../domain/mappers.dart';
 import '../../pdf/pdf_service.dart';
 import '../common/app_card.dart';
 import '../common/app_snackbar.dart';
+import '../common/hoja_formulario.dart';
 import '../common/confirm_dialog.dart';
 import '../common/error_state_view.dart';
 import '../common/money_text.dart';
@@ -42,8 +43,11 @@ import '../bitacora/bitacora_screen.dart';
 import '../../domain/asistencia/fracciones.dart';
 import '../../domain/bitacora/bitacora_reglas.dart' show puedeVerBitacora;
 import '../notas/notas_obra_screen.dart';
+import '../listas/listas_obra_screen.dart';
+import '../../domain/listas/listas_calculo.dart' show puedeVerListas;
 import '../pdf_pre_dialog.dart';
 import 'importar_movimientos_screen.dart';
+import '../../domain/numeros.dart';
 
 /// Pestañas del detalle de obra, en su orden.
 enum PestanaObra { equipo, asistencia, nomina, caja }
@@ -198,7 +202,17 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
           child: ListTile(
             contentPadding: EdgeInsets.zero,
             leading: Icon(Icons.handshake_outlined),
-            title: Text('Notas de trato'),
+            title: Text('Notas'),
+          ),
+        ),
+      // Listas de material (0050): lo que pide el plano, para palomear.
+      if (modulos.usa(ClaveModulo.listas) && puedeVerListas(rol))
+        const PopupMenuItem(
+          value: 'listas',
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(Icons.checklist_outlined),
+            title: Text('Listas de material'),
           ),
         ),
       // Entra ya filtrada a esta obra. Solo para quien puede ver
@@ -249,6 +263,12 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                           obraId: widget.obra.id,
                           obraNombre: widget.obra.nombre)));
                 }
+                if (v == 'listas') {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => ListasObraScreen(
+                          obraId: widget.obra.id,
+                          obraNombre: widget.obra.nombre)));
+                }
                 if (v == 'notas') {
                   Navigator.of(context).push(MaterialPageRoute(
                       builder: (_) => NotasObraScreen(
@@ -268,6 +288,9 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                 // vacía, y no había nada que desplazar. Repartidos ocupan el
                 // ancho y crecen sus áreas tocables.
                 isScrollable: false,
+                // Con el relleno por defecto (16 a cada lado) «Asistencia» se
+                // cortaba en un teléfono de 360 dp.
+                labelPadding: const EdgeInsets.symmetric(horizontal: 4),
                 tabs: [for (final p in _pestanas) Tab(text: _tituloPestana(p))],
               ),
       ),
@@ -448,6 +471,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                       subtitle: Text(c.tipoPago == 'DIA' ? 'Por día' : 'Por destajo'),
                       trailing: IconButton(
                         icon: const Icon(Icons.person_remove_outlined),
+                        tooltip: 'Quitar de esta obra',
                         onPressed: () => _desvincular(c),
                       ),
                     ))
@@ -516,30 +540,27 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     final nombreCtrl = TextEditingController();
     String puestoId = puestos.first.id;
     String tipoPago = 'DIA';
-    final formKey = GlobalKey<FormState>();
     final id = const Uuid().v4();
 
-    await showDialog<void>(
-      context: context,
+    await mostrarHojaFormulario(
+      context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setS) => AlertDialog(
-          title: const Text('Nuevo colaborador'),
-          content: Form(
-            key: formKey,
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
+        builder: (ctx, setS) => HojaFormulario(
+        titulo: 'Nuevo colaborador',
+        subtitulo: widget.obra.nombre,
+        textoGuardar: 'Agregar y asignar',
+        campos: [
               TextFormField(
                 controller: nombreCtrl,
                 decoration: const InputDecoration(labelText: 'Nombre'),
                 validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
               ),
-              const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 initialValue: puestoId,
                 decoration: const InputDecoration(labelText: 'Puesto'),
                 items: puestos.map((p) => DropdownMenuItem(value: p.id, child: Text(p.nombre))).toList(),
                 onChanged: (v) => setS(() => puestoId = v ?? puestoId),
               ),
-              const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 initialValue: tipoPago,
                 decoration: const InputDecoration(labelText: 'Tipo de pago'),
@@ -549,13 +570,8 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                 ],
                 onChanged: (v) => setS(() => tipoPago = v ?? 'DIA'),
               ),
-            ]),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-            FilledButton(
-              onPressed: () async {
-                if (!formKey.currentState!.validate()) return;
+            ],
+        onGuardar: () async {
                 await ref.read(colaboradorRepositoryProvider).upsert(ColaboradoresCompanion(
                       id: Value(id),
                       nombre: Value(nombreCtrl.text.trim()),
@@ -564,12 +580,9 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                       activo: const Value(true),
                     ));
                 await _asignar(id);
-                if (ctx.mounted) Navigator.pop(ctx);
-              },
-              child: const Text('Crear y asignar'),
-            ),
-          ],
-        ),
+          return true;
+        },
+      ),
       ),
     );
   }
@@ -883,6 +896,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
           children: [
             IconButton(
               icon: const Icon(Icons.chevron_left),
+              tooltip: 'Semana anterior',
               onPressed: () => setState(() => _inicioSemana =
                   lunes.subtract(const Duration(days: 7)).millisecondsSinceEpoch),
             ),
@@ -890,6 +904,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                 style: Theme.of(context).textTheme.titleSmall),
             IconButton(
               icon: const Icon(Icons.chevron_right),
+              tooltip: 'Semana siguiente',
               onPressed: () => setState(() => _inicioSemana =
                   lunes.add(const Duration(days: 7)).millisecondsSinceEpoch),
             ),
@@ -1072,7 +1087,18 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
                       Text(Fmt.money(d.monto)),
                       IconButton(
                         icon: const Icon(Icons.delete_outline, size: 20),
+                        tooltip: 'Borrar destajo',
                         onPressed: () async {
+                          // Antes borraba al primer toque, sin preguntar.
+                          final ok = await confirmDialog(
+                            ctx,
+                            title: 'Borrar destajo',
+                            message:
+                                '¿Borrar «${d.concepto}» por ${Fmt.money(d.monto)}? '
+                                'No se puede deshacer.',
+                            actionLabel: 'Borrar destajo',
+                          );
+                          if (!ok) return;
                           await ref.read(destajoRepositoryProvider).delete(d.id);
                           if (ctx.mounted) Navigator.pop(ctx);
                         },
@@ -1086,7 +1112,7 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
           FilledButton.icon(
             onPressed: () {
               Navigator.pop(ctx);
-              _agregarDestajoDialog(colaboradorId);
+              _agregarDestajoDialog(colaboradorId, nombre);
             },
             icon: const Icon(Icons.add),
             label: const Text('Agregar'),
@@ -1096,17 +1122,16 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     );
   }
 
-  Future<void> _agregarDestajoDialog(String colaboradorId) async {
+  Future<void> _agregarDestajoDialog(String colaboradorId, String nombre) async {
     final conceptoCtrl = TextEditingController();
     final montoCtrl = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Agregar destajo'),
-        content: Form(
-          key: formKey,
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
+    await mostrarHojaFormulario(
+      context,
+      builder: (ctx) => HojaFormulario(
+        titulo: 'Agregar destajo',
+        subtitulo: nombre,
+        textoGuardar: 'Guardar destajo',
+        campos: [
             TextFormField(
               controller: conceptoCtrl,
               decoration: const InputDecoration(labelText: 'Concepto'),
@@ -1118,29 +1143,21 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
               decoration: const InputDecoration(labelText: 'Monto (\$)'),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               validator: (v) {
-                final d = double.tryParse((v ?? '').trim());
+                final d = leerNumero(v);
                 return (d == null || d <= 0) ? 'Monto inválido' : null;
               },
             ),
-          ]),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-          FilledButton(
-            onPressed: () async {
-              if (!formKey.currentState!.validate()) return;
+          ],
+        onGuardar: () async {
               await ref.read(destajoRepositoryProvider).insert(
                     obraId: _obraId,
                     colaboradorId: colaboradorId,
                     fecha: _inicioSemana, // se registra en el lunes de la semana activa
                     concepto: conceptoCtrl.text.trim(),
-                    monto: double.parse(montoCtrl.text.trim()),
+                    monto: leerNumero(montoCtrl.text)!,
                   );
-              if (ctx.mounted) Navigator.pop(ctx);
-            },
-            child: const Text('Guardar'),
-          ),
-        ],
+          return true;
+        },
       ),
     );
   }
@@ -1345,7 +1362,6 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     final nombreFocus = FocusNode();
     final montoCtrl = TextEditingController();
     String metodo = 'Transferencia';
-    final formKey = GlobalKey<FormState>();
 
     // Sugerencias de autocompletado: valores DISTINTOS ya usados en esta obra.
     final movs =
@@ -1383,107 +1399,95 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
     }
     if (!mounted) return;
 
-    await showDialog<void>(
-      context: context,
+    final obraNombre = widget.obra.nombre;
+    await mostrarHojaFormulario(
+      context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setS) => AlertDialog(
-          title: Text(tipo == 'ENTRADA' ? 'Nueva entrada' : 'Nueva salida'),
-          content: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                _autocompleteField(
-                  label: 'Concepto / Categoría',
-                  controller: conceptoCtrl,
-                  focusNode: conceptoFocus,
-                  opciones: categoriasExistentes,
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Requerido' : null,
-                ),
-                _autocompleteField(
-                  label: tipo == 'ENTRADA'
-                      ? 'De quién (opcional)'
-                      : 'Beneficiario (opcional)',
-                  controller: nombreCtrl,
-                  focusNode: nombreFocus,
-                  opciones: nombresExistentes,
-                ),
-                TextFormField(
-                  controller: montoCtrl,
-                  decoration: const InputDecoration(labelText: 'Monto (\$)'),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  validator: (v) {
-                    final d = double.tryParse((v ?? '').trim());
-                    return (d == null || d <= 0) ? 'Monto inválido' : null;
-                  },
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  initialValue: metodo,
-                  decoration: const InputDecoration(labelText: 'Método'),
-                  items: const [
-                    DropdownMenuItem(value: 'Transferencia', child: Text('Transferencia')),
-                    DropdownMenuItem(value: 'Efectivo', child: Text('Efectivo')),
-                    DropdownMenuItem(value: 'Cheque', child: Text('Cheque')),
-                  ],
-                  onChanged: (v) => setS(() => metodo = v ?? 'Transferencia'),
-                ),
-                if (tipo == 'SALIDA' && partidasObra.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<String?>(
-                    initialValue: partidaId,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                        labelText: 'Ligar a partida (opcional)'),
-                    items: [
-                      const DropdownMenuItem(value: null, child: Text('Sin ligar')),
-                      ...partidasObra.map((p) => DropdownMenuItem(
-                            value: p.id,
-                            child: Text(p.descripcion,
-                                maxLines: 1, overflow: TextOverflow.ellipsis),
-                          )),
-                    ],
-                    onChanged: (v) => setS(() => partidaId = v),
-                  ),
-                ],
-              ]),
+        builder: (ctx, setS) => HojaFormulario(
+          titulo: tipo == 'ENTRADA' ? 'Nueva entrada' : 'Nueva salida',
+          subtitulo: obraNombre,
+          textoGuardar: tipo == 'ENTRADA' ? 'Guardar entrada' : 'Guardar salida',
+          campos: [
+            _autocompleteField(
+              label: 'Concepto o categoría',
+              controller: conceptoCtrl,
+              focusNode: conceptoFocus,
+              opciones: categoriasExistentes,
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? 'Escribe el concepto' : null,
             ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-            FilledButton(
-              onPressed: () async {
-                if (!formKey.currentState!.validate()) return;
-                final partida = partidaId == null
-                    ? null
-                    : partidasObra.firstWhereOrNull((p) => p.id == partidaId);
-                // Canoniza a la etiqueta existente (case/acento-insensible) para
-                // que las cubetas de "Recibido por tipo" / "Pagado por persona"
-                // no se fragmenten; permite texto nuevo libre.
-                final concepto =
-                    _canonizar(conceptoCtrl.text, categoriasExistentes);
-                final nombre = _canonizar(nombreCtrl.text, nombresExistentes);
-                await ref.read(movimientoRepositoryProvider).add(
-                      obraId: _obraId,
-                      fecha: DateTime.now().millisecondsSinceEpoch,
-                      tipo: tipo,
-                      // categoria = concepto: la caja agrupa entradas por
-                      // categoria (igual que el import de estado de cuenta).
-                      categoria: concepto,
-                      concepto: concepto,
-                      monto: double.parse(montoCtrl.text.trim()),
-                      metodoPago: metodo,
-                      nombre: nombre,
-                      cotizacionId: partida != null ? cot?.id : null,
-                      seccionId: partida?.seccionId,
-                      partidaId: partida?.id,
-                    );
-                if (ctx.mounted) Navigator.pop(ctx);
+            _autocompleteField(
+              label: tipo == 'ENTRADA'
+                  ? 'De quién (opcional)'
+                  : 'Beneficiario (opcional)',
+              controller: nombreCtrl,
+              focusNode: nombreFocus,
+              opciones: nombresExistentes,
+            ),
+            TextFormField(
+              controller: montoCtrl,
+              decoration: const InputDecoration(
+                  labelText: 'Monto', prefixText: r'$ '),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              validator: (v) {
+                final d = leerNumero(v);
+                return (d == null || d <= 0) ? 'Escribe un monto mayor a 0' : null;
               },
-              child: const Text('Guardar'),
             ),
+            DropdownButtonFormField<String>(
+              initialValue: metodo,
+              decoration: const InputDecoration(labelText: 'Método de pago'),
+              items: const [
+                DropdownMenuItem(value: 'Transferencia', child: Text('Transferencia')),
+                DropdownMenuItem(value: 'Efectivo', child: Text('Efectivo')),
+                DropdownMenuItem(value: 'Cheque', child: Text('Cheque')),
+              ],
+              onChanged: (v) => setS(() => metodo = v ?? 'Transferencia'),
+            ),
+            if (tipo == 'SALIDA' && partidasObra.isNotEmpty)
+              DropdownButtonFormField<String?>(
+                initialValue: partidaId,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                    labelText: 'Ligar a partida (opcional)'),
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('Sin ligar')),
+                  ...partidasObra.map((p) => DropdownMenuItem(
+                        value: p.id,
+                        child: Text(p.descripcion,
+                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                      )),
+                ],
+                onChanged: (v) => setS(() => partidaId = v),
+              ),
           ],
+          onGuardar: () async {
+            final partida = partidaId == null
+                ? null
+                : partidasObra.firstWhereOrNull((p) => p.id == partidaId);
+            // Canoniza a la etiqueta existente (case/acento-insensible) para
+            // que las cubetas de "Recibido por tipo" / "Pagado por persona"
+            // no se fragmenten; permite texto nuevo libre.
+            final concepto = _canonizar(conceptoCtrl.text, categoriasExistentes);
+            final nombre = _canonizar(nombreCtrl.text, nombresExistentes);
+            await ref.read(movimientoRepositoryProvider).add(
+                  obraId: _obraId,
+                  fecha: DateTime.now().millisecondsSinceEpoch,
+                  tipo: tipo,
+                  // categoria = concepto: la caja agrupa entradas por
+                  // categoria (igual que el import de estado de cuenta).
+                  categoria: concepto,
+                  concepto: concepto,
+                  monto: leerNumero(montoCtrl.text)!,
+                  metodoPago: metodo,
+                  nombre: nombre,
+                  cotizacionId: partida != null ? cot?.id : null,
+                  seccionId: partida?.seccionId,
+                  partidaId: partida?.id,
+                );
+            return true;
+          },
         ),
       ),
     );
@@ -1596,11 +1600,22 @@ class _ObraDetailScreenState extends ConsumerState<ObraDetailScreen>
             title: Text(tiene ? 'Reemplazar con PDF' : 'Adjuntar PDF'),
             onTap: () => Navigator.pop(ctx, 'pdf'),
           ),
+          // Borrar solo existía con pulsación larga: no se descubría y
+          // TalkBack no lo veía (U14). Sigue pidiendo confirmación.
+          const Divider(height: 1),
+          ListTile(
+            leading: Icon(Icons.delete_outline, color: context.colores.danger),
+            title: Text('Borrar movimiento',
+                style: TextStyle(color: context.colores.danger)),
+            onTap: () => Navigator.pop(ctx, 'borrar'),
+          ),
         ]),
       ),
     );
     if (opcion == null) return;
-    if (opcion == 'ver') {
+    if (opcion == 'borrar') {
+      await _eliminarMov(m);
+    } else if (opcion == 'ver') {
       await _verComprobante(m);
     } else {
       await _adjuntarComprobante(m, opcion);
@@ -2005,7 +2020,7 @@ class _NotaConciliacionCardState extends ConsumerState<_NotaConciliacionCard> {
             onEditingComplete: _guardar,
             style: Theme.of(context).textTheme.bodyMedium,
             decoration: InputDecoration(
-              hintText: 'Ej. DIFERENCIA A FAVOR \$20,957 CON…',
+              hintText: 'Ej. Diferencia a favor: anticipo pendiente de facturar',
               hintStyle: TextStyle(color: c.textFaint),
               border: const OutlineInputBorder(),
             ),

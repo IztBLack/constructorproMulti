@@ -62,6 +62,8 @@ Usa estos antes de armar algo a mano. Si falta uno, se crea aquí, no dentro de 
 | `SyncStatusAction` | Indicador de nube en el `AppBar` de toda pantalla donde se captura. |
 | `SelectorFraccion` | Asistencia: `· ½ ¾ 1` con nombre accesible (mismo catálogo que la web). |
 | `showAppSnack` | Avisos; con "Deshacer" de **8 s** cuando la acción es reversible. |
+| `HojaFormulario` / `mostrarHojaFormulario` | **Todo formulario de captura** (2 o más campos): hoja desde abajo que se acomoda al teclado, título + contexto (la obra), campos y botón ancho que dice lo que hace («Guardar salida»). Bloquea el botón mientras guarda. `textoQuitar` pone el borrar al pie, en rojo. |
+| `leerNumero` / `numeroParaEditar` (`lib/domain/numeros.dart`) | Leer montos tecleados («1,500», «$1,500.50») y mostrarlos para editar («3500», no «3500.0»). Nunca `double.tryParse` sobre lo que escribe el usuario. |
 
 ## 4. Anatomía de pantalla
 
@@ -83,6 +85,16 @@ Título de grupo (labelLarge, textMuted)
 - Los títulos de grupo van en **oración**, no en MAYÚSCULAS.
 - Lo que depende de un módulo apagado **no se pinta** (se lee de `modulosProvider`).
 
+### Formularios
+- **Un solo valor** (el IVA, un nombre): diálogo, como en Ajustes.
+- **Dos o más campos**: `HojaFormulario`. Nunca un `AlertDialog` con varios campos (el teclado los tapa y los botones quedan chicos).
+- **Largos o con secciones / adjuntos**: pantalla completa (modelo: entrada de bitácora; Documentos PDF).
+- Etiquetas en oración; lo opcional dice «(opcional)»; montos con `prefixText: '$ '`.
+- El botón principal dice qué hace («Crear obra», «Guardar cambios»), nunca solo «Guardar» ni «Aceptar».
+- Errores bajo el campo, en palabras de obra («Escribe un monto mayor a 0»), no «Inválido».
+- Si una pantalla de formulario se puede abandonar con cambios, pregunta antes de tirarlos.
+- Borrar algo que se edita va dentro de su hoja (`textoQuitar`), no como bote rojo en cada fila.
+
 ### Una fila, una acción
 - Una `FilaLista` hace UNA cosa. Si lleva `Switch`, tocar la fila alterna el switch (como `SwitchListTile`). Lo demás (p. ej. el día y la hora del recordatorio) va en **otra fila**, que aparece solo cuando aplica. Dos toques distintos en una fila se funden en uno para TalkBack.
 - Un selector de varias opciones (`SegmentedButton`) va en su propio bloque a todo el ancho de la tarjeta, no dentro del texto de una fila (ver "Apariencia" en Ajustes).
@@ -103,7 +115,7 @@ Título de grupo (labelLarge, textMuted)
 - Español de México, tú, frases cortas. "Guardar un respaldo", no "Exportar respaldo (JSON)".
 - Decir el efecto, no la técnica: "Reemplaza lo que hay en el teléfono", no "Sobrescribe la base local".
 - Los botones dicen lo que hacen: "Dejar solo en este teléfono", no "Omitir".
-- **Nombres de la web** (U7): Ajustes · Obras · Cotizaciones · Equipo · Notas · Inicio. Fechas como la web: "6 oct 2026" (U15).
+- **Nombres de la web** (U7): Ajustes · Obras · Cotizaciones · Equipo · Notas · Inicio. Excepción: en la barra inferior la pestaña dice «Cotizar» (con 5 pestañas «Cotizaciones» se parte en dos renglones); el título de la pantalla sí es «Cotizaciones». Fechas como la web: "6 oct 2026" (U15).
 - Sin "datos de prueba", "demo" ni jerga en una cuenta real.
 
 ## 6. Accesibilidad (no negociable)
@@ -132,4 +144,7 @@ Desde 600 dp: contenido con `maxWidth` 720 centrado (las listas no se estiran a 
 | Ajustes | ✅ Línea nueva (2026-10-07, `docs/PLAN_AJUSTES_REDISENO.md`) |
 | Bitácora | ✅ Modelo de estados y avisos |
 | Nube y sincronización | Parcial (errores clasificados, U1) |
-| Pase de lista, Detalle de obra, Caja, Notas, Cotizaciones, Equipo, Resumen | Pendiente — se migran al tocarlas (Fases B y C de `docs/AUDITORIA_UX_MOVIL_2026-10-07.md`) |
+| Nube y sincronización, Documentos PDF, Puestos | ✅ Línea nueva (2026-10-12) |
+| Catálogo | ✅ Encabezados de grupo y valor a la vista (lista perezosa: +1000 conceptos) |
+| Formularios de captura (13) | ✅ `HojaFormulario` (2026-10-12) |
+| Pase de lista, Detalle de obra, Caja, Notas, Cotizaciones, Equipo, Inicio | Parcial: formularios, nombres, fechas y avisos al día; falta la estructura de pantalla (Fase C de `docs/AUDITORIA_UX_MOVIL_2026-10-07.md`) |
